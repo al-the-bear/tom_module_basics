@@ -18,7 +18,7 @@
 /// ```
 library;
 
-export 'src/exception_base.dart';
+export 'src/exceptions/exception_base.dart';
 export 'src/logging/logging.dart';
 export 'src/runtime/platform_neutral.dart';
 export 'src/runtime/platform_environment_runtime.dart';

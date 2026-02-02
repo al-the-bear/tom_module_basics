@@ -1,0 +1,19 @@
+name: tom_version_builder
+description: Build-time version file generator that reads version from pubspec.yaml and adds build timestamp.
+version: 1.0.0
+repository: https://github.com/al-the-bear/tom_module_basics
+
+environment:
+  sdk: ^3.10.4
+
+dependencies:
+  build: ^4.0.4
+  path: ^1.9.0
+  pub_semver: ^2.2.0
+  yaml: ^3.1.2
+
+dev_dependencies:
+  build_runner: ^2.4.13
+  build_test: ^3.5.5
+  lints: ^6.0.0
+  test: ^1.25.6

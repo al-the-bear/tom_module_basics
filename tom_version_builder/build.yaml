@@ -1,0 +1,12 @@
+# Build configuration for tom_version_builder
+#
+# This registers the version_builder as a builder that can be used by other packages.
+
+builders:
+  version_builder:
+    import: "package:tom_version_builder/builder.dart"
+    builder_factories: ["versionBuilder"]
+    build_extensions:
+      r"$lib$": ["version.g.info"]
+    auto_apply: none
+    build_to: source
