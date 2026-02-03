@@ -2,15 +2,14 @@
 
 import 'dart:io';
 
-import 'package:analyzer/dart/analysis/analysis_context_collection.dart';
 import 'package:analyzer/dart/analysis/results.dart' as analysis_results;
 import 'package:analyzer/dart/element/element.dart' as analyzer;
 import 'package:analyzer/dart/element/type.dart' as analyzer_types;
-import 'package:analyzer/file_system/physical_file_system.dart';
 import 'package:crypto/crypto.dart';
 import 'package:path/path.dart' as p;
 import 'package:yaml/yaml.dart';
 
+import 'analyzer_context_builder.dart';
 import '../model/model.dart';
 import '../serialization/id_generator.dart';
 
@@ -25,9 +24,10 @@ class TomAnalyzer {
         ? p.normalize(p.absolute(workspaceRoot))
         : p.normalize(p.absolute(p.dirname(resolvedPath)));
 
-    final collection = AnalysisContextCollection(
+    final contextBuilder = AnalyzerContextBuilder();
+    final collection = contextBuilder.build(
+      rootPath: rootPath,
       includedPaths: [rootPath],
-      resourceProvider: PhysicalResourceProvider.INSTANCE,
     );
 
     final context = collection.contextFor(resolvedPath);

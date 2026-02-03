@@ -1,4 +1,9 @@
 export 'src/analyzer/analyzer_runner.dart';
+export 'src/analyzer/analyzer_context_builder.dart';
+export 'src/analyzer/annotation_parser.dart';
+export 'src/analyzer/barrel_analyzer.dart';
+export 'src/analyzer/element_visitor.dart';
+export 'src/analyzer/type_resolver.dart';
 export 'src/model/model.dart';
 export 'src/serialization/json_serializer.dart';
 export 'src/serialization/yaml_serializer.dart';
