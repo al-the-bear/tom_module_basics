@@ -22,7 +22,7 @@ class _JsonWriter {
       'dartSdkVersion': result.dartSdkVersion,
       'analyzerVersion': result.analyzerVersion,
       'schemaVersion': result.schemaVersion,
-      'rootPackage': _package(result.rootPackage),
+      'rootPackageId': result.rootPackage.id,
       'packages': result.packages.values.map(_package).toList(),
       'libraries': result.libraries.values.map(_library).toList(),
       'files': result.files.values.map(_file).toList(),

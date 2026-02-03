@@ -19,10 +19,7 @@ class JsonDeserializer {
 
 class _JsonReader {
   AnalysisResult read(Map<String, dynamic> data) {
-    final rootPackageData = _requireMap(data['rootPackage'], 'rootPackage');
     final packageRecords = <String, _PackageRecord>{};
-
-    _addPackageRecord(packageRecords, rootPackageData, isRootOverride: true);
 
     final packagesData = _requireList(data['packages'], 'packages');
     for (final entry in packagesData) {
@@ -30,6 +27,12 @@ class _JsonReader {
         throw const FormatException('Invalid package entry in packages list.');
       }
       _addPackageRecord(packageRecords, entry.cast<String, dynamic>());
+    }
+
+    final rootPackageId = _readOptionalString(data['rootPackageId']);
+    if (rootPackageId == null) {
+      final rootPackageData = _requireMap(data['rootPackage'], 'rootPackage');
+      _addPackageRecord(packageRecords, rootPackageData, isRootOverride: true);
     }
 
     final packageById = <String, PackageInfo>{};
@@ -84,13 +87,14 @@ class _JsonReader {
 
     final errors = _readErrors(data['errors']);
 
+    final rootPackage = _resolveRootPackage(packageRecords, rootPackageId);
     final analysisResult = AnalysisResult(
       id: _requireString(data['id'], 'id'),
       timestamp: _readDateTime(data['timestamp'], 'timestamp'),
       dartSdkVersion: _requireString(data['dartSdkVersion'], 'dartSdkVersion'),
       analyzerVersion: _requireString(data['analyzerVersion'], 'analyzerVersion'),
       schemaVersion: _requireString(data['schemaVersion'], 'schemaVersion'),
-      rootPackage: packageRecords.values.firstWhere((p) => p.package.isRoot).package,
+      rootPackage: rootPackage,
       packages: {
         for (final record in packageRecords.values) record.package.name: record.package,
       },
@@ -107,6 +111,25 @@ class _JsonReader {
     _attachDependencies(packageRecords);
 
     return analysisResult;
+  }
+
+  PackageInfo _resolveRootPackage(
+    Map<String, _PackageRecord> records,
+    String? rootPackageId,
+  ) {
+    if (rootPackageId != null) {
+      for (final record in records.values) {
+        if (record.package.id == rootPackageId) {
+          return record.package;
+        }
+      }
+      throw FormatException('Unknown rootPackageId "$rootPackageId".');
+    }
+    final rootRecord = records.values.firstWhere(
+      (record) => record.package.isRoot,
+      orElse: () => throw const FormatException('Missing root package definition.'),
+    );
+    return rootRecord.package;
   }
 
   void _addPackageRecord(
