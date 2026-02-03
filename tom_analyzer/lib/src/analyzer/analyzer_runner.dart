@@ -2,6 +2,7 @@
 
 import 'dart:io';
 
+import 'package:analyzer/dart/analysis/analysis_context.dart' as analysis_context;
 import 'package:analyzer/dart/analysis/results.dart' as analysis_results;
 import 'package:analyzer/dart/element/element.dart' as analyzer;
 import 'package:analyzer/dart/element/type.dart' as analyzer_types;
@@ -69,19 +70,70 @@ class TomAnalyzer {
 
     registry.attachAnalysisResult(analysisResult);
 
-    final libraryElement = libraryResult.element;
-    final libraryInfo = _buildLibraryInfo(
+    await _collectLibraries(
       analysisResult,
       registry,
-      libraryElement,
+      context,
       rootPath,
+      packageName,
     );
 
-    analysisResult.libraries[libraryInfo.uri] = libraryInfo;
-    analysisResult.rootPackage.libraries.add(libraryInfo);
     analysisResult.packages[analysisResult.rootPackage.name] = analysisResult.rootPackage;
 
     return analysisResult;
+  }
+
+  Future<void> _collectLibraries(
+    AnalysisResult analysisResult,
+    _ModelRegistry registry,
+    analysis_context.AnalysisContext context,
+    String rootPath,
+    String packageName,
+  ) async {
+    final session = context.currentSession;
+    final analyzedFiles = context.contextRoot.analyzedFiles();
+
+    for (final path in analyzedFiles) {
+      if (!path.endsWith('.dart')) {
+        continue;
+      }
+
+      final result = await session.getResolvedLibrary(path);
+      if (result is! analysis_results.ResolvedLibraryResult) {
+        continue;
+      }
+
+      final uri = result.element.source.uri;
+      if (!_isInPackage(uri, rootPath, packageName)) {
+        continue;
+      }
+      if (analysisResult.libraries.containsKey(uri)) {
+        continue;
+      }
+
+      final libraryInfo = _buildLibraryInfo(
+        analysisResult,
+        registry,
+        result.element,
+        rootPath,
+      );
+      analysisResult.libraries[libraryInfo.uri] = libraryInfo;
+      if (!analysisResult.rootPackage.libraries.contains(libraryInfo)) {
+        analysisResult.rootPackage.libraries.add(libraryInfo);
+      }
+    }
+  }
+
+  bool _isInPackage(Uri uri, String rootPath, String packageName) {
+    if (uri.scheme == 'package') {
+      if (uri.pathSegments.isEmpty) return false;
+      return uri.pathSegments.first == packageName;
+    }
+    if (uri.scheme == 'file') {
+      final filePath = uri.toFilePath();
+      return p.isWithin(rootPath, filePath);
+    }
+    return false;
   }
 
   Map<String, dynamic> _readPubspec(String rootPath) {
