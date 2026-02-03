@@ -188,7 +188,7 @@ class TomAnalyzer {
     final lines = content.isEmpty ? 0 : content.split('\n').length;
 
     final library = registry.libraryForUri(uri, packageInfo.rootPath);
-    return FileInfo(
+    final fileInfo = FileInfo(
       id: registry.idGen.nextId('file'),
       path: filePath,
       package: packageInfo,
@@ -199,6 +199,8 @@ class TomAnalyzer {
       contentHash: hash,
       modified: file.existsSync() ? file.lastModifiedSync() : DateTime.now(),
     );
+    registry.registerFile(fileInfo);
+    return fileInfo;
   }
 
   ClassInfo _mapClass(analyzer.ClassElement element, LibraryInfo libraryInfo, _ModelRegistry registry) {
@@ -663,6 +665,14 @@ class _ModelRegistry {
     for (final package in _packages.values) {
       package.attachAnalysisResult(result);
     }
+  }
+
+  void registerFile(FileInfo fileInfo) {
+    final result = _analysisResult;
+    if (result == null) {
+      return;
+    }
+    result.files[fileInfo.path] = fileInfo;
   }
 
   PackageInfo createPackage({
