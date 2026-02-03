@@ -1,0 +1,72 @@
+{
+  "id": "analysis_1",
+  "timestamp": "2026-02-03T19:36:29.191394",
+  "dartSdkVersion": "unknown",
+  "analyzerVersion": "8.x",
+  "schemaVersion": "1.0",
+  "rootPackage": {
+    "id": "pkg_1",
+    "name": "tom_analyzer",
+    "version": "1.0.0",
+    "rootPath": "/Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_analyzer",
+    "isRoot": true,
+    "libraries": [
+      "lib_1",
+      "lib_1"
+    ],
+    "dependencies": [],
+    "devDependencies": []
+  },
+  "packages": [
+    {
+      "id": "pkg_1",
+      "name": "tom_analyzer",
+      "version": "1.0.0",
+      "rootPath": "/Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_analyzer",
+      "isRoot": true,
+      "libraries": [
+        "lib_1",
+        "lib_1"
+      ],
+      "dependencies": [],
+      "devDependencies": []
+    }
+  ],
+  "libraries": [
+    {
+      "id": "lib_1",
+      "name": "",
+      "uri": "package:tom_analyzer/tom_analyzer.dart",
+      "packageId": "pkg_1",
+      "mainSourceFileId": "file_2",
+      "partFileIds": [],
+      "classes": [],
+      "enums": [],
+      "mixins": [],
+      "extensions": [],
+      "extensionTypes": [],
+      "typeAliases": [],
+      "functions": [],
+      "variables": [],
+      "getters": [],
+      "setters": []
+    }
+  ],
+  "files": [
+    {
+      "id": "file_2",
+      "path": "/Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_analyzer/lib/tom_analyzer.dart",
+      "packageId": "pkg_1",
+      "libraryId": "lib_2",
+      "isPart": false,
+      "partOfDirective": null,
+      "lines": 14,
+      "contentHash": "5bc93b94380a937e90a9a68e52ffb4b406c52e30f1e1ef80722cf122d08b992c",
+      "modified": "2026-02-03T18:57:52.000"
+    }
+  ],
+  "errors": [],
+  "metadata": {
+    "barrelPath": "/Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_analyzer/lib/tom_analyzer.dart"
+  }
+}
