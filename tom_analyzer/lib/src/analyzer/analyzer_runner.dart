@@ -660,6 +660,9 @@ class _ModelRegistry {
 
   void attachAnalysisResult(AnalysisResult result) {
     _analysisResult = result;
+    for (final package in _packages.values) {
+      package.attachAnalysisResult(result);
+    }
   }
 
   PackageInfo createPackage({
@@ -670,9 +673,6 @@ class _ModelRegistry {
     String? version,
   }) {
     final result = _analysisResult;
-    if (result == null) {
-      throw StateError('AnalysisResult not attached');
-    }
     final pkg = PackageInfo(
       id: id,
       name: name,
@@ -682,6 +682,9 @@ class _ModelRegistry {
       isRoot: isRoot,
       libraries: [],
     );
+    if (result != null) {
+      pkg.attachAnalysisResult(result);
+    }
     _packages[name] = pkg;
     return pkg;
   }
