@@ -21,13 +21,14 @@ class PackageInfo extends ContainerElement {
   final Map<String, PackageInfo> devDependencies;
   final bool isRoot;
   final Map<String, dynamic>? pubspecMetadata;
-  final AnalysisResult analysisResult;
+  late final AnalysisResult analysisResult;
+  bool _analysisResultAttached = false;
 
   PackageInfo({
     required this.id,
     required this.name,
     required this.rootPath,
-    required this.analysisResult,
+    AnalysisResult? analysisResult,
     this.documentation,
     this.annotations = const [],
     this.version,
@@ -36,5 +37,18 @@ class PackageInfo extends ContainerElement {
     this.devDependencies = const {},
     this.isRoot = false,
     this.pubspecMetadata,
-  });
+  }) {
+    if (analysisResult != null) {
+      this.analysisResult = analysisResult;
+      _analysisResultAttached = true;
+    }
+  }
+
+  void attachAnalysisResult(AnalysisResult result) {
+    if (_analysisResultAttached) {
+      return;
+    }
+    analysisResult = result;
+    _analysisResultAttached = true;
+  }
 }

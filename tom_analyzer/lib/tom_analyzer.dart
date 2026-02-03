@@ -6,4 +6,7 @@ export 'src/analyzer/element_visitor.dart';
 export 'src/analyzer/type_resolver.dart';
 export 'src/model/model.dart';
 export 'src/serialization/json_serializer.dart';
+export 'src/serialization/json_deserializer.dart';
+export 'src/serialization/yaml_deserializer.dart';
+export 'src/serialization/analysis_result_validator.dart';
 export 'src/serialization/yaml_serializer.dart';
