@@ -4,6 +4,7 @@ export 'src/analyzer/annotation_parser.dart';
 export 'src/analyzer/barrel_analyzer.dart';
 export 'src/analyzer/element_visitor.dart';
 export 'src/analyzer/type_resolver.dart';
+export 'src/config/configuration.dart';
 export 'src/model/model.dart';
 export 'src/serialization/json_serializer.dart';
 export 'src/serialization/json_deserializer.dart';

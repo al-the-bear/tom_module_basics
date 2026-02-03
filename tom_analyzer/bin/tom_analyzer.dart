@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:args/args.dart';
 import 'package:tom_analyzer/tom_analyzer.dart';
-import 'package:yaml/yaml.dart';
 
 void main(List<String> arguments) async {
   final parser = ArgParser()
@@ -24,42 +23,39 @@ void main(List<String> arguments) async {
   }
 
   final configPath = result['config'] as String?;
-  final config = configPath != null ? _loadConfig(configPath) : <String, dynamic>{};
+  var config = TomAnalyzerConfig.load(path: configPath);
 
-  final barrel = result['barrel'] as String? ?? config['barrels']?.first as String?;
+  final barrelOverride = result['barrel'] as String?;
+  if (barrelOverride != null) {
+    config = config.applyOverrides(barrels: [barrelOverride]);
+  }
+
+  final barrel = config.barrels.isNotEmpty ? config.barrels.first : null;
   if (barrel == null) {
     stderr.writeln('Missing barrel path. Use --barrel or config file.');
     exitCode = 1;
     return;
   }
 
-  final workspaceRoot = result['workspace-root'] as String? ?? config['workspace_root'] as String?;
-  final outputPath = result['output'] as String? ?? config['output_file'] as String?;
-  final format = result['format'] as String? ?? config['output_format'] as String? ?? 'yaml';
+  config = config.applyOverrides(
+    workspaceRoot: result['workspace-root'] as String?,
+    outputFile: result['output'] as String?,
+    outputFormat: result['format'] as String?,
+  );
 
   final analyzer = TomAnalyzer();
   final analysis = await analyzer.analyzeBarrel(
     barrelPath: barrel,
-    workspaceRoot: workspaceRoot,
+    workspaceRoot: config.workspaceRoot,
   );
 
-  final content = format == 'json'
+  final content = config.outputFormat == 'json'
       ? JsonSerializer.encode(analysis)
       : YamlSerializer.encode(analysis);
 
-  if (outputPath != null) {
-    await File(outputPath).writeAsString(content);
+  if (config.outputFile != null) {
+    await File(config.outputFile!).writeAsString(content);
   } else {
     stdout.writeln(content);
   }
-}
-
-Map<String, dynamic> _loadConfig(String path) {
-  final file = File(path);
-  if (!file.existsSync()) return {};
-  final yaml = loadYaml(file.readAsStringSync());
-  if (yaml is YamlMap) {
-    return Map<String, dynamic>.from(yaml);
-  }
-  return {};
 }

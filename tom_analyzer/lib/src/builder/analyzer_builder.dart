@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:build/build.dart';
 
 import '../analyzer/analyzer_runner.dart';
+import '../config/configuration.dart';
 import '../serialization/json_serializer.dart';
 import '../serialization/yaml_serializer.dart';
 
@@ -19,9 +20,9 @@ class AnalyzerBuilder implements Builder {
 
   @override
   Future<void> build(BuildStep buildStep) async {
-    final config = options.config;
-    final barrels = (config['barrels'] as List?)?.cast<String>() ?? [];
-    final outputFormat = (config['output_format'] as String?) ?? 'yaml';
+    final config = TomAnalyzerConfig.fromMap(options.config);
+    final barrels = config.barrels;
+    final outputFormat = config.outputFormat;
 
     if (barrels.isNotEmpty && !barrels.contains(buildStep.inputId.path)) {
       return;
@@ -30,7 +31,7 @@ class AnalyzerBuilder implements Builder {
     final analyzer = TomAnalyzer();
     final result = await analyzer.analyzeBarrel(
       barrelPath: buildStep.inputId.path,
-      workspaceRoot: buildStep.inputId.package,
+      workspaceRoot: config.workspaceRoot,
     );
 
     final outputId = buildStep.inputId.changeExtension('.analysis.yaml');
