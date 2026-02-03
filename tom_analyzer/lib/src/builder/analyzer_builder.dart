@@ -32,6 +32,9 @@ class AnalyzerBuilder implements Builder {
     final result = await analyzer.analyzeBarrel(
       barrelPath: buildStep.inputId.path,
       workspaceRoot: config.workspaceRoot,
+      followReExports: config.followReExports,
+      followReExportPackages: config.followReExportPackages,
+      skipReExports: config.skipReExports,
     );
 
     final outputId = buildStep.inputId.changeExtension('.analysis.yaml');

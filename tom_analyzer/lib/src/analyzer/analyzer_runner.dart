@@ -19,6 +19,9 @@ class TomAnalyzer {
   Future<AnalysisResult> analyzeBarrel({
     required String barrelPath,
     String? workspaceRoot,
+    bool followReExports = true,
+    List<String>? followReExportPackages,
+    List<String> skipReExports = const [],
   }) async {
     final resolvedPath = p.normalize(p.absolute(barrelPath));
     final rootPath = workspaceRoot != null
@@ -76,6 +79,9 @@ class TomAnalyzer {
       context,
       rootPath,
       packageName,
+      followReExports: followReExports,
+      followReExportPackages: followReExportPackages,
+      skipReExports: skipReExports,
     );
 
     analysisResult.packages[analysisResult.rootPackage.name] = analysisResult.rootPackage;
@@ -89,9 +95,16 @@ class TomAnalyzer {
     analysis_context.AnalysisContext context,
     String rootPath,
     String packageName,
+    {
+    required bool followReExports,
+    List<String>? followReExportPackages,
+    List<String> skipReExports = const [],
+  }
   ) async {
     final session = context.currentSession;
     final analyzedFiles = context.contextRoot.analyzedFiles();
+    final queuedUris = <Uri>{};
+    final pendingExports = <String>[];
 
     for (final path in analyzedFiles) {
       if (!path.endsWith('.dart')) {
@@ -121,6 +134,60 @@ class TomAnalyzer {
       if (!analysisResult.rootPackage.libraries.contains(libraryInfo)) {
         analysisResult.rootPackage.libraries.add(libraryInfo);
       }
+
+      if (followReExports) {
+        for (final exportedLibrary in result.element.exportedLibraries) {
+          final exportUri = exportedLibrary.source.uri;
+          if (_shouldFollowReExport(
+            exportUri,
+            rootPath,
+            packageName,
+            followReExportPackages,
+            skipReExports,
+          )) {
+            if (queuedUris.add(exportUri)) {
+              pendingExports.add(exportedLibrary.source.fullName);
+            }
+          }
+        }
+      }
+    }
+
+    while (pendingExports.isNotEmpty) {
+      final exportPath = pendingExports.removeLast();
+      final exportResult = await session.getResolvedLibrary(exportPath);
+      if (exportResult is! analysis_results.ResolvedLibraryResult) {
+        continue;
+      }
+      final exportUri = exportResult.element.source.uri;
+      if (analysisResult.libraries.containsKey(exportUri)) {
+        continue;
+      }
+
+      final libraryInfo = _buildLibraryInfo(
+        analysisResult,
+        registry,
+        exportResult.element,
+        rootPath,
+      );
+      analysisResult.libraries[libraryInfo.uri] = libraryInfo;
+
+      if (followReExports) {
+        for (final exportedLibrary in exportResult.element.exportedLibraries) {
+          final nextUri = exportedLibrary.source.uri;
+          if (_shouldFollowReExport(
+            nextUri,
+            rootPath,
+            packageName,
+            followReExportPackages,
+            skipReExports,
+          )) {
+            if (queuedUris.add(nextUri)) {
+              pendingExports.add(exportedLibrary.source.fullName);
+            }
+          }
+        }
+      }
     }
   }
 
@@ -134,6 +201,33 @@ class TomAnalyzer {
       return p.isWithin(rootPath, filePath);
     }
     return false;
+  }
+
+  bool _shouldFollowReExport(
+    Uri uri,
+    String rootPath,
+    String rootPackageName,
+    List<String>? followReExportPackages,
+    List<String> skipReExports,
+  ) {
+    String? package;
+    if (uri.scheme == 'package') {
+      package = uri.pathSegments.isNotEmpty ? uri.pathSegments.first : null;
+    } else if (uri.scheme == 'file') {
+      if (p.isWithin(rootPath, uri.toFilePath())) {
+        package = rootPackageName;
+      }
+    }
+
+    if (package != null && skipReExports.contains(package)) {
+      return false;
+    }
+
+    if (followReExportPackages != null && followReExportPackages.isNotEmpty) {
+      return package != null && followReExportPackages.contains(package);
+    }
+
+    return true;
   }
 
   Map<String, dynamic> _readPubspec(String rootPath) {
@@ -748,6 +842,9 @@ class _ModelRegistry {
       pkg.attachAnalysisResult(result);
     }
     _packages[name] = pkg;
+    if (result != null) {
+      result.packages[name] = pkg;
+    }
     return pkg;
   }
 

@@ -8,6 +8,9 @@ class TomAnalyzerConfig {
   final String outputFormat;
   final String? outputFile;
   final String? workspaceRoot;
+  final bool followReExports;
+  final List<String>? followReExportPackages;
+  final List<String> skipReExports;
   final Map<String, dynamic> raw;
 
   const TomAnalyzerConfig({
@@ -15,6 +18,9 @@ class TomAnalyzerConfig {
     this.outputFormat = 'yaml',
     this.outputFile,
     this.workspaceRoot,
+    this.followReExports = true,
+    this.followReExportPackages,
+    this.skipReExports = const [],
     this.raw = const {},
   });
 
@@ -29,6 +35,9 @@ class TomAnalyzerConfig {
       outputFormat: outputFormat ?? this.outputFormat,
       outputFile: outputFile ?? this.outputFile,
       workspaceRoot: workspaceRoot ?? this.workspaceRoot,
+      followReExports: followReExports,
+      followReExportPackages: followReExportPackages,
+      skipReExports: skipReExports,
       raw: raw,
     );
   }
@@ -56,11 +65,17 @@ class TomAnalyzerConfig {
     final outputFormat = _readString(map['output_format']) ?? 'yaml';
     final outputFile = _readString(map['output_file']);
     final workspaceRoot = _readString(map['workspace_root']);
+    final followValue = map['followReExports'] ?? map['follow_re_exports'];
+    final followParsed = _readFollowReExports(followValue);
+    final skipReExports = _readStringList(map['skipReExports'] ?? map['skip_re_exports']);
     return TomAnalyzerConfig(
       barrels: barrels,
       outputFormat: outputFormat,
       outputFile: outputFile,
       workspaceRoot: workspaceRoot,
+      followReExports: followParsed.followReExports,
+      followReExportPackages: followParsed.followReExportPackages,
+      skipReExports: skipReExports,
       raw: map,
     );
   }
@@ -86,4 +101,27 @@ class TomAnalyzerConfig {
     }
     return const [];
   }
+
+  static _FollowReExportsConfig _readFollowReExports(Object? value) {
+    if (value == null) {
+      return const _FollowReExportsConfig(true, null);
+    }
+    if (value is bool) {
+      return _FollowReExportsConfig(value, null);
+    }
+    if (value is String) {
+      return _FollowReExportsConfig(true, [value]);
+    }
+    if (value is List) {
+      return _FollowReExportsConfig(true, value.whereType<String>().toList());
+    }
+    return const _FollowReExportsConfig(true, null);
+  }
+}
+
+class _FollowReExportsConfig {
+  final bool followReExports;
+  final List<String>? followReExportPackages;
+
+  const _FollowReExportsConfig(this.followReExports, this.followReExportPackages);
 }

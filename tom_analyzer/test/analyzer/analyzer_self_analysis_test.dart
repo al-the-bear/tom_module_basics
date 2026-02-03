@@ -1,135 +1,49 @@
-// ignore_for_file: deprecated_member_use
-
 import 'dart:io';
 
-import 'package:analyzer/dart/analysis/results.dart' as analysis_results;
-import 'package:analyzer/dart/element/element.dart' as analyzer_elements;
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
-import 'package:tom_analyzer/tom_analyzer.dart';
+
+import '../support/analyzer_comparison.dart';
 
 void main() {
   group('TomAnalyzer', () {
     group('self analysis json', () {
-      late AnalysisResult analysisResult;
-      late String rootPath;
-
-      setUpAll(() {
-        final cwd = p.normalize(p.absolute(Directory.current.path));
-        rootPath = p.basename(cwd) == 'test' ? p.dirname(cwd) : cwd;
-        final jsonFile = File(p.join(rootPath, 'doc', 'analyzer_analysis.json'));
-        final content = jsonFile.readAsStringSync();
-        analysisResult = JsonDeserializer.decode(content);
-      });
-
       test('should contain all analyzer elements from the package', () async {
-        final contextBuilder = AnalyzerContextBuilder();
-        final collection = contextBuilder.build(
+        final rootPath = _findTomAnalyzerRoot();
+        final barrelPath = p.join(rootPath, 'lib', 'tom_analyzer.dart');
+        final jsonPath = p.join(rootPath, 'doc', 'analyzer_analysis.json');
+
+        await compareAnalyzerToJson(
           rootPath: rootPath,
-          includedPaths: [rootPath],
+          barrelPath: barrelPath,
+          jsonPath: jsonPath,
+          packageName: 'tom_analyzer',
         );
-
-        final entryPath = p.join(rootPath, 'lib', 'tom_analyzer.dart');
-        final context = collection.contextFor(entryPath);
-        final session = context.currentSession;
-        final analyzedFiles = context.contextRoot.analyzedFiles();
-
-        final classNames = analysisResult.allClasses.map((c) => c.qualifiedName).toSet();
-        final enumNames = analysisResult.allEnums.map((e) => e.qualifiedName).toSet();
-        final mixinNames = analysisResult.allMixins.map((m) => m.qualifiedName).toSet();
-        final extensionNames = analysisResult.allExtensions.map((e) => e.qualifiedName).toSet();
-        final extensionTypeNames =
-            analysisResult.allExtensionTypes.map((e) => e.qualifiedName).toSet();
-        final typeAliasNames = analysisResult.allTypeAliases.map((t) => t.qualifiedName).toSet();
-        final functionNames = analysisResult.allFunctions.map((f) => f.qualifiedName).toSet();
-
-        expect(classNames, isNotEmpty, reason: 'Expected classes in analysis result.');
-
-        for (final path in analyzedFiles) {
-          if (!path.endsWith('.dart')) {
-            continue;
-          }
-          final result = await session.getResolvedLibrary(path);
-          if (result is! analysis_results.ResolvedLibraryResult) {
-            continue;
-          }
-
-          final libraryUri = result.element.source.uri;
-          if (!_isInPackage(libraryUri, rootPath, 'tom_analyzer')) {
-            continue;
-          }
-
-          for (final element in result.element.topLevelElements) {
-            final name = element.displayName;
-            if (name.isEmpty) {
-              continue;
-            }
-            final qualifiedName = _qualifiedName(element);
-
-            if (element is analyzer_elements.ClassElement) {
-              expect(
-                classNames,
-                contains(qualifiedName),
-                reason: 'Missing class $qualifiedName in JSON analysis.',
-              );
-            } else if (element is analyzer_elements.EnumElement) {
-              expect(
-                enumNames,
-                contains(qualifiedName),
-                reason: 'Missing enum $qualifiedName in JSON analysis.',
-              );
-            } else if (element is analyzer_elements.MixinElement) {
-              expect(
-                mixinNames,
-                contains(qualifiedName),
-                reason: 'Missing mixin $qualifiedName in JSON analysis.',
-              );
-            } else if (element is analyzer_elements.ExtensionElement) {
-              expect(
-                extensionNames,
-                contains(qualifiedName),
-                reason: 'Missing extension $qualifiedName in JSON analysis.',
-              );
-            } else if (element is analyzer_elements.ExtensionTypeElement) {
-              expect(
-                extensionTypeNames,
-                contains(qualifiedName),
-                reason: 'Missing extension type $qualifiedName in JSON analysis.',
-              );
-            } else if (element is analyzer_elements.TypeAliasElement) {
-              expect(
-                typeAliasNames,
-                contains(qualifiedName),
-                reason: 'Missing type alias $qualifiedName in JSON analysis.',
-              );
-            } else if (element is analyzer_elements.FunctionElement) {
-              expect(
-                functionNames,
-                contains(qualifiedName),
-                reason: 'Missing function $qualifiedName in JSON analysis.',
-              );
-            }
-          }
-        }
       });
     });
   });
 }
 
-String _qualifiedName(analyzer_elements.Element element) {
-  final libraryUri = element.librarySource?.uri.toString() ?? '';
-  final name = element.displayName;
-  return '$libraryUri.$name';
-}
-
-bool _isInPackage(Uri uri, String rootPath, String packageName) {
-  if (uri.scheme == 'package') {
-    if (uri.pathSegments.isEmpty) return false;
-    return uri.pathSegments.first == packageName;
+String _findTomAnalyzerRoot() {
+  final cwd = Directory.current;
+  final direct = File(p.join(cwd.path, 'pubspec.yaml'));
+  if (direct.existsSync() && direct.readAsStringSync().contains('name: tom_analyzer')) {
+    return cwd.path;
   }
-  if (uri.scheme == 'file') {
-    final filePath = uri.toFilePath();
-    return p.isWithin(rootPath, filePath);
+  final nested = Directory(p.join(cwd.path, 'tom_analyzer'));
+  if (nested.existsSync()) {
+    return nested.path;
   }
-  return false;
+  var current = cwd;
+  while (true) {
+    final candidate = File(p.join(current.path, 'tom_analyzer', 'pubspec.yaml'));
+    if (candidate.existsSync()) {
+      return p.dirname(candidate.path);
+    }
+    final parent = current.parent;
+    if (parent.path == current.path) {
+      throw StateError('Unable to locate tom_analyzer package root.');
+    }
+    current = parent;
+  }
 }

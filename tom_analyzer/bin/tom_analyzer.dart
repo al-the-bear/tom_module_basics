@@ -47,6 +47,9 @@ void main(List<String> arguments) async {
   final analysis = await analyzer.analyzeBarrel(
     barrelPath: barrel,
     workspaceRoot: config.workspaceRoot,
+    followReExports: config.followReExports,
+    followReExportPackages: config.followReExportPackages,
+    skipReExports: config.skipReExports,
   );
 
   final content = config.outputFormat == 'json'
