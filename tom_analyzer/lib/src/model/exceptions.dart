@@ -1,5 +1,6 @@
 part of 'model.dart';
 
+/// Thrown when a requested element cannot be found.
 class ElementNotFoundException implements Exception {
   final String message;
 
@@ -9,6 +10,7 @@ class ElementNotFoundException implements Exception {
   String toString() => 'ElementNotFoundException: $message';
 }
 
+/// Thrown when a query returns multiple matching elements.
 class AmbiguousElementException implements Exception {
   final String message;
   final List<String> candidates;

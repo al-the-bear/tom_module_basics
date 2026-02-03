@@ -1,5 +1,6 @@
 import '../model/model.dart';
 
+/// Bridge model between static analysis and reflection output.
 class ReflectionModel {
   final AnalysisResult analysisResult;
 

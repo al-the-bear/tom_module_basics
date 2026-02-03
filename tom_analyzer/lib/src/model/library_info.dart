@@ -1,5 +1,6 @@
 part of 'model.dart';
 
+/// Represents a Dart library and its contained declarations.
 class LibraryInfo extends ContainerElement {
   @override
   final String id;

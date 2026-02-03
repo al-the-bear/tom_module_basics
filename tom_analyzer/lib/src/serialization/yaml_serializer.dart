@@ -1,6 +1,7 @@
 import '../model/model.dart';
 import 'json_serializer.dart';
 
+/// Serializes analysis results to a YAML representation.
 class YamlSerializer {
   static String encode(AnalysisResult result) {
     final map = JsonSerializer.toMap(result);

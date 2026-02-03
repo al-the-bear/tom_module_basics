@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import '../model/model.dart';
 
+/// Serializes analysis results to JSON format.
 class JsonSerializer {
   static String encode(AnalysisResult result) {
     final map = _JsonWriter().toMap(result);

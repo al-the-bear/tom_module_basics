@@ -1,5 +1,6 @@
 part of 'model.dart';
 
+/// Reference to a type with optional resolved declaration.
 class TypeReference {
   final String id;
   final String name;

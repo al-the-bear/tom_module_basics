@@ -1,5 +1,6 @@
 part of 'model.dart';
 
+/// Represents a class declaration and its members.
 class ClassInfo extends TypeDeclaration {
   @override
   final String id;

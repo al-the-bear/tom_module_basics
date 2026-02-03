@@ -14,6 +14,7 @@ import 'package:yaml/yaml.dart';
 import '../model/model.dart';
 import '../serialization/id_generator.dart';
 
+/// Runs analyzer-based extraction of model information.
 class TomAnalyzer {
   Future<AnalysisResult> analyzeBarrel({
     required String barrelPath,

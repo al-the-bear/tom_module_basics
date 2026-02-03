@@ -1,5 +1,6 @@
 part of 'model.dart';
 
+/// Information about a Dart package in the analysis graph.
 class PackageInfo extends ContainerElement {
   @override
   final String id;

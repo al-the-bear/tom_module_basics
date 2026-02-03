@@ -1,5 +1,6 @@
 part of 'model.dart';
 
+/// Represents an extension type declaration.
 class ExtensionTypeInfo extends TypeDeclaration {
   @override
   final String id;

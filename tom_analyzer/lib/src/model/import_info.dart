@@ -1,5 +1,6 @@
 part of 'model.dart';
 
+/// Represents an import directive between libraries.
 class ImportInfo {
   final String id;
   final LibraryInfo importingLibrary;

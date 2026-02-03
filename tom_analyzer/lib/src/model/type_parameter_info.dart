@@ -1,11 +1,13 @@
 part of 'model.dart';
 
+/// Variance of a type parameter.
 enum TypeParameterVariance {
   covariant,
   contravariant,
   invariant,
 }
 
+/// Information about a type parameter and its bounds.
 class TypeParameterInfo {
   final String id;
   final String name;

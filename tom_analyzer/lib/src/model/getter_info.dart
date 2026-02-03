@@ -1,5 +1,6 @@
 part of 'model.dart';
 
+/// Represents a getter declaration.
 class GetterInfo extends ExecutableElement {
   @override
   final String id;

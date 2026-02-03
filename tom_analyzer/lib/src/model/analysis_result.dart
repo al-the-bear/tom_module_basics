@@ -1,5 +1,6 @@
 part of 'model.dart';
 
+/// Root container for all analysis results and queries.
 class AnalysisResult extends ContainerElement {
   @override
   final String id;

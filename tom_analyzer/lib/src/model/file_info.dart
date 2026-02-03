@@ -1,5 +1,6 @@
 part of 'model.dart';
 
+/// Represents a source file in the package.
 class FileInfo {
   final String id;
   final String path;

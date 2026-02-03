@@ -1,5 +1,6 @@
 part of 'model.dart';
 
+/// Grouped view of elements belonging to a package.
 class PackageElements {
   final List<ClassInfo> classes;
   final List<EnumInfo> enums;

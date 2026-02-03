@@ -1,5 +1,6 @@
 part of 'model.dart';
 
+/// Represents a class or extension method declaration.
 class MethodInfo extends ExecutableElement {
   @override
   final String id;

@@ -1,5 +1,6 @@
 part of 'model.dart';
 
+/// Represents a typedef declaration.
 class TypeAliasInfo extends TypeDeclaration {
   @override
   final String id;

@@ -1,5 +1,6 @@
 part of 'model.dart';
 
+/// Represents a top-level variable declaration.
 class VariableInfo extends VariableElement {
   @override
   final String id;

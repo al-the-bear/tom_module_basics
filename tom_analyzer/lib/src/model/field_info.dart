@@ -1,5 +1,6 @@
 part of 'model.dart';
 
+/// Represents a field declaration.
 class FieldInfo extends VariableElement {
   @override
   final String id;

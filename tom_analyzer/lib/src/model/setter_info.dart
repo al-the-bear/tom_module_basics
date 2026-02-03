@@ -1,5 +1,6 @@
 part of 'model.dart';
 
+/// Represents a setter declaration.
 class SetterInfo extends ExecutableElement {
   @override
   final String id;

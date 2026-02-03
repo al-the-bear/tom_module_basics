@@ -1,5 +1,6 @@
 part of 'model.dart';
 
+/// Represents a top-level function declaration.
 class FunctionInfo extends ExecutableElement {
   @override
   final String id;

@@ -6,6 +6,7 @@ import '../analyzer/analyzer_runner.dart';
 import '../serialization/json_serializer.dart';
 import '../serialization/yaml_serializer.dart';
 
+/// build_runner builder that emits analysis output for Dart sources.
 class AnalyzerBuilder implements Builder {
   final BuilderOptions options;
 

@@ -1,5 +1,6 @@
 part of 'model.dart';
 
+/// Represents an enum declaration and its values.
 class EnumInfo extends TypeDeclaration {
   @override
   final String id;

@@ -1,5 +1,6 @@
 part of 'model.dart';
 
+/// Aggregates static members of a class.
 class ClassStaticMembers {
   final List<MethodInfo> methods;
   final List<FieldInfo> fields;

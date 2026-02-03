@@ -1,5 +1,6 @@
 part of 'model.dart';
 
+/// Describes a function type signature.
 class FunctionTypeInfo {
   final String id;
   final TypeReference returnType;

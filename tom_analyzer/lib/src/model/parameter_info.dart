@@ -1,5 +1,6 @@
 part of 'model.dart';
 
+/// Information about a callable parameter.
 class ParameterInfo {
   final String id;
   final String name;

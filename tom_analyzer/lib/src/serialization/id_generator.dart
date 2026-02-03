@@ -1,3 +1,4 @@
+/// Generates incremental identifiers per element prefix.
 class IdGenerator {
   final Map<String, int> _counters = {};
 

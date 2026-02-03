@@ -1,5 +1,6 @@
 part of 'model.dart';
 
+/// Represents a mixin declaration.
 class MixinInfo extends TypeDeclaration {
   @override
   final String id;

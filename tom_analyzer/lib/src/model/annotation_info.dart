@@ -1,5 +1,6 @@
 part of 'model.dart';
 
+/// Represents a resolved annotation with constructor and arguments.
 class AnnotationInfo {
   final String name;
   final String qualifiedName;
@@ -16,6 +17,7 @@ class AnnotationInfo {
   });
 }
 
+/// Wrapper for annotation argument values.
 class ArgumentValue {
   final Object? value;
 

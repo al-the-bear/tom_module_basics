@@ -1,5 +1,6 @@
 part of 'model.dart';
 
+/// Represents a constructor declaration.
 class ConstructorInfo extends ExecutableElement {
   @override
   final String id;

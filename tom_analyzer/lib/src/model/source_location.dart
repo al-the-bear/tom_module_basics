@@ -1,5 +1,6 @@
 part of 'model.dart';
 
+/// Source position for an element within a file.
 class SourceLocation {
   final int line;
   final int column;

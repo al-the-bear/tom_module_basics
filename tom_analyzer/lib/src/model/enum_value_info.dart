@@ -1,5 +1,6 @@
 part of 'model.dart';
 
+/// Represents a single enum value.
 class EnumValueInfo {
   final String id;
   final String name;
