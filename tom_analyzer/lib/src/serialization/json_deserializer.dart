@@ -52,17 +52,34 @@ class _JsonReader {
 
     final librariesData = _requireList(data['libraries'], 'libraries');
     final librariesByUri = <Uri, LibraryInfo>{};
+    final librariesById = <String, LibraryInfo>{};
+    final libraryDataById = <String, Map<String, dynamic>>{};
     for (final entry in librariesData) {
       if (entry is! Map) {
         throw const FormatException('Invalid library entry in libraries list.');
       }
+      final entryMap = entry.cast<String, dynamic>();
       final library = _readLibrary(
-        entry.cast<String, dynamic>(),
+        entryMap,
         packageById,
         filesById,
       );
       librariesByUri[library.uri] = library;
+      librariesById[library.id] = library;
+      libraryDataById[library.id] = entryMap;
       library.package.libraries.add(library);
+    }
+
+    for (final entry in libraryDataById.entries) {
+      final library = librariesById[entry.key];
+      if (library != null) {
+        _populateLibraryMembers(
+          library,
+          entry.value,
+          librariesById,
+          filesById,
+        );
+      }
     }
 
     final errors = _readErrors(data['errors']);
@@ -185,19 +202,471 @@ class _JsonReader {
       package: package,
       mainSourceFile: mainSourceFile,
       partFiles: partFiles,
-      classes: const [],
-      enums: const [],
-      mixins: const [],
-      extensions: const [],
-      extensionTypes: const [],
-      typeAliases: const [],
-      functions: const [],
-      variables: const [],
+      documentation: _readOptionalString(data['documentation']),
+      annotations: _readAnnotations(data['annotations']),
+      classes: <ClassInfo>[],
+      enums: <EnumInfo>[],
+      mixins: <MixinInfo>[],
+      extensions: <ExtensionInfo>[],
+      extensionTypes: <ExtensionTypeInfo>[],
+      typeAliases: <TypeAliasInfo>[],
+      functions: <FunctionInfo>[],
+      variables: <VariableInfo>[],
+      getters: <GetterInfo>[],
+      setters: <SetterInfo>[],
+      exports: <ExportInfo>[],
+      imports: <ImportInfo>[],
+    );
+  }
+
+  void _populateLibraryMembers(
+    LibraryInfo library,
+    Map<String, dynamic> data,
+    Map<String, LibraryInfo> librariesById,
+    Map<String, FileInfo> filesById,
+  ) {
+    final classes = _readList(data['classes']);
+    final enums = _readList(data['enums']);
+    final mixins = _readList(data['mixins']);
+    final extensions = _readList(data['extensions']);
+    final extensionTypes = _readList(data['extensionTypes']);
+    final typeAliases = _readList(data['typeAliases']);
+    final functions = _readList(data['functions']);
+
+    for (final entry in classes) {
+      if (entry is Map) {
+        library.classes.add(_readClass(entry.cast<String, dynamic>(), library, librariesById, filesById));
+      }
+    }
+    for (final entry in enums) {
+      if (entry is Map) {
+        library.enums.add(_readEnum(entry.cast<String, dynamic>(), library, librariesById, filesById));
+      }
+    }
+    for (final entry in mixins) {
+      if (entry is Map) {
+        library.mixins.add(_readMixin(entry.cast<String, dynamic>(), library, librariesById, filesById));
+      }
+    }
+    for (final entry in extensions) {
+      if (entry is Map) {
+        library.extensions.add(
+          _readExtension(entry.cast<String, dynamic>(), library, librariesById, filesById),
+        );
+      }
+    }
+    for (final entry in extensionTypes) {
+      if (entry is Map) {
+        library.extensionTypes.add(
+          _readExtensionType(entry.cast<String, dynamic>(), library, librariesById, filesById),
+        );
+      }
+    }
+    for (final entry in typeAliases) {
+      if (entry is Map) {
+        library.typeAliases.add(
+          _readTypeAlias(entry.cast<String, dynamic>(), library, librariesById, filesById),
+        );
+      }
+    }
+    for (final entry in functions) {
+      if (entry is Map) {
+        library.functions.add(
+          _readFunction(entry.cast<String, dynamic>(), library, librariesById, filesById),
+        );
+      }
+    }
+  }
+
+  ClassInfo _readClass(
+    Map<String, dynamic> data,
+    LibraryInfo library,
+    Map<String, LibraryInfo> librariesById,
+    Map<String, FileInfo> filesById,
+  ) {
+    final sourceFile = _resolveFile(filesById, data['sourceFileId']);
+    return ClassInfo(
+      id: _requireString(data['id'], 'id'),
+      name: _requireString(data['name'], 'name'),
+      qualifiedName: _requireString(data['qualifiedName'], 'qualifiedName'),
+      library: library,
+      sourceFile: sourceFile,
+      location: _readSourceLocation(data['location']),
+      documentation: _readOptionalString(data['documentation']),
+      annotations: _readAnnotations(data['annotations']),
+      isAbstract: _readBool(data['isAbstract']),
+      isSealed: _readBool(data['isSealed']),
+      isFinal: _readBool(data['isFinal']),
+      isBase: _readBool(data['isBase']),
+      isInterface: _readBool(data['isInterface']),
+      isMixin: _readBool(data['isMixin']),
+      superclass: _readTypeReference(data['superclass'], librariesById),
+      interfaces: _readTypeReferences(data['interfaces'], librariesById),
+      mixins: _readTypeReferences(data['mixins'], librariesById),
+      typeParameters: _readTypeParameters(data['typeParameters'], librariesById),
+      constructors: const [],
+      methods: const [],
+      fields: const [],
       getters: const [],
       setters: const [],
-      exports: const [],
-      imports: const [],
     );
+  }
+
+  EnumInfo _readEnum(
+    Map<String, dynamic> data,
+    LibraryInfo library,
+    Map<String, LibraryInfo> librariesById,
+    Map<String, FileInfo> filesById,
+  ) {
+    final sourceFile = _resolveFile(filesById, data['sourceFileId']);
+    return EnumInfo(
+      id: _requireString(data['id'], 'id'),
+      name: _requireString(data['name'], 'name'),
+      qualifiedName: _requireString(data['qualifiedName'], 'qualifiedName'),
+      library: library,
+      sourceFile: sourceFile,
+      location: _readSourceLocation(data['location']),
+      documentation: _readOptionalString(data['documentation']),
+      annotations: _readAnnotations(data['annotations']),
+      values: const [],
+      interfaces: _readTypeReferences(data['interfaces'], librariesById),
+      mixins: _readTypeReferences(data['mixins'], librariesById),
+      fields: const [],
+      methods: const [],
+      getters: const [],
+      setters: const [],
+      constructors: const [],
+    );
+  }
+
+  MixinInfo _readMixin(
+    Map<String, dynamic> data,
+    LibraryInfo library,
+    Map<String, LibraryInfo> librariesById,
+    Map<String, FileInfo> filesById,
+  ) {
+    final sourceFile = _resolveFile(filesById, data['sourceFileId']);
+    return MixinInfo(
+      id: _requireString(data['id'], 'id'),
+      name: _requireString(data['name'], 'name'),
+      qualifiedName: _requireString(data['qualifiedName'], 'qualifiedName'),
+      library: library,
+      sourceFile: sourceFile,
+      location: _readSourceLocation(data['location']),
+      documentation: _readOptionalString(data['documentation']),
+      annotations: _readAnnotations(data['annotations']),
+      onTypes: _readTypeReferences(data['onTypes'], librariesById),
+      implementsTypes: _readTypeReferences(data['implementsTypes'], librariesById),
+      typeParameters: _readTypeParameters(data['typeParameters'], librariesById),
+      methods: const [],
+      fields: const [],
+      getters: const [],
+      setters: const [],
+    );
+  }
+
+  ExtensionInfo _readExtension(
+    Map<String, dynamic> data,
+    LibraryInfo library,
+    Map<String, LibraryInfo> librariesById,
+    Map<String, FileInfo> filesById,
+  ) {
+    final sourceFile = _resolveFile(filesById, data['sourceFileId']);
+    final extendedType = _readTypeReference(data['extendedType'], librariesById) ??
+        TypeReference(
+          id: 'type_unknown',
+          name: 'dynamic',
+          qualifiedName: 'dynamic',
+          isDynamic: true,
+        );
+    return ExtensionInfo(
+      id: _requireString(data['id'], 'id'),
+      name: _requireString(data['name'], 'name'),
+      qualifiedName: _requireString(data['qualifiedName'], 'qualifiedName'),
+      library: library,
+      sourceFile: sourceFile,
+      location: _readSourceLocation(data['location']),
+      documentation: _readOptionalString(data['documentation']),
+      annotations: _readAnnotations(data['annotations']),
+      extendedType: extendedType,
+      typeParameters: _readTypeParameters(data['typeParameters'], librariesById),
+      methods: const [],
+      fields: const [],
+      getters: const [],
+      setters: const [],
+    );
+  }
+
+  ExtensionTypeInfo _readExtensionType(
+    Map<String, dynamic> data,
+    LibraryInfo library,
+    Map<String, LibraryInfo> librariesById,
+    Map<String, FileInfo> filesById,
+  ) {
+    final sourceFile = _resolveFile(filesById, data['sourceFileId']);
+    final representationType = _readTypeReference(data['representationType'], librariesById) ??
+        TypeReference(
+          id: 'type_unknown',
+          name: 'dynamic',
+          qualifiedName: 'dynamic',
+          isDynamic: true,
+        );
+    return ExtensionTypeInfo(
+      id: _requireString(data['id'], 'id'),
+      name: _requireString(data['name'], 'name'),
+      qualifiedName: _requireString(data['qualifiedName'], 'qualifiedName'),
+      library: library,
+      sourceFile: sourceFile,
+      location: _readSourceLocation(data['location']),
+      documentation: _readOptionalString(data['documentation']),
+      annotations: _readAnnotations(data['annotations']),
+      representationType: representationType,
+      primaryConstructor: null,
+      typeParameters: _readTypeParameters(data['typeParameters'], librariesById),
+      methods: const [],
+      fields: const [],
+      getters: const [],
+      setters: const [],
+      constructors: const [],
+    );
+  }
+
+  TypeAliasInfo _readTypeAlias(
+    Map<String, dynamic> data,
+    LibraryInfo library,
+    Map<String, LibraryInfo> librariesById,
+    Map<String, FileInfo> filesById,
+  ) {
+    final sourceFile = _resolveFile(filesById, data['sourceFileId']);
+    final aliasedType = _readTypeReference(data['aliasedType'], librariesById) ??
+        TypeReference(
+          id: 'type_unknown',
+          name: 'dynamic',
+          qualifiedName: 'dynamic',
+          isDynamic: true,
+        );
+    return TypeAliasInfo(
+      id: _requireString(data['id'], 'id'),
+      name: _requireString(data['name'], 'name'),
+      qualifiedName: _requireString(data['qualifiedName'], 'qualifiedName'),
+      library: library,
+      sourceFile: sourceFile,
+      location: _readSourceLocation(data['location']),
+      documentation: _readOptionalString(data['documentation']),
+      annotations: _readAnnotations(data['annotations']),
+      aliasedType: aliasedType,
+      typeParameters: _readTypeParameters(data['typeParameters'], librariesById),
+    );
+  }
+
+  FunctionInfo _readFunction(
+    Map<String, dynamic> data,
+    LibraryInfo library,
+    Map<String, LibraryInfo> librariesById,
+    Map<String, FileInfo> filesById,
+  ) {
+    final sourceFile = _resolveFile(filesById, data['sourceFileId']);
+    final returnType = _readTypeReference(data['returnType'], librariesById) ??
+        TypeReference(
+          id: 'type_unknown',
+          name: 'dynamic',
+          qualifiedName: 'dynamic',
+          isDynamic: true,
+        );
+    return FunctionInfo(
+      id: _requireString(data['id'], 'id'),
+      name: _requireString(data['name'], 'name'),
+      qualifiedName: _requireString(data['qualifiedName'], 'qualifiedName'),
+      library: library,
+      sourceFile: sourceFile,
+      location: _readSourceLocation(data['location']),
+      documentation: _readOptionalString(data['documentation']),
+      annotations: _readAnnotations(data['annotations']),
+      returnType: returnType,
+      typeParameters: _readTypeParameters(data['typeParameters'], librariesById),
+      parameters: _readParameters(data['parameters'], librariesById),
+      isAsync: _readBool(data['isAsync']),
+      isGenerator: _readBool(data['isGenerator']),
+      isExternal: _readBool(data['isExternal']),
+    );
+  }
+
+  FileInfo _resolveFile(Map<String, FileInfo> filesById, Object? idValue) {
+    final id = _requireString(idValue, 'sourceFileId');
+    final file = filesById[id];
+    if (file == null) {
+      throw FormatException('Unknown sourceFileId "$id" for element.');
+    }
+    return file;
+  }
+
+  List _readList(Object? value) {
+    if (value == null) return const [];
+    if (value is List) return value;
+    throw const FormatException('Invalid list value.');
+  }
+
+  bool _readBool(Object? value) => value is bool ? value : false;
+
+  SourceLocation _readSourceLocation(Object? value) {
+    if (value is Map) {
+      final map = value.cast<String, dynamic>();
+      return SourceLocation(
+        line: _readInt(map['line'], 'line'),
+        column: _readInt(map['column'], 'column'),
+        offset: _readInt(map['offset'], 'offset'),
+        length: _readInt(map['length'], 'length'),
+      );
+    }
+    return const SourceLocation(line: 0, column: 0, offset: 0, length: 0);
+  }
+
+  List<AnnotationInfo> _readAnnotations(Object? value) {
+    if (value == null) return const [];
+    if (value is! List) {
+      throw const FormatException('Invalid annotations value.');
+    }
+    return value.whereType<Map>().map((entry) {
+      final map = entry.cast<String, dynamic>();
+      final namedArguments = <String, ArgumentValue>{};
+      final rawNamed = map['namedArguments'];
+      if (rawNamed is Map) {
+        for (final entry in rawNamed.entries) {
+          namedArguments[entry.key.toString()] = ArgumentValue(entry.value);
+        }
+      }
+      final positionalArgs = <ArgumentValue>[];
+      final rawPositional = map['positionalArguments'];
+      if (rawPositional is List) {
+        positionalArgs.addAll(rawPositional.map(ArgumentValue.new));
+      }
+      return AnnotationInfo(
+        name: _requireString(map['name'], 'name'),
+        qualifiedName: _requireString(map['qualifiedName'], 'qualifiedName'),
+        constructorName: _readOptionalString(map['constructorName']),
+        namedArguments: namedArguments,
+        positionalArguments: positionalArgs,
+      );
+    }).toList();
+  }
+
+  TypeReference? _readTypeReference(Object? value, Map<String, LibraryInfo> librariesById) {
+    if (value == null) return null;
+    if (value is! Map) {
+      throw const FormatException('Invalid type reference value.');
+    }
+    final map = value.cast<String, dynamic>();
+    return TypeReference(
+      id: _requireString(map['id'], 'id'),
+      name: _requireString(map['name'], 'name'),
+      qualifiedName: _requireString(map['qualifiedName'], 'qualifiedName'),
+      typeArguments: _readTypeReferences(map['typeArguments'], librariesById),
+      isNullable: _readBool(map['isNullable']),
+      isDynamic: _readBool(map['isDynamic']),
+      isVoid: _readBool(map['isVoid']),
+      isFunction: _readBool(map['isFunction']),
+      functionType: _readFunctionType(map['functionType'], librariesById),
+      definitionLibrary: _readLibraryById(map['definitionLibraryId'], librariesById),
+      isTypeParameter: _readBool(map['isTypeParameter']),
+      typeParameterBound: _readTypeReference(map['typeParameterBound'], librariesById),
+    );
+  }
+
+  List<TypeReference> _readTypeReferences(Object? value, Map<String, LibraryInfo> librariesById) {
+    if (value == null) return const [];
+    if (value is! List) {
+      throw const FormatException('Invalid type references value.');
+    }
+    return value
+        .whereType<Map>()
+        .map((entry) => _readTypeReference(entry, librariesById))
+        .whereType<TypeReference>()
+        .toList();
+  }
+
+  FunctionTypeInfo? _readFunctionType(Object? value, Map<String, LibraryInfo> librariesById) {
+    if (value == null) return null;
+    if (value is! Map) {
+      throw const FormatException('Invalid function type value.');
+    }
+    final map = value.cast<String, dynamic>();
+    final returnType = _readTypeReference(map['returnType'], librariesById) ??
+        TypeReference(
+          id: 'type_unknown',
+          name: 'dynamic',
+          qualifiedName: 'dynamic',
+          isDynamic: true,
+        );
+    return FunctionTypeInfo(
+      id: _requireString(map['id'], 'id'),
+      returnType: returnType,
+      typeParameters: _readTypeParameters(map['typeParameters'], librariesById),
+      parameters: _readParameters(map['parameters'], librariesById),
+    );
+  }
+
+  List<TypeParameterInfo> _readTypeParameters(
+    Object? value,
+    Map<String, LibraryInfo> librariesById,
+  ) {
+    if (value == null) return const [];
+    if (value is! List) {
+      throw const FormatException('Invalid type parameters value.');
+    }
+    return value.whereType<Map>().map((entry) {
+      final map = entry.cast<String, dynamic>();
+      return TypeParameterInfo(
+        id: _requireString(map['id'], 'id'),
+        name: _requireString(map['name'], 'name'),
+        bound: _readTypeReference(map['bound'], librariesById),
+        defaultType: _readTypeReference(map['defaultType'], librariesById),
+        variance: _readVariance(map['variance']),
+      );
+    }).toList();
+  }
+
+  TypeParameterVariance? _readVariance(Object? value) {
+    if (value is! String) return null;
+    return TypeParameterVariance.values.firstWhere(
+      (v) => v.name == value,
+      orElse: () => TypeParameterVariance.invariant,
+    );
+  }
+
+  List<ParameterInfo> _readParameters(Object? value, Map<String, LibraryInfo> librariesById) {
+    if (value == null) return const [];
+    if (value is! List) {
+      throw const FormatException('Invalid parameters value.');
+    }
+    return value.whereType<Map>().map((entry) {
+      final map = entry.cast<String, dynamic>();
+      final type = _readTypeReference(map['type'], librariesById) ??
+          TypeReference(
+            id: 'type_unknown',
+            name: 'dynamic',
+            qualifiedName: 'dynamic',
+            isDynamic: true,
+          );
+      return ParameterInfo(
+        id: _requireString(map['id'], 'id'),
+        name: _requireString(map['name'], 'name'),
+        type: type,
+        isRequired: _readBool(map['isRequired']),
+        isNamed: _readBool(map['isNamed']),
+        isPositional: _readBool(map['isPositional']),
+        hasDefaultValue: _readBool(map['hasDefaultValue']),
+        defaultValue: _readOptionalString(map['defaultValue']),
+        documentation: _readOptionalString(map['documentation']),
+        annotations: _readAnnotations(map['annotations']),
+      );
+    }).toList();
+  }
+
+  LibraryInfo? _readLibraryById(Object? value, Map<String, LibraryInfo> librariesById) {
+    if (value is String) {
+      return librariesById[value];
+    }
+    return null;
   }
 
   List<AnalysisError> _readErrors(Object? raw) {
