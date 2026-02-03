@@ -1,6 +1,6 @@
 {
   "id": "analysis_1",
-  "timestamp": "2026-02-03T19:36:29.191394",
+  "timestamp": "2026-02-03T19:44:05.144774",
   "dartSdkVersion": "unknown",
   "analyzerVersion": "8.x",
   "schemaVersion": "1.0",
@@ -40,6 +40,8 @@
       "packageId": "pkg_1",
       "mainSourceFileId": "file_2",
       "partFileIds": [],
+      "documentation": null,
+      "annotations": [],
       "classes": [],
       "enums": [],
       "mixins": [],
@@ -49,7 +51,9 @@
       "functions": [],
       "variables": [],
       "getters": [],
-      "setters": []
+      "setters": [],
+      "imports": [],
+      "exports": []
     }
   ],
   "files": [

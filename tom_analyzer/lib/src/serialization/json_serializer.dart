@@ -52,16 +52,20 @@ class _JsonWriter {
       'packageId': lib.package.id,
       'mainSourceFileId': lib.mainSourceFile.id,
       'partFileIds': lib.partFiles.map((f) => f.id).toList(),
-      'classes': lib.classes.map((c) => c.id).toList(),
-      'enums': lib.enums.map((e) => e.id).toList(),
-      'mixins': lib.mixins.map((m) => m.id).toList(),
-      'extensions': lib.extensions.map((e) => e.id).toList(),
-      'extensionTypes': lib.extensionTypes.map((e) => e.id).toList(),
-      'typeAliases': lib.typeAliases.map((t) => t.id).toList(),
-      'functions': lib.functions.map((f) => f.id).toList(),
-      'variables': lib.variables.map((v) => v.id).toList(),
-      'getters': lib.getters.map((g) => g.id).toList(),
-      'setters': lib.setters.map((s) => s.id).toList(),
+      'documentation': lib.documentation,
+      'annotations': lib.annotations.map(_annotation).toList(),
+      'classes': lib.classes.map(_class).toList(),
+      'enums': lib.enums.map(_enum).toList(),
+      'mixins': lib.mixins.map(_mixin).toList(),
+      'extensions': lib.extensions.map(_extension).toList(),
+      'extensionTypes': lib.extensionTypes.map(_extensionType).toList(),
+      'typeAliases': lib.typeAliases.map(_typeAlias).toList(),
+      'functions': lib.functions.map(_function).toList(),
+      'variables': lib.variables.map(_variable).toList(),
+      'getters': lib.getters.map(_getter).toList(),
+      'setters': lib.setters.map(_setter).toList(),
+      'imports': lib.imports.map(_import).toList(),
+      'exports': lib.exports.map(_export).toList(),
     };
   }
 
@@ -92,6 +96,380 @@ class _JsonWriter {
             }
           : null,
       'code': error.code,
+    };
+  }
+
+  Map<String, dynamic> _class(ClassInfo info) {
+    return {
+      'id': info.id,
+      'name': info.name,
+      'qualifiedName': info.qualifiedName,
+      'libraryId': info.library.id,
+      'sourceFileId': info.sourceFile.id,
+      'location': _location(info.location),
+      'documentation': info.documentation,
+      'annotations': info.annotations.map(_annotation).toList(),
+      'isAbstract': info.isAbstract,
+      'isSealed': info.isSealed,
+      'isFinal': info.isFinal,
+      'isBase': info.isBase,
+      'isInterface': info.isInterface,
+      'isMixin': info.isMixin,
+      'superclass': info.superclass != null ? _typeReference(info.superclass!) : null,
+      'interfaces': info.interfaces.map(_typeReference).toList(),
+      'mixins': info.mixins.map(_typeReference).toList(),
+      'typeParameters': info.typeParameters.map(_typeParameter).toList(),
+      'constructors': info.constructors.map(_constructor).toList(),
+      'methods': info.methods.map(_method).toList(),
+      'fields': info.fields.map(_field).toList(),
+      'getters': info.getters.map(_getter).toList(),
+      'setters': info.setters.map(_setter).toList(),
+    };
+  }
+
+  Map<String, dynamic> _enum(EnumInfo info) {
+    return {
+      'id': info.id,
+      'name': info.name,
+      'qualifiedName': info.qualifiedName,
+      'libraryId': info.library.id,
+      'sourceFileId': info.sourceFile.id,
+      'location': _location(info.location),
+      'documentation': info.documentation,
+      'annotations': info.annotations.map(_annotation).toList(),
+      'values': info.values.map(_enumValue).toList(),
+      'interfaces': info.interfaces.map(_typeReference).toList(),
+      'mixins': info.mixins.map(_typeReference).toList(),
+      'fields': info.fields.map(_field).toList(),
+      'methods': info.methods.map(_method).toList(),
+      'getters': info.getters.map(_getter).toList(),
+      'setters': info.setters.map(_setter).toList(),
+      'constructors': info.constructors.map(_constructor).toList(),
+    };
+  }
+
+  Map<String, dynamic> _mixin(MixinInfo info) {
+    return {
+      'id': info.id,
+      'name': info.name,
+      'qualifiedName': info.qualifiedName,
+      'libraryId': info.library.id,
+      'sourceFileId': info.sourceFile.id,
+      'location': _location(info.location),
+      'documentation': info.documentation,
+      'annotations': info.annotations.map(_annotation).toList(),
+      'onTypes': info.onTypes.map(_typeReference).toList(),
+      'implementsTypes': info.implementsTypes.map(_typeReference).toList(),
+      'typeParameters': info.typeParameters.map(_typeParameter).toList(),
+      'methods': info.methods.map(_method).toList(),
+      'fields': info.fields.map(_field).toList(),
+      'getters': info.getters.map(_getter).toList(),
+      'setters': info.setters.map(_setter).toList(),
+    };
+  }
+
+  Map<String, dynamic> _extension(ExtensionInfo info) {
+    return {
+      'id': info.id,
+      'name': info.name,
+      'qualifiedName': info.qualifiedName,
+      'libraryId': info.library.id,
+      'sourceFileId': info.sourceFile.id,
+      'location': _location(info.location),
+      'documentation': info.documentation,
+      'annotations': info.annotations.map(_annotation).toList(),
+      'extendedType': _typeReference(info.extendedType),
+      'typeParameters': info.typeParameters.map(_typeParameter).toList(),
+      'methods': info.methods.map(_method).toList(),
+      'fields': info.fields.map(_field).toList(),
+      'getters': info.getters.map(_getter).toList(),
+      'setters': info.setters.map(_setter).toList(),
+    };
+  }
+
+  Map<String, dynamic> _extensionType(ExtensionTypeInfo info) {
+    return {
+      'id': info.id,
+      'name': info.name,
+      'qualifiedName': info.qualifiedName,
+      'libraryId': info.library.id,
+      'sourceFileId': info.sourceFile.id,
+      'location': _location(info.location),
+      'documentation': info.documentation,
+      'annotations': info.annotations.map(_annotation).toList(),
+      'representationType': _typeReference(info.representationType),
+      'primaryConstructor': info.primaryConstructor != null
+          ? _constructor(info.primaryConstructor!)
+          : null,
+      'typeParameters': info.typeParameters.map(_typeParameter).toList(),
+      'methods': info.methods.map(_method).toList(),
+      'fields': info.fields.map(_field).toList(),
+      'getters': info.getters.map(_getter).toList(),
+      'setters': info.setters.map(_setter).toList(),
+      'constructors': info.constructors.map(_constructor).toList(),
+    };
+  }
+
+  Map<String, dynamic> _typeAlias(TypeAliasInfo info) {
+    return {
+      'id': info.id,
+      'name': info.name,
+      'qualifiedName': info.qualifiedName,
+      'libraryId': info.library.id,
+      'sourceFileId': info.sourceFile.id,
+      'location': _location(info.location),
+      'documentation': info.documentation,
+      'annotations': info.annotations.map(_annotation).toList(),
+      'aliasedType': _typeReference(info.aliasedType),
+      'typeParameters': info.typeParameters.map(_typeParameter).toList(),
+    };
+  }
+
+  Map<String, dynamic> _function(FunctionInfo info) {
+    return {
+      'id': info.id,
+      'name': info.name,
+      'qualifiedName': info.qualifiedName,
+      'libraryId': info.library.id,
+      'sourceFileId': info.sourceFile.id,
+      'location': _location(info.location),
+      'documentation': info.documentation,
+      'annotations': info.annotations.map(_annotation).toList(),
+      'returnType': _typeReference(info.returnType),
+      'typeParameters': info.typeParameters.map(_typeParameter).toList(),
+      'parameters': info.parameters.map(_parameter).toList(),
+      'isAsync': info.isAsync,
+      'isGenerator': info.isGenerator,
+      'isExternal': info.isExternal,
+      'isStatic': info.isStatic,
+    };
+  }
+
+  Map<String, dynamic> _variable(VariableInfo info) {
+    return {
+      'id': info.id,
+      'name': info.name,
+      'qualifiedName': info.qualifiedName,
+      'libraryId': info.library.id,
+      'sourceFileId': info.sourceFile.id,
+      'location': _location(info.location),
+      'documentation': info.documentation,
+      'annotations': info.annotations.map(_annotation).toList(),
+      'type': _typeReference(info.type),
+      'isFinal': info.isFinal,
+      'isConst': info.isConst,
+      'isLate': info.isLate,
+      'isStatic': info.isStatic,
+      'hasInitializer': info.hasInitializer,
+    };
+  }
+
+  Map<String, dynamic> _field(FieldInfo info) {
+    return {
+      'id': info.id,
+      'name': info.name,
+      'qualifiedName': info.qualifiedName,
+      'declaringTypeId': info.declaringType?.id,
+      'owningLibraryId': info.owningLibrary?.id,
+      'sourceFileId': info.sourceFile.id,
+      'location': _location(info.location),
+      'documentation': info.documentation,
+      'annotations': info.annotations.map(_annotation).toList(),
+      'type': _typeReference(info.type),
+      'isFinal': info.isFinal,
+      'isConst': info.isConst,
+      'isLate': info.isLate,
+      'isStatic': info.isStatic,
+      'hasInitializer': info.hasInitializer,
+    };
+  }
+
+  Map<String, dynamic> _method(MethodInfo info) {
+    return {
+      'id': info.id,
+      'name': info.name,
+      'qualifiedName': info.qualifiedName,
+      'declaringTypeId': info.declaringType?.id,
+      'owningLibraryId': info.owningLibrary?.id,
+      'sourceFileId': info.sourceFile.id,
+      'location': _location(info.location),
+      'documentation': info.documentation,
+      'annotations': info.annotations.map(_annotation).toList(),
+      'returnType': _typeReference(info.returnType),
+      'typeParameters': info.typeParameters.map(_typeParameter).toList(),
+      'parameters': info.parameters.map(_parameter).toList(),
+      'isAsync': info.isAsync,
+      'isGenerator': info.isGenerator,
+      'isExternal': info.isExternal,
+      'isStatic': info.isStatic,
+      'isAbstract': info.isAbstract,
+      'isOperator': info.isOperator,
+    };
+  }
+
+  Map<String, dynamic> _constructor(ConstructorInfo info) {
+    return {
+      'id': info.id,
+      'name': info.name,
+      'qualifiedName': info.qualifiedName,
+      'declaringTypeId': info.declaringType.id,
+      'sourceFileId': info.sourceFile.id,
+      'location': _location(info.location),
+      'documentation': info.documentation,
+      'annotations': info.annotations.map(_annotation).toList(),
+      'parameters': info.parameters.map(_parameter).toList(),
+      'isAsync': info.isAsync,
+      'isExternal': info.isExternal,
+      'isStatic': info.isStatic,
+      'isConst': info.isConst,
+      'isFactory': info.isFactory,
+      'redirectedConstructor': info.redirectedConstructor,
+      'superConstructorInvocation': info.superConstructorInvocation,
+    };
+  }
+
+  Map<String, dynamic> _getter(GetterInfo info) {
+    return {
+      'id': info.id,
+      'name': info.name,
+      'qualifiedName': info.qualifiedName,
+      'declaringTypeId': info.declaringType?.id,
+      'owningLibraryId': info.owningLibrary?.id,
+      'sourceFileId': info.sourceFile.id,
+      'location': _location(info.location),
+      'documentation': info.documentation,
+      'annotations': info.annotations.map(_annotation).toList(),
+      'returnType': _typeReference(info.returnType),
+      'parameters': info.parameters.map(_parameter).toList(),
+      'isAsync': info.isAsync,
+      'isExternal': info.isExternal,
+      'isStatic': info.isStatic,
+      'isAbstract': info.isAbstract,
+    };
+  }
+
+  Map<String, dynamic> _setter(SetterInfo info) {
+    return {
+      'id': info.id,
+      'name': info.name,
+      'qualifiedName': info.qualifiedName,
+      'declaringTypeId': info.declaringType?.id,
+      'owningLibraryId': info.owningLibrary?.id,
+      'sourceFileId': info.sourceFile.id,
+      'location': _location(info.location),
+      'documentation': info.documentation,
+      'annotations': info.annotations.map(_annotation).toList(),
+      'parameter': _parameter(info.parameter),
+      'isAsync': info.isAsync,
+      'isExternal': info.isExternal,
+      'isStatic': info.isStatic,
+      'isAbstract': info.isAbstract,
+    };
+  }
+
+  Map<String, dynamic> _enumValue(EnumValueInfo info) {
+    return {
+      'id': info.id,
+      'name': info.name,
+      'parentEnumId': info.parentEnum.id,
+      'index': info.index,
+      'documentation': info.documentation,
+      'annotations': info.annotations.map(_annotation).toList(),
+    };
+  }
+
+  Map<String, dynamic> _annotation(AnnotationInfo info) {
+    return {
+      'name': info.name,
+      'qualifiedName': info.qualifiedName,
+      'constructorName': info.constructorName,
+      'namedArguments': info.namedArguments.map((key, value) => MapEntry(key, value.value)),
+      'positionalArguments': info.positionalArguments.map((value) => value.value).toList(),
+    };
+  }
+
+  Map<String, dynamic> _typeReference(TypeReference info) {
+    return {
+      'id': info.id,
+      'name': info.name,
+      'qualifiedName': info.qualifiedName,
+      'typeArguments': info.typeArguments.map(_typeReference).toList(),
+      'isNullable': info.isNullable,
+      'isDynamic': info.isDynamic,
+      'isVoid': info.isVoid,
+      'isFunction': info.isFunction,
+      'functionType': info.functionType != null ? _functionType(info.functionType!) : null,
+      'definitionLibraryId': info.definitionLibrary?.id,
+      'isTypeParameter': info.isTypeParameter,
+      'typeParameterBound': info.typeParameterBound != null
+          ? _typeReference(info.typeParameterBound!)
+          : null,
+      'resolvedElementId': info.resolvedElement?.id,
+    };
+  }
+
+  Map<String, dynamic> _functionType(FunctionTypeInfo info) {
+    return {
+      'id': info.id,
+      'returnType': _typeReference(info.returnType),
+      'typeParameters': info.typeParameters.map(_typeParameter).toList(),
+      'parameters': info.parameters.map(_parameter).toList(),
+    };
+  }
+
+  Map<String, dynamic> _typeParameter(TypeParameterInfo info) {
+    return {
+      'id': info.id,
+      'name': info.name,
+      'bound': info.bound != null ? _typeReference(info.bound!) : null,
+      'defaultType': info.defaultType != null ? _typeReference(info.defaultType!) : null,
+      'variance': info.variance?.name,
+    };
+  }
+
+  Map<String, dynamic> _parameter(ParameterInfo info) {
+    return {
+      'id': info.id,
+      'name': info.name,
+      'type': _typeReference(info.type),
+      'isRequired': info.isRequired,
+      'isNamed': info.isNamed,
+      'isPositional': info.isPositional,
+      'hasDefaultValue': info.hasDefaultValue,
+      'defaultValue': info.defaultValue,
+      'documentation': info.documentation,
+      'annotations': info.annotations.map(_annotation).toList(),
+    };
+  }
+
+  Map<String, dynamic> _location(SourceLocation location) {
+    return {
+      'line': location.line,
+      'column': location.column,
+      'offset': location.offset,
+      'length': location.length,
+    };
+  }
+
+  Map<String, dynamic> _import(ImportInfo info) {
+    return {
+      'importingLibraryId': info.importingLibrary.id,
+      'importedLibraryId': info.importedLibrary.id,
+      'prefix': info.prefix,
+      'isDeferred': info.isDeferred,
+      'show': info.show,
+      'hide': info.hide,
+      'documentation': info.documentation,
+    };
+  }
+
+  Map<String, dynamic> _export(ExportInfo info) {
+    return {
+      'exportingLibraryId': info.exportingLibrary.id,
+      'exportedLibraryId': info.exportedLibrary.id,
+      'show': info.show,
+      'hide': info.hide,
+      'documentation': info.documentation,
     };
   }
 }
