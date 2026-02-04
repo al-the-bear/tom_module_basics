@@ -45,3 +45,5 @@ class AnalyzerBuilder implements Builder {
     await buildStep.writeAsString(outputId, content);
   }
 }
+
+Builder tomAnalyzerBuilder(BuilderOptions options) => AnalyzerBuilder(options);

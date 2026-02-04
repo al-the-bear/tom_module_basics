@@ -7,6 +7,7 @@ class TomAnalyzerConfig {
   final List<String> barrels;
   final String outputFormat;
   final String? outputFile;
+  final String? reflectionOutputFile;
   final String? workspaceRoot;
   final bool followReExports;
   final List<String>? followReExportPackages;
@@ -17,6 +18,7 @@ class TomAnalyzerConfig {
     this.barrels = const [],
     this.outputFormat = 'yaml',
     this.outputFile,
+    this.reflectionOutputFile,
     this.workspaceRoot,
     this.followReExports = true,
     this.followReExportPackages,
@@ -28,12 +30,14 @@ class TomAnalyzerConfig {
     List<String>? barrels,
     String? outputFormat,
     String? outputFile,
+    String? reflectionOutputFile,
     String? workspaceRoot,
   }) {
     return TomAnalyzerConfig(
       barrels: barrels ?? this.barrels,
       outputFormat: outputFormat ?? this.outputFormat,
       outputFile: outputFile ?? this.outputFile,
+      reflectionOutputFile: reflectionOutputFile ?? this.reflectionOutputFile,
       workspaceRoot: workspaceRoot ?? this.workspaceRoot,
       followReExports: followReExports,
       followReExportPackages: followReExportPackages,
@@ -64,6 +68,9 @@ class TomAnalyzerConfig {
     final barrels = _readStringList(map['barrels']);
     final outputFormat = _readString(map['output_format']) ?? 'yaml';
     final outputFile = _readString(map['output_file']);
+    final reflectionOutputFile = _readString(
+      map['reflection_output_file'] ?? map['reflectionOutputFile'],
+    );
     final workspaceRoot = _readString(map['workspace_root']);
     final followValue = map['followReExports'] ?? map['follow_re_exports'];
     final followParsed = _readFollowReExports(followValue);
@@ -72,6 +79,7 @@ class TomAnalyzerConfig {
       barrels: barrels,
       outputFormat: outputFormat,
       outputFile: outputFile,
+      reflectionOutputFile: reflectionOutputFile,
       workspaceRoot: workspaceRoot,
       followReExports: followParsed.followReExports,
       followReExportPackages: followParsed.followReExportPackages,

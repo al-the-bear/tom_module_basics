@@ -11,3 +11,6 @@ export 'src/serialization/json_deserializer.dart';
 export 'src/serialization/yaml_deserializer.dart';
 export 'src/serialization/analysis_result_validator.dart';
 export 'src/serialization/yaml_serializer.dart';
+export 'src/reflection/reflection_model.dart';
+export 'src/reflection/reflection_generator.dart';
+export 'src/reflection/runtime_reflection.dart';
