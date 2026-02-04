@@ -308,7 +308,7 @@ This document outlines the phased implementation plan for the reflection functio
 | 7.5.2 | Apply `instance_members` pattern/annotation filters | ✅ | `reflection_generator.dart` |
 | 7.5.3 | Apply `constructors` pattern filter (e.g., `from*`) | ✅ | `reflection_generator.dart` |
 | 7.5.4 | Apply `top_level` config for global members | ✅ | `reflection_generator.dart` |
-| 7.5.5 | Mark types as declarations-only (negative invoker index) for metadata-only types | ⏳ | TODO |
+| 7.5.5 | Mark types as declarations-only (negative invoker index) for metadata-only types | ✅ | `reflection_generator.dart` |
 
 ### 7.6 Code Generation ✅
 
@@ -318,9 +318,9 @@ This document outlines the phased implementation plan for the reflection functio
 | 7.6.2 | Generate bit flag constants | ✅ | `reflection_generator.dart` |
 | 7.6.3 | Generate package/library structure arrays | ✅ | `reflection_generator.dart` |
 | 7.6.4 | Generate type data arrays (classes, enums, mixins) | ✅ | `reflection_generator.dart` |
-| 7.6.5 | Generate member data arrays with invoker indices | ⏳ | TODO |
+| 7.6.5 | Generate member data arrays with invoker indices | ✅ | `reflection_generator.dart` |
 | 7.6.6 | Generate invoker closures for methods, constructors, fields | ✅ | `reflection_generator.dart` |
-| 7.6.7 | Generate extension method entries on ClassMirror | ⏳ | TODO |
+| 7.6.7 | Generate extension method entries on ClassMirror | ✅ | `reflection_generator.dart` |
 | 7.6.8 | Generate `reflectionApi` singleton instantiation | ✅ | `reflection_generator.dart` |
 | 7.6.9 | Write output to configured path (base name + `.r.dart`) | ✅ | `reflection_generator.dart` |
 
@@ -337,55 +337,63 @@ This document outlines the phased implementation plan for the reflection functio
 
 ---
 
-## Phase 8: Multi-Entry-Point Support
+## Phase 8: Multi-Entry-Point Support ✅ COMPLETE
 
 **Goal:** Handle multiple entry points with combined or separate output.
 
-| Step | Description | Reference |
-|------|-------------|-----------|
-| 8.1 | Detect multiple entry points in configuration | [User Guide → Multi-entry-point behavior](reflection_user_guide.md#multi-entry-point-behavior) |
-| 8.2 | Without `output`: generate separate `.r.dart` per entry point | [User Guide → Multi-entry-point behavior](reflection_user_guide.md#multi-entry-point-behavior) |
-| 8.3 | With `output`: merge reachable sets from all entry points | [User Guide → Multi-entry-point behavior](reflection_user_guide.md#multi-entry-point-behavior) |
-| 8.4 | Apply filters once to combined set | [User Guide → Multi-entry-point behavior](reflection_user_guide.md#multi-entry-point-behavior) |
-| 8.5 | Generate single combined output file | [User Guide → Multi-entry-point behavior](reflection_user_guide.md#multi-entry-point-behavior) |
+**Status:** Multi-entry-point infrastructure complete in `lib/src/reflection/generator/`
+
+| Step | Description | Status | File |
+|------|-------------|--------|------|
+| 8.1 | Detect multiple entry points in configuration | ✅ | `reflection_config.dart` |
+| 8.2 | Without `output`: generate separate `.r.dart` per entry point | ✅ | `multi_entry_generator.dart` |
+| 8.3 | With `output`: merge reachable sets from all entry points | ✅ | `multi_entry_generator.dart` |
+| 8.4 | Apply filters once to combined set | ✅ | `multi_entry_generator.dart` |
+| 8.5 | Generate single combined output file | ✅ | `multi_entry_generator.dart` |
 
 ---
 
-## Phase 9: CLI Integration
+## Phase 9: CLI Integration ✅ COMPLETE
 
 **Goal:** Expose reflection generation via CLI and build_runner.
 
-### 9.1 CLI Command
+**Status:** CLI command implemented in `bin/tom_analyzer.dart`. Build runner integration deferred.
 
-| Step | Description | Reference |
-|------|-------------|-----------|
-| 9.1.1 | Implement `tom_analyzer reflect` command | [User Guide → CLI usage](reflection_user_guide.md#cli-usage) |
-| 9.1.2 | Parse `--config`, `--entry`, `--output` arguments | [User Guide → CLI usage](reflection_user_guide.md#cli-usage) |
-| 9.1.3 | Normalize output path (add `.r.dart`, remove `.dart`) | [User Guide → Output file naming](reflection_user_guide.md#output-file-naming) |
+### 9.1 CLI Command ✅
+
+| Step | Description | Status | File |
+|------|-------------|--------|------|
+| 9.1.1 | Implement `tom_analyzer reflect` command | ✅ | `bin/tom_analyzer.dart` |
+| 9.1.2 | Parse `--config`, `--entry`, `--output` arguments | ✅ | `bin/tom_analyzer.dart` |
+| 9.1.3 | Normalize output path (add `.r.dart`, remove `.dart`) | ✅ | `reflection_config.dart` |
 
 ### 9.2 build_runner Integration
 
-| Step | Description | Reference |
-|------|-------------|-----------|
-| 9.2.1 | Implement `tom_analyzer_reflection` builder | [User Guide → build_runner usage](reflection_user_guide.md#build_runner-usage) |
-| 9.2.2 | Read options from `build.yaml` | [User Guide → build_runner usage](reflection_user_guide.md#build_runner-usage) |
-| 9.2.3 | Integrate with build_runner lifecycle | [User Guide → build_runner usage](reflection_user_guide.md#build_runner-usage) |
+| Step | Description | Status | File |
+|------|-------------|--------|------|
+| 9.2.1 | Implement `tom_analyzer_reflection` builder | ⏳ Deferred | - |
+| 9.2.2 | Read options from `build.yaml` | ⏳ Deferred | - |
+| 9.2.3 | Integrate with build_runner lifecycle | ⏳ Deferred | - |
+
+Note: build_runner integration is deferred as CLI-based generation is the primary workflow.
 
 ---
 
-## Phase 10: Testing and Validation
+## Phase 10: Testing and Validation ⏳ IN PROGRESS
 
 **Goal:** Comprehensive testing of all functionality.
 
-| Step | Description | Reference |
-|------|-------------|-----------|
-| 10.1 | Unit tests for all trait interfaces | [Trait Interfaces](reflection_implementation.md#trait-interfaces) |
-| 10.2 | Unit tests for all mirror types | [Core Types](reflection_implementation.md#core-types), [Member Mirrors](reflection_implementation.md#member-mirrors) |
-| 10.3 | Unit tests for filters and processors | [Filters](reflection_implementation.md#filters), [Processors](reflection_implementation.md#processors) |
-| 10.4 | Integration tests for code generation | [Generated Output Structure](reflection_implementation.md#generated-output-structure) |
-| 10.5 | Integration tests for filter/dependency/coverage configs | [User Guide → Filtering configuration](reflection_user_guide.md#filtering-configuration) |
-| 10.6 | End-to-end tests with sample projects | [Usage Examples](reflection_implementation.md#usage-examples) (L2061-2340) |
-| 10.7 | Performance tests with large codebases | [Project Hierarchy → Size Estimation](reflection_implementation.md#size-estimation) (L3135-3147) |
+**Status:** Generator unit tests created in `test/reflection/`
+
+| Step | Description | Status | File |
+|------|-------------|--------|------|
+| 10.1 | Unit tests for ReflectionConfig | ✅ | `reflection_config_test.dart` |
+| 10.2 | Unit tests for FilterMatcher, GlobMatcher, AnnotationPattern | ✅ | `filter_matcher_test.dart` |
+| 10.3 | Unit tests for EntryPointAnalyzer | ⏳ Pending | - |
+| 10.4 | Unit tests for ReflectionGenerator | ⏳ Pending | - |
+| 10.5 | Integration tests for code generation | ⏳ Pending | - |
+| 10.6 | End-to-end tests with sample projects | ⏳ Pending | - |
+| 10.7 | Performance tests with large codebases | ⏳ Pending | - |
 
 ---
 
@@ -400,9 +408,9 @@ This document outlines the phased implementation plan for the reflection functio
 | 5. Filters and Processors | P1 | Phase 4 | ✅ Complete | Medium |
 | 6. Name Resolution & Errors | P1 | Phase 4 | ✅ Complete | Small |
 | 7. Code Generator | P0 | Phase 4 | ✅ Complete | Large |
-| 8. Multi-Entry-Point | P1 | Phase 7 | ⏳ Pending | Small |
-| 9. CLI Integration | P1 | Phase 7 | ⏳ Pending | Small |
-| 10. Testing | P0 | All | ⏳ Pending | Large |
+| 8. Multi-Entry-Point | P1 | Phase 7 | ✅ Complete | Small |
+| 9. CLI Integration | P1 | Phase 7 | ✅ Complete | Small |
+| 10. Testing | P0 | All | ⏳ In Progress | Large |
 
 **Critical Path:** Phase 1 → Phase 2 → Phase 3 → Phase 4 → Phase 7
 
@@ -449,6 +457,14 @@ Generator files are in `lib/src/reflection/generator/`:
 | `filter_matcher.dart` | Filter matching utilities (GlobMatcher, AnnotationPattern, InclusionResolver) |
 | `entry_point_analyzer.dart` | Entry point analysis (EntryPointAnalyzer, AnalysisResult) |
 | `reflection_generator.dart` | Main code generator (ReflectionGenerator) |
+| `multi_entry_generator.dart` | Multi-entry-point generation (MultiEntryGenerator, MultiEntryResult) |
+
+Test files are in `test/reflection/`:
+
+| File | Description |
+|------|-------------|
+| `reflection_config_test.dart` | Tests for ReflectionConfig and related config classes |
+| `filter_matcher_test.dart` | Tests for FilterMatcher, GlobMatcher, AnnotationPattern, InclusionResolver |
 
 Top-level library:
 

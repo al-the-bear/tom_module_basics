@@ -137,6 +137,23 @@ class ReflectionConfig {
     return 'reflection.r.dart';
   }
 
+  /// Get the output path for a specific entry point (for multi-entry-point mode).
+  String getOutputPathFor(String entryPoint) {
+    if (entryPoint.endsWith('.dart')) {
+      return '${entryPoint.substring(0, entryPoint.length - 5)}.r.dart';
+    }
+    return '$entryPoint.r.dart';
+  }
+
+  /// Whether this config has multiple entry points.
+  bool get hasMultipleEntryPoints => entryPoints.length > 1;
+
+  /// Whether to generate combined output (when output is explicitly specified).
+  ///
+  /// - If `output` is set: all entry points merge into one file
+  /// - If `output` is null: each entry point gets its own .r.dart file
+  bool get shouldCombineOutput => output != null && hasMultipleEntryPoints;
+
   static String? _defaultConfigPath() {
     final file = File('tom_analyzer.yaml');
     if (file.existsSync()) {

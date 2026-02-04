@@ -12,5 +12,6 @@ export 'filter_matcher.dart'
         FilterMatcher,
         GlobMatcher,
         InclusionResolver;
+export 'multi_entry_generator.dart' show MultiEntryGenerator, MultiEntryResult;
 export 'reflection_config.dart';
 export 'reflection_generator.dart' show ReflectionGenerator;
