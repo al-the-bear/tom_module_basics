@@ -389,11 +389,11 @@ Note: build_runner integration is deferred as CLI-based generation is the primar
 |------|-------------|--------|------|
 | 10.1 | Unit tests for ReflectionConfig | ✅ | `reflection_config_test.dart` |
 | 10.2 | Unit tests for FilterMatcher, GlobMatcher, AnnotationPattern | ✅ | `filter_matcher_test.dart` |
-| 10.3 | Unit tests for EntryPointAnalyzer | ⏳ Pending | - |
-| 10.4 | Unit tests for ReflectionGenerator | ⏳ Pending | - |
-| 10.5 | Integration tests for code generation | ⏳ Pending | - |
-| 10.6 | End-to-end tests with sample projects | ⏳ Pending | - |
-| 10.7 | Performance tests with large codebases | ⏳ Pending | - |
+| 10.3 | Unit tests for EntryPointAnalyzer | ✅ | `entry_point_analyzer_test.dart` |
+| 10.4 | Unit tests for ReflectionGenerator | ✅ | `reflection_generator_test.dart` |
+| 10.5 | Integration tests for code generation | ✅ | `code_generation_integration_test.dart` |
+| 10.6 | End-to-end tests with sample projects | ✅ | `end_to_end_test.dart`, `fixtures/sample_models.dart` |
+| 10.7 | Performance tests with large codebases | ✅ | `performance_test.dart` (uses aa_server_start.dart) |
 
 ---
 
