@@ -308,7 +308,14 @@ class _JsonReader {
     Map<String, FileInfo> filesById,
   ) {
     final sourceFile = _resolveFile(filesById, data['sourceFileId']);
-    return ClassInfo(
+    // Use mutable lists so we can add members after construction
+    final constructors = <ConstructorInfo>[];
+    final methods = <MethodInfo>[];
+    final fields = <FieldInfo>[];
+    final getters = <GetterInfo>[];
+    final setters = <SetterInfo>[];
+
+    final classInfo = ClassInfo(
       id: _requireString(data['id'], 'id'),
       name: _requireString(data['name'], 'name'),
       qualifiedName: _requireString(data['qualifiedName'], 'qualifiedName'),
@@ -327,12 +334,21 @@ class _JsonReader {
       interfaces: _readTypeReferences(data['interfaces'], librariesById),
       mixins: _readTypeReferences(data['mixins'], librariesById),
       typeParameters: _readTypeParameters(data['typeParameters'], librariesById),
-      constructors: const [],
-      methods: const [],
-      fields: const [],
-      getters: const [],
-      setters: const [],
+      constructors: constructors,
+      methods: methods,
+      fields: fields,
+      getters: getters,
+      setters: setters,
     );
+
+    // Now populate members with reference to declaring type
+    _readConstructors(data['constructors'], classInfo, filesById, librariesById, constructors);
+    _readMethods(data['methods'], classInfo, filesById, librariesById, methods);
+    _readFields(data['fields'], classInfo, filesById, librariesById, fields);
+    _readGetters(data['getters'], classInfo, filesById, librariesById, getters);
+    _readSetters(data['setters'], classInfo, filesById, librariesById, setters);
+
+    return classInfo;
   }
 
   EnumInfo _readEnum(
@@ -342,7 +358,15 @@ class _JsonReader {
     Map<String, FileInfo> filesById,
   ) {
     final sourceFile = _resolveFile(filesById, data['sourceFileId']);
-    return EnumInfo(
+    // Use mutable lists so we can add members after construction
+    final values = <EnumValueInfo>[];
+    final constructors = <ConstructorInfo>[];
+    final methods = <MethodInfo>[];
+    final fields = <FieldInfo>[];
+    final getters = <GetterInfo>[];
+    final setters = <SetterInfo>[];
+
+    final enumInfo = EnumInfo(
       id: _requireString(data['id'], 'id'),
       name: _requireString(data['name'], 'name'),
       qualifiedName: _requireString(data['qualifiedName'], 'qualifiedName'),
@@ -351,15 +375,25 @@ class _JsonReader {
       location: _readSourceLocation(data['location']),
       documentation: _readOptionalString(data['documentation']),
       annotations: _readAnnotations(data['annotations']),
-      values: const [],
+      values: values,
       interfaces: _readTypeReferences(data['interfaces'], librariesById),
       mixins: _readTypeReferences(data['mixins'], librariesById),
-      fields: const [],
-      methods: const [],
-      getters: const [],
-      setters: const [],
-      constructors: const [],
+      fields: fields,
+      methods: methods,
+      getters: getters,
+      setters: setters,
+      constructors: constructors,
     );
+
+    // Now populate members with reference to declaring type
+    _readEnumValues(data['values'], enumInfo, values);
+    _readConstructors(data['constructors'], enumInfo, filesById, librariesById, constructors);
+    _readMethods(data['methods'], enumInfo, filesById, librariesById, methods);
+    _readFields(data['fields'], enumInfo, filesById, librariesById, fields);
+    _readGetters(data['getters'], enumInfo, filesById, librariesById, getters);
+    _readSetters(data['setters'], enumInfo, filesById, librariesById, setters);
+
+    return enumInfo;
   }
 
   MixinInfo _readMixin(
@@ -369,7 +403,13 @@ class _JsonReader {
     Map<String, FileInfo> filesById,
   ) {
     final sourceFile = _resolveFile(filesById, data['sourceFileId']);
-    return MixinInfo(
+    // Use mutable lists so we can add members after construction
+    final methods = <MethodInfo>[];
+    final fields = <FieldInfo>[];
+    final getters = <GetterInfo>[];
+    final setters = <SetterInfo>[];
+
+    final mixinInfo = MixinInfo(
       id: _requireString(data['id'], 'id'),
       name: _requireString(data['name'], 'name'),
       qualifiedName: _requireString(data['qualifiedName'], 'qualifiedName'),
@@ -381,11 +421,19 @@ class _JsonReader {
       onTypes: _readTypeReferences(data['onTypes'], librariesById),
       implementsTypes: _readTypeReferences(data['implementsTypes'], librariesById),
       typeParameters: _readTypeParameters(data['typeParameters'], librariesById),
-      methods: const [],
-      fields: const [],
-      getters: const [],
-      setters: const [],
+      methods: methods,
+      fields: fields,
+      getters: getters,
+      setters: setters,
     );
+
+    // Now populate members with reference to declaring type
+    _readMethods(data['methods'], mixinInfo, filesById, librariesById, methods);
+    _readFields(data['fields'], mixinInfo, filesById, librariesById, fields);
+    _readGetters(data['getters'], mixinInfo, filesById, librariesById, getters);
+    _readSetters(data['setters'], mixinInfo, filesById, librariesById, setters);
+
+    return mixinInfo;
   }
 
   ExtensionInfo _readExtension(
@@ -402,7 +450,13 @@ class _JsonReader {
           qualifiedName: 'dynamic',
           isDynamic: true,
         );
-    return ExtensionInfo(
+    // Use mutable lists so we can add members after construction
+    final methods = <MethodInfo>[];
+    final fields = <FieldInfo>[];
+    final getters = <GetterInfo>[];
+    final setters = <SetterInfo>[];
+
+    final extensionInfo = ExtensionInfo(
       id: _requireString(data['id'], 'id'),
       name: _requireString(data['name'], 'name'),
       qualifiedName: _requireString(data['qualifiedName'], 'qualifiedName'),
@@ -413,11 +467,19 @@ class _JsonReader {
       annotations: _readAnnotations(data['annotations']),
       extendedType: extendedType,
       typeParameters: _readTypeParameters(data['typeParameters'], librariesById),
-      methods: const [],
-      fields: const [],
-      getters: const [],
-      setters: const [],
+      methods: methods,
+      fields: fields,
+      getters: getters,
+      setters: setters,
     );
+
+    // Now populate members with reference to declaring type
+    _readMethods(data['methods'], extensionInfo, filesById, librariesById, methods);
+    _readFields(data['fields'], extensionInfo, filesById, librariesById, fields);
+    _readGetters(data['getters'], extensionInfo, filesById, librariesById, getters);
+    _readSetters(data['setters'], extensionInfo, filesById, librariesById, setters);
+
+    return extensionInfo;
   }
 
   ExtensionTypeInfo _readExtensionType(
@@ -434,7 +496,14 @@ class _JsonReader {
           qualifiedName: 'dynamic',
           isDynamic: true,
         );
-    return ExtensionTypeInfo(
+    // Use mutable lists so we can add members after construction
+    final constructors = <ConstructorInfo>[];
+    final methods = <MethodInfo>[];
+    final fields = <FieldInfo>[];
+    final getters = <GetterInfo>[];
+    final setters = <SetterInfo>[];
+
+    final extensionTypeInfo = ExtensionTypeInfo(
       id: _requireString(data['id'], 'id'),
       name: _requireString(data['name'], 'name'),
       qualifiedName: _requireString(data['qualifiedName'], 'qualifiedName'),
@@ -444,14 +513,23 @@ class _JsonReader {
       documentation: _readOptionalString(data['documentation']),
       annotations: _readAnnotations(data['annotations']),
       representationType: representationType,
-      primaryConstructor: null,
+      primaryConstructor: null, // TODO: Read primary constructor
       typeParameters: _readTypeParameters(data['typeParameters'], librariesById),
-      methods: const [],
-      fields: const [],
-      getters: const [],
-      setters: const [],
-      constructors: const [],
+      methods: methods,
+      fields: fields,
+      getters: getters,
+      setters: setters,
+      constructors: constructors,
     );
+
+    // Now populate members with reference to declaring type
+    _readConstructors(data['constructors'], extensionTypeInfo, filesById, librariesById, constructors);
+    _readMethods(data['methods'], extensionTypeInfo, filesById, librariesById, methods);
+    _readFields(data['fields'], extensionTypeInfo, filesById, librariesById, fields);
+    _readGetters(data['getters'], extensionTypeInfo, filesById, librariesById, getters);
+    _readSetters(data['setters'], extensionTypeInfo, filesById, librariesById, setters);
+
+    return extensionTypeInfo;
   }
 
   TypeAliasInfo _readTypeAlias(
@@ -576,13 +654,16 @@ class _JsonReader {
   TypeReference? _readTypeReference(Object? value, Map<String, LibraryInfo> librariesById) {
     if (value == null) return null;
     if (value is! Map) {
-      throw const FormatException('Invalid type reference value.');
+      throw FormatException('Invalid type reference value: $value');
     }
     final map = value.cast<String, dynamic>();
+    // Name can be null for some types like dart:core.Null
+    final name = map['name'] as String? ?? 'Null';
+    final qualifiedName = map['qualifiedName'] as String? ?? name;
     return TypeReference(
       id: _requireString(map['id'], 'id'),
-      name: _requireString(map['name'], 'name'),
-      qualifiedName: _requireString(map['qualifiedName'], 'qualifiedName'),
+      name: name,
+      qualifiedName: qualifiedName,
       typeArguments: _readTypeReferences(map['typeArguments'], librariesById),
       isNullable: _readBool(map['isNullable']),
       isDynamic: _readBool(map['isDynamic']),
@@ -683,6 +764,221 @@ class _JsonReader {
         annotations: _readAnnotations(map['annotations']),
       );
     }).toList();
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Member reading methods
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  void _readConstructors(
+    Object? value,
+    TypeDeclaration declaringType,
+    Map<String, FileInfo> filesById,
+    Map<String, LibraryInfo> librariesById,
+    List<ConstructorInfo> target,
+  ) {
+    if (value == null) return;
+    if (value is! List) return;
+    for (final entry in value) {
+      if (entry is! Map) continue;
+      final map = entry.cast<String, dynamic>();
+      final sourceFile = _resolveFile(filesById, map['sourceFileId']);
+      target.add(ConstructorInfo(
+        id: _requireString(map['id'], 'id'),
+        name: _requireString(map['name'], 'name'),
+        qualifiedName: _requireString(map['qualifiedName'], 'qualifiedName'),
+        declaringType: declaringType,
+        sourceFile: sourceFile,
+        location: _readSourceLocation(map['location']),
+        documentation: _readOptionalString(map['documentation']),
+        annotations: _readAnnotations(map['annotations']),
+        parameters: _readParameters(map['parameters'], librariesById),
+        isAsync: _readBool(map['isAsync']),
+        isExternal: _readBool(map['isExternal']),
+        isConst: _readBool(map['isConst']),
+        isFactory: _readBool(map['isFactory']),
+        redirectedConstructor: _readOptionalString(map['redirectedConstructor']),
+        superConstructorInvocation: _readOptionalString(map['superConstructorInvocation']),
+      ));
+    }
+  }
+
+  void _readMethods(
+    Object? value,
+    TypeDeclaration declaringType,
+    Map<String, FileInfo> filesById,
+    Map<String, LibraryInfo> librariesById,
+    List<MethodInfo> target,
+  ) {
+    if (value == null) return;
+    if (value is! List) return;
+    for (final entry in value) {
+      if (entry is! Map) continue;
+      final map = entry.cast<String, dynamic>();
+      final sourceFile = _resolveFile(filesById, map['sourceFileId']);
+      final returnType = _readTypeReference(map['returnType'], librariesById) ??
+          TypeReference(
+            id: 'type_unknown',
+            name: 'dynamic',
+            qualifiedName: 'dynamic',
+            isDynamic: true,
+          );
+      target.add(MethodInfo(
+        id: _requireString(map['id'], 'id'),
+        name: _requireString(map['name'], 'name'),
+        qualifiedName: _requireString(map['qualifiedName'], 'qualifiedName'),
+        declaringType: declaringType,
+        sourceFile: sourceFile,
+        location: _readSourceLocation(map['location']),
+        documentation: _readOptionalString(map['documentation']),
+        annotations: _readAnnotations(map['annotations']),
+        returnType: returnType,
+        typeParameters: _readTypeParameters(map['typeParameters'], librariesById),
+        parameters: _readParameters(map['parameters'], librariesById),
+        isAsync: _readBool(map['isAsync']),
+        isGenerator: _readBool(map['isGenerator']),
+        isExternal: _readBool(map['isExternal']),
+        isStatic: _readBool(map['isStatic']),
+        isAbstract: _readBool(map['isAbstract']),
+        isOperator: _readBool(map['isOperator']),
+      ));
+    }
+  }
+
+  void _readFields(
+    Object? value,
+    TypeDeclaration declaringType,
+    Map<String, FileInfo> filesById,
+    Map<String, LibraryInfo> librariesById,
+    List<FieldInfo> target,
+  ) {
+    if (value == null) return;
+    if (value is! List) return;
+    for (final entry in value) {
+      if (entry is! Map) continue;
+      final map = entry.cast<String, dynamic>();
+      final sourceFile = _resolveFile(filesById, map['sourceFileId']);
+      final type = _readTypeReference(map['type'], librariesById) ??
+          TypeReference(
+            id: 'type_unknown',
+            name: 'dynamic',
+            qualifiedName: 'dynamic',
+            isDynamic: true,
+          );
+      target.add(FieldInfo(
+        id: _requireString(map['id'], 'id'),
+        name: _requireString(map['name'], 'name'),
+        qualifiedName: _requireString(map['qualifiedName'], 'qualifiedName'),
+        declaringType: declaringType,
+        sourceFile: sourceFile,
+        location: _readSourceLocation(map['location']),
+        documentation: _readOptionalString(map['documentation']),
+        annotations: _readAnnotations(map['annotations']),
+        type: type,
+        isFinal: _readBool(map['isFinal']),
+        isConst: _readBool(map['isConst']),
+        isLate: _readBool(map['isLate']),
+        isStatic: _readBool(map['isStatic']),
+        hasInitializer: _readBool(map['hasInitializer']),
+        hasGetter: map['hasGetter'] as bool? ?? true,
+        hasSetter: map['hasSetter'] as bool? ?? true,
+      ));
+    }
+  }
+
+  void _readGetters(
+    Object? value,
+    TypeDeclaration declaringType,
+    Map<String, FileInfo> filesById,
+    Map<String, LibraryInfo> librariesById,
+    List<GetterInfo> target,
+  ) {
+    if (value == null) return;
+    if (value is! List) return;
+    for (final entry in value) {
+      if (entry is! Map) continue;
+      final map = entry.cast<String, dynamic>();
+      final sourceFile = _resolveFile(filesById, map['sourceFileId']);
+      final returnType = _readTypeReference(map['returnType'], librariesById) ??
+          TypeReference(
+            id: 'type_unknown',
+            name: 'dynamic',
+            qualifiedName: 'dynamic',
+            isDynamic: true,
+          );
+      target.add(GetterInfo(
+        id: _requireString(map['id'], 'id'),
+        name: _requireString(map['name'], 'name'),
+        qualifiedName: _requireString(map['qualifiedName'], 'qualifiedName'),
+        declaringType: declaringType,
+        sourceFile: sourceFile,
+        location: _readSourceLocation(map['location']),
+        documentation: _readOptionalString(map['documentation']),
+        annotations: _readAnnotations(map['annotations']),
+        returnType: returnType,
+        isAsync: _readBool(map['isAsync']),
+        isExternal: _readBool(map['isExternal']),
+        isStatic: _readBool(map['isStatic']),
+        isAbstract: _readBool(map['isAbstract']),
+      ));
+    }
+  }
+
+  void _readSetters(
+    Object? value,
+    TypeDeclaration declaringType,
+    Map<String, FileInfo> filesById,
+    Map<String, LibraryInfo> librariesById,
+    List<SetterInfo> target,
+  ) {
+    if (value == null) return;
+    if (value is! List) return;
+    for (final entry in value) {
+      if (entry is! Map) continue;
+      final map = entry.cast<String, dynamic>();
+      final sourceFile = _resolveFile(filesById, map['sourceFileId']);
+      final parameters = _readParameters(map['parameters'], librariesById);
+      // SetterInfo requires exactly one parameter
+      if (parameters.isEmpty) continue;
+      target.add(SetterInfo(
+        id: _requireString(map['id'], 'id'),
+        name: _requireString(map['name'], 'name'),
+        qualifiedName: _requireString(map['qualifiedName'], 'qualifiedName'),
+        declaringType: declaringType,
+        sourceFile: sourceFile,
+        location: _readSourceLocation(map['location']),
+        documentation: _readOptionalString(map['documentation']),
+        annotations: _readAnnotations(map['annotations']),
+        parameter: parameters.first,
+        isAsync: _readBool(map['isAsync']),
+        isExternal: _readBool(map['isExternal']),
+        isStatic: _readBool(map['isStatic']),
+        isAbstract: _readBool(map['isAbstract']),
+      ));
+    }
+  }
+
+  void _readEnumValues(
+    Object? value,
+    EnumInfo parentEnum,
+    List<EnumValueInfo> target,
+  ) {
+    if (value == null) return;
+    if (value is! List) return;
+    var index = 0;
+    for (final entry in value) {
+      if (entry is! Map) continue;
+      final map = entry.cast<String, dynamic>();
+      target.add(EnumValueInfo(
+        id: _requireString(map['id'], 'id'),
+        name: _requireString(map['name'], 'name'),
+        parentEnum: parentEnum,
+        index: map['index'] as int? ?? index,
+        documentation: _readOptionalString(map['documentation']),
+        annotations: _readAnnotations(map['annotations']),
+      ));
+      index++;
+    }
   }
 
   LibraryInfo? _readLibraryById(Object? value, Map<String, LibraryInfo> librariesById) {

@@ -261,6 +261,8 @@ class _JsonWriter {
       'isLate': info.isLate,
       'isStatic': info.isStatic,
       'hasInitializer': info.hasInitializer,
+      'hasGetter': info.hasGetter,
+      'hasSetter': info.hasSetter,
     };
   }
 
@@ -281,6 +283,8 @@ class _JsonWriter {
       'isLate': info.isLate,
       'isStatic': info.isStatic,
       'hasInitializer': info.hasInitializer,
+      'hasGetter': info.hasGetter,
+      'hasSetter': info.hasSetter,
     };
   }
 

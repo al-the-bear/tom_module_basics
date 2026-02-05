@@ -84,6 +84,10 @@ class ParameterDescriptor {
 class MethodDescriptor {
   final String name;
   final bool isStatic;
+  final bool isAbstract;
+  final bool isOperator;
+  final String? returnTypeQualifiedName;
+  final String? declaringClassQualifiedName;
   final List<TypeParameterDescriptor> typeParameters;
   final List<ParameterDescriptor> parameters;
   final List<AnnotationDescriptor> annotations;
@@ -93,6 +97,10 @@ class MethodDescriptor {
   const MethodDescriptor({
     required this.name,
     required this.isStatic,
+    this.isAbstract = false,
+    this.isOperator = false,
+    this.returnTypeQualifiedName,
+    this.declaringClassQualifiedName,
     this.typeParameters = const [],
     this.parameters = const [],
     this.annotations = const [],
@@ -107,7 +115,8 @@ class ConstructorDescriptor {
   final List<TypeParameterDescriptor> typeParameters;
   final List<ParameterDescriptor> parameters;
   final List<AnnotationDescriptor> annotations;
-  final ConstructorInvoker invoke;
+  /// The invoker for this constructor. Null for generative constructors of abstract classes.
+  final ConstructorInvoker? invoke;
 
   const ConstructorDescriptor({
     required this.name,
@@ -115,7 +124,7 @@ class ConstructorDescriptor {
     this.typeParameters = const [],
     this.parameters = const [],
     this.annotations = const [],
-    required this.invoke,
+    this.invoke,
   });
 }
 
@@ -125,6 +134,7 @@ class FieldDescriptor {
   final bool isStatic;
   final bool isFinal;
   final bool isConst;
+  final String? declaringClassQualifiedName;
   final List<AnnotationDescriptor> annotations;
   final InstanceGetter? getInstance;
   final InstanceSetter? setInstance;
@@ -137,6 +147,7 @@ class FieldDescriptor {
     required this.isStatic,
     required this.isFinal,
     required this.isConst,
+    this.declaringClassQualifiedName,
     this.annotations = const [],
     this.getInstance,
     this.setInstance,
@@ -149,6 +160,8 @@ class GetterDescriptor {
   final String name;
   final String typeQualifiedName;
   final bool isStatic;
+  final bool isAbstract;
+  final String? declaringClassQualifiedName;
   final List<AnnotationDescriptor> annotations;
   final InstanceGetter? getInstance;
   final StaticGetter? getStatic;
@@ -157,6 +170,8 @@ class GetterDescriptor {
     required this.name,
     required this.typeQualifiedName,
     required this.isStatic,
+    this.isAbstract = false,
+    this.declaringClassQualifiedName,
     this.annotations = const [],
     this.getInstance,
     this.getStatic,
@@ -167,6 +182,8 @@ class SetterDescriptor {
   final String name;
   final String typeQualifiedName;
   final bool isStatic;
+  final bool isAbstract;
+  final String? declaringClassQualifiedName;
   final List<AnnotationDescriptor> annotations;
   final InstanceSetter? setInstance;
   final StaticSetter? setStatic;
@@ -175,6 +192,8 @@ class SetterDescriptor {
     required this.name,
     required this.typeQualifiedName,
     required this.isStatic,
+    this.isAbstract = false,
+    this.declaringClassQualifiedName,
     this.annotations = const [],
     this.setInstance,
     this.setStatic,
@@ -218,6 +237,12 @@ class MemberContainerDescriptor {
 }
 
 class ClassDescriptor extends MemberContainerDescriptor {
+  final bool isAbstract;
+  final bool isSealed;
+  final bool isFinal;
+  final bool isBase;
+  final bool isInterface;
+  final bool isMixinClass;
   final String? superclassQualifiedName;
   final List<String> interfaceQualifiedNames;
   final List<String> mixinQualifiedNames;
@@ -240,6 +265,12 @@ class ClassDescriptor extends MemberContainerDescriptor {
     super.staticGetters,
     super.setters,
     super.staticSetters,
+    this.isAbstract = false,
+    this.isSealed = false,
+    this.isFinal = false,
+    this.isBase = false,
+    this.isInterface = false,
+    this.isMixinClass = false,
     required this.superclassQualifiedName,
     this.interfaceQualifiedNames = const [],
     this.mixinQualifiedNames = const [],
@@ -257,7 +288,11 @@ class ClassDescriptor extends MemberContainerDescriptor {
     if (ctor == null) {
       throw StateError('No constructor named $constructorName for $qualifiedName');
     }
-    return ctor.invoke(positional, named);
+    if (ctor.invoke == null) {
+      throw StateError(
+          'Cannot invoke generative constructor $constructorName of abstract class $qualifiedName');
+    }
+    return ctor.invoke!(positional, named);
   }
 
   Object? invoke(

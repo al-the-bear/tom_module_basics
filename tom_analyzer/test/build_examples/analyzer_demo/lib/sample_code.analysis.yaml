@@ -1,14 +1,14 @@
 id: analysis_1
-timestamp: "2026-02-05T12:00:59.589938"
+timestamp: "2026-02-05T13:17:44.610765"
 dartSdkVersion: unknown
 analyzerVersion: 8.x
-schemaVersion: 1.0
+schemaVersion: "1.0"
 rootPackageId: pkg_1
 packages:
   -
     id: pkg_1
     name: analyzer_demo
-    version: 1.0.0
+    version: "1.0.0"
     rootPath: /Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_analyzer/test/build_examples/analyzer_demo
     isRoot: true
     libraries:
@@ -20,7 +20,7 @@ packages:
 libraries:
   -
     id: lib_1
-    name: 
+    name: ""
     uri: "file:///Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_analyzer/test/build_examples/analyzer_demo/bin/verify.dart"
     packageId: pkg_1
     mainSourceFileId: file_2
@@ -149,7 +149,7 @@ libraries:
         constructors:
           -
             id: ctor_1
-            name: Entity
+            name: new
             qualifiedName: "package:analyzer_demo/sample_code.dart.Entity"
             declaringTypeId: class_1
             sourceFileId: file_4
@@ -222,6 +222,8 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: false
+            hasGetter: true
+            hasSetter: false
           -
             id: field_2
             name: createdAt
@@ -257,6 +259,8 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: false
+            hasGetter: true
+            hasSetter: false
           -
             id: field_3
             name: updatedAt
@@ -292,6 +296,8 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: false
+            hasGetter: true
+            hasSetter: false
         getters:
 
         setters:
@@ -372,7 +378,7 @@ libraries:
         constructors:
           -
             id: ctor_2
-            name: Repository
+            name: new
             qualifiedName: "package:analyzer_demo/sample_code.dart.Repository"
             declaringTypeId: class_2
             sourceFileId: file_4
@@ -942,7 +948,7 @@ libraries:
         constructors:
           -
             id: ctor_3
-            name: User
+            name: new
             qualifiedName: "package:analyzer_demo/sample_code.dart.User"
             declaringTypeId: class_3
             sourceFileId: file_4
@@ -1361,6 +1367,8 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: false
+            hasGetter: true
+            hasSetter: false
           -
             id: field_5
             name: createdAt
@@ -1396,6 +1404,8 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: false
+            hasGetter: true
+            hasSetter: false
           -
             id: field_6
             name: updatedAt
@@ -1431,6 +1441,8 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: false
+            hasGetter: true
+            hasSetter: true
           -
             id: field_7
             name: email
@@ -1443,7 +1455,7 @@ libraries:
               column: 0
               offset: 2973
               length: 5
-            documentation: /// The user's email address.
+            documentation: "/// The user's email address."
             annotations:
 
             type:
@@ -1466,6 +1478,8 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: false
+            hasGetter: true
+            hasSetter: false
           -
             id: field_8
             name: name
@@ -1478,7 +1492,7 @@ libraries:
               column: 0
               offset: 3021
               length: 4
-            documentation: /// The user's display name.
+            documentation: "/// The user's display name."
             annotations:
 
             type:
@@ -1501,6 +1515,8 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: false
+            hasGetter: true
+            hasSetter: true
           -
             id: field_9
             name: roles
@@ -1513,7 +1529,7 @@ libraries:
               column: 0
               offset: 3069
               length: 5
-            documentation: /// User's roles.
+            documentation: "/// User's roles."
             annotations:
 
             type:
@@ -1550,6 +1566,8 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: true
+            hasGetter: true
+            hasSetter: false
           -
             id: field_10
             name: validationErrors
@@ -1599,6 +1617,8 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: false
+            hasGetter: true
+            hasSetter: false
         getters:
 
         setters:
@@ -1688,7 +1708,7 @@ libraries:
         constructors:
           -
             id: ctor_4
-            name: Task
+            name: new
             qualifiedName: "package:analyzer_demo/sample_code.dart.Task"
             declaringTypeId: class_4
             sourceFileId: file_4
@@ -2000,6 +2020,8 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: false
+            hasGetter: true
+            hasSetter: false
           -
             id: field_12
             name: createdAt
@@ -2035,6 +2057,8 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: false
+            hasGetter: true
+            hasSetter: false
           -
             id: field_13
             name: updatedAt
@@ -2070,6 +2094,8 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: false
+            hasGetter: true
+            hasSetter: true
           -
             id: field_14
             name: title
@@ -2105,6 +2131,8 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: false
+            hasGetter: true
+            hasSetter: true
           -
             id: field_15
             name: description
@@ -2140,6 +2168,8 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: false
+            hasGetter: true
+            hasSetter: true
           -
             id: field_16
             name: priority
@@ -2175,6 +2205,8 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: false
+            hasGetter: true
+            hasSetter: true
           -
             id: field_17
             name: dueDate
@@ -2210,6 +2242,8 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: false
+            hasGetter: true
+            hasSetter: true
           -
             id: field_18
             name: isCompleted
@@ -2245,6 +2279,8 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: true
+            hasGetter: true
+            hasSetter: true
           -
             id: field_19
             name: isOverdue
@@ -2280,6 +2316,8 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: false
+            hasGetter: true
+            hasSetter: false
           -
             id: field_20
             name: validationErrors
@@ -2329,6 +2367,8 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: false
+            hasGetter: true
+            hasSetter: false
         getters:
 
         setters:
@@ -2380,14 +2420,14 @@ libraries:
             variance: null
           -
             id: typeParam_4
-            name: E
+            name: "E"
             bound: null
             defaultType: null
             variance: null
         constructors:
           -
             id: ctor_5
-            name: Result.success
+            name: success
             qualifiedName: "package:analyzer_demo/sample_code.dart.Result.success"
             declaringTypeId: class_5
             sourceFileId: file_4
@@ -2448,7 +2488,7 @@ libraries:
             superConstructorInvocation: Object
           -
             id: ctor_6
-            name: Result.failure
+            name: failure
             qualifiedName: "package:analyzer_demo/sample_code.dart.Result.failure"
             declaringTypeId: class_5
             sourceFileId: file_4
@@ -2559,8 +2599,8 @@ libraries:
                   resolvedElementId: null
                 -
                   id: type_91
-                  name: E
-                  qualifiedName: E
+                  name: "E"
+                  qualifiedName: "E"
                   typeArguments:
 
                   isNullable: false
@@ -2652,7 +2692,7 @@ libraries:
                     parameters:
                       -
                         id: param_21
-                        name: <unnamed>
+                        name: "<unnamed>"
                         type:
                           id: type_96
                           name: T
@@ -2756,6 +2796,8 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: false
+            hasGetter: true
+            hasSetter: false
           -
             id: field_22
             name: _error
@@ -2805,6 +2847,8 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: false
+            hasGetter: true
+            hasSetter: false
           -
             id: field_23
             name: isSuccess
@@ -2840,6 +2884,8 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: false
+            hasGetter: true
+            hasSetter: false
           -
             id: field_24
             name: isFailure
@@ -2875,6 +2921,8 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: false
+            hasGetter: true
+            hasSetter: false
           -
             id: field_25
             name: value
@@ -2924,6 +2972,8 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: false
+            hasGetter: true
+            hasSetter: false
           -
             id: field_26
             name: error
@@ -2941,8 +2991,8 @@ libraries:
 
             type:
               id: type_106
-              name: E
-              qualifiedName: E
+              name: "E"
+              qualifiedName: "E"
               typeArguments:
 
               isNullable: false
@@ -2973,6 +3023,8 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: false
+            hasGetter: true
+            hasSetter: false
         getters:
 
         setters:
@@ -3095,6 +3147,8 @@ libraries:
             isLate: false
             isStatic: true
             hasInitializer: false
+            hasGetter: true
+            hasSetter: false
           -
             id: field_28
             name: isWeekend
@@ -3130,6 +3184,8 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: false
+            hasGetter: true
+            hasSetter: false
         methods:
 
         getters:
@@ -3139,7 +3195,7 @@ libraries:
         constructors:
           -
             id: ctor_7
-            name: Weekday
+            name: new
             qualifiedName: "package:analyzer_demo/sample_code.dart.Weekday"
             declaringTypeId: enum_1
             sourceFileId: file_4
@@ -3257,6 +3313,8 @@ libraries:
             isLate: false
             isStatic: true
             hasInitializer: false
+            hasGetter: true
+            hasSetter: false
           -
             id: field_30
             name: level
@@ -3292,6 +3350,8 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: false
+            hasGetter: true
+            hasSetter: false
           -
             id: field_31
             name: description
@@ -3327,6 +3387,8 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: false
+            hasGetter: true
+            hasSetter: false
           -
             id: field_32
             name: isUrgent
@@ -3362,6 +3424,8 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: false
+            hasGetter: true
+            hasSetter: false
         methods:
 
         getters:
@@ -3371,7 +3435,7 @@ libraries:
         constructors:
           -
             id: ctor_8
-            name: Priority
+            name: new
             qualifiedName: "package:analyzer_demo/sample_code.dart.Priority"
             declaringTypeId: enum_2
             sourceFileId: file_4
@@ -3567,6 +3631,8 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: false
+            hasGetter: true
+            hasSetter: false
         getters:
 
         setters:
@@ -3940,6 +4006,8 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: false
+            hasGetter: true
+            hasSetter: false
         getters:
 
         setters:
@@ -4164,6 +4232,8 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: false
+            hasGetter: true
+            hasSetter: false
           -
             id: field_36
             name: lastOrNull
@@ -4213,6 +4283,8 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: false
+            hasGetter: true
+            hasSetter: false
         getters:
 
         setters:
@@ -4387,8 +4459,8 @@ libraries:
 
         aliasedType:
           id: type_155
-          name: T Function(Map<String, dynamic>)
-          qualifiedName: T Function(Map<String, dynamic>)
+          name: "T Function(Map<String, dynamic>)"
+          qualifiedName: "T Function(Map<String, dynamic>)"
           typeArguments:
 
           isNullable: false
@@ -4819,8 +4891,8 @@ libraries:
             name: action
             type:
               id: type_175
-              name: Future<T> Function()
-              qualifiedName: Future<T> Function()
+              name: "Future<T> Function()"
+              qualifiedName: "Future<T> Function()"
               typeArguments:
 
               isNullable: false

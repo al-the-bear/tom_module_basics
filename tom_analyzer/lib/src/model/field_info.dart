@@ -46,6 +46,14 @@ class FieldInfo extends VariableElement {
 
   final bool hasInitializer;
 
+  /// Whether this field has a getter.
+  /// For synthetic fields backing setters without getters, this is false.
+  final bool hasGetter;
+
+  /// Whether this field has a setter (i.e., is not read-only).
+  /// For synthetic fields backing getters without setters, this is false.
+  final bool hasSetter;
+
   FieldInfo({
     required this.id,
     required this.name,
@@ -62,5 +70,7 @@ class FieldInfo extends VariableElement {
     this.isLate = false,
     this.isStatic = false,
     this.hasInitializer = false,
+    this.hasGetter = true,
+    this.hasSetter = true,
   });
 }

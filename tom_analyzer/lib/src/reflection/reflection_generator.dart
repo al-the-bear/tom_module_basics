@@ -133,6 +133,460 @@ class ReflectionGenerator {
     return buffer.toString();
   }
 
+  /// Collects inherited methods from superclass chain and mixins.
+  /// Returns a map of method name to (MethodInfo, declaringClassQualifiedName).
+  Map<String, (MethodInfo, String)> _collectInheritedMethods(
+    ClassInfo cls,
+    Set<String> ownMethodNames,
+  ) {
+    final result = <String, (MethodInfo, String)>{};
+
+    // Walk superclass chain (closest superclass first)
+    var current = cls.superclass?.resolveAsClass();
+    while (current != null) {
+      for (final method in current.methods) {
+        if (!_isPrivate(method.name) &&
+            !method.isStatic &&
+            !ownMethodNames.contains(method.name) &&
+            !result.containsKey(method.name)) {
+          result[method.name] = (method, current.qualifiedName);
+        }
+      }
+      current = current.superclass?.resolveAsClass();
+    }
+
+    // Walk mixins (in order - later mixins override earlier ones)
+    for (final mixinRef in cls.mixins) {
+      final mixinInfo = mixinRef.resolveAsMixin();
+      if (mixinInfo != null) {
+        for (final method in mixinInfo.methods) {
+          if (!_isPrivate(method.name) &&
+              !method.isStatic &&
+              !ownMethodNames.contains(method.name)) {
+            // Mixins can override superclass members
+            result[method.name] = (method, mixinInfo.qualifiedName);
+          }
+        }
+      }
+    }
+
+    return result;
+  }
+
+  /// Collects inherited fields from superclass chain and mixins.
+  Map<String, (FieldInfo, String)> _collectInheritedFields(
+    ClassInfo cls,
+    Set<String> ownFieldNames,
+  ) {
+    final result = <String, (FieldInfo, String)>{};
+
+    var current = cls.superclass?.resolveAsClass();
+    while (current != null) {
+      for (final field in current.fields) {
+        if (!_isPrivate(field.name) &&
+            !field.isStatic &&
+            !ownFieldNames.contains(field.name) &&
+            !result.containsKey(field.name)) {
+          result[field.name] = (field, current.qualifiedName);
+        }
+      }
+      current = current.superclass?.resolveAsClass();
+    }
+
+    for (final mixinRef in cls.mixins) {
+      final mixinInfo = mixinRef.resolveAsMixin();
+      if (mixinInfo != null) {
+        for (final field in mixinInfo.fields) {
+          if (!_isPrivate(field.name) &&
+              !field.isStatic &&
+              !ownFieldNames.contains(field.name)) {
+            result[field.name] = (field, mixinInfo.qualifiedName);
+          }
+        }
+      }
+    }
+
+    return result;
+  }
+
+  /// Collects inherited getters from superclass chain and mixins.
+  Map<String, (GetterInfo, String)> _collectInheritedGetters(
+    ClassInfo cls,
+    Set<String> ownGetterNames,
+  ) {
+    final result = <String, (GetterInfo, String)>{};
+
+    var current = cls.superclass?.resolveAsClass();
+    while (current != null) {
+      for (final getter in current.getters) {
+        if (!_isPrivate(getter.name) &&
+            !getter.isStatic &&
+            !ownGetterNames.contains(getter.name) &&
+            !result.containsKey(getter.name)) {
+          result[getter.name] = (getter, current.qualifiedName);
+        }
+      }
+      current = current.superclass?.resolveAsClass();
+    }
+
+    for (final mixinRef in cls.mixins) {
+      final mixinInfo = mixinRef.resolveAsMixin();
+      if (mixinInfo != null) {
+        for (final getter in mixinInfo.getters) {
+          if (!_isPrivate(getter.name) &&
+              !getter.isStatic &&
+              !ownGetterNames.contains(getter.name)) {
+            result[getter.name] = (getter, mixinInfo.qualifiedName);
+          }
+        }
+      }
+    }
+
+    return result;
+  }
+
+  /// Collects inherited setters from superclass chain and mixins.
+  Map<String, (SetterInfo, String)> _collectInheritedSetters(
+    ClassInfo cls,
+    Set<String> ownSetterNames,
+  ) {
+    final result = <String, (SetterInfo, String)>{};
+
+    var current = cls.superclass?.resolveAsClass();
+    while (current != null) {
+      for (final setter in current.setters) {
+        if (!_isPrivate(setter.name) &&
+            !setter.isStatic &&
+            !ownSetterNames.contains(setter.name) &&
+            !result.containsKey(setter.name)) {
+          result[setter.name] = (setter, current.qualifiedName);
+        }
+      }
+      current = current.superclass?.resolveAsClass();
+    }
+
+    for (final mixinRef in cls.mixins) {
+      final mixinInfo = mixinRef.resolveAsMixin();
+      if (mixinInfo != null) {
+        for (final setter in mixinInfo.setters) {
+          if (!_isPrivate(setter.name) &&
+              !setter.isStatic &&
+              !ownSetterNames.contains(setter.name)) {
+            result[setter.name] = (setter, mixinInfo.qualifiedName);
+          }
+        }
+      }
+    }
+
+    return result;
+  }
+
+  /// Collects extension methods that apply to this class.
+  /// Returns a list of (ExtensionInfo, MethodInfo) pairs.
+  List<(ExtensionInfo, MethodInfo)> _collectExtensionMethods(
+    ClassInfo cls,
+    AnalysisResult result,
+    Set<String> ownMethodNames,
+    Map<String, (MethodInfo, String)> inheritedMethods,
+  ) {
+    final extensionMethods = <(ExtensionInfo, MethodInfo)>[];
+    
+    // Find all extensions that apply to this class
+    final extensions = result.allExtensions
+        .where((ext) => ext.extendedType.qualifiedName == cls.qualifiedName);
+    
+    for (final ext in extensions) {
+      for (final method in ext.methods) {
+        // Skip private, static, and methods that already exist
+        if (_isPrivate(method.name) || method.isStatic) continue;
+        if (ownMethodNames.contains(method.name)) continue;
+        if (inheritedMethods.containsKey(method.name)) continue;
+        extensionMethods.add((ext, method));
+      }
+    }
+    
+    return extensionMethods;
+  }
+
+  /// Collects extension getters that apply to this class.
+  List<(ExtensionInfo, GetterInfo)> _collectExtensionGetters(
+    ClassInfo cls,
+    AnalysisResult result,
+    Set<String> ownGetterNames,
+    Map<String, (GetterInfo, String)> inheritedGetters,
+  ) {
+    final extensionGetters = <(ExtensionInfo, GetterInfo)>[];
+    
+    final extensions = result.allExtensions
+        .where((ext) => ext.extendedType.qualifiedName == cls.qualifiedName);
+    
+    for (final ext in extensions) {
+      for (final getter in ext.getters) {
+        if (_isPrivate(getter.name) || getter.isStatic) continue;
+        if (ownGetterNames.contains(getter.name)) continue;
+        if (inheritedGetters.containsKey(getter.name)) continue;
+        extensionGetters.add((ext, getter));
+      }
+    }
+    
+    return extensionGetters;
+  }
+
+  /// Collects extension setters that apply to this class.
+  List<(ExtensionInfo, SetterInfo)> _collectExtensionSetters(
+    ClassInfo cls,
+    AnalysisResult result,
+    Set<String> ownSetterNames,
+    Map<String, (SetterInfo, String)> inheritedSetters,
+  ) {
+    final extensionSetters = <(ExtensionInfo, SetterInfo)>[];
+    
+    final extensions = result.allExtensions
+        .where((ext) => ext.extendedType.qualifiedName == cls.qualifiedName);
+    
+    for (final ext in extensions) {
+      for (final setter in ext.setters) {
+        if (_isPrivate(setter.name) || setter.isStatic) continue;
+        if (ownSetterNames.contains(setter.name)) continue;
+        if (inheritedSetters.containsKey(setter.name)) continue;
+        extensionSetters.add((ext, setter));
+      }
+    }
+    
+    return extensionSetters;
+  }
+
+  /// Builds a method map including own, inherited, and extension methods.
+  String _methodMapWithInheritedAndExtensions(
+    List<MethodInfo> ownMethods,
+    Map<String, (MethodInfo, String)> inheritedMethods,
+    List<(ExtensionInfo, MethodInfo)> extensionMethods,
+    String alias,
+    String typeName,
+    Map<Uri, String> importAliases, {
+    required bool isStatic,
+  }) {
+    final entries = <String>[];
+    
+    // Add own methods (declaringClass = null means declared here)
+    for (final method in ownMethods) {
+      if (_isPrivate(method.name) || method.isStatic != isStatic) continue;
+      entries.add(_methodDescriptor(method, alias, typeName));
+    }
+    
+    // Add inherited methods (with declaringClass set)
+    if (!isStatic) {
+      for (final entry in inheritedMethods.entries) {
+        final (method, declaringClass) = entry.value;
+        entries.add(_methodDescriptor(method, alias, typeName,
+            declaringClassQualifiedName: declaringClass));
+      }
+      
+      // Add extension methods (with declaringClass set to extension)
+      for (final (ext, method) in extensionMethods) {
+        final extAlias = importAliases[ext.library.uri] ?? alias;
+        entries.add(_extensionMethodDescriptor(method, extAlias, ext.name, alias, typeName,
+            declaringClassQualifiedName: ext.qualifiedName));
+      }
+    }
+    
+    if (entries.isEmpty) return 'const {}';
+    return '<String, ta.MethodDescriptor>{\n${entries.join()}  }';
+  }
+
+  /// Generates a method descriptor for an extension method.
+  /// Extension methods need explicit extension application for invocation.
+  String _extensionMethodDescriptor(
+    MethodInfo method,
+    String extAlias,
+    String extName,
+    String targetAlias,
+    String targetTypeName, {
+    String? declaringClassQualifiedName,
+  }) {
+    final isOp = _isOperator(method.name);
+    // Extension methods can always be invoked (they're never abstract)
+    // Use explicit extension application: ExtName(instance).method(...)
+    final invoker = 
+        '(Object instance, List<dynamic> positional, Map<Symbol, dynamic> named) => '
+        'Function.apply($extAlias.$extName(instance as $targetAlias.$targetTypeName).${method.name}, positional, named)';
+
+    final declaringClass = declaringClassQualifiedName != null
+        ? "'${_escape(declaringClassQualifiedName)}'"
+        : 'null';
+
+    return "  '${_escape(method.name)}': ta.MethodDescriptor(\n"
+        "    name: '${_escape(method.name)}',\n"
+        "    isStatic: false,\n"
+        "    isAbstract: false,\n"
+        "    isOperator: $isOp,\n"
+        "    returnTypeQualifiedName: '${_escape(method.returnType.qualifiedName)}',\n"
+        "    declaringClassQualifiedName: $declaringClass,\n"
+        "    typeParameters: ${_typeParameterList(method.typeParameters)},\n"
+        "    parameters: ${_parameterList(method.parameters)},\n"
+        "    annotations: ${_annotationList(method.annotations)},\n"
+        "    invokeOn: $invoker,\n"
+        "    invokeStatic: null,\n"
+        "  ),\n";
+  }
+
+  /// Builds a field map including both own and inherited fields.
+  String _fieldMapWithInherited(
+    List<FieldInfo> ownFields,
+    Map<String, (FieldInfo, String)> inheritedFields,
+    String alias,
+    String typeName, {
+    required bool isStatic,
+  }) {
+    final entries = <String>[];
+    
+    for (final field in ownFields) {
+      if (_isPrivate(field.name) || field.isStatic != isStatic) continue;
+      entries.add(_fieldDescriptor(field, alias, typeName));
+    }
+    
+    if (!isStatic) {
+      for (final entry in inheritedFields.entries) {
+        final (field, declaringClass) = entry.value;
+        entries.add(_fieldDescriptor(field, alias, typeName,
+            declaringClassQualifiedName: declaringClass));
+      }
+    }
+    
+    if (entries.isEmpty) return 'const {}';
+    return '<String, ta.FieldDescriptor>{\n${entries.join()}  }';
+  }
+
+  /// Builds a getter map including own, inherited, and extension getters.
+  String _getterMapWithInheritedAndExtensions(
+    List<GetterInfo> ownGetters,
+    Map<String, (GetterInfo, String)> inheritedGetters,
+    List<(ExtensionInfo, GetterInfo)> extensionGetters,
+    String alias,
+    String typeName,
+    Map<Uri, String> importAliases, {
+    required bool isStatic,
+  }) {
+    final entries = <String>[];
+    
+    for (final getter in ownGetters) {
+      if (_isPrivate(getter.name) || getter.isStatic != isStatic) continue;
+      entries.add(_getterDescriptor(getter, alias, typeName));
+    }
+    
+    if (!isStatic) {
+      for (final entry in inheritedGetters.entries) {
+        final (getter, declaringClass) = entry.value;
+        entries.add(_getterDescriptor(getter, alias, typeName,
+            declaringClassQualifiedName: declaringClass));
+      }
+      
+      // Add extension getters
+      for (final (ext, getter) in extensionGetters) {
+        final extAlias = importAliases[ext.library.uri] ?? alias;
+        entries.add(_extensionGetterDescriptor(getter, extAlias, ext.name, alias, typeName,
+            declaringClassQualifiedName: ext.qualifiedName));
+      }
+    }
+    
+    if (entries.isEmpty) return 'const {}';
+    return '<String, ta.GetterDescriptor>{\n${entries.join()}  }';
+  }
+
+  /// Generates a getter descriptor for an extension getter.
+  String _extensionGetterDescriptor(
+    GetterInfo getter,
+    String extAlias,
+    String extName,
+    String targetAlias,
+    String targetTypeName, {
+    String? declaringClassQualifiedName,
+  }) {
+    // Extension getters: ExtName(instance).getter
+    final instanceGetter =
+        '(Object instance) => $extAlias.$extName(instance as $targetAlias.$targetTypeName).${getter.name}';
+
+    final declaringClass = declaringClassQualifiedName != null
+        ? "'${_escape(declaringClassQualifiedName)}'"
+        : 'null';
+
+    return "  '${_escape(getter.name)}': ta.GetterDescriptor(\n"
+        "    name: '${_escape(getter.name)}',\n"
+        "    typeQualifiedName: '${_escape(getter.returnType.qualifiedName)}',\n"
+        "    isStatic: false,\n"
+        "    isAbstract: false,\n"
+        "    declaringClassQualifiedName: $declaringClass,\n"
+        "    annotations: ${_annotationList(getter.annotations)},\n"
+        "    getInstance: $instanceGetter,\n"
+        "    getStatic: null,\n"
+        "  ),\n";
+  }
+
+  /// Builds a setter map including own, inherited, and extension setters.
+  String _setterMapWithInheritedAndExtensions(
+    List<SetterInfo> ownSetters,
+    Map<String, (SetterInfo, String)> inheritedSetters,
+    List<(ExtensionInfo, SetterInfo)> extensionSetters,
+    String alias,
+    String typeName,
+    Map<Uri, String> importAliases, {
+    required bool isStatic,
+  }) {
+    final entries = <String>[];
+    
+    for (final setter in ownSetters) {
+      if (_isPrivate(setter.name) || setter.isStatic != isStatic) continue;
+      entries.add(_setterDescriptor(setter, alias, typeName));
+    }
+    
+    if (!isStatic) {
+      for (final entry in inheritedSetters.entries) {
+        final (setter, declaringClass) = entry.value;
+        entries.add(_setterDescriptor(setter, alias, typeName,
+            declaringClassQualifiedName: declaringClass));
+      }
+      
+      // Add extension setters
+      for (final (ext, setter) in extensionSetters) {
+        final extAlias = importAliases[ext.library.uri] ?? alias;
+        entries.add(_extensionSetterDescriptor(setter, extAlias, ext.name, alias, typeName,
+            declaringClassQualifiedName: ext.qualifiedName));
+      }
+    }
+    
+    if (entries.isEmpty) return 'const {}';
+    return '<String, ta.SetterDescriptor>{\n${entries.join()}  }';
+  }
+
+  /// Generates a setter descriptor for an extension setter.
+  String _extensionSetterDescriptor(
+    SetterInfo setter,
+    String extAlias,
+    String extName,
+    String targetAlias,
+    String targetTypeName, {
+    String? declaringClassQualifiedName,
+  }) {
+    // Extension setters: ExtName(instance).setter = value
+    final instanceSetter =
+        '(Object instance, Object? value) { $extAlias.$extName(instance as $targetAlias.$targetTypeName).${setter.name} = value as dynamic; return null; }';
+
+    final declaringClass = declaringClassQualifiedName != null
+        ? "'${_escape(declaringClassQualifiedName)}'"
+        : 'null';
+
+    return "  '${_escape(setter.name)}': ta.SetterDescriptor(\n"
+        "    name: '${_escape(setter.name)}',\n"
+        "    typeQualifiedName: '${_escape(setter.parameter.type.qualifiedName)}',\n"
+        "    isStatic: false,\n"
+        "    isAbstract: false,\n"
+        "    declaringClassQualifiedName: $declaringClass,\n"
+        "    annotations: ${_annotationList(setter.annotations)},\n"
+        "    setInstance: $instanceSetter,\n"
+        "    setStatic: null,\n"
+        "  ),\n";
+  }
+
   String _classDescriptor(
     ClassInfo cls,
     Map<Uri, String> importAliases,
@@ -142,16 +596,40 @@ class ReflectionGenerator {
     final qualifiedName = cls.qualifiedName;
     final constructors = <String>[
       for (final ctor in cls.constructors..sort(_byName))
-        if (!_isPrivate(ctor.name)) _constructorDescriptor(ctor, alias, cls.name),
+        if (!_isPrivate(ctor.name))
+          _constructorDescriptor(ctor, alias, cls.name,
+              isAbstractClass: cls.isAbstract),
     ];
 
-    final methods = _methodMap(cls.methods, alias, cls.name, isStatic: false);
+    // Collect own members (no declaringClass = declared here)
+    final ownMethodNames = cls.methods.where((m) => !_isPrivate(m.name) && !m.isStatic).map((m) => m.name).toSet();
+    final ownFieldNames = cls.fields.where((f) => !_isPrivate(f.name) && !f.isStatic).map((f) => f.name).toSet();
+    final ownGetterNames = cls.getters.where((g) => !_isPrivate(g.name) && !g.isStatic).map((g) => g.name).toSet();
+    final ownSetterNames = cls.setters.where((s) => !_isPrivate(s.name) && !s.isStatic).map((s) => s.name).toSet();
+
+    // Collect inherited members from superclass chain and mixins
+    final inheritedMethods = _collectInheritedMethods(cls, ownMethodNames);
+    final inheritedFields = _collectInheritedFields(cls, ownFieldNames);
+    final inheritedGetters = _collectInheritedGetters(cls, ownGetterNames);
+    final inheritedSetters = _collectInheritedSetters(cls, ownSetterNames);
+
+    // Collect extension members
+    final extensionMethods = _collectExtensionMethods(cls, result, ownMethodNames, inheritedMethods);
+    final extensionGetters = _collectExtensionGetters(cls, result, ownGetterNames, inheritedGetters);
+    final extensionSetters = _collectExtensionSetters(cls, result, ownSetterNames, inheritedSetters);
+
+    // Build combined method maps
+    final methods = _methodMapWithInheritedAndExtensions(
+      cls.methods, inheritedMethods, extensionMethods, alias, cls.name, importAliases, isStatic: false);
     final staticMethods = _methodMap(cls.methods, alias, cls.name, isStatic: true);
-    final fields = _fieldMap(cls.fields, alias, cls.name, isStatic: false);
+    final fields = _fieldMapWithInherited(
+      cls.fields, inheritedFields, alias, cls.name, isStatic: false);
     final staticFields = _fieldMap(cls.fields, alias, cls.name, isStatic: true);
-    final getters = _getterMap(cls.getters, alias, cls.name, isStatic: false);
+    final getters = _getterMapWithInheritedAndExtensions(
+      cls.getters, inheritedGetters, extensionGetters, alias, cls.name, importAliases, isStatic: false);
     final staticGetters = _getterMap(cls.getters, alias, cls.name, isStatic: true);
-    final setters = _setterMap(cls.setters, alias, cls.name, isStatic: false);
+    final setters = _setterMapWithInheritedAndExtensions(
+      cls.setters, inheritedSetters, extensionSetters, alias, cls.name, importAliases, isStatic: false);
     final staticSetters = _setterMap(cls.setters, alias, cls.name, isStatic: true);
 
     final appliedExtensions = _appliedExtensions(cls, result);
@@ -163,6 +641,12 @@ class ReflectionGenerator {
         "  package: '${_escape(cls.library.package.name)}',\n"
         "  annotations: ${_annotationList(cls.annotations)},\n"
         "  typeParameters: ${_typeParameterList(cls.typeParameters)},\n"
+        "  isAbstract: ${cls.isAbstract},\n"
+        "  isSealed: ${cls.isSealed},\n"
+        "  isFinal: ${cls.isFinal},\n"
+        "  isBase: ${cls.isBase},\n"
+        "  isInterface: ${cls.isInterface},\n"
+        "  isMixinClass: ${cls.isMixin},\n"
         "  methods: $methods,\n"
         "  staticMethods: $staticMethods,\n"
         "  fields: $fields,\n"
@@ -304,13 +788,16 @@ class ReflectionGenerator {
     String alias,
     String typeName, {
     required bool isStatic,
+    String? declaringClassQualifiedName,
   }) {
     final entries = <String>[];
     for (final method in methods) {
       if (_isPrivate(method.name) || method.isStatic != isStatic) {
         continue;
       }
-      entries.add(_methodDescriptor(method, alias, typeName));
+      // Include operators - they will have null invokers but are tracked
+      entries.add(_methodDescriptor(method, alias, typeName,
+          declaringClassQualifiedName: declaringClassQualifiedName));
     }
     if (entries.isEmpty) {
       return 'const {}';
@@ -318,21 +805,45 @@ class ReflectionGenerator {
     return '<String, ta.MethodDescriptor>{\n${entries.join()}  }';
   }
 
-  String _methodDescriptor(MethodInfo method, String alias, String typeName) {
+  /// Returns true if the method name is a Dart operator
+  bool _isOperator(String name) {
+    const operators = {
+      '+', '-', '*', '/', '~/', '%', // arithmetic
+      '==', '<', '>', '<=', '>=', // comparison
+      '[]', '[]=', // indexing
+      '|', '&', '^', '~', '<<', '>>', '>>>', // bitwise
+      'unary-', // unary minus
+    };
+    return operators.contains(name);
+  }
+
+  String _methodDescriptor(MethodInfo method, String alias, String typeName,
+      {String? declaringClassQualifiedName}) {
+    // Abstract methods and operators can't have invokers via Function.apply
+    final isOp = _isOperator(method.name);
+    final canInvoke = !method.isAbstract && !isOp;
     final invoker = method.isStatic
         ? '(List<dynamic> positional, Map<Symbol, dynamic> named) => '
             'Function.apply($alias.$typeName.${method.name}, positional, named)'
         : '(Object instance, List<dynamic> positional, Map<Symbol, dynamic> named) => '
             'Function.apply((instance as $alias.$typeName).${method.name}, positional, named)';
 
+    final declaringClass = declaringClassQualifiedName != null
+        ? "'${_escape(declaringClassQualifiedName)}'"
+        : 'null';
+
     return "  '${_escape(method.name)}': ta.MethodDescriptor(\n"
         "    name: '${_escape(method.name)}',\n"
         "    isStatic: ${method.isStatic},\n"
+        "    isAbstract: ${method.isAbstract},\n"
+        "    isOperator: $isOp,\n"
+        "    returnTypeQualifiedName: '${_escape(method.returnType.qualifiedName)}',\n"
+        "    declaringClassQualifiedName: $declaringClass,\n"
         "    typeParameters: ${_typeParameterList(method.typeParameters)},\n"
         "    parameters: ${_parameterList(method.parameters)},\n"
         "    annotations: ${_annotationList(method.annotations)},\n"
-        "    invokeOn: ${method.isStatic ? 'null' : invoker},\n"
-        "    invokeStatic: ${method.isStatic ? invoker : 'null'},\n"
+        "    invokeOn: ${method.isStatic || !canInvoke ? 'null' : invoker},\n"
+        "    invokeStatic: ${method.isStatic && canInvoke ? invoker : 'null'},\n"
         "  ),\n";
   }
 
@@ -350,10 +861,19 @@ class ReflectionGenerator {
     return '<String, ta.MethodDescriptor>{\n${entries.join()}  }';
   }
 
-  String _methodDescriptorMetadata(MethodInfo method) {
+  String _methodDescriptorMetadata(MethodInfo method,
+      {String? declaringClassQualifiedName}) {
+    final isOp = _isOperator(method.name);
+    final declaringClass = declaringClassQualifiedName != null
+        ? "'${_escape(declaringClassQualifiedName)}'"
+        : 'null';
     return "  '${_escape(method.name)}': ta.MethodDescriptor(\n"
         "    name: '${_escape(method.name)}',\n"
         "    isStatic: ${method.isStatic},\n"
+        "    isAbstract: ${method.isAbstract},\n"
+        "    isOperator: $isOp,\n"
+        "    returnTypeQualifiedName: '${_escape(method.returnType.qualifiedName)}',\n"
+        "    declaringClassQualifiedName: $declaringClass,\n"
         "    typeParameters: ${_typeParameterList(method.typeParameters)},\n"
         "    parameters: ${_parameterList(method.parameters)},\n"
         "    annotations: ${_annotationList(method.annotations)},\n"
@@ -362,10 +882,19 @@ class ReflectionGenerator {
         "  ),\n";
   }
 
-  String _constructorDescriptor(ConstructorInfo ctor, String alias, String typeName) {
+  String _constructorDescriptor(
+    ConstructorInfo ctor,
+    String alias,
+    String typeName, {
+    required bool isAbstractClass,
+  }) {
     final ctorName = ctor.name.isEmpty ? 'new' : ctor.name;
-    final invoker = '(List<dynamic> positional, Map<Symbol, dynamic> named) => '
-        'Function.apply($alias.$typeName.$ctorName, positional, named)';
+    // Can't tear off generative constructors of abstract classes
+    final canInvoke = !isAbstractClass || ctor.isFactory;
+    final invoker = canInvoke
+        ? '(List<dynamic> positional, Map<Symbol, dynamic> named) => '
+            'Function.apply($alias.$typeName.$ctorName, positional, named)'
+        : 'null';
     return "    '${_escape(ctor.name)}': ta.ConstructorDescriptor(\n"
         "      name: '${_escape(ctor.name)}',\n"
         "      isFactory: ${ctor.isFactory},\n"
@@ -394,16 +923,27 @@ class ReflectionGenerator {
     return '<String, ta.FieldDescriptor>{\n${entries.join()}  }';
   }
 
-  String _fieldDescriptor(FieldInfo field, String alias, String typeName) {
-    final instanceGetter =
-        '(Object instance) => (instance as $alias.$typeName).${field.name}';
-    final instanceSetter = field.isFinal || field.isConst
+  String _fieldDescriptor(FieldInfo field, String alias, String typeName,
+      {String? declaringClassQualifiedName}) {
+    // Only create getters if the field actually has a getter
+    final instanceGetter = !field.hasGetter
         ? 'null'
-        : '(Object instance, Object? value) { (instance as $alias.$typeName).${field.name} = value; return null; }';
-    final staticGetter = '$alias.$typeName.${field.name}';
-    final staticSetter = field.isFinal || field.isConst
+        : '(Object instance) => (instance as $alias.$typeName).${field.name}';
+    // Only create setters if the field actually has a setter
+    // (not final/const and not a synthetic field backing a getter-only property)
+    final instanceSetter = !field.hasSetter
         ? 'null'
-        : '(Object? value) { $alias.$typeName.${field.name} = value; return null; }';
+        : '(Object instance, Object? value) { (instance as $alias.$typeName).${field.name} = value as dynamic; return null; }';
+    final staticGetter = !field.hasGetter
+        ? 'null'
+        : '() => $alias.$typeName.${field.name}';
+    final staticSetter = !field.hasSetter
+        ? 'null'
+        : '(Object? value) { $alias.$typeName.${field.name} = value as dynamic; return null; }';
+
+    final declaringClass = declaringClassQualifiedName != null
+        ? "'${_escape(declaringClassQualifiedName)}'"
+        : 'null';
 
     return "  '${_escape(field.name)}': ta.FieldDescriptor(\n"
         "    name: '${_escape(field.name)}',\n"
@@ -411,10 +951,11 @@ class ReflectionGenerator {
         "    isStatic: ${field.isStatic},\n"
         "    isFinal: ${field.isFinal},\n"
         "    isConst: ${field.isConst},\n"
+        "    declaringClassQualifiedName: $declaringClass,\n"
         "    annotations: ${_annotationList(field.annotations)},\n"
         "    getInstance: ${field.isStatic ? 'null' : instanceGetter},\n"
         "    setInstance: ${field.isStatic ? 'null' : instanceSetter},\n"
-        "    getStatic: ${field.isStatic ? '() => $staticGetter' : 'null'},\n"
+        "    getStatic: ${field.isStatic ? staticGetter : 'null'},\n"
         "    setStatic: ${field.isStatic ? staticSetter : 'null'},\n"
         "  ),\n";
   }
@@ -433,13 +974,18 @@ class ReflectionGenerator {
     return '<String, ta.FieldDescriptor>{\n${entries.join()}  }';
   }
 
-  String _fieldDescriptorMetadata(FieldInfo field) {
+  String _fieldDescriptorMetadata(FieldInfo field,
+      {String? declaringClassQualifiedName}) {
+    final declaringClass = declaringClassQualifiedName != null
+        ? "'${_escape(declaringClassQualifiedName)}'"
+        : 'null';
     return "  '${_escape(field.name)}': ta.FieldDescriptor(\n"
         "    name: '${_escape(field.name)}',\n"
         "    typeQualifiedName: '${_escape(field.type.qualifiedName)}',\n"
         "    isStatic: ${field.isStatic},\n"
         "    isFinal: ${field.isFinal},\n"
         "    isConst: ${field.isConst},\n"
+        "    declaringClassQualifiedName: $declaringClass,\n"
         "    annotations: ${_annotationList(field.annotations)},\n"
         "    getInstance: null,\n"
         "    setInstance: null,\n"
@@ -467,18 +1013,27 @@ class ReflectionGenerator {
     return '<String, ta.GetterDescriptor>{\n${entries.join()}  }';
   }
 
-  String _getterDescriptor(GetterInfo getter, String alias, String typeName) {
+  String _getterDescriptor(GetterInfo getter, String alias, String typeName,
+      {String? declaringClassQualifiedName}) {
+    // Abstract getters can't have invokers
+    final canInvoke = !getter.isAbstract;
     final instanceGetter =
         '(Object instance) => (instance as $alias.$typeName).${getter.name}';
     final staticGetter = '$alias.$typeName.${getter.name}';
+
+    final declaringClass = declaringClassQualifiedName != null
+        ? "'${_escape(declaringClassQualifiedName)}'"
+        : 'null';
 
     return "  '${_escape(getter.name)}': ta.GetterDescriptor(\n"
         "    name: '${_escape(getter.name)}',\n"
         "    typeQualifiedName: '${_escape(getter.returnType.qualifiedName)}',\n"
         "    isStatic: ${getter.isStatic},\n"
+        "    isAbstract: ${getter.isAbstract},\n"
+        "    declaringClassQualifiedName: $declaringClass,\n"
         "    annotations: ${_annotationList(getter.annotations)},\n"
-        "    getInstance: ${getter.isStatic ? 'null' : instanceGetter},\n"
-        "    getStatic: ${getter.isStatic ? '() => $staticGetter' : 'null'},\n"
+        "    getInstance: ${getter.isStatic || !canInvoke ? 'null' : instanceGetter},\n"
+        "    getStatic: ${getter.isStatic && canInvoke ? '() => $staticGetter' : 'null'},\n"
         "  ),\n";
   }
 
@@ -496,11 +1051,17 @@ class ReflectionGenerator {
     return '<String, ta.GetterDescriptor>{\n${entries.join()}  }';
   }
 
-  String _getterDescriptorMetadata(GetterInfo getter) {
+  String _getterDescriptorMetadata(GetterInfo getter,
+      {String? declaringClassQualifiedName}) {
+    final declaringClass = declaringClassQualifiedName != null
+        ? "'${_escape(declaringClassQualifiedName)}'"
+        : 'null';
     return "  '${_escape(getter.name)}': ta.GetterDescriptor(\n"
         "    name: '${_escape(getter.name)}',\n"
         "    typeQualifiedName: '${_escape(getter.returnType.qualifiedName)}',\n"
         "    isStatic: ${getter.isStatic},\n"
+        "    isAbstract: ${getter.isAbstract},\n"
+        "    declaringClassQualifiedName: $declaringClass,\n"
         "    annotations: ${_annotationList(getter.annotations)},\n"
         "    getInstance: null,\n"
         "    getStatic: null,\n"
@@ -526,19 +1087,29 @@ class ReflectionGenerator {
     return '<String, ta.SetterDescriptor>{\n${entries.join()}  }';
   }
 
-  String _setterDescriptor(SetterInfo setter, String alias, String typeName) {
+  String _setterDescriptor(SetterInfo setter, String alias, String typeName,
+      {String? declaringClassQualifiedName}) {
+    // Abstract setters can't have invokers
+    final canInvoke = !setter.isAbstract;
+    // Use 'value as dynamic' to allow assignment to any setter type - runtime type checking applies
     final instanceSetter =
-        '(Object instance, Object? value) { (instance as $alias.$typeName).${setter.name} = value; return null; }';
+        '(Object instance, Object? value) { (instance as $alias.$typeName).${setter.name} = value as dynamic; return null; }';
     final staticSetter =
-        '(Object? value) { $alias.$typeName.${setter.name} = value; return null; }';
+        '(Object? value) { $alias.$typeName.${setter.name} = value as dynamic; return null; }';
+
+    final declaringClass = declaringClassQualifiedName != null
+        ? "'${_escape(declaringClassQualifiedName)}'"
+        : 'null';
 
     return "  '${_escape(setter.name)}': ta.SetterDescriptor(\n"
         "    name: '${_escape(setter.name)}',\n"
         "    typeQualifiedName: '${_escape(setter.parameter.type.qualifiedName)}',\n"
         "    isStatic: ${setter.isStatic},\n"
+        "    isAbstract: ${setter.isAbstract},\n"
+        "    declaringClassQualifiedName: $declaringClass,\n"
         "    annotations: ${_annotationList(setter.annotations)},\n"
-        "    setInstance: ${setter.isStatic ? 'null' : instanceSetter},\n"
-        "    setStatic: ${setter.isStatic ? staticSetter : 'null'},\n"
+        "    setInstance: ${setter.isStatic || !canInvoke ? 'null' : instanceSetter},\n"
+        "    setStatic: ${setter.isStatic && canInvoke ? staticSetter : 'null'},\n"
         "  ),\n";
   }
 
@@ -556,11 +1127,17 @@ class ReflectionGenerator {
     return '<String, ta.SetterDescriptor>{\n${entries.join()}  }';
   }
 
-  String _setterDescriptorMetadata(SetterInfo setter) {
+  String _setterDescriptorMetadata(SetterInfo setter,
+      {String? declaringClassQualifiedName}) {
+    final declaringClass = declaringClassQualifiedName != null
+        ? "'${_escape(declaringClassQualifiedName)}'"
+        : 'null';
     return "  '${_escape(setter.name)}': ta.SetterDescriptor(\n"
         "    name: '${_escape(setter.name)}',\n"
         "    typeQualifiedName: '${_escape(setter.parameter.type.qualifiedName)}',\n"
         "    isStatic: ${setter.isStatic},\n"
+        "    isAbstract: ${setter.isAbstract},\n"
+        "    declaringClassQualifiedName: $declaringClass,\n"
         "    annotations: ${_annotationList(setter.annotations)},\n"
         "    setInstance: null,\n"
         "    setStatic: null,\n"
@@ -568,10 +1145,12 @@ class ReflectionGenerator {
   }
 
   String _globalVariable(VariableInfo variable, String alias) {
-    final getter = '() => $alias.${variable.name}';
-    final setter = variable.isFinal || variable.isConst
-        ? 'null'
-        : '(Object? value) { $alias.${variable.name} = value; return null; }';
+    final getter = variable.hasGetter
+        ? '() => $alias.${variable.name}'
+        : 'null';
+    final setter = variable.hasSetter
+        ? '(Object? value) { $alias.${variable.name} = value as dynamic; return null; }'
+        : 'null';
 
     return "  '${_escape(variable.qualifiedName)}': ta.GlobalDescriptor(\n"
         "    kind: ta.GlobalKind.variable,\n"
@@ -608,7 +1187,7 @@ class ReflectionGenerator {
         "    package: '${_escape(setter.library.package.name)}',\n"
         "    typeQualifiedName: '${_escape(setter.parameter.type.qualifiedName)}',\n"
         "    annotations: ${_annotationList(setter.annotations)},\n"
-        "    setValue: (Object? value) { $alias.${setter.name} = value; return null; },\n"
+        "    setValue: (Object? value) { $alias.${setter.name} = value as dynamic; return null; },\n"
         "  ),\n";
   }
 

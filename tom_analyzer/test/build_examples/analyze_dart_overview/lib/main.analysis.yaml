@@ -1,8 +1,8 @@
 id: analysis_1
-timestamp: "2026-02-05T11:00:05.127428"
+timestamp: "2026-02-05T13:13:21.776179"
 dartSdkVersion: unknown
 analyzerVersion: 8.x
-schemaVersion: 1.0
+schemaVersion: "1.0"
 rootPackageId: pkg_1
 packages:
   -
@@ -12,30 +12,31 @@ packages:
     rootPath: /Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_analyzer/test/build_examples/analyze_dart_overview
     isRoot: false
     libraries:
-      - lib_3
       - lib_5
       - lib_7
       - lib_9
       - lib_11
+      - lib_13
     dependencies:
 
     devDependencies:
   -
     id: pkg_1
     name: analyze_dart_overview
-    version: 1.0.0
+    version: "1.0.0"
     rootPath: /Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_analyzer/test/build_examples/analyze_dart_overview
     isRoot: true
     libraries:
       - lib_1
+      - lib_3
     dependencies:
 
     devDependencies:
 libraries:
   -
     id: lib_1
-    name: 
-    uri: "package:analyze_dart_overview/main.dart"
+    name: ""
+    uri: "file:///Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_analyzer/test/build_examples/analyze_dart_overview/bin/verify.dart"
     packageId: pkg_1
     mainSourceFileId: file_2
     partFileIds:
@@ -56,7 +57,43 @@ libraries:
     typeAliases:
 
     functions:
+      -
+        id: function_1
+        name: main
+        qualifiedName: "file:///Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_analyzer/test/build_examples/analyze_dart_overview/bin/verify.dart.main"
+        libraryId: lib_1
+        sourceFileId: file_2
+        location:
+          line: 0
+          column: 0
+          offset: 183
+          length: 4
+        documentation: null
+        annotations:
 
+        returnType:
+          id: type_1
+          name: void
+          qualifiedName: void
+          typeArguments:
+
+          isNullable: false
+          isDynamic: false
+          isVoid: true
+          isFunction: false
+          functionType: null
+          definitionLibraryId: null
+          isTypeParameter: false
+          typeParameterBound: null
+          resolvedElementId: null
+        typeParameters:
+
+        parameters:
+
+        isAsync: false
+        isGenerator: false
+        isExternal: false
+        isStatic: true
     variables:
 
     getters:
@@ -68,9 +105,9 @@ libraries:
     exports:
   -
     id: lib_3
-    name: dart_overview
-    uri: "package:dart_overview/dart_overview.dart"
-    packageId: pkg_2
+    name: ""
+    uri: "package:analyze_dart_overview/main.dart"
+    packageId: pkg_1
     mainSourceFileId: file_4
     partFileIds:
 
@@ -102,10 +139,44 @@ libraries:
     exports:
   -
     id: lib_5
-    name: 
-    uri: "package:dart_overview/enums/basics/run_basics.dart"
+    name: dart_overview
+    uri: "package:dart_overview/dart_overview.dart"
     packageId: pkg_2
     mainSourceFileId: file_6
+    partFileIds:
+
+    documentation: null
+    annotations:
+
+    classes:
+
+    enums:
+
+    mixins:
+
+    extensions:
+
+    extensionTypes:
+
+    typeAliases:
+
+    functions:
+
+    variables:
+
+    getters:
+
+    setters:
+
+    imports:
+
+    exports:
+  -
+    id: lib_7
+    name: ""
+    uri: "package:dart_overview/enums/basics/run_basics.dart"
+    packageId: pkg_2
+    mainSourceFileId: file_8
     partFileIds:
 
     documentation: null
@@ -116,8 +187,8 @@ libraries:
         id: class_1
         name: MathOperation
         qualifiedName: "package:dart_overview/enums/basics/run_basics.dart.MathOperation"
-        libraryId: lib_5
-        sourceFileId: file_6
+        libraryId: lib_7
+        sourceFileId: file_8
         location:
           line: 0
           column: 0
@@ -133,7 +204,7 @@ libraries:
         isInterface: false
         isMixin: false
         superclass:
-          id: type_1
+          id: type_2
           name: Object
           qualifiedName: "dart:core.Object"
           typeArguments:
@@ -156,10 +227,10 @@ libraries:
         constructors:
           -
             id: ctor_1
-            name: MathOperation
+            name: new
             qualifiedName: "package:dart_overview/enums/basics/run_basics.dart.MathOperation"
             declaringTypeId: class_1
-            sourceFileId: file_6
+            sourceFileId: file_8
             location:
               line: 0
               column: 0
@@ -183,8 +254,8 @@ libraries:
             name: execute
             qualifiedName: "package:dart_overview/enums/basics/run_basics.dart.execute"
             declaringTypeId: class_1
-            owningLibraryId: lib_5
-            sourceFileId: file_6
+            owningLibraryId: lib_7
+            sourceFileId: file_8
             location:
               line: 0
               column: 0
@@ -194,7 +265,7 @@ libraries:
             annotations:
 
             returnType:
-              id: type_2
+              id: type_3
               name: double
               qualifiedName: "dart:core.double"
               typeArguments:
@@ -215,7 +286,7 @@ libraries:
                 id: param_1
                 name: a
                 type:
-                  id: type_3
+                  id: type_4
                   name: double
                   qualifiedName: "dart:core.double"
                   typeArguments:
@@ -240,7 +311,7 @@ libraries:
                 id: param_2
                 name: b
                 type:
-                  id: type_4
+                  id: type_5
                   name: double
                   qualifiedName: "dart:core.double"
                   typeArguments:
@@ -277,8 +348,8 @@ libraries:
         id: enum_1
         name: Day
         qualifiedName: "package:dart_overview/enums/basics/run_basics.dart.Day"
-        libraryId: lib_5
-        sourceFileId: file_6
+        libraryId: lib_7
+        sourceFileId: file_8
         location:
           line: 0
           column: 0
@@ -347,8 +418,8 @@ libraries:
             name: values
             qualifiedName: "package:dart_overview/enums/basics/run_basics.dart.values"
             declaringTypeId: enum_1
-            owningLibraryId: lib_5
-            sourceFileId: file_6
+            owningLibraryId: lib_7
+            sourceFileId: file_8
             location:
               line: 0
               column: 0
@@ -358,12 +429,12 @@ libraries:
             annotations:
 
             type:
-              id: type_5
+              id: type_6
               name: List
               qualifiedName: "dart:core.List"
               typeArguments:
                 -
-                  id: type_6
+                  id: type_7
                   name: Day
                   qualifiedName: "package:dart_overview/enums/basics/run_basics.dart.Day"
                   typeArguments:
@@ -391,6 +462,8 @@ libraries:
             isLate: false
             isStatic: true
             hasInitializer: false
+            hasGetter: true
+            hasSetter: false
         methods:
 
         getters:
@@ -400,10 +473,10 @@ libraries:
         constructors:
           -
             id: ctor_2
-            name: Day
+            name: new
             qualifiedName: "package:dart_overview/enums/basics/run_basics.dart.Day"
             declaringTypeId: enum_1
-            sourceFileId: file_6
+            sourceFileId: file_8
             location:
               line: 0
               column: 0
@@ -425,8 +498,8 @@ libraries:
         id: enum_2
         name: Season
         qualifiedName: "package:dart_overview/enums/basics/run_basics.dart.Season"
-        libraryId: lib_5
-        sourceFileId: file_6
+        libraryId: lib_7
+        sourceFileId: file_8
         location:
           line: 0
           column: 0
@@ -474,8 +547,8 @@ libraries:
             name: values
             qualifiedName: "package:dart_overview/enums/basics/run_basics.dart.values"
             declaringTypeId: enum_2
-            owningLibraryId: lib_5
-            sourceFileId: file_6
+            owningLibraryId: lib_7
+            sourceFileId: file_8
             location:
               line: 0
               column: 0
@@ -485,12 +558,12 @@ libraries:
             annotations:
 
             type:
-              id: type_7
+              id: type_8
               name: List
               qualifiedName: "dart:core.List"
               typeArguments:
                 -
-                  id: type_8
+                  id: type_9
                   name: Season
                   qualifiedName: "package:dart_overview/enums/basics/run_basics.dart.Season"
                   typeArguments:
@@ -518,13 +591,15 @@ libraries:
             isLate: false
             isStatic: true
             hasInitializer: false
+            hasGetter: true
+            hasSetter: false
           -
             id: field_3
             name: months
             qualifiedName: "package:dart_overview/enums/basics/run_basics.dart.months"
             declaringTypeId: enum_2
-            owningLibraryId: lib_5
-            sourceFileId: file_6
+            owningLibraryId: lib_7
+            sourceFileId: file_8
             location:
               line: 0
               column: 0
@@ -534,12 +609,12 @@ libraries:
             annotations:
 
             type:
-              id: type_9
+              id: type_10
               name: List
               qualifiedName: "dart:core.List"
               typeArguments:
                 -
-                  id: type_10
+                  id: type_11
                   name: String
                   qualifiedName: "dart:core.String"
                   typeArguments:
@@ -567,13 +642,15 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: false
+            hasGetter: true
+            hasSetter: false
           -
             id: field_4
             name: avgTemperature
             qualifiedName: "package:dart_overview/enums/basics/run_basics.dart.avgTemperature"
             declaringTypeId: enum_2
-            owningLibraryId: lib_5
-            sourceFileId: file_6
+            owningLibraryId: lib_7
+            sourceFileId: file_8
             location:
               line: 0
               column: 0
@@ -583,7 +660,7 @@ libraries:
             annotations:
 
             type:
-              id: type_11
+              id: type_12
               name: int
               qualifiedName: "dart:core.int"
               typeArguments:
@@ -602,6 +679,8 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: false
+            hasGetter: true
+            hasSetter: false
         methods:
 
         getters:
@@ -611,10 +690,10 @@ libraries:
         constructors:
           -
             id: ctor_3
-            name: Season
+            name: new
             qualifiedName: "package:dart_overview/enums/basics/run_basics.dart.Season"
             declaringTypeId: enum_2
-            sourceFileId: file_6
+            sourceFileId: file_8
             location:
               line: 0
               column: 0
@@ -628,12 +707,12 @@ libraries:
                 id: param_3
                 name: months
                 type:
-                  id: type_12
+                  id: type_13
                   name: List
                   qualifiedName: "dart:core.List"
                   typeArguments:
                     -
-                      id: type_13
+                      id: type_14
                       name: String
                       qualifiedName: "dart:core.String"
                       typeArguments:
@@ -667,7 +746,7 @@ libraries:
                 id: param_4
                 name: avgTemperature
                 type:
-                  id: type_14
+                  id: type_15
                   name: int
                   qualifiedName: "dart:core.int"
                   typeArguments:
@@ -699,8 +778,8 @@ libraries:
         id: enum_3
         name: HttpStatus
         qualifiedName: "package:dart_overview/enums/basics/run_basics.dart.HttpStatus"
-        libraryId: lib_5
-        sourceFileId: file_6
+        libraryId: lib_7
+        sourceFileId: file_8
         location:
           line: 0
           column: 0
@@ -762,8 +841,8 @@ libraries:
             name: values
             qualifiedName: "package:dart_overview/enums/basics/run_basics.dart.values"
             declaringTypeId: enum_3
-            owningLibraryId: lib_5
-            sourceFileId: file_6
+            owningLibraryId: lib_7
+            sourceFileId: file_8
             location:
               line: 0
               column: 0
@@ -773,12 +852,12 @@ libraries:
             annotations:
 
             type:
-              id: type_15
+              id: type_16
               name: List
               qualifiedName: "dart:core.List"
               typeArguments:
                 -
-                  id: type_16
+                  id: type_17
                   name: HttpStatus
                   qualifiedName: "package:dart_overview/enums/basics/run_basics.dart.HttpStatus"
                   typeArguments:
@@ -806,13 +885,15 @@ libraries:
             isLate: false
             isStatic: true
             hasInitializer: false
+            hasGetter: true
+            hasSetter: false
           -
             id: field_6
             name: code
             qualifiedName: "package:dart_overview/enums/basics/run_basics.dart.code"
             declaringTypeId: enum_3
-            owningLibraryId: lib_5
-            sourceFileId: file_6
+            owningLibraryId: lib_7
+            sourceFileId: file_8
             location:
               line: 0
               column: 0
@@ -822,7 +903,7 @@ libraries:
             annotations:
 
             type:
-              id: type_17
+              id: type_18
               name: int
               qualifiedName: "dart:core.int"
               typeArguments:
@@ -841,13 +922,15 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: false
+            hasGetter: true
+            hasSetter: false
           -
             id: field_7
             name: message
             qualifiedName: "package:dart_overview/enums/basics/run_basics.dart.message"
             declaringTypeId: enum_3
-            owningLibraryId: lib_5
-            sourceFileId: file_6
+            owningLibraryId: lib_7
+            sourceFileId: file_8
             location:
               line: 0
               column: 0
@@ -857,7 +940,7 @@ libraries:
             annotations:
 
             type:
-              id: type_18
+              id: type_19
               name: String
               qualifiedName: "dart:core.String"
               typeArguments:
@@ -876,53 +959,20 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: false
+            hasGetter: true
+            hasSetter: false
           -
             id: field_8
             name: isSuccess
             qualifiedName: "package:dart_overview/enums/basics/run_basics.dart.isSuccess"
             declaringTypeId: enum_3
-            owningLibraryId: lib_5
-            sourceFileId: file_6
+            owningLibraryId: lib_7
+            sourceFileId: file_8
             location:
               line: 0
               column: 0
               offset: 0
               length: 9
-            documentation: null
-            annotations:
-
-            type:
-              id: type_19
-              name: bool
-              qualifiedName: "dart:core.bool"
-              typeArguments:
-
-              isNullable: false
-              isDynamic: false
-              isVoid: false
-              isFunction: false
-              functionType: null
-              definitionLibraryId: null
-              isTypeParameter: false
-              typeParameterBound: null
-              resolvedElementId: null
-            isFinal: false
-            isConst: false
-            isLate: false
-            isStatic: false
-            hasInitializer: false
-          -
-            id: field_9
-            name: isError
-            qualifiedName: "package:dart_overview/enums/basics/run_basics.dart.isError"
-            declaringTypeId: enum_3
-            owningLibraryId: lib_5
-            sourceFileId: file_6
-            location:
-              line: 0
-              column: 0
-              offset: 0
-              length: 7
             documentation: null
             annotations:
 
@@ -946,6 +996,45 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: false
+            hasGetter: true
+            hasSetter: false
+          -
+            id: field_9
+            name: isError
+            qualifiedName: "package:dart_overview/enums/basics/run_basics.dart.isError"
+            declaringTypeId: enum_3
+            owningLibraryId: lib_7
+            sourceFileId: file_8
+            location:
+              line: 0
+              column: 0
+              offset: 0
+              length: 7
+            documentation: null
+            annotations:
+
+            type:
+              id: type_21
+              name: bool
+              qualifiedName: "dart:core.bool"
+              typeArguments:
+
+              isNullable: false
+              isDynamic: false
+              isVoid: false
+              isFunction: false
+              functionType: null
+              definitionLibraryId: null
+              isTypeParameter: false
+              typeParameterBound: null
+              resolvedElementId: null
+            isFinal: false
+            isConst: false
+            isLate: false
+            isStatic: false
+            hasInitializer: false
+            hasGetter: true
+            hasSetter: false
         methods:
 
         getters:
@@ -955,10 +1044,10 @@ libraries:
         constructors:
           -
             id: ctor_4
-            name: HttpStatus
+            name: new
             qualifiedName: "package:dart_overview/enums/basics/run_basics.dart.HttpStatus"
             declaringTypeId: enum_3
-            sourceFileId: file_6
+            sourceFileId: file_8
             location:
               line: 0
               column: 0
@@ -972,7 +1061,7 @@ libraries:
                 id: param_5
                 name: code
                 type:
-                  id: type_21
+                  id: type_22
                   name: int
                   qualifiedName: "dart:core.int"
                   typeArguments:
@@ -997,7 +1086,7 @@ libraries:
                 id: param_6
                 name: message
                 type:
-                  id: type_22
+                  id: type_23
                   name: String
                   qualifiedName: "dart:core.String"
                   typeArguments:
@@ -1029,8 +1118,8 @@ libraries:
         id: enum_4
         name: Operation
         qualifiedName: "package:dart_overview/enums/basics/run_basics.dart.Operation"
-        libraryId: lib_5
-        sourceFileId: file_6
+        libraryId: lib_7
+        sourceFileId: file_8
         location:
           line: 0
           column: 0
@@ -1070,7 +1159,7 @@ libraries:
             annotations:
         interfaces:
           -
-            id: type_23
+            id: type_24
             name: MathOperation
             qualifiedName: "package:dart_overview/enums/basics/run_basics.dart.MathOperation"
             typeArguments:
@@ -1092,8 +1181,8 @@ libraries:
             name: values
             qualifiedName: "package:dart_overview/enums/basics/run_basics.dart.values"
             declaringTypeId: enum_4
-            owningLibraryId: lib_5
-            sourceFileId: file_6
+            owningLibraryId: lib_7
+            sourceFileId: file_8
             location:
               line: 0
               column: 0
@@ -1103,12 +1192,12 @@ libraries:
             annotations:
 
             type:
-              id: type_27
+              id: type_28
               name: List
               qualifiedName: "dart:core.List"
               typeArguments:
                 -
-                  id: type_28
+                  id: type_29
                   name: Operation
                   qualifiedName: "package:dart_overview/enums/basics/run_basics.dart.Operation"
                   typeArguments:
@@ -1136,13 +1225,15 @@ libraries:
             isLate: false
             isStatic: true
             hasInitializer: false
+            hasGetter: true
+            hasSetter: false
           -
             id: field_11
             name: symbol
             qualifiedName: "package:dart_overview/enums/basics/run_basics.dart.symbol"
             declaringTypeId: enum_4
-            owningLibraryId: lib_5
-            sourceFileId: file_6
+            owningLibraryId: lib_7
+            sourceFileId: file_8
             location:
               line: 0
               column: 0
@@ -1152,7 +1243,7 @@ libraries:
             annotations:
 
             type:
-              id: type_29
+              id: type_30
               name: String
               qualifiedName: "dart:core.String"
               typeArguments:
@@ -1171,14 +1262,16 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: false
+            hasGetter: true
+            hasSetter: false
         methods:
           -
             id: method_2
             name: execute
             qualifiedName: "package:dart_overview/enums/basics/run_basics.dart.execute"
             declaringTypeId: enum_4
-            owningLibraryId: lib_5
-            sourceFileId: file_6
+            owningLibraryId: lib_7
+            sourceFileId: file_8
             location:
               line: 0
               column: 0
@@ -1188,7 +1281,7 @@ libraries:
             annotations:
 
             returnType:
-              id: type_24
+              id: type_25
               name: double
               qualifiedName: "dart:core.double"
               typeArguments:
@@ -1209,7 +1302,7 @@ libraries:
                 id: param_7
                 name: a
                 type:
-                  id: type_25
+                  id: type_26
                   name: double
                   qualifiedName: "dart:core.double"
                   typeArguments:
@@ -1234,7 +1327,7 @@ libraries:
                 id: param_8
                 name: b
                 type:
-                  id: type_26
+                  id: type_27
                   name: double
                   qualifiedName: "dart:core.double"
                   typeArguments:
@@ -1268,10 +1361,10 @@ libraries:
         constructors:
           -
             id: ctor_5
-            name: Operation
+            name: new
             qualifiedName: "package:dart_overview/enums/basics/run_basics.dart.Operation"
             declaringTypeId: enum_4
-            sourceFileId: file_6
+            sourceFileId: file_8
             location:
               line: 0
               column: 0
@@ -1285,7 +1378,7 @@ libraries:
                 id: param_9
                 name: symbol
                 type:
-                  id: type_30
+                  id: type_31
                   name: String
                   qualifiedName: "dart:core.String"
                   typeArguments:
@@ -1317,8 +1410,8 @@ libraries:
         id: enum_5
         name: LogLevel
         qualifiedName: "package:dart_overview/enums/basics/run_basics.dart.LogLevel"
-        libraryId: lib_5
-        sourceFileId: file_6
+        libraryId: lib_7
+        sourceFileId: file_8
         location:
           line: 0
           column: 0
@@ -1360,7 +1453,7 @@ libraries:
 
         mixins:
           -
-            id: type_31
+            id: type_32
             name: LoggableMixin
             qualifiedName: "package:dart_overview/enums/basics/run_basics.dart.LoggableMixin"
             typeArguments:
@@ -1380,8 +1473,8 @@ libraries:
             name: values
             qualifiedName: "package:dart_overview/enums/basics/run_basics.dart.values"
             declaringTypeId: enum_5
-            owningLibraryId: lib_5
-            sourceFileId: file_6
+            owningLibraryId: lib_7
+            sourceFileId: file_8
             location:
               line: 0
               column: 0
@@ -1391,12 +1484,12 @@ libraries:
             annotations:
 
             type:
-              id: type_32
+              id: type_33
               name: List
               qualifiedName: "dart:core.List"
               typeArguments:
                 -
-                  id: type_33
+                  id: type_34
                   name: LogLevel
                   qualifiedName: "package:dart_overview/enums/basics/run_basics.dart.LogLevel"
                   typeArguments:
@@ -1424,13 +1517,15 @@ libraries:
             isLate: false
             isStatic: true
             hasInitializer: false
+            hasGetter: true
+            hasSetter: false
           -
             id: field_13
             name: severity
             qualifiedName: "package:dart_overview/enums/basics/run_basics.dart.severity"
             declaringTypeId: enum_5
-            owningLibraryId: lib_5
-            sourceFileId: file_6
+            owningLibraryId: lib_7
+            sourceFileId: file_8
             location:
               line: 0
               column: 0
@@ -1440,7 +1535,7 @@ libraries:
             annotations:
 
             type:
-              id: type_34
+              id: type_35
               name: int
               qualifiedName: "dart:core.int"
               typeArguments:
@@ -1459,6 +1554,8 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: false
+            hasGetter: true
+            hasSetter: false
         methods:
 
         getters:
@@ -1468,10 +1565,10 @@ libraries:
         constructors:
           -
             id: ctor_6
-            name: LogLevel
+            name: new
             qualifiedName: "package:dart_overview/enums/basics/run_basics.dart.LogLevel"
             declaringTypeId: enum_5
-            sourceFileId: file_6
+            sourceFileId: file_8
             location:
               line: 0
               column: 0
@@ -1485,7 +1582,7 @@ libraries:
                 id: param_10
                 name: severity
                 type:
-                  id: type_35
+                  id: type_36
                   name: int
                   qualifiedName: "dart:core.int"
                   typeArguments:
@@ -1517,8 +1614,8 @@ libraries:
         id: enum_6
         name: Priority
         qualifiedName: "package:dart_overview/enums/basics/run_basics.dart.Priority"
-        libraryId: lib_5
-        sourceFileId: file_6
+        libraryId: lib_7
+        sourceFileId: file_8
         location:
           line: 0
           column: 0
@@ -1566,8 +1663,8 @@ libraries:
             name: values
             qualifiedName: "package:dart_overview/enums/basics/run_basics.dart.values"
             declaringTypeId: enum_6
-            owningLibraryId: lib_5
-            sourceFileId: file_6
+            owningLibraryId: lib_7
+            sourceFileId: file_8
             location:
               line: 0
               column: 0
@@ -1577,12 +1674,12 @@ libraries:
             annotations:
 
             type:
-              id: type_36
+              id: type_37
               name: List
               qualifiedName: "dart:core.List"
               typeArguments:
                 -
-                  id: type_37
+                  id: type_38
                   name: Priority
                   qualifiedName: "package:dart_overview/enums/basics/run_basics.dart.Priority"
                   typeArguments:
@@ -1610,6 +1707,8 @@ libraries:
             isLate: false
             isStatic: true
             hasInitializer: false
+            hasGetter: true
+            hasSetter: false
         methods:
 
         getters:
@@ -1619,10 +1718,10 @@ libraries:
         constructors:
           -
             id: ctor_7
-            name: Priority
+            name: new
             qualifiedName: "package:dart_overview/enums/basics/run_basics.dart.Priority"
             declaringTypeId: enum_6
-            sourceFileId: file_6
+            sourceFileId: file_8
             location:
               line: 0
               column: 0
@@ -1644,8 +1743,8 @@ libraries:
         id: enum_7
         name: Role
         qualifiedName: "package:dart_overview/enums/basics/run_basics.dart.Role"
-        libraryId: lib_5
-        sourceFileId: file_6
+        libraryId: lib_7
+        sourceFileId: file_8
         location:
           line: 0
           column: 0
@@ -1686,8 +1785,8 @@ libraries:
             name: values
             qualifiedName: "package:dart_overview/enums/basics/run_basics.dart.values"
             declaringTypeId: enum_7
-            owningLibraryId: lib_5
-            sourceFileId: file_6
+            owningLibraryId: lib_7
+            sourceFileId: file_8
             location:
               line: 0
               column: 0
@@ -1697,12 +1796,12 @@ libraries:
             annotations:
 
             type:
-              id: type_38
+              id: type_39
               name: List
               qualifiedName: "dart:core.List"
               typeArguments:
                 -
-                  id: type_39
+                  id: type_40
                   name: Role
                   qualifiedName: "package:dart_overview/enums/basics/run_basics.dart.Role"
                   typeArguments:
@@ -1730,6 +1829,8 @@ libraries:
             isLate: false
             isStatic: true
             hasInitializer: false
+            hasGetter: true
+            hasSetter: false
         methods:
 
         getters:
@@ -1739,10 +1840,10 @@ libraries:
         constructors:
           -
             id: ctor_8
-            name: Role
+            name: new
             qualifiedName: "package:dart_overview/enums/basics/run_basics.dart.Role"
             declaringTypeId: enum_7
-            sourceFileId: file_6
+            sourceFileId: file_8
             location:
               line: 0
               column: 0
@@ -1765,8 +1866,8 @@ libraries:
         id: mixin_1
         name: LoggableMixin
         qualifiedName: "package:dart_overview/enums/basics/run_basics.dart.LoggableMixin"
-        libraryId: lib_5
-        sourceFileId: file_6
+        libraryId: lib_7
+        sourceFileId: file_8
         location:
           line: 0
           column: 0
@@ -1777,7 +1878,7 @@ libraries:
 
         onTypes:
           -
-            id: type_40
+            id: type_41
             name: Object
             qualifiedName: "dart:core.Object"
             typeArguments:
@@ -1801,8 +1902,8 @@ libraries:
             name: shouldLog
             qualifiedName: "package:dart_overview/enums/basics/run_basics.dart.shouldLog"
             declaringTypeId: mixin_1
-            owningLibraryId: lib_5
-            sourceFileId: file_6
+            owningLibraryId: lib_7
+            sourceFileId: file_8
             location:
               line: 0
               column: 0
@@ -1812,7 +1913,7 @@ libraries:
             annotations:
 
             returnType:
-              id: type_41
+              id: type_42
               name: bool
               qualifiedName: "dart:core.bool"
               typeArguments:
@@ -1833,7 +1934,7 @@ libraries:
                 id: param_11
                 name: minLevel
                 type:
-                  id: type_42
+                  id: type_43
                   name: LogLevel
                   qualifiedName: "package:dart_overview/enums/basics/run_basics.dart.LogLevel"
                   typeArguments:
@@ -1866,8 +1967,8 @@ libraries:
             name: severity
             qualifiedName: "package:dart_overview/enums/basics/run_basics.dart.severity"
             declaringTypeId: mixin_1
-            owningLibraryId: lib_5
-            sourceFileId: file_6
+            owningLibraryId: lib_7
+            sourceFileId: file_8
             location:
               line: 0
               column: 0
@@ -1877,7 +1978,7 @@ libraries:
             annotations:
 
             type:
-              id: type_43
+              id: type_44
               name: int
               qualifiedName: "dart:core.int"
               typeArguments:
@@ -1896,6 +1997,8 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: false
+            hasGetter: true
+            hasSetter: false
         getters:
 
         setters:
@@ -1907,29 +2010,30 @@ libraries:
 
     functions:
       -
-        id: function_1
+        id: function_2
         name: main
         qualifiedName: "package:dart_overview/enums/basics/run_basics.dart.main"
-        libraryId: lib_5
-        sourceFileId: file_6
+        libraryId: lib_7
+        sourceFileId: file_8
         location:
           line: 0
           column: 0
           offset: 264
           length: 4
-        documentation: "/// Demonstrates Dart enums
-///
-/// Features covered:
-/// - Simple enums
-/// - Enhanced enums (with fields, constructors, methods)
-/// - Enum properties (name, index, values)
-/// - Implementing interfaces
-/// - Using mixins
-/// - Pattern matching with enums"
+        documentation: |
+          /// Demonstrates Dart enums
+          ///
+          /// Features covered:
+          /// - Simple enums
+          /// - Enhanced enums (with fields, constructors, methods)
+          /// - Enum properties (name, index, values)
+          /// - Implementing interfaces
+          /// - Using mixins
+          /// - Pattern matching with enums
         annotations:
 
         returnType:
-          id: type_44
+          id: type_45
           name: void
           qualifiedName: void
           typeArguments:
@@ -1961,11 +2065,11 @@ libraries:
 
     exports:
   -
-    id: lib_7
-    name: 
+    id: lib_9
+    name: ""
     uri: "package:dart_overview/generics/generic_classes/run_generic_classes.dart"
     packageId: pkg_2
-    mainSourceFileId: file_8
+    mainSourceFileId: file_10
     partFileIds:
 
     documentation: null
@@ -1976,8 +2080,8 @@ libraries:
         id: class_2
         name: Box
         qualifiedName: "package:dart_overview/generics/generic_classes/run_generic_classes.dart.Box"
-        libraryId: lib_7
-        sourceFileId: file_8
+        libraryId: lib_9
+        sourceFileId: file_10
         location:
           line: 0
           column: 0
@@ -1993,7 +2097,7 @@ libraries:
         isInterface: false
         isMixin: false
         superclass:
-          id: type_45
+          id: type_46
           name: Object
           qualifiedName: "dart:core.Object"
           typeArguments:
@@ -2021,10 +2125,10 @@ libraries:
         constructors:
           -
             id: ctor_9
-            name: Box
+            name: new
             qualifiedName: "package:dart_overview/generics/generic_classes/run_generic_classes.dart.Box"
             declaringTypeId: class_2
-            sourceFileId: file_8
+            sourceFileId: file_10
             location:
               line: 0
               column: 0
@@ -2038,7 +2142,7 @@ libraries:
                 id: param_12
                 name: value
                 type:
-                  id: type_46
+                  id: type_47
                   name: T
                   qualifiedName: T
                   typeArguments:
@@ -2051,7 +2155,7 @@ libraries:
                   definitionLibraryId: null
                   isTypeParameter: true
                   typeParameterBound:
-                    id: type_47
+                    id: type_48
                     name: dynamic
                     qualifiedName: dynamic
                     typeArguments:
@@ -2088,8 +2192,8 @@ libraries:
             name: value
             qualifiedName: "package:dart_overview/generics/generic_classes/run_generic_classes.dart.value"
             declaringTypeId: class_2
-            owningLibraryId: lib_7
-            sourceFileId: file_8
+            owningLibraryId: lib_9
+            sourceFileId: file_10
             location:
               line: 0
               column: 0
@@ -2099,7 +2203,7 @@ libraries:
             annotations:
 
             type:
-              id: type_48
+              id: type_49
               name: T
               qualifiedName: T
               typeArguments:
@@ -2112,7 +2216,7 @@ libraries:
               definitionLibraryId: null
               isTypeParameter: true
               typeParameterBound:
-                id: type_49
+                id: type_50
                 name: dynamic
                 qualifiedName: dynamic
                 typeArguments:
@@ -2132,6 +2236,8 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: false
+            hasGetter: true
+            hasSetter: false
         getters:
 
         setters:
@@ -2139,8 +2245,8 @@ libraries:
         id: class_3
         name: Wrapper
         qualifiedName: "package:dart_overview/generics/generic_classes/run_generic_classes.dart.Wrapper"
-        libraryId: lib_7
-        sourceFileId: file_8
+        libraryId: lib_9
+        sourceFileId: file_10
         location:
           line: 0
           column: 0
@@ -2156,7 +2262,7 @@ libraries:
         isInterface: false
         isMixin: false
         superclass:
-          id: type_50
+          id: type_51
           name: Object
           qualifiedName: "dart:core.Object"
           typeArguments:
@@ -2184,10 +2290,10 @@ libraries:
         constructors:
           -
             id: ctor_10
-            name: Wrapper
+            name: new
             qualifiedName: "package:dart_overview/generics/generic_classes/run_generic_classes.dart.Wrapper"
             declaringTypeId: class_3
-            sourceFileId: file_8
+            sourceFileId: file_10
             location:
               line: 0
               column: 0
@@ -2201,7 +2307,7 @@ libraries:
                 id: param_13
                 name: value
                 type:
-                  id: type_51
+                  id: type_52
                   name: T
                   qualifiedName: T
                   typeArguments:
@@ -2214,7 +2320,7 @@ libraries:
                   definitionLibraryId: null
                   isTypeParameter: true
                   typeParameterBound:
-                    id: type_52
+                    id: type_53
                     name: dynamic
                     qualifiedName: dynamic
                     typeArguments:
@@ -2249,8 +2355,8 @@ libraries:
             name: transform
             qualifiedName: "package:dart_overview/generics/generic_classes/run_generic_classes.dart.transform"
             declaringTypeId: class_3
-            owningLibraryId: lib_7
-            sourceFileId: file_8
+            owningLibraryId: lib_9
+            sourceFileId: file_10
             location:
               line: 0
               column: 0
@@ -2260,12 +2366,12 @@ libraries:
             annotations:
 
             returnType:
-              id: type_53
+              id: type_54
               name: Wrapper
               qualifiedName: "package:dart_overview/generics/generic_classes/run_generic_classes.dart.Wrapper"
               typeArguments:
                 -
-                  id: type_54
+                  id: type_55
                   name: R
                   qualifiedName: R
                   typeArguments:
@@ -2278,7 +2384,7 @@ libraries:
                   definitionLibraryId: null
                   isTypeParameter: true
                   typeParameterBound:
-                    id: type_55
+                    id: type_56
                     name: dynamic
                     qualifiedName: dynamic
                     typeArguments:
@@ -2314,7 +2420,7 @@ libraries:
                 id: param_14
                 name: f
                 type:
-                  id: type_56
+                  id: type_57
                   name: R Function(T)
                   qualifiedName: R Function(T)
                   typeArguments:
@@ -2326,7 +2432,7 @@ libraries:
                   functionType:
                     id: functionType_1
                     returnType:
-                      id: type_57
+                      id: type_58
                       name: R
                       qualifiedName: R
                       typeArguments:
@@ -2339,7 +2445,7 @@ libraries:
                       definitionLibraryId: null
                       isTypeParameter: true
                       typeParameterBound:
-                        id: type_58
+                        id: type_59
                         name: dynamic
                         qualifiedName: dynamic
                         typeArguments:
@@ -2359,9 +2465,9 @@ libraries:
                     parameters:
                       -
                         id: param_15
-                        name: <unnamed>
+                        name: "<unnamed>"
                         type:
-                          id: type_59
+                          id: type_60
                           name: T
                           qualifiedName: T
                           typeArguments:
@@ -2374,7 +2480,7 @@ libraries:
                           definitionLibraryId: null
                           isTypeParameter: true
                           typeParameterBound:
-                            id: type_60
+                            id: type_61
                             name: dynamic
                             qualifiedName: dynamic
                             typeArguments:
@@ -2419,8 +2525,8 @@ libraries:
             name: value
             qualifiedName: "package:dart_overview/generics/generic_classes/run_generic_classes.dart.value"
             declaringTypeId: class_3
-            owningLibraryId: lib_7
-            sourceFileId: file_8
+            owningLibraryId: lib_9
+            sourceFileId: file_10
             location:
               line: 0
               column: 0
@@ -2430,7 +2536,7 @@ libraries:
             annotations:
 
             type:
-              id: type_61
+              id: type_62
               name: T
               qualifiedName: T
               typeArguments:
@@ -2443,7 +2549,7 @@ libraries:
               definitionLibraryId: null
               isTypeParameter: true
               typeParameterBound:
-                id: type_62
+                id: type_63
                 name: dynamic
                 qualifiedName: dynamic
                 typeArguments:
@@ -2463,6 +2569,8 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: false
+            hasGetter: true
+            hasSetter: true
         getters:
 
         setters:
@@ -2470,8 +2578,8 @@ libraries:
         id: class_4
         name: Pair
         qualifiedName: "package:dart_overview/generics/generic_classes/run_generic_classes.dart.Pair"
-        libraryId: lib_7
-        sourceFileId: file_8
+        libraryId: lib_9
+        sourceFileId: file_10
         location:
           line: 0
           column: 0
@@ -2487,7 +2595,7 @@ libraries:
         isInterface: false
         isMixin: false
         superclass:
-          id: type_63
+          id: type_64
           name: Object
           qualifiedName: "dart:core.Object"
           typeArguments:
@@ -2521,10 +2629,10 @@ libraries:
         constructors:
           -
             id: ctor_11
-            name: Pair
+            name: new
             qualifiedName: "package:dart_overview/generics/generic_classes/run_generic_classes.dart.Pair"
             declaringTypeId: class_4
-            sourceFileId: file_8
+            sourceFileId: file_10
             location:
               line: 0
               column: 0
@@ -2538,7 +2646,7 @@ libraries:
                 id: param_16
                 name: first
                 type:
-                  id: type_64
+                  id: type_65
                   name: F
                   qualifiedName: F
                   typeArguments:
@@ -2551,7 +2659,7 @@ libraries:
                   definitionLibraryId: null
                   isTypeParameter: true
                   typeParameterBound:
-                    id: type_65
+                    id: type_66
                     name: dynamic
                     qualifiedName: dynamic
                     typeArguments:
@@ -2577,7 +2685,7 @@ libraries:
                 id: param_17
                 name: second
                 type:
-                  id: type_66
+                  id: type_67
                   name: S
                   qualifiedName: S
                   typeArguments:
@@ -2590,7 +2698,7 @@ libraries:
                   definitionLibraryId: null
                   isTypeParameter: true
                   typeParameterBound:
-                    id: type_67
+                    id: type_68
                     name: dynamic
                     qualifiedName: dynamic
                     typeArguments:
@@ -2625,8 +2733,8 @@ libraries:
             name: swap
             qualifiedName: "package:dart_overview/generics/generic_classes/run_generic_classes.dart.swap"
             declaringTypeId: class_4
-            owningLibraryId: lib_7
-            sourceFileId: file_8
+            owningLibraryId: lib_9
+            sourceFileId: file_10
             location:
               line: 0
               column: 0
@@ -2636,12 +2744,12 @@ libraries:
             annotations:
 
             returnType:
-              id: type_68
+              id: type_69
               name: Pair
               qualifiedName: "package:dart_overview/generics/generic_classes/run_generic_classes.dart.Pair"
               typeArguments:
                 -
-                  id: type_69
+                  id: type_70
                   name: S
                   qualifiedName: S
                   typeArguments:
@@ -2654,7 +2762,7 @@ libraries:
                   definitionLibraryId: null
                   isTypeParameter: true
                   typeParameterBound:
-                    id: type_70
+                    id: type_71
                     name: dynamic
                     qualifiedName: dynamic
                     typeArguments:
@@ -2670,7 +2778,7 @@ libraries:
                     resolvedElementId: null
                   resolvedElementId: null
                 -
-                  id: type_71
+                  id: type_72
                   name: F
                   qualifiedName: F
                   typeArguments:
@@ -2683,7 +2791,7 @@ libraries:
                   definitionLibraryId: null
                   isTypeParameter: true
                   typeParameterBound:
-                    id: type_72
+                    id: type_73
                     name: dynamic
                     qualifiedName: dynamic
                     typeArguments:
@@ -2722,8 +2830,8 @@ libraries:
             name: toString
             qualifiedName: "package:dart_overview/generics/generic_classes/run_generic_classes.dart.toString"
             declaringTypeId: class_4
-            owningLibraryId: lib_7
-            sourceFileId: file_8
+            owningLibraryId: lib_9
+            sourceFileId: file_10
             location:
               line: 0
               column: 0
@@ -2733,7 +2841,7 @@ libraries:
             annotations:
 
             returnType:
-              id: type_73
+              id: type_74
               name: String
               qualifiedName: "dart:core.String"
               typeArguments:
@@ -2763,8 +2871,8 @@ libraries:
             name: first
             qualifiedName: "package:dart_overview/generics/generic_classes/run_generic_classes.dart.first"
             declaringTypeId: class_4
-            owningLibraryId: lib_7
-            sourceFileId: file_8
+            owningLibraryId: lib_9
+            sourceFileId: file_10
             location:
               line: 0
               column: 0
@@ -2774,7 +2882,7 @@ libraries:
             annotations:
 
             type:
-              id: type_74
+              id: type_75
               name: F
               qualifiedName: F
               typeArguments:
@@ -2787,7 +2895,7 @@ libraries:
               definitionLibraryId: null
               isTypeParameter: true
               typeParameterBound:
-                id: type_75
+                id: type_76
                 name: dynamic
                 qualifiedName: dynamic
                 typeArguments:
@@ -2807,13 +2915,15 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: false
+            hasGetter: true
+            hasSetter: false
           -
             id: field_20
             name: second
             qualifiedName: "package:dart_overview/generics/generic_classes/run_generic_classes.dart.second"
             declaringTypeId: class_4
-            owningLibraryId: lib_7
-            sourceFileId: file_8
+            owningLibraryId: lib_9
+            sourceFileId: file_10
             location:
               line: 0
               column: 0
@@ -2823,7 +2933,7 @@ libraries:
             annotations:
 
             type:
-              id: type_76
+              id: type_77
               name: S
               qualifiedName: S
               typeArguments:
@@ -2836,7 +2946,7 @@ libraries:
               definitionLibraryId: null
               isTypeParameter: true
               typeParameterBound:
-                id: type_77
+                id: type_78
                 name: dynamic
                 qualifiedName: dynamic
                 typeArguments:
@@ -2856,6 +2966,8 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: false
+            hasGetter: true
+            hasSetter: false
         getters:
 
         setters:
@@ -2863,8 +2975,8 @@ libraries:
         id: class_5
         name: Stack
         qualifiedName: "package:dart_overview/generics/generic_classes/run_generic_classes.dart.Stack"
-        libraryId: lib_7
-        sourceFileId: file_8
+        libraryId: lib_9
+        sourceFileId: file_10
         location:
           line: 0
           column: 0
@@ -2880,7 +2992,7 @@ libraries:
         isInterface: false
         isMixin: false
         superclass:
-          id: type_78
+          id: type_79
           name: Object
           qualifiedName: "dart:core.Object"
           typeArguments:
@@ -2908,10 +3020,10 @@ libraries:
         constructors:
           -
             id: ctor_12
-            name: Stack
+            name: new
             qualifiedName: "package:dart_overview/generics/generic_classes/run_generic_classes.dart.Stack"
             declaringTypeId: class_5
-            sourceFileId: file_8
+            sourceFileId: file_10
             location:
               line: 0
               column: 0
@@ -2935,8 +3047,8 @@ libraries:
             name: push
             qualifiedName: "package:dart_overview/generics/generic_classes/run_generic_classes.dart.push"
             declaringTypeId: class_5
-            owningLibraryId: lib_7
-            sourceFileId: file_8
+            owningLibraryId: lib_9
+            sourceFileId: file_10
             location:
               line: 0
               column: 0
@@ -2946,7 +3058,7 @@ libraries:
             annotations:
 
             returnType:
-              id: type_79
+              id: type_80
               name: void
               qualifiedName: void
               typeArguments:
@@ -2967,7 +3079,7 @@ libraries:
                 id: param_18
                 name: item
                 type:
-                  id: type_80
+                  id: type_81
                   name: T
                   qualifiedName: T
                   typeArguments:
@@ -2980,7 +3092,7 @@ libraries:
                   definitionLibraryId: null
                   isTypeParameter: true
                   typeParameterBound:
-                    id: type_81
+                    id: type_82
                     name: dynamic
                     qualifiedName: dynamic
                     typeArguments:
@@ -3013,8 +3125,8 @@ libraries:
             name: pop
             qualifiedName: "package:dart_overview/generics/generic_classes/run_generic_classes.dart.pop"
             declaringTypeId: class_5
-            owningLibraryId: lib_7
-            sourceFileId: file_8
+            owningLibraryId: lib_9
+            sourceFileId: file_10
             location:
               line: 0
               column: 0
@@ -3024,7 +3136,7 @@ libraries:
             annotations:
 
             returnType:
-              id: type_82
+              id: type_83
               name: T
               qualifiedName: T
               typeArguments:
@@ -3037,7 +3149,7 @@ libraries:
               definitionLibraryId: null
               isTypeParameter: true
               typeParameterBound:
-                id: type_83
+                id: type_84
                 name: dynamic
                 qualifiedName: dynamic
                 typeArguments:
@@ -3067,8 +3179,8 @@ libraries:
             name: peek
             qualifiedName: "package:dart_overview/generics/generic_classes/run_generic_classes.dart.peek"
             declaringTypeId: class_5
-            owningLibraryId: lib_7
-            sourceFileId: file_8
+            owningLibraryId: lib_9
+            sourceFileId: file_10
             location:
               line: 0
               column: 0
@@ -3078,7 +3190,7 @@ libraries:
             annotations:
 
             returnType:
-              id: type_84
+              id: type_85
               name: T
               qualifiedName: T
               typeArguments:
@@ -3091,7 +3203,7 @@ libraries:
               definitionLibraryId: null
               isTypeParameter: true
               typeParameterBound:
-                id: type_85
+                id: type_86
                 name: dynamic
                 qualifiedName: dynamic
                 typeArguments:
@@ -3121,8 +3233,8 @@ libraries:
             name: toString
             qualifiedName: "package:dart_overview/generics/generic_classes/run_generic_classes.dart.toString"
             declaringTypeId: class_5
-            owningLibraryId: lib_7
-            sourceFileId: file_8
+            owningLibraryId: lib_9
+            sourceFileId: file_10
             location:
               line: 0
               column: 0
@@ -3132,7 +3244,7 @@ libraries:
             annotations:
 
             returnType:
-              id: type_86
+              id: type_87
               name: String
               qualifiedName: "dart:core.String"
               typeArguments:
@@ -3162,8 +3274,8 @@ libraries:
             name: _items
             qualifiedName: "package:dart_overview/generics/generic_classes/run_generic_classes.dart._items"
             declaringTypeId: class_5
-            owningLibraryId: lib_7
-            sourceFileId: file_8
+            owningLibraryId: lib_9
+            sourceFileId: file_10
             location:
               line: 0
               column: 0
@@ -3173,12 +3285,12 @@ libraries:
             annotations:
 
             type:
-              id: type_87
+              id: type_88
               name: List
               qualifiedName: "dart:core.List"
               typeArguments:
                 -
-                  id: type_88
+                  id: type_89
                   name: T
                   qualifiedName: T
                   typeArguments:
@@ -3191,7 +3303,7 @@ libraries:
                   definitionLibraryId: null
                   isTypeParameter: true
                   typeParameterBound:
-                    id: type_89
+                    id: type_90
                     name: dynamic
                     qualifiedName: dynamic
                     typeArguments:
@@ -3220,13 +3332,15 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: true
+            hasGetter: true
+            hasSetter: false
           -
             id: field_22
             name: isEmpty
             qualifiedName: "package:dart_overview/generics/generic_classes/run_generic_classes.dart.isEmpty"
             declaringTypeId: class_5
-            owningLibraryId: lib_7
-            sourceFileId: file_8
+            owningLibraryId: lib_9
+            sourceFileId: file_10
             location:
               line: 0
               column: 0
@@ -3236,7 +3350,7 @@ libraries:
             annotations:
 
             type:
-              id: type_90
+              id: type_91
               name: bool
               qualifiedName: "dart:core.bool"
               typeArguments:
@@ -3255,13 +3369,15 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: false
+            hasGetter: true
+            hasSetter: false
           -
             id: field_23
             name: length
             qualifiedName: "package:dart_overview/generics/generic_classes/run_generic_classes.dart.length"
             declaringTypeId: class_5
-            owningLibraryId: lib_7
-            sourceFileId: file_8
+            owningLibraryId: lib_9
+            sourceFileId: file_10
             location:
               line: 0
               column: 0
@@ -3271,7 +3387,7 @@ libraries:
             annotations:
 
             type:
-              id: type_91
+              id: type_92
               name: int
               qualifiedName: "dart:core.int"
               typeArguments:
@@ -3290,6 +3406,8 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: false
+            hasGetter: true
+            hasSetter: false
         getters:
 
         setters:
@@ -3297,8 +3415,8 @@ libraries:
         id: class_6
         name: Queue
         qualifiedName: "package:dart_overview/generics/generic_classes/run_generic_classes.dart.Queue"
-        libraryId: lib_7
-        sourceFileId: file_8
+        libraryId: lib_9
+        sourceFileId: file_10
         location:
           line: 0
           column: 0
@@ -3314,7 +3432,7 @@ libraries:
         isInterface: false
         isMixin: false
         superclass:
-          id: type_92
+          id: type_93
           name: Object
           qualifiedName: "dart:core.Object"
           typeArguments:
@@ -3342,10 +3460,10 @@ libraries:
         constructors:
           -
             id: ctor_13
-            name: Queue
+            name: new
             qualifiedName: "package:dart_overview/generics/generic_classes/run_generic_classes.dart.Queue"
             declaringTypeId: class_6
-            sourceFileId: file_8
+            sourceFileId: file_10
             location:
               line: 0
               column: 0
@@ -3369,8 +3487,8 @@ libraries:
             name: enqueue
             qualifiedName: "package:dart_overview/generics/generic_classes/run_generic_classes.dart.enqueue"
             declaringTypeId: class_6
-            owningLibraryId: lib_7
-            sourceFileId: file_8
+            owningLibraryId: lib_9
+            sourceFileId: file_10
             location:
               line: 0
               column: 0
@@ -3380,7 +3498,7 @@ libraries:
             annotations:
 
             returnType:
-              id: type_93
+              id: type_94
               name: void
               qualifiedName: void
               typeArguments:
@@ -3401,7 +3519,7 @@ libraries:
                 id: param_19
                 name: item
                 type:
-                  id: type_94
+                  id: type_95
                   name: T
                   qualifiedName: T
                   typeArguments:
@@ -3414,7 +3532,7 @@ libraries:
                   definitionLibraryId: null
                   isTypeParameter: true
                   typeParameterBound:
-                    id: type_95
+                    id: type_96
                     name: dynamic
                     qualifiedName: dynamic
                     typeArguments:
@@ -3447,8 +3565,8 @@ libraries:
             name: dequeue
             qualifiedName: "package:dart_overview/generics/generic_classes/run_generic_classes.dart.dequeue"
             declaringTypeId: class_6
-            owningLibraryId: lib_7
-            sourceFileId: file_8
+            owningLibraryId: lib_9
+            sourceFileId: file_10
             location:
               line: 0
               column: 0
@@ -3458,7 +3576,7 @@ libraries:
             annotations:
 
             returnType:
-              id: type_96
+              id: type_97
               name: T
               qualifiedName: T
               typeArguments:
@@ -3471,7 +3589,7 @@ libraries:
               definitionLibraryId: null
               isTypeParameter: true
               typeParameterBound:
-                id: type_97
+                id: type_98
                 name: dynamic
                 qualifiedName: dynamic
                 typeArguments:
@@ -3501,8 +3619,8 @@ libraries:
             name: toString
             qualifiedName: "package:dart_overview/generics/generic_classes/run_generic_classes.dart.toString"
             declaringTypeId: class_6
-            owningLibraryId: lib_7
-            sourceFileId: file_8
+            owningLibraryId: lib_9
+            sourceFileId: file_10
             location:
               line: 0
               column: 0
@@ -3512,7 +3630,7 @@ libraries:
             annotations:
 
             returnType:
-              id: type_98
+              id: type_99
               name: String
               qualifiedName: "dart:core.String"
               typeArguments:
@@ -3542,8 +3660,8 @@ libraries:
             name: _items
             qualifiedName: "package:dart_overview/generics/generic_classes/run_generic_classes.dart._items"
             declaringTypeId: class_6
-            owningLibraryId: lib_7
-            sourceFileId: file_8
+            owningLibraryId: lib_9
+            sourceFileId: file_10
             location:
               line: 0
               column: 0
@@ -3553,12 +3671,12 @@ libraries:
             annotations:
 
             type:
-              id: type_99
+              id: type_100
               name: List
               qualifiedName: "dart:core.List"
               typeArguments:
                 -
-                  id: type_100
+                  id: type_101
                   name: T
                   qualifiedName: T
                   typeArguments:
@@ -3571,7 +3689,7 @@ libraries:
                   definitionLibraryId: null
                   isTypeParameter: true
                   typeParameterBound:
-                    id: type_101
+                    id: type_102
                     name: dynamic
                     qualifiedName: dynamic
                     typeArguments:
@@ -3600,13 +3718,15 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: true
+            hasGetter: true
+            hasSetter: false
           -
             id: field_25
             name: front
             qualifiedName: "package:dart_overview/generics/generic_classes/run_generic_classes.dart.front"
             declaringTypeId: class_6
-            owningLibraryId: lib_7
-            sourceFileId: file_8
+            owningLibraryId: lib_9
+            sourceFileId: file_10
             location:
               line: 0
               column: 0
@@ -3616,7 +3736,7 @@ libraries:
             annotations:
 
             type:
-              id: type_102
+              id: type_103
               name: T
               qualifiedName: T
               typeArguments:
@@ -3629,7 +3749,7 @@ libraries:
               definitionLibraryId: null
               isTypeParameter: true
               typeParameterBound:
-                id: type_103
+                id: type_104
                 name: dynamic
                 qualifiedName: dynamic
                 typeArguments:
@@ -3649,13 +3769,15 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: false
+            hasGetter: true
+            hasSetter: false
           -
             id: field_26
             name: isEmpty
             qualifiedName: "package:dart_overview/generics/generic_classes/run_generic_classes.dart.isEmpty"
             declaringTypeId: class_6
-            owningLibraryId: lib_7
-            sourceFileId: file_8
+            owningLibraryId: lib_9
+            sourceFileId: file_10
             location:
               line: 0
               column: 0
@@ -3665,7 +3787,7 @@ libraries:
             annotations:
 
             type:
-              id: type_104
+              id: type_105
               name: bool
               qualifiedName: "dart:core.bool"
               typeArguments:
@@ -3684,13 +3806,15 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: false
+            hasGetter: true
+            hasSetter: false
           -
             id: field_27
             name: length
             qualifiedName: "package:dart_overview/generics/generic_classes/run_generic_classes.dart.length"
             declaringTypeId: class_6
-            owningLibraryId: lib_7
-            sourceFileId: file_8
+            owningLibraryId: lib_9
+            sourceFileId: file_10
             location:
               line: 0
               column: 0
@@ -3700,7 +3824,7 @@ libraries:
             annotations:
 
             type:
-              id: type_105
+              id: type_106
               name: int
               qualifiedName: "dart:core.int"
               typeArguments:
@@ -3719,6 +3843,8 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: false
+            hasGetter: true
+            hasSetter: false
         getters:
 
         setters:
@@ -3726,8 +3852,8 @@ libraries:
         id: class_7
         name: Maybe
         qualifiedName: "package:dart_overview/generics/generic_classes/run_generic_classes.dart.Maybe"
-        libraryId: lib_7
-        sourceFileId: file_8
+        libraryId: lib_9
+        sourceFileId: file_10
         location:
           line: 0
           column: 0
@@ -3743,7 +3869,7 @@ libraries:
         isInterface: false
         isMixin: false
         superclass:
-          id: type_106
+          id: type_107
           name: Object
           qualifiedName: "dart:core.Object"
           typeArguments:
@@ -3771,10 +3897,10 @@ libraries:
         constructors:
           -
             id: ctor_14
-            name: Maybe.some
+            name: some
             qualifiedName: "package:dart_overview/generics/generic_classes/run_generic_classes.dart.Maybe.some"
             declaringTypeId: class_7
-            sourceFileId: file_8
+            sourceFileId: file_10
             location:
               line: 0
               column: 0
@@ -3788,7 +3914,7 @@ libraries:
                 id: param_20
                 name: value
                 type:
-                  id: type_107
+                  id: type_108
                   name: T
                   qualifiedName: T
                   typeArguments:
@@ -3801,7 +3927,7 @@ libraries:
                   definitionLibraryId: null
                   isTypeParameter: true
                   typeParameterBound:
-                    id: type_108
+                    id: type_109
                     name: dynamic
                     qualifiedName: dynamic
                     typeArguments:
@@ -3832,10 +3958,10 @@ libraries:
             superConstructorInvocation: Object
           -
             id: ctor_15
-            name: Maybe.none
+            name: none
             qualifiedName: "package:dart_overview/generics/generic_classes/run_generic_classes.dart.Maybe.none"
             declaringTypeId: class_7
-            sourceFileId: file_8
+            sourceFileId: file_10
             location:
               line: 0
               column: 0
@@ -3859,8 +3985,8 @@ libraries:
             name: getOrElse
             qualifiedName: "package:dart_overview/generics/generic_classes/run_generic_classes.dart.getOrElse"
             declaringTypeId: class_7
-            owningLibraryId: lib_7
-            sourceFileId: file_8
+            owningLibraryId: lib_9
+            sourceFileId: file_10
             location:
               line: 0
               column: 0
@@ -3870,7 +3996,7 @@ libraries:
             annotations:
 
             returnType:
-              id: type_109
+              id: type_110
               name: T
               qualifiedName: T
               typeArguments:
@@ -3883,7 +4009,7 @@ libraries:
               definitionLibraryId: null
               isTypeParameter: true
               typeParameterBound:
-                id: type_110
+                id: type_111
                 name: dynamic
                 qualifiedName: dynamic
                 typeArguments:
@@ -3905,7 +4031,7 @@ libraries:
                 id: param_21
                 name: defaultValue
                 type:
-                  id: type_111
+                  id: type_112
                   name: T
                   qualifiedName: T
                   typeArguments:
@@ -3918,7 +4044,7 @@ libraries:
                   definitionLibraryId: null
                   isTypeParameter: true
                   typeParameterBound:
-                    id: type_112
+                    id: type_113
                     name: dynamic
                     qualifiedName: dynamic
                     typeArguments:
@@ -3951,8 +4077,8 @@ libraries:
             name: map
             qualifiedName: "package:dart_overview/generics/generic_classes/run_generic_classes.dart.map"
             declaringTypeId: class_7
-            owningLibraryId: lib_7
-            sourceFileId: file_8
+            owningLibraryId: lib_9
+            sourceFileId: file_10
             location:
               line: 0
               column: 0
@@ -3962,12 +4088,12 @@ libraries:
             annotations:
 
             returnType:
-              id: type_113
+              id: type_114
               name: Maybe
               qualifiedName: "package:dart_overview/generics/generic_classes/run_generic_classes.dart.Maybe"
               typeArguments:
                 -
-                  id: type_114
+                  id: type_115
                   name: R
                   qualifiedName: R
                   typeArguments:
@@ -3980,7 +4106,7 @@ libraries:
                   definitionLibraryId: null
                   isTypeParameter: true
                   typeParameterBound:
-                    id: type_115
+                    id: type_116
                     name: dynamic
                     qualifiedName: dynamic
                     typeArguments:
@@ -4016,7 +4142,7 @@ libraries:
                 id: param_22
                 name: f
                 type:
-                  id: type_116
+                  id: type_117
                   name: R Function(T)
                   qualifiedName: R Function(T)
                   typeArguments:
@@ -4028,7 +4154,7 @@ libraries:
                   functionType:
                     id: functionType_2
                     returnType:
-                      id: type_117
+                      id: type_118
                       name: R
                       qualifiedName: R
                       typeArguments:
@@ -4041,7 +4167,7 @@ libraries:
                       definitionLibraryId: null
                       isTypeParameter: true
                       typeParameterBound:
-                        id: type_118
+                        id: type_119
                         name: dynamic
                         qualifiedName: dynamic
                         typeArguments:
@@ -4061,9 +4187,9 @@ libraries:
                     parameters:
                       -
                         id: param_23
-                        name: <unnamed>
+                        name: "<unnamed>"
                         type:
-                          id: type_119
+                          id: type_120
                           name: T
                           qualifiedName: T
                           typeArguments:
@@ -4076,7 +4202,7 @@ libraries:
                           definitionLibraryId: null
                           isTypeParameter: true
                           typeParameterBound:
-                            id: type_120
+                            id: type_121
                             name: dynamic
                             qualifiedName: dynamic
                             typeArguments:
@@ -4121,8 +4247,8 @@ libraries:
             name: _value
             qualifiedName: "package:dart_overview/generics/generic_classes/run_generic_classes.dart._value"
             declaringTypeId: class_7
-            owningLibraryId: lib_7
-            sourceFileId: file_8
+            owningLibraryId: lib_9
+            sourceFileId: file_10
             location:
               line: 0
               column: 0
@@ -4132,7 +4258,7 @@ libraries:
             annotations:
 
             type:
-              id: type_121
+              id: type_122
               name: T?
               qualifiedName: T?
               typeArguments:
@@ -4145,7 +4271,7 @@ libraries:
               definitionLibraryId: null
               isTypeParameter: true
               typeParameterBound:
-                id: type_122
+                id: type_123
                 name: dynamic
                 qualifiedName: dynamic
                 typeArguments:
@@ -4165,13 +4291,15 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: false
+            hasGetter: true
+            hasSetter: false
           -
             id: field_29
             name: hasValue
             qualifiedName: "package:dart_overview/generics/generic_classes/run_generic_classes.dart.hasValue"
             declaringTypeId: class_7
-            owningLibraryId: lib_7
-            sourceFileId: file_8
+            owningLibraryId: lib_9
+            sourceFileId: file_10
             location:
               line: 0
               column: 0
@@ -4181,7 +4309,7 @@ libraries:
             annotations:
 
             type:
-              id: type_123
+              id: type_124
               name: bool
               qualifiedName: "dart:core.bool"
               typeArguments:
@@ -4200,13 +4328,15 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: false
+            hasGetter: true
+            hasSetter: false
           -
             id: field_30
             name: value
             qualifiedName: "package:dart_overview/generics/generic_classes/run_generic_classes.dart.value"
             declaringTypeId: class_7
-            owningLibraryId: lib_7
-            sourceFileId: file_8
+            owningLibraryId: lib_9
+            sourceFileId: file_10
             location:
               line: 0
               column: 0
@@ -4216,7 +4346,7 @@ libraries:
             annotations:
 
             type:
-              id: type_124
+              id: type_125
               name: T
               qualifiedName: T
               typeArguments:
@@ -4229,7 +4359,7 @@ libraries:
               definitionLibraryId: null
               isTypeParameter: true
               typeParameterBound:
-                id: type_125
+                id: type_126
                 name: dynamic
                 qualifiedName: dynamic
                 typeArguments:
@@ -4249,6 +4379,8 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: false
+            hasGetter: true
+            hasSetter: false
         getters:
 
         setters:
@@ -4256,8 +4388,8 @@ libraries:
         id: class_8
         name: Result
         qualifiedName: "package:dart_overview/generics/generic_classes/run_generic_classes.dart.Result"
-        libraryId: lib_7
-        sourceFileId: file_8
+        libraryId: lib_9
+        sourceFileId: file_10
         location:
           line: 0
           column: 0
@@ -4273,7 +4405,7 @@ libraries:
         isInterface: false
         isMixin: false
         superclass:
-          id: type_126
+          id: type_127
           name: Object
           qualifiedName: "dart:core.Object"
           typeArguments:
@@ -4300,17 +4432,17 @@ libraries:
             variance: null
           -
             id: typeParam_11
-            name: E
+            name: "E"
             bound: null
             defaultType: null
             variance: null
         constructors:
           -
             id: ctor_16
-            name: Result.success
+            name: success
             qualifiedName: "package:dart_overview/generics/generic_classes/run_generic_classes.dart.Result.success"
             declaringTypeId: class_8
-            sourceFileId: file_8
+            sourceFileId: file_10
             location:
               line: 0
               column: 0
@@ -4324,7 +4456,7 @@ libraries:
                 id: param_24
                 name: value
                 type:
-                  id: type_127
+                  id: type_128
                   name: T
                   qualifiedName: T
                   typeArguments:
@@ -4337,7 +4469,7 @@ libraries:
                   definitionLibraryId: null
                   isTypeParameter: true
                   typeParameterBound:
-                    id: type_128
+                    id: type_129
                     name: dynamic
                     qualifiedName: dynamic
                     typeArguments:
@@ -4368,10 +4500,10 @@ libraries:
             superConstructorInvocation: Object
           -
             id: ctor_17
-            name: Result.failure
+            name: failure
             qualifiedName: "package:dart_overview/generics/generic_classes/run_generic_classes.dart.Result.failure"
             declaringTypeId: class_8
-            sourceFileId: file_8
+            sourceFileId: file_10
             location:
               line: 0
               column: 0
@@ -4385,9 +4517,9 @@ libraries:
                 id: param_25
                 name: error
                 type:
-                  id: type_129
-                  name: E
-                  qualifiedName: E
+                  id: type_130
+                  name: "E"
+                  qualifiedName: "E"
                   typeArguments:
 
                   isNullable: false
@@ -4398,7 +4530,7 @@ libraries:
                   definitionLibraryId: null
                   isTypeParameter: true
                   typeParameterBound:
-                    id: type_130
+                    id: type_131
                     name: dynamic
                     qualifiedName: dynamic
                     typeArguments:
@@ -4433,8 +4565,8 @@ libraries:
             name: fold
             qualifiedName: "package:dart_overview/generics/generic_classes/run_generic_classes.dart.fold"
             declaringTypeId: class_8
-            owningLibraryId: lib_7
-            sourceFileId: file_8
+            owningLibraryId: lib_9
+            sourceFileId: file_10
             location:
               line: 0
               column: 0
@@ -4444,7 +4576,7 @@ libraries:
             annotations:
 
             returnType:
-              id: type_131
+              id: type_132
               name: R
               qualifiedName: R
               typeArguments:
@@ -4457,7 +4589,7 @@ libraries:
               definitionLibraryId: null
               isTypeParameter: true
               typeParameterBound:
-                id: type_132
+                id: type_133
                 name: dynamic
                 qualifiedName: dynamic
                 typeArguments:
@@ -4484,7 +4616,7 @@ libraries:
                 id: param_26
                 name: onSuccess
                 type:
-                  id: type_133
+                  id: type_134
                   name: R Function(T)
                   qualifiedName: R Function(T)
                   typeArguments:
@@ -4496,7 +4628,7 @@ libraries:
                   functionType:
                     id: functionType_3
                     returnType:
-                      id: type_134
+                      id: type_135
                       name: R
                       qualifiedName: R
                       typeArguments:
@@ -4509,7 +4641,7 @@ libraries:
                       definitionLibraryId: null
                       isTypeParameter: true
                       typeParameterBound:
-                        id: type_135
+                        id: type_136
                         name: dynamic
                         qualifiedName: dynamic
                         typeArguments:
@@ -4529,9 +4661,9 @@ libraries:
                     parameters:
                       -
                         id: param_27
-                        name: <unnamed>
+                        name: "<unnamed>"
                         type:
-                          id: type_136
+                          id: type_137
                           name: T
                           qualifiedName: T
                           typeArguments:
@@ -4544,7 +4676,7 @@ libraries:
                           definitionLibraryId: null
                           isTypeParameter: true
                           typeParameterBound:
-                            id: type_137
+                            id: type_138
                             name: dynamic
                             qualifiedName: dynamic
                             typeArguments:
@@ -4581,7 +4713,7 @@ libraries:
                 id: param_28
                 name: onFailure
                 type:
-                  id: type_138
+                  id: type_139
                   name: R Function(E)
                   qualifiedName: R Function(E)
                   typeArguments:
@@ -4593,7 +4725,7 @@ libraries:
                   functionType:
                     id: functionType_4
                     returnType:
-                      id: type_139
+                      id: type_140
                       name: R
                       qualifiedName: R
                       typeArguments:
@@ -4606,7 +4738,7 @@ libraries:
                       definitionLibraryId: null
                       isTypeParameter: true
                       typeParameterBound:
-                        id: type_140
+                        id: type_141
                         name: dynamic
                         qualifiedName: dynamic
                         typeArguments:
@@ -4626,11 +4758,11 @@ libraries:
                     parameters:
                       -
                         id: param_29
-                        name: <unnamed>
+                        name: "<unnamed>"
                         type:
-                          id: type_141
-                          name: E
-                          qualifiedName: E
+                          id: type_142
+                          name: "E"
+                          qualifiedName: "E"
                           typeArguments:
 
                           isNullable: false
@@ -4641,7 +4773,7 @@ libraries:
                           definitionLibraryId: null
                           isTypeParameter: true
                           typeParameterBound:
-                            id: type_142
+                            id: type_143
                             name: dynamic
                             qualifiedName: dynamic
                             typeArguments:
@@ -4686,8 +4818,8 @@ libraries:
             name: _value
             qualifiedName: "package:dart_overview/generics/generic_classes/run_generic_classes.dart._value"
             declaringTypeId: class_8
-            owningLibraryId: lib_7
-            sourceFileId: file_8
+            owningLibraryId: lib_9
+            sourceFileId: file_10
             location:
               line: 0
               column: 0
@@ -4697,7 +4829,7 @@ libraries:
             annotations:
 
             type:
-              id: type_143
+              id: type_144
               name: T?
               qualifiedName: T?
               typeArguments:
@@ -4710,7 +4842,7 @@ libraries:
               definitionLibraryId: null
               isTypeParameter: true
               typeParameterBound:
-                id: type_144
+                id: type_145
                 name: dynamic
                 qualifiedName: dynamic
                 typeArguments:
@@ -4730,13 +4862,15 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: false
+            hasGetter: true
+            hasSetter: false
           -
             id: field_32
             name: _error
             qualifiedName: "package:dart_overview/generics/generic_classes/run_generic_classes.dart._error"
             declaringTypeId: class_8
-            owningLibraryId: lib_7
-            sourceFileId: file_8
+            owningLibraryId: lib_9
+            sourceFileId: file_10
             location:
               line: 0
               column: 0
@@ -4746,7 +4880,7 @@ libraries:
             annotations:
 
             type:
-              id: type_145
+              id: type_146
               name: E?
               qualifiedName: E?
               typeArguments:
@@ -4759,7 +4893,7 @@ libraries:
               definitionLibraryId: null
               isTypeParameter: true
               typeParameterBound:
-                id: type_146
+                id: type_147
                 name: dynamic
                 qualifiedName: dynamic
                 typeArguments:
@@ -4779,13 +4913,15 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: false
+            hasGetter: true
+            hasSetter: false
           -
             id: field_33
             name: isSuccess
             qualifiedName: "package:dart_overview/generics/generic_classes/run_generic_classes.dart.isSuccess"
             declaringTypeId: class_8
-            owningLibraryId: lib_7
-            sourceFileId: file_8
+            owningLibraryId: lib_9
+            sourceFileId: file_10
             location:
               line: 0
               column: 0
@@ -4795,7 +4931,7 @@ libraries:
             annotations:
 
             type:
-              id: type_147
+              id: type_148
               name: bool
               qualifiedName: "dart:core.bool"
               typeArguments:
@@ -4814,6 +4950,8 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: false
+            hasGetter: true
+            hasSetter: false
         getters:
 
         setters:
@@ -4829,28 +4967,29 @@ libraries:
 
     functions:
       -
-        id: function_2
+        id: function_3
         name: main
         qualifiedName: "package:dart_overview/generics/generic_classes/run_generic_classes.dart.main"
-        libraryId: lib_7
-        sourceFileId: file_8
+        libraryId: lib_9
+        sourceFileId: file_10
         location:
           line: 0
           column: 0
           offset: 209
           length: 4
-        documentation: "/// Demonstrates Dart generic classes
-///
-/// Features covered:
-/// - Generic class declaration
-/// - Type parameters
-/// - Multiple type parameters
-/// - Generic methods in classes
-/// - Type inference"
+        documentation: |
+          /// Demonstrates Dart generic classes
+          ///
+          /// Features covered:
+          /// - Generic class declaration
+          /// - Type parameters
+          /// - Multiple type parameters
+          /// - Generic methods in classes
+          /// - Type inference
         annotations:
 
         returnType:
-          id: type_148
+          id: type_149
           name: void
           qualifiedName: void
           typeArguments:
@@ -4882,11 +5021,11 @@ libraries:
 
     exports:
   -
-    id: lib_9
-    name: 
+    id: lib_11
+    name: ""
     uri: "package:dart_overview/classes/declarations/run_declarations.dart"
     packageId: pkg_2
-    mainSourceFileId: file_10
+    mainSourceFileId: file_12
     partFileIds:
 
     documentation: null
@@ -4897,8 +5036,8 @@ libraries:
         id: class_9
         name: Person
         qualifiedName: "package:dart_overview/classes/declarations/run_declarations.dart.Person"
-        libraryId: lib_9
-        sourceFileId: file_10
+        libraryId: lib_11
+        sourceFileId: file_12
         location:
           line: 0
           column: 0
@@ -4914,7 +5053,7 @@ libraries:
         isInterface: false
         isMixin: false
         superclass:
-          id: type_149
+          id: type_150
           name: Object
           qualifiedName: "dart:core.Object"
           typeArguments:
@@ -4937,10 +5076,10 @@ libraries:
         constructors:
           -
             id: ctor_18
-            name: Person
+            name: new
             qualifiedName: "package:dart_overview/classes/declarations/run_declarations.dart.Person"
             declaringTypeId: class_9
-            sourceFileId: file_10
+            sourceFileId: file_12
             location:
               line: 0
               column: 0
@@ -4964,8 +5103,8 @@ libraries:
             name: greet
             qualifiedName: "package:dart_overview/classes/declarations/run_declarations.dart.greet"
             declaringTypeId: class_9
-            owningLibraryId: lib_9
-            sourceFileId: file_10
+            owningLibraryId: lib_11
+            sourceFileId: file_12
             location:
               line: 0
               column: 0
@@ -4975,7 +5114,7 @@ libraries:
             annotations:
 
             returnType:
-              id: type_150
+              id: type_151
               name: void
               qualifiedName: void
               typeArguments:
@@ -5005,8 +5144,8 @@ libraries:
             name: name
             qualifiedName: "package:dart_overview/classes/declarations/run_declarations.dart.name"
             declaringTypeId: class_9
-            owningLibraryId: lib_9
-            sourceFileId: file_10
+            owningLibraryId: lib_11
+            sourceFileId: file_12
             location:
               line: 0
               column: 0
@@ -5016,7 +5155,7 @@ libraries:
             annotations:
 
             type:
-              id: type_151
+              id: type_152
               name: String
               qualifiedName: "dart:core.String"
               typeArguments:
@@ -5035,13 +5174,15 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: true
+            hasGetter: true
+            hasSetter: true
           -
             id: field_35
             name: age
             qualifiedName: "package:dart_overview/classes/declarations/run_declarations.dart.age"
             declaringTypeId: class_9
-            owningLibraryId: lib_9
-            sourceFileId: file_10
+            owningLibraryId: lib_11
+            sourceFileId: file_12
             location:
               line: 0
               column: 0
@@ -5051,7 +5192,7 @@ libraries:
             annotations:
 
             type:
-              id: type_152
+              id: type_153
               name: int
               qualifiedName: "dart:core.int"
               typeArguments:
@@ -5070,6 +5211,8 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: true
+            hasGetter: true
+            hasSetter: true
         getters:
 
         setters:
@@ -5077,8 +5220,8 @@ libraries:
         id: class_10
         name: Dog
         qualifiedName: "package:dart_overview/classes/declarations/run_declarations.dart.Dog"
-        libraryId: lib_9
-        sourceFileId: file_10
+        libraryId: lib_11
+        sourceFileId: file_12
         location:
           line: 0
           column: 0
@@ -5094,7 +5237,7 @@ libraries:
         isInterface: false
         isMixin: false
         superclass:
-          id: type_153
+          id: type_154
           name: Object
           qualifiedName: "dart:core.Object"
           typeArguments:
@@ -5117,10 +5260,10 @@ libraries:
         constructors:
           -
             id: ctor_19
-            name: Dog
+            name: new
             qualifiedName: "package:dart_overview/classes/declarations/run_declarations.dart.Dog"
             declaringTypeId: class_10
-            sourceFileId: file_10
+            sourceFileId: file_12
             location:
               line: 0
               column: 0
@@ -5134,7 +5277,7 @@ libraries:
                 id: param_30
                 name: name
                 type:
-                  id: type_154
+                  id: type_155
                   name: String
                   qualifiedName: "dart:core.String"
                   typeArguments:
@@ -5159,7 +5302,7 @@ libraries:
                 id: param_31
                 name: age
                 type:
-                  id: type_155
+                  id: type_156
                   name: int
                   qualifiedName: "dart:core.int"
                   typeArguments:
@@ -5193,8 +5336,8 @@ libraries:
             name: bark
             qualifiedName: "package:dart_overview/classes/declarations/run_declarations.dart.bark"
             declaringTypeId: class_10
-            owningLibraryId: lib_9
-            sourceFileId: file_10
+            owningLibraryId: lib_11
+            sourceFileId: file_12
             location:
               line: 0
               column: 0
@@ -5204,7 +5347,7 @@ libraries:
             annotations:
 
             returnType:
-              id: type_156
+              id: type_157
               name: void
               qualifiedName: void
               typeArguments:
@@ -5234,8 +5377,8 @@ libraries:
             name: name
             qualifiedName: "package:dart_overview/classes/declarations/run_declarations.dart.name"
             declaringTypeId: class_10
-            owningLibraryId: lib_9
-            sourceFileId: file_10
+            owningLibraryId: lib_11
+            sourceFileId: file_12
             location:
               line: 0
               column: 0
@@ -5245,7 +5388,7 @@ libraries:
             annotations:
 
             type:
-              id: type_157
+              id: type_158
               name: String
               qualifiedName: "dart:core.String"
               typeArguments:
@@ -5264,13 +5407,15 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: false
+            hasGetter: true
+            hasSetter: true
           -
             id: field_37
             name: age
             qualifiedName: "package:dart_overview/classes/declarations/run_declarations.dart.age"
             declaringTypeId: class_10
-            owningLibraryId: lib_9
-            sourceFileId: file_10
+            owningLibraryId: lib_11
+            sourceFileId: file_12
             location:
               line: 0
               column: 0
@@ -5280,7 +5425,7 @@ libraries:
             annotations:
 
             type:
-              id: type_158
+              id: type_159
               name: int
               qualifiedName: "dart:core.int"
               typeArguments:
@@ -5299,6 +5444,8 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: false
+            hasGetter: true
+            hasSetter: true
         getters:
 
         setters:
@@ -5306,8 +5453,8 @@ libraries:
         id: class_11
         name: User
         qualifiedName: "package:dart_overview/classes/declarations/run_declarations.dart.User"
-        libraryId: lib_9
-        sourceFileId: file_10
+        libraryId: lib_11
+        sourceFileId: file_12
         location:
           line: 0
           column: 0
@@ -5323,7 +5470,7 @@ libraries:
         isInterface: false
         isMixin: false
         superclass:
-          id: type_159
+          id: type_160
           name: Object
           qualifiedName: "dart:core.Object"
           typeArguments:
@@ -5346,10 +5493,10 @@ libraries:
         constructors:
           -
             id: ctor_20
-            name: User
+            name: new
             qualifiedName: "package:dart_overview/classes/declarations/run_declarations.dart.User"
             declaringTypeId: class_11
-            sourceFileId: file_10
+            sourceFileId: file_12
             location:
               line: 0
               column: 0
@@ -5363,7 +5510,7 @@ libraries:
                 id: param_32
                 name: name
                 type:
-                  id: type_160
+                  id: type_161
                   name: String
                   qualifiedName: "dart:core.String"
                   typeArguments:
@@ -5388,7 +5535,7 @@ libraries:
                 id: param_33
                 name: email
                 type:
-                  id: type_161
+                  id: type_162
                   name: String
                   qualifiedName: "dart:core.String"
                   typeArguments:
@@ -5418,10 +5565,10 @@ libraries:
             superConstructorInvocation: Object
           -
             id: ctor_21
-            name: User.guest
+            name: guest
             qualifiedName: "package:dart_overview/classes/declarations/run_declarations.dart.User.guest"
             declaringTypeId: class_11
-            sourceFileId: file_10
+            sourceFileId: file_12
             location:
               line: 0
               column: 0
@@ -5441,10 +5588,10 @@ libraries:
             superConstructorInvocation: Object
           -
             id: ctor_22
-            name: User.fromMap
+            name: fromMap
             qualifiedName: "package:dart_overview/classes/declarations/run_declarations.dart.User.fromMap"
             declaringTypeId: class_11
-            sourceFileId: file_10
+            sourceFileId: file_12
             location:
               line: 0
               column: 0
@@ -5458,12 +5605,12 @@ libraries:
                 id: param_34
                 name: map
                 type:
-                  id: type_162
+                  id: type_163
                   name: Map
                   qualifiedName: "dart:core.Map"
                   typeArguments:
                     -
-                      id: type_163
+                      id: type_164
                       name: String
                       qualifiedName: "dart:core.String"
                       typeArguments:
@@ -5478,7 +5625,7 @@ libraries:
                       typeParameterBound: null
                       resolvedElementId: null
                     -
-                      id: type_164
+                      id: type_165
                       name: dynamic
                       qualifiedName: dynamic
                       typeArguments:
@@ -5521,8 +5668,8 @@ libraries:
             name: toString
             qualifiedName: "package:dart_overview/classes/declarations/run_declarations.dart.toString"
             declaringTypeId: class_11
-            owningLibraryId: lib_9
-            sourceFileId: file_10
+            owningLibraryId: lib_11
+            sourceFileId: file_12
             location:
               line: 0
               column: 0
@@ -5532,7 +5679,7 @@ libraries:
             annotations:
 
             returnType:
-              id: type_165
+              id: type_166
               name: String
               qualifiedName: "dart:core.String"
               typeArguments:
@@ -5562,48 +5709,13 @@ libraries:
             name: name
             qualifiedName: "package:dart_overview/classes/declarations/run_declarations.dart.name"
             declaringTypeId: class_11
-            owningLibraryId: lib_9
-            sourceFileId: file_10
+            owningLibraryId: lib_11
+            sourceFileId: file_12
             location:
               line: 0
               column: 0
               offset: 2581
               length: 4
-            documentation: null
-            annotations:
-
-            type:
-              id: type_166
-              name: String
-              qualifiedName: "dart:core.String"
-              typeArguments:
-
-              isNullable: false
-              isDynamic: false
-              isVoid: false
-              isFunction: false
-              functionType: null
-              definitionLibraryId: null
-              isTypeParameter: false
-              typeParameterBound: null
-              resolvedElementId: null
-            isFinal: false
-            isConst: false
-            isLate: false
-            isStatic: false
-            hasInitializer: false
-          -
-            id: field_39
-            name: email
-            qualifiedName: "package:dart_overview/classes/declarations/run_declarations.dart.email"
-            declaringTypeId: class_11
-            owningLibraryId: lib_9
-            sourceFileId: file_10
-            location:
-              line: 0
-              column: 0
-              offset: 2596
-              length: 5
             documentation: null
             annotations:
 
@@ -5627,6 +5739,45 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: false
+            hasGetter: true
+            hasSetter: true
+          -
+            id: field_39
+            name: email
+            qualifiedName: "package:dart_overview/classes/declarations/run_declarations.dart.email"
+            declaringTypeId: class_11
+            owningLibraryId: lib_11
+            sourceFileId: file_12
+            location:
+              line: 0
+              column: 0
+              offset: 2596
+              length: 5
+            documentation: null
+            annotations:
+
+            type:
+              id: type_168
+              name: String
+              qualifiedName: "dart:core.String"
+              typeArguments:
+
+              isNullable: false
+              isDynamic: false
+              isVoid: false
+              isFunction: false
+              functionType: null
+              definitionLibraryId: null
+              isTypeParameter: false
+              typeParameterBound: null
+              resolvedElementId: null
+            isFinal: false
+            isConst: false
+            isLate: false
+            isStatic: false
+            hasInitializer: false
+            hasGetter: true
+            hasSetter: true
         getters:
 
         setters:
@@ -5634,8 +5785,8 @@ libraries:
         id: class_12
         name: Calculator
         qualifiedName: "package:dart_overview/classes/declarations/run_declarations.dart.Calculator"
-        libraryId: lib_9
-        sourceFileId: file_10
+        libraryId: lib_11
+        sourceFileId: file_12
         location:
           line: 0
           column: 0
@@ -5651,7 +5802,7 @@ libraries:
         isInterface: false
         isMixin: false
         superclass:
-          id: type_168
+          id: type_169
           name: Object
           qualifiedName: "dart:core.Object"
           typeArguments:
@@ -5674,10 +5825,10 @@ libraries:
         constructors:
           -
             id: ctor_23
-            name: Calculator
+            name: new
             qualifiedName: "package:dart_overview/classes/declarations/run_declarations.dart.Calculator"
             declaringTypeId: class_12
-            sourceFileId: file_10
+            sourceFileId: file_12
             location:
               line: 0
               column: 0
@@ -5701,8 +5852,8 @@ libraries:
             name: add
             qualifiedName: "package:dart_overview/classes/declarations/run_declarations.dart.add"
             declaringTypeId: class_12
-            owningLibraryId: lib_9
-            sourceFileId: file_10
+            owningLibraryId: lib_11
+            sourceFileId: file_12
             location:
               line: 0
               column: 0
@@ -5712,7 +5863,7 @@ libraries:
             annotations:
 
             returnType:
-              id: type_169
+              id: type_170
               name: int
               qualifiedName: "dart:core.int"
               typeArguments:
@@ -5733,7 +5884,7 @@ libraries:
                 id: param_35
                 name: a
                 type:
-                  id: type_170
+                  id: type_171
                   name: int
                   qualifiedName: "dart:core.int"
                   typeArguments:
@@ -5758,7 +5909,7 @@ libraries:
                 id: param_36
                 name: b
                 type:
-                  id: type_171
+                  id: type_172
                   name: int
                   qualifiedName: "dart:core.int"
                   typeArguments:
@@ -5790,8 +5941,8 @@ libraries:
             name: subtract
             qualifiedName: "package:dart_overview/classes/declarations/run_declarations.dart.subtract"
             declaringTypeId: class_12
-            owningLibraryId: lib_9
-            sourceFileId: file_10
+            owningLibraryId: lib_11
+            sourceFileId: file_12
             location:
               line: 0
               column: 0
@@ -5801,7 +5952,7 @@ libraries:
             annotations:
 
             returnType:
-              id: type_172
+              id: type_173
               name: int
               qualifiedName: "dart:core.int"
               typeArguments:
@@ -5822,7 +5973,7 @@ libraries:
                 id: param_37
                 name: a
                 type:
-                  id: type_173
+                  id: type_174
                   name: int
                   qualifiedName: "dart:core.int"
                   typeArguments:
@@ -5847,7 +5998,7 @@ libraries:
                 id: param_38
                 name: b
                 type:
-                  id: type_174
+                  id: type_175
                   name: int
                   qualifiedName: "dart:core.int"
                   typeArguments:
@@ -5879,8 +6030,8 @@ libraries:
             name: multiply
             qualifiedName: "package:dart_overview/classes/declarations/run_declarations.dart.multiply"
             declaringTypeId: class_12
-            owningLibraryId: lib_9
-            sourceFileId: file_10
+            owningLibraryId: lib_11
+            sourceFileId: file_12
             location:
               line: 0
               column: 0
@@ -5890,7 +6041,7 @@ libraries:
             annotations:
 
             returnType:
-              id: type_175
+              id: type_176
               name: int
               qualifiedName: "dart:core.int"
               typeArguments:
@@ -5911,7 +6062,7 @@ libraries:
                 id: param_39
                 name: a
                 type:
-                  id: type_176
+                  id: type_177
                   name: int
                   qualifiedName: "dart:core.int"
                   typeArguments:
@@ -5936,7 +6087,7 @@ libraries:
                 id: param_40
                 name: b
                 type:
-                  id: type_177
+                  id: type_178
                   name: int
                   qualifiedName: "dart:core.int"
                   typeArguments:
@@ -5968,8 +6119,8 @@ libraries:
             name: divide
             qualifiedName: "package:dart_overview/classes/declarations/run_declarations.dart.divide"
             declaringTypeId: class_12
-            owningLibraryId: lib_9
-            sourceFileId: file_10
+            owningLibraryId: lib_11
+            sourceFileId: file_12
             location:
               line: 0
               column: 0
@@ -5979,7 +6130,7 @@ libraries:
             annotations:
 
             returnType:
-              id: type_178
+              id: type_179
               name: double
               qualifiedName: "dart:core.double"
               typeArguments:
@@ -6000,7 +6151,7 @@ libraries:
                 id: param_41
                 name: a
                 type:
-                  id: type_179
+                  id: type_180
                   name: int
                   qualifiedName: "dart:core.int"
                   typeArguments:
@@ -6025,7 +6176,7 @@ libraries:
                 id: param_42
                 name: b
                 type:
-                  id: type_180
+                  id: type_181
                   name: int
                   qualifiedName: "dart:core.int"
                   typeArguments:
@@ -6061,8 +6212,8 @@ libraries:
         id: class_13
         name: Rectangle
         qualifiedName: "package:dart_overview/classes/declarations/run_declarations.dart.Rectangle"
-        libraryId: lib_9
-        sourceFileId: file_10
+        libraryId: lib_11
+        sourceFileId: file_12
         location:
           line: 0
           column: 0
@@ -6078,7 +6229,7 @@ libraries:
         isInterface: false
         isMixin: false
         superclass:
-          id: type_181
+          id: type_182
           name: Object
           qualifiedName: "dart:core.Object"
           typeArguments:
@@ -6101,10 +6252,10 @@ libraries:
         constructors:
           -
             id: ctor_24
-            name: Rectangle
+            name: new
             qualifiedName: "package:dart_overview/classes/declarations/run_declarations.dart.Rectangle"
             declaringTypeId: class_13
-            sourceFileId: file_10
+            sourceFileId: file_12
             location:
               line: 0
               column: 0
@@ -6118,7 +6269,7 @@ libraries:
                 id: param_43
                 name: width
                 type:
-                  id: type_182
+                  id: type_183
                   name: double
                   qualifiedName: "dart:core.double"
                   typeArguments:
@@ -6143,7 +6294,7 @@ libraries:
                 id: param_44
                 name: height
                 type:
-                  id: type_183
+                  id: type_184
                   name: double
                   qualifiedName: "dart:core.double"
                   typeArguments:
@@ -6179,48 +6330,13 @@ libraries:
             name: width
             qualifiedName: "package:dart_overview/classes/declarations/run_declarations.dart.width"
             declaringTypeId: class_13
-            owningLibraryId: lib_9
-            sourceFileId: file_10
+            owningLibraryId: lib_11
+            sourceFileId: file_12
             location:
               line: 0
               column: 0
               offset: 3246
               length: 5
-            documentation: null
-            annotations:
-
-            type:
-              id: type_184
-              name: double
-              qualifiedName: "dart:core.double"
-              typeArguments:
-
-              isNullable: false
-              isDynamic: false
-              isVoid: false
-              isFunction: false
-              functionType: null
-              definitionLibraryId: null
-              isTypeParameter: false
-              typeParameterBound: null
-              resolvedElementId: null
-            isFinal: false
-            isConst: false
-            isLate: false
-            isStatic: false
-            hasInitializer: false
-          -
-            id: field_41
-            name: height
-            qualifiedName: "package:dart_overview/classes/declarations/run_declarations.dart.height"
-            declaringTypeId: class_13
-            owningLibraryId: lib_9
-            sourceFileId: file_10
-            location:
-              line: 0
-              column: 0
-              offset: 3262
-              length: 6
             documentation: null
             annotations:
 
@@ -6244,18 +6360,20 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: false
+            hasGetter: true
+            hasSetter: true
           -
-            id: field_42
-            name: area
-            qualifiedName: "package:dart_overview/classes/declarations/run_declarations.dart.area"
+            id: field_41
+            name: height
+            qualifiedName: "package:dart_overview/classes/declarations/run_declarations.dart.height"
             declaringTypeId: class_13
-            owningLibraryId: lib_9
-            sourceFileId: file_10
+            owningLibraryId: lib_11
+            sourceFileId: file_12
             location:
               line: 0
               column: 0
-              offset: 0
-              length: 4
+              offset: 3262
+              length: 6
             documentation: null
             annotations:
 
@@ -6279,18 +6397,20 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: false
+            hasGetter: true
+            hasSetter: true
           -
-            id: field_43
-            name: perimeter
-            qualifiedName: "package:dart_overview/classes/declarations/run_declarations.dart.perimeter"
+            id: field_42
+            name: area
+            qualifiedName: "package:dart_overview/classes/declarations/run_declarations.dart.area"
             declaringTypeId: class_13
-            owningLibraryId: lib_9
-            sourceFileId: file_10
+            owningLibraryId: lib_11
+            sourceFileId: file_12
             location:
               line: 0
               column: 0
               offset: 0
-              length: 9
+              length: 4
             documentation: null
             annotations:
 
@@ -6314,18 +6434,20 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: false
+            hasGetter: true
+            hasSetter: false
           -
-            id: field_44
-            name: scale
-            qualifiedName: "package:dart_overview/classes/declarations/run_declarations.dart.scale"
+            id: field_43
+            name: perimeter
+            qualifiedName: "package:dart_overview/classes/declarations/run_declarations.dart.perimeter"
             declaringTypeId: class_13
-            owningLibraryId: lib_9
-            sourceFileId: file_10
+            owningLibraryId: lib_11
+            sourceFileId: file_12
             location:
               line: 0
               column: 0
               offset: 0
-              length: 5
+              length: 9
             documentation: null
             annotations:
 
@@ -6349,6 +6471,45 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: false
+            hasGetter: true
+            hasSetter: false
+          -
+            id: field_44
+            name: scale
+            qualifiedName: "package:dart_overview/classes/declarations/run_declarations.dart.scale"
+            declaringTypeId: class_13
+            owningLibraryId: lib_11
+            sourceFileId: file_12
+            location:
+              line: 0
+              column: 0
+              offset: 0
+              length: 5
+            documentation: null
+            annotations:
+
+            type:
+              id: type_189
+              name: double
+              qualifiedName: "dart:core.double"
+              typeArguments:
+
+              isNullable: false
+              isDynamic: false
+              isVoid: false
+              isFunction: false
+              functionType: null
+              definitionLibraryId: null
+              isTypeParameter: false
+              typeParameterBound: null
+              resolvedElementId: null
+            isFinal: false
+            isConst: false
+            isLate: false
+            isStatic: false
+            hasInitializer: false
+            hasGetter: false
+            hasSetter: true
         getters:
 
         setters:
@@ -6356,8 +6517,8 @@ libraries:
         id: class_14
         name: BankAccount
         qualifiedName: "package:dart_overview/classes/declarations/run_declarations.dart.BankAccount"
-        libraryId: lib_9
-        sourceFileId: file_10
+        libraryId: lib_11
+        sourceFileId: file_12
         location:
           line: 0
           column: 0
@@ -6373,7 +6534,7 @@ libraries:
         isInterface: false
         isMixin: false
         superclass:
-          id: type_189
+          id: type_190
           name: Object
           qualifiedName: "dart:core.Object"
           typeArguments:
@@ -6396,10 +6557,10 @@ libraries:
         constructors:
           -
             id: ctor_25
-            name: BankAccount
+            name: new
             qualifiedName: "package:dart_overview/classes/declarations/run_declarations.dart.BankAccount"
             declaringTypeId: class_14
-            sourceFileId: file_10
+            sourceFileId: file_12
             location:
               line: 0
               column: 0
@@ -6413,7 +6574,7 @@ libraries:
                 id: param_45
                 name: accountNumber
                 type:
-                  id: type_190
+                  id: type_191
                   name: String
                   qualifiedName: "dart:core.String"
                   typeArguments:
@@ -6438,7 +6599,7 @@ libraries:
                 id: param_46
                 name: _balance
                 type:
-                  id: type_191
+                  id: type_192
                   name: double
                   qualifiedName: "dart:core.double"
                   typeArguments:
@@ -6472,8 +6633,8 @@ libraries:
             name: deposit
             qualifiedName: "package:dart_overview/classes/declarations/run_declarations.dart.deposit"
             declaringTypeId: class_14
-            owningLibraryId: lib_9
-            sourceFileId: file_10
+            owningLibraryId: lib_11
+            sourceFileId: file_12
             location:
               line: 0
               column: 0
@@ -6483,7 +6644,7 @@ libraries:
             annotations:
 
             returnType:
-              id: type_192
+              id: type_193
               name: void
               qualifiedName: void
               typeArguments:
@@ -6504,7 +6665,7 @@ libraries:
                 id: param_47
                 name: amount
                 type:
-                  id: type_193
+                  id: type_194
                   name: double
                   qualifiedName: "dart:core.double"
                   typeArguments:
@@ -6536,8 +6697,8 @@ libraries:
             name: withdraw
             qualifiedName: "package:dart_overview/classes/declarations/run_declarations.dart.withdraw"
             declaringTypeId: class_14
-            owningLibraryId: lib_9
-            sourceFileId: file_10
+            owningLibraryId: lib_11
+            sourceFileId: file_12
             location:
               line: 0
               column: 0
@@ -6547,7 +6708,7 @@ libraries:
             annotations:
 
             returnType:
-              id: type_194
+              id: type_195
               name: bool
               qualifiedName: "dart:core.bool"
               typeArguments:
@@ -6568,7 +6729,7 @@ libraries:
                 id: param_48
                 name: amount
                 type:
-                  id: type_195
+                  id: type_196
                   name: double
                   qualifiedName: "dart:core.double"
                   typeArguments:
@@ -6601,8 +6762,8 @@ libraries:
             name: accountNumber
             qualifiedName: "package:dart_overview/classes/declarations/run_declarations.dart.accountNumber"
             declaringTypeId: class_14
-            owningLibraryId: lib_9
-            sourceFileId: file_10
+            owningLibraryId: lib_11
+            sourceFileId: file_12
             location:
               line: 0
               column: 0
@@ -6612,7 +6773,7 @@ libraries:
             annotations:
 
             type:
-              id: type_196
+              id: type_197
               name: String
               qualifiedName: "dart:core.String"
               typeArguments:
@@ -6631,53 +6792,20 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: false
+            hasGetter: true
+            hasSetter: false
           -
             id: field_46
             name: _balance
             qualifiedName: "package:dart_overview/classes/declarations/run_declarations.dart._balance"
             declaringTypeId: class_14
-            owningLibraryId: lib_9
-            sourceFileId: file_10
+            owningLibraryId: lib_11
+            sourceFileId: file_12
             location:
               line: 0
               column: 0
               offset: 3586
               length: 8
-            documentation: null
-            annotations:
-
-            type:
-              id: type_197
-              name: double
-              qualifiedName: "dart:core.double"
-              typeArguments:
-
-              isNullable: false
-              isDynamic: false
-              isVoid: false
-              isFunction: false
-              functionType: null
-              definitionLibraryId: null
-              isTypeParameter: false
-              typeParameterBound: null
-              resolvedElementId: null
-            isFinal: false
-            isConst: false
-            isLate: false
-            isStatic: false
-            hasInitializer: false
-          -
-            id: field_47
-            name: balance
-            qualifiedName: "package:dart_overview/classes/declarations/run_declarations.dart.balance"
-            declaringTypeId: class_14
-            owningLibraryId: lib_9
-            sourceFileId: file_10
-            location:
-              line: 0
-              column: 0
-              offset: 0
-              length: 7
             documentation: null
             annotations:
 
@@ -6701,6 +6829,45 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: false
+            hasGetter: true
+            hasSetter: true
+          -
+            id: field_47
+            name: balance
+            qualifiedName: "package:dart_overview/classes/declarations/run_declarations.dart.balance"
+            declaringTypeId: class_14
+            owningLibraryId: lib_11
+            sourceFileId: file_12
+            location:
+              line: 0
+              column: 0
+              offset: 0
+              length: 7
+            documentation: null
+            annotations:
+
+            type:
+              id: type_199
+              name: double
+              qualifiedName: "dart:core.double"
+              typeArguments:
+
+              isNullable: false
+              isDynamic: false
+              isVoid: false
+              isFunction: false
+              functionType: null
+              definitionLibraryId: null
+              isTypeParameter: false
+              typeParameterBound: null
+              resolvedElementId: null
+            isFinal: false
+            isConst: false
+            isLate: false
+            isStatic: false
+            hasInitializer: false
+            hasGetter: true
+            hasSetter: false
         getters:
 
         setters:
@@ -6708,8 +6875,8 @@ libraries:
         id: class_15
         name: Circle
         qualifiedName: "package:dart_overview/classes/declarations/run_declarations.dart.Circle"
-        libraryId: lib_9
-        sourceFileId: file_10
+        libraryId: lib_11
+        sourceFileId: file_12
         location:
           line: 0
           column: 0
@@ -6725,7 +6892,7 @@ libraries:
         isInterface: false
         isMixin: false
         superclass:
-          id: type_199
+          id: type_200
           name: Object
           qualifiedName: "dart:core.Object"
           typeArguments:
@@ -6748,10 +6915,10 @@ libraries:
         constructors:
           -
             id: ctor_26
-            name: Circle
+            name: new
             qualifiedName: "package:dart_overview/classes/declarations/run_declarations.dart.Circle"
             declaringTypeId: class_15
-            sourceFileId: file_10
+            sourceFileId: file_12
             location:
               line: 0
               column: 0
@@ -6765,7 +6932,7 @@ libraries:
                 id: param_49
                 name: radius
                 type:
-                  id: type_200
+                  id: type_201
                   name: double
                   qualifiedName: "dart:core.double"
                   typeArguments:
@@ -6801,48 +6968,13 @@ libraries:
             name: radius
             qualifiedName: "package:dart_overview/classes/declarations/run_declarations.dart.radius"
             declaringTypeId: class_15
-            owningLibraryId: lib_9
-            sourceFileId: file_10
+            owningLibraryId: lib_11
+            sourceFileId: file_12
             location:
               line: 0
               column: 0
               offset: 4055
               length: 6
-            documentation: null
-            annotations:
-
-            type:
-              id: type_201
-              name: double
-              qualifiedName: "dart:core.double"
-              typeArguments:
-
-              isNullable: false
-              isDynamic: false
-              isVoid: false
-              isFunction: false
-              functionType: null
-              definitionLibraryId: null
-              isTypeParameter: false
-              typeParameterBound: null
-              resolvedElementId: null
-            isFinal: true
-            isConst: false
-            isLate: false
-            isStatic: false
-            hasInitializer: false
-          -
-            id: field_49
-            name: diameter
-            qualifiedName: "package:dart_overview/classes/declarations/run_declarations.dart.diameter"
-            declaringTypeId: class_15
-            owningLibraryId: lib_9
-            sourceFileId: file_10
-            location:
-              line: 0
-              column: 0
-              offset: 0
-              length: 8
             documentation: null
             annotations:
 
@@ -6861,23 +6993,25 @@ libraries:
               isTypeParameter: false
               typeParameterBound: null
               resolvedElementId: null
-            isFinal: false
+            isFinal: true
             isConst: false
             isLate: false
             isStatic: false
             hasInitializer: false
+            hasGetter: true
+            hasSetter: false
           -
-            id: field_50
-            name: circumference
-            qualifiedName: "package:dart_overview/classes/declarations/run_declarations.dart.circumference"
+            id: field_49
+            name: diameter
+            qualifiedName: "package:dart_overview/classes/declarations/run_declarations.dart.diameter"
             declaringTypeId: class_15
-            owningLibraryId: lib_9
-            sourceFileId: file_10
+            owningLibraryId: lib_11
+            sourceFileId: file_12
             location:
               line: 0
               column: 0
               offset: 0
-              length: 13
+              length: 8
             documentation: null
             annotations:
 
@@ -6901,18 +7035,20 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: false
+            hasGetter: true
+            hasSetter: false
           -
-            id: field_51
-            name: circleArea
-            qualifiedName: "package:dart_overview/classes/declarations/run_declarations.dart.circleArea"
+            id: field_50
+            name: circumference
+            qualifiedName: "package:dart_overview/classes/declarations/run_declarations.dart.circumference"
             declaringTypeId: class_15
-            owningLibraryId: lib_9
-            sourceFileId: file_10
+            owningLibraryId: lib_11
+            sourceFileId: file_12
             location:
               line: 0
               column: 0
               offset: 0
-              length: 10
+              length: 13
             documentation: null
             annotations:
 
@@ -6936,6 +7072,45 @@ libraries:
             isLate: false
             isStatic: false
             hasInitializer: false
+            hasGetter: true
+            hasSetter: false
+          -
+            id: field_51
+            name: circleArea
+            qualifiedName: "package:dart_overview/classes/declarations/run_declarations.dart.circleArea"
+            declaringTypeId: class_15
+            owningLibraryId: lib_11
+            sourceFileId: file_12
+            location:
+              line: 0
+              column: 0
+              offset: 0
+              length: 10
+            documentation: null
+            annotations:
+
+            type:
+              id: type_205
+              name: double
+              qualifiedName: "dart:core.double"
+              typeArguments:
+
+              isNullable: false
+              isDynamic: false
+              isVoid: false
+              isFunction: false
+              functionType: null
+              definitionLibraryId: null
+              isTypeParameter: false
+              typeParameterBound: null
+              resolvedElementId: null
+            isFinal: false
+            isConst: false
+            isLate: false
+            isStatic: false
+            hasInitializer: false
+            hasGetter: true
+            hasSetter: false
         getters:
 
         setters:
@@ -6951,28 +7126,29 @@ libraries:
 
     functions:
       -
-        id: function_3
+        id: function_4
         name: main
         qualifiedName: "package:dart_overview/classes/declarations/run_declarations.dart.main"
-        libraryId: lib_9
-        sourceFileId: file_10
+        libraryId: lib_11
+        sourceFileId: file_12
         location:
           line: 0
           column: 0
           offset: 196
           length: 4
-        documentation: "/// Demonstrates Dart class declarations
-///
-/// Features covered:
-/// - Basic class declaration
-/// - Instance variables (fields)
-/// - Constructors
-/// - Methods
-/// - Getters and setters"
+        documentation: |
+          /// Demonstrates Dart class declarations
+          ///
+          /// Features covered:
+          /// - Basic class declaration
+          /// - Instance variables (fields)
+          /// - Constructors
+          /// - Methods
+          /// - Getters and setters
         annotations:
 
         returnType:
-          id: type_205
+          id: type_206
           name: void
           qualifiedName: void
           typeArguments:
@@ -7004,11 +7180,11 @@ libraries:
 
     exports:
   -
-    id: lib_11
-    name: 
+    id: lib_13
+    name: ""
     uri: "package:dart_overview/run_dart_overview.dart"
     packageId: pkg_2
-    mainSourceFileId: file_12
+    mainSourceFileId: file_14
     partFileIds:
 
     documentation: null
@@ -7028,11 +7204,11 @@ libraries:
 
     functions:
       -
-        id: function_4
+        id: function_5
         name: main
         qualifiedName: "package:dart_overview/run_dart_overview.dart.main"
-        libraryId: lib_11
-        sourceFileId: file_12
+        libraryId: lib_13
+        sourceFileId: file_14
         location:
           line: 0
           column: 0
@@ -7042,12 +7218,12 @@ libraries:
         annotations:
 
         returnType:
-          id: type_206
+          id: type_207
           name: Future
           qualifiedName: "dart:async.Future"
           typeArguments:
             -
-              id: type_207
+              id: type_208
               name: void
               qualifiedName: void
               typeArguments:
@@ -7090,59 +7266,69 @@ libraries:
 files:
   -
     id: file_2
-    path: /Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_analyzer/test/build_examples/analyze_dart_overview/lib/main.dart
+    path: /Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_analyzer/test/build_examples/analyze_dart_overview/bin/verify.dart
     packageId: pkg_1
     libraryId: lib_2
+    isPart: false
+    partOfDirective: null
+    lines: 148
+    contentHash: 37bb88bff1022151f24b57682f7dbbb9bb5fee7b887db1decb15e9cb555bfeee
+    modified: "2026-02-05T12:06:43.000"
+  -
+    id: file_4
+    path: /Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_analyzer/test/build_examples/analyze_dart_overview/lib/main.dart
+    packageId: pkg_1
+    libraryId: lib_4
     isPart: false
     partOfDirective: null
     lines: 8
     contentHash: c48dbf3478752e2ba0f82d0f8970b3462d8cedded89d4d1e2a2060ab97bb5325
     modified: "2026-02-05T10:55:29.000"
   -
-    id: file_4
+    id: file_6
     path: /Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_analyzer/test/dart_overview/lib/dart_overview.dart
     packageId: pkg_2
-    libraryId: lib_4
+    libraryId: lib_6
     isPart: false
     partOfDirective: null
     lines: 13
     contentHash: be2e8a25b51d76a627e3907aadb181bedf20f949f54c373a67b452120f829078
     modified: "2026-02-05T10:59:17.000"
   -
-    id: file_6
+    id: file_8
     path: /Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_analyzer/test/dart_overview/lib/enums/basics/run_basics.dart
     packageId: pkg_2
-    libraryId: lib_6
+    libraryId: lib_8
     isPart: false
     partOfDirective: null
     lines: 235
     contentHash: 6e69116060c769af992dc0c421ec767e7f0a500d7b98097dd88f4cdb57702ba3
     modified: "2026-02-03T21:31:59.000"
   -
-    id: file_8
+    id: file_10
     path: /Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_analyzer/test/dart_overview/lib/generics/generic_classes/run_generic_classes.dart
     packageId: pkg_2
-    libraryId: lib_8
+    libraryId: lib_10
     isPart: false
     partOfDirective: null
     lines: 229
     contentHash: 8dd70f832b7e944a84d6f6ce6cabd0767b6635a4e3e7e330d79859ff0b203541
     modified: "2026-02-03T21:31:59.000"
   -
-    id: file_10
+    id: file_12
     path: /Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_analyzer/test/dart_overview/lib/classes/declarations/run_declarations.dart
     packageId: pkg_2
-    libraryId: lib_10
+    libraryId: lib_12
     isPart: false
     partOfDirective: null
     lines: 188
     contentHash: ccc6d9390d64ec0f7dff0b2df54f22e766dc96085f0e9142d2d3a0606d4ed6f5
     modified: "2026-02-03T21:31:59.000"
   -
-    id: file_12
+    id: file_14
     path: /Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_analyzer/test/dart_overview/lib/run_dart_overview.dart
     packageId: pkg_2
-    libraryId: lib_12
+    libraryId: lib_14
     isPart: false
     partOfDirective: null
     lines: 258

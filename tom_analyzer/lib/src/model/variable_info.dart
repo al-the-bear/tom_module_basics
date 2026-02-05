@@ -45,6 +45,12 @@ class VariableInfo extends VariableElement {
 
   final bool hasInitializer;
 
+  /// Whether this variable has a getter.
+  final bool hasGetter;
+
+  /// Whether this variable has a setter.
+  final bool hasSetter;
+
   VariableInfo({
     required this.id,
     required this.name,
@@ -59,5 +65,7 @@ class VariableInfo extends VariableElement {
     this.isConst = false,
     this.isLate = false,
     this.hasInitializer = false,
+    this.hasGetter = true,
+    this.hasSetter = true,
   }) : isStatic = true;
 }

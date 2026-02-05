@@ -21,7 +21,8 @@ void main() {
   // Comparable bound
   print('');
   print('--- Comparable Bound ---');
-  var numbers = [5, 2, 8, 1, 9];
+  // Using num instead of int because int implements Comparable<num>, not Comparable<int>
+  var numbers = <num>[5, 2, 8, 1, 9];
   var words = ['banana', 'apple', 'cherry'];
 
   print('Min of $numbers: ${findMin(numbers)}');
@@ -30,7 +31,7 @@ void main() {
   print('Max of $words: ${findMax(words)}');
 
   // Sorted list
-  var sortedNumbers = SortedList<int>()..addAll(numbers);
+  var sortedNumbers = SortedList<num>()..addAll(numbers);
   var sortedWords = SortedList<String>()..addAll(words);
 
   print('');
@@ -97,9 +98,10 @@ void main() {
   // Clamp function
   print('');
   print('--- Clamp Function ---');
-  print('clamp(15, 10, 20): ${clamp(15, 10, 20)}');
-  print('clamp(5, 10, 20): ${clamp(5, 10, 20)}');
-  print('clamp(25, 10, 20): ${clamp(25, 10, 20)}');
+  // Using num for type inference (int implements Comparable<num>)
+  print('clamp(15, 10, 20): ${clamp<num>(15, 10, 20)}');
+  print('clamp(5, 10, 20): ${clamp<num>(5, 10, 20)}');
+  print('clamp(25, 10, 20): ${clamp<num>(25, 10, 20)}');
 
   // Interface bounds
   print('');

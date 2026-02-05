@@ -86,6 +86,9 @@ class TomAnalyzer {
 
     analysisResult.packages[analysisResult.rootPackage.name] = analysisResult.rootPackage;
 
+    // Resolve TypeReferences to their corresponding type declarations
+    registry.resolveTypeReferences(analysisResult);
+
     return analysisResult;
   }
 
@@ -578,6 +581,8 @@ class TomAnalyzer {
       isConst: element.isConst,
       isLate: element.isLate,
       hasInitializer: element.hasInitializer,
+      hasGetter: element.getter != null,
+      hasSetter: !element.isFinal && !element.isConst && element.setter != null,
     );
   }
 
@@ -606,6 +611,10 @@ class TomAnalyzer {
       isLate: element.isLate,
       isStatic: element.isStatic,
       hasInitializer: element.hasInitializer,
+      // A field has a getter if it has a getter accessor
+      hasGetter: element.getter != null,
+      // A field has a setter if it's not final/const and has a setter accessor
+      hasSetter: !element.isFinal && !element.isConst && element.setter != null,
     );
   }
 
@@ -709,7 +718,9 @@ class TomAnalyzer {
     }
     return ConstructorInfo(
       id: registry.idGen.nextId('ctor'),
-      name: element.displayName,
+      // Use element.name which returns '' for unnamed constructors
+      // instead of displayName which returns the class name
+      name: element.name ?? '',
       qualifiedName: _qualifiedName(element),
       declaringType: ownerType,
       sourceFile: ownerType.sourceFile,
@@ -787,13 +798,15 @@ class TomAnalyzer {
     if (type is analyzer_types.InterfaceType) {
       final element = type.element;
       final qualified = _qualifiedName(element);
-      return TypeReference(
+      final typeRef = TypeReference(
         id: registry.idGen.nextId('type'),
         name: element.displayName,
         qualifiedName: qualified,
         typeArguments: type.typeArguments.map((t) => _typeRef(t, registry, visited)).toList(),
         isNullable: type.nullabilitySuffix.name == 'question',
       );
+      registry.trackTypeReference(typeRef);
+      return typeRef;
     }
 
     return TypeReference(
@@ -825,8 +838,46 @@ class _ModelRegistry {
   AnalysisResult? _analysisResult;
   final Map<Uri, LibraryInfo> _libraries = {};
   final Map<String, PackageInfo> _packages = {};
+  final List<TypeReference> _allTypeReferences = [];
 
   _ModelRegistry(this.idGen);
+
+  /// Track a TypeReference for later resolution.
+  void trackTypeReference(TypeReference typeRef) {
+    _allTypeReferences.add(typeRef);
+  }
+
+  /// Resolve all tracked TypeReferences to their corresponding type declarations.
+  void resolveTypeReferences(AnalysisResult result) {
+    // Build a lookup map from qualifiedName to TypeDeclaration
+    final typeDeclarationMap = <String, TypeDeclaration>{};
+    for (final cls in result.allClasses) {
+      typeDeclarationMap[cls.qualifiedName] = cls;
+    }
+    for (final enm in result.allEnums) {
+      typeDeclarationMap[enm.qualifiedName] = enm;
+    }
+    for (final mix in result.allMixins) {
+      typeDeclarationMap[mix.qualifiedName] = mix;
+    }
+    for (final ext in result.allExtensions) {
+      typeDeclarationMap[ext.qualifiedName] = ext;
+    }
+    for (final extType in result.allExtensionTypes) {
+      typeDeclarationMap[extType.qualifiedName] = extType;
+    }
+    for (final alias in result.allTypeAliases) {
+      typeDeclarationMap[alias.qualifiedName] = alias;
+    }
+
+    // Resolve each tracked TypeReference
+    for (final typeRef in _allTypeReferences) {
+      final resolved = typeDeclarationMap[typeRef.qualifiedName];
+      if (resolved != null) {
+        typeRef.setResolvedElement(resolved);
+      }
+    }
+  }
 
   void attachAnalysisResult(AnalysisResult result) {
     _analysisResult = result;

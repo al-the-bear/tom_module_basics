@@ -21,12 +21,12 @@ class _YamlEmitter {
       return _emitList(value, indent);
     }
     if (value is String) {
-      return _escapeString(value);
+      return _escapeString(value, indent);
     }
     if (value is num || value is bool) {
       return value.toString();
     }
-    return _escapeString(value.toString());
+    return _escapeString(value.toString(), indent);
   }
 
   String _emitMap(Map<String, Object?> map, int indent) {
@@ -38,8 +38,12 @@ class _YamlEmitter {
       if (value is Map || value is List) {
         buffer.writeln('$pad$key:');
         buffer.writeln(emit(value, indent: indent + 2));
+      } else if (value is String && value.contains('\n')) {
+        // Multiline strings need special handling
+        buffer.write('$pad$key: ');
+        buffer.writeln(_escapeString(value, indent + 2));
       } else {
-        buffer.writeln('$pad$key: ${emit(value)}');
+        buffer.writeln('$pad$key: ${emit(value, indent: indent)}');
       }
     }
     return buffer.toString().trimRight();
@@ -53,17 +57,62 @@ class _YamlEmitter {
         buffer.writeln('$pad-');
         buffer.writeln(emit(value, indent: indent + 2));
       } else {
-        buffer.writeln('$pad- ${emit(value)}');
+        buffer.writeln('$pad- ${emit(value, indent: indent)}');
       }
     }
     return buffer.toString().trimRight();
   }
 
-  String _escapeString(String value) {
-    final escaped = value.replaceAll('"', '\\"');
-    if (escaped.contains('\n') || escaped.contains(':') || escaped.contains('#')) {
+  String _escapeString(String value, [int indent = 0]) {
+    // Empty strings need quoting
+    if (value.isEmpty) return '""';
+
+    // For multiline strings, use literal block scalar
+    if (value.contains('\n')) {
+      final lines = value.split('\n');
+      final pad = ' ' * indent;
+      final buffer = StringBuffer('|\n');
+      for (final line in lines) {
+        buffer.writeln('$pad$line');
+      }
+      return buffer.toString().trimRight();
+    }
+
+    // Check for YAML special characters and patterns that need quoting
+    final needsQuoting = value.contains(':') ||
+        value.contains('#') ||
+        value.contains('"') ||
+        value.contains("'") ||
+        value.contains('\\') ||
+        value.contains('>') ||
+        value.contains('|') ||
+        value.contains('&') ||
+        value.contains('*') ||
+        value.contains('!') ||
+        value.contains('%') ||
+        value.contains('@') ||
+        value.contains('`') ||
+        value.contains('[') ||
+        value.contains(']') ||
+        value.contains('{') ||
+        value.contains('}') ||
+        value.contains(',') ||
+        value.startsWith('-') ||
+        value.startsWith('?') ||
+        value.startsWith(' ') ||
+        value.endsWith(' ') ||
+        value == 'null' ||
+        value == 'true' ||
+        value == 'false' ||
+        value == '~' ||
+        // Numbers that might be misinterpreted
+        RegExp(r'^[\d.eE+-]+$').hasMatch(value);
+
+    if (needsQuoting) {
+      // Escape backslashes first, then quotes
+      final escaped = value.replaceAll('\\', '\\\\').replaceAll('"', '\\"');
       return '"$escaped"';
     }
-    return escaped;
+    return value;
   }
 }
