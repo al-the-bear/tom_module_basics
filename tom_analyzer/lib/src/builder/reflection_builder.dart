@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:build/build.dart';
+import 'package:path/path.dart' as p;
 
 import '../analyzer/analyzer_runner.dart';
 import '../config/configuration.dart';
@@ -25,10 +28,16 @@ class ReflectionBuilder implements Builder {
       return;
     }
 
+    // Convert relative path to absolute path for analyzer
+    final workspaceRoot = config.workspaceRoot ?? Directory.current.path;
+    final absoluteBarrelPath = p.isAbsolute(buildStep.inputId.path)
+        ? buildStep.inputId.path
+        : p.join(workspaceRoot, buildStep.inputId.path);
+
     final analyzer = TomAnalyzer();
     final result = await analyzer.analyzeBarrel(
-      barrelPath: buildStep.inputId.path,
-      workspaceRoot: config.workspaceRoot,
+      barrelPath: absoluteBarrelPath,
+      workspaceRoot: workspaceRoot,
       followReExports: config.followReExports,
       followReExportPackages: config.followReExportPackages,
       skipReExports: config.skipReExports,

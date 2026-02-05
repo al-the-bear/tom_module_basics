@@ -178,7 +178,7 @@ class MultiEntryGenerator {
     final extensionTypes = <ExtensionTypeElement>{};
     final extensions = <ExtensionElement>{};
     final typeAliases = <TypeAliasElement>{};
-    final globalFunctions = <FunctionElement>{};
+    final globalFunctions = <TopLevelFunctionElement>{};
     final globalVariables = <TopLevelVariableElement>{};
     final packageLibraries = <String, Set<String>>{};
     final libraryTypes = <String, Set<InterfaceElement>>{};

@@ -19,9 +19,10 @@ include: package:lints/recommended.yaml
 #   rules:
 #     - camel_case_types
 
-# analyzer:
-#   exclude:
-#     - path/to/excluded/files/**
+analyzer:
+  exclude:
+    # AST module is incomplete (WIP) and not exported from the main library
+    - lib/src/ast/**
 
 # For more information about the core and recommended set of lints, see
 # https://dart.dev/go/core-lints

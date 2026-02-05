@@ -1,0 +1,18 @@
+# Build configuration for tom_analyzer reflection generation
+# 
+# This build.yaml configures the reflection generator to run during build_runner execution.
+# The generator produces a .r.dart file with reflection metadata for runtime introspection.
+
+targets:
+  $default:
+    builders:
+      tom_analyzer|tom_analyzer_reflection:
+        enabled: true
+        generate_for:
+          - lib/main.dart
+        options:
+          # Barrel files to analyze (must match generate_for paths)
+          barrels:
+            - lib/main.dart
+          # Include all exported types from the barrel file
+          follow_re_exports: true

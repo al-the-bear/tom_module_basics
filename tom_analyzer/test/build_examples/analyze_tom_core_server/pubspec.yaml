@@ -1,0 +1,22 @@
+name: analyze_tom_core_server
+description: Example of using tom_analyzer to analyze tom_core_server with all dependencies.
+version: 1.0.0
+publish_to: none
+
+environment:
+  sdk: ^3.5.0
+
+dependencies:
+  tom_core_server:
+    path: ../../../../../../core/tom_core_server
+  tom_core_kernel:
+    path: ../../../../../../core/tom_core_kernel
+  tom_basics_console:
+    path: ../../../../tom_basics_console
+
+dev_dependencies:
+  build_runner: ^2.10.4
+  build: ^4.0.3
+  tom_analyzer:
+    path: ../../../
+  lints: ^5.0.0

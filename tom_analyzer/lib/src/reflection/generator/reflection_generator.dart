@@ -197,22 +197,22 @@ class ReflectionGenerator {
     final libraryUris = <String>{};
 
     for (final cls in result.classes) {
-      libraryUris.add(cls.library.source.uri.toString());
+      libraryUris.add(cls.library.firstFragment.source.uri.toString());
     }
     for (final enm in result.enums) {
-      libraryUris.add(enm.library.source.uri.toString());
+      libraryUris.add(enm.library.firstFragment.source.uri.toString());
     }
     for (final mixin in result.mixins) {
-      libraryUris.add(mixin.library.source.uri.toString());
+      libraryUris.add(mixin.library.firstFragment.source.uri.toString());
     }
     for (final extType in result.extensionTypes) {
-      libraryUris.add(extType.library.source.uri.toString());
+      libraryUris.add(extType.library.firstFragment.source.uri.toString());
     }
     for (final func in result.globalFunctions) {
-      libraryUris.add(func.library.source.uri.toString());
+      libraryUris.add(func.library.firstFragment.source.uri.toString());
     }
     for (final variable in result.globalVariables) {
-      libraryUris.add(variable.library.source.uri.toString());
+      libraryUris.add(variable.library.firstFragment.source.uri.toString());
     }
 
     // Generate imports with prefixes
@@ -358,16 +358,17 @@ class ReflectionGenerator {
         if (ctor.isPrivate) continue;
         if (!_shouldGenerateInvoker(ctor)) continue;
 
-        final ctorName = ctor.name.isEmpty ? 'new' : ctor.name;
+        final ctorName = ctor.name;
+        final ctorDisplayName = (ctorName == null || ctorName.isEmpty) ? 'new' : ctorName;
         _constructorInvokerIndices[ctor] = _invokerCounter;
         buffer.writeln(
-            "  // ${cls.name}.$ctorName constructor - Index ${_invokerCounter++}");
-        if (ctor.name.isEmpty) {
+            "  // ${cls.name}.$ctorDisplayName constructor - Index ${_invokerCounter++}");
+        if (ctorName == null || ctorName.isEmpty) {
           buffer.writeln(
               "  (List args, Map<Symbol, dynamic> named) => Function.apply($prefix.${cls.name}.new, args, named),");
         } else {
           buffer.writeln(
-              "  (List args, Map<Symbol, dynamic> named) => Function.apply($prefix.${cls.name}.${ctor.name}, args, named),");
+              "  (List args, Map<Symbol, dynamic> named) => Function.apply($prefix.${cls.name}.$ctorName, args, named),");
         }
       }
     }
@@ -435,7 +436,7 @@ class ReflectionGenerator {
     }
   }
 
-  void _writeGlobalFunctionInvoker(StringBuffer buffer, FunctionElement func) {
+  void _writeGlobalFunctionInvoker(StringBuffer buffer, TopLevelFunctionElement func) {
     if (func.isPrivate) return;
 
     final prefix = _getPrefix(func);
@@ -488,29 +489,33 @@ class ReflectionGenerator {
       }
     }
 
-    // Extension getter/setter invokers
-    for (final accessor in ext.accessors) {
-      if (accessor.isPrivate) continue;
+    // Extension getter invokers
+    for (final getter in ext.getters) {
+      if (getter.isPrivate) continue;
 
-      if (accessor.isGetter) {
-        _extensionMethodInvokerIndices[accessor] = _invokerCounter;
-        buffer.writeln(
-            "  // $extName.${accessor.name} extension getter - Index ${_invokerCounter++}");
-        if (ext.name != null) {
-          buffer.writeln("  (dynamic target) => $prefix.${ext.name}(target).${accessor.name},");
-        } else {
-          buffer.writeln("  (dynamic target) => target.${accessor.name},");
-        }
-      } else if (accessor.isSetter) {
-        _extensionMethodInvokerIndices[accessor] = _invokerCounter;
-        final propName = accessor.name.replaceAll('=', '');
-        buffer.writeln(
-            "  // $extName.$propName extension setter - Index ${_invokerCounter++}");
-        if (ext.name != null) {
-          buffer.writeln("  (dynamic target, dynamic v) => $prefix.${ext.name}(target).$propName = v,");
-        } else {
-          buffer.writeln("  (dynamic target, dynamic v) => target.$propName = v,");
-        }
+      _extensionMethodInvokerIndices[getter] = _invokerCounter;
+      buffer.writeln(
+          "  // $extName.${getter.name} extension getter - Index ${_invokerCounter++}");
+      if (ext.name != null) {
+        buffer.writeln("  (dynamic target) => $prefix.${ext.name}(target).${getter.name},");
+      } else {
+        buffer.writeln("  (dynamic target) => target.${getter.name},");
+      }
+    }
+
+    // Extension setter invokers
+    for (final setter in ext.setters) {
+      if (setter.isPrivate) continue;
+
+      _extensionMethodInvokerIndices[setter] = _invokerCounter;
+      final setterName = setter.name ?? '';
+      final propName = setterName.replaceAll('=', '');
+      buffer.writeln(
+          "  // $extName.$propName extension setter - Index ${_invokerCounter++}");
+      if (ext.name != null) {
+        buffer.writeln("  (dynamic target, dynamic v) => $prefix.${ext.name}(target).$propName = v,");
+      } else {
+        buffer.writeln("  (dynamic target, dynamic v) => target.$propName = v,");
       }
     }
   }
@@ -603,9 +608,10 @@ class ReflectionGenerator {
           ? -1 
           : (_constructorInvokerIndices[ctor] ?? -1);
       final flags = _computeConstructorFlags(ctor);
-      final name = ctor.name.isEmpty ? '' : ctor.name;
+      final ctorName = ctor.name ?? '';
+      final name = ctorName.isEmpty ? '' : ctorName;
 
-      buffer.writeln("    // Constructor: ${cls.name}.${ctor.name.isEmpty ? 'new' : ctor.name}");
+      buffer.writeln("    // Constructor: ${cls.name}.${ctorName.isEmpty ? 'new' : ctorName}");
       buffer.writeln('    r.ConstructorMirrorData(');
       buffer.writeln("      '$name',  // name");
       buffer.writeln('      $flags,  // flags');
@@ -716,8 +722,8 @@ class ReflectionGenerator {
       final invokerIndex = _extensionMethodInvokerIndices[method] ?? -1;
       var flags = 1 << 6; // method flag
       flags |= 1 << 9; // extension flag
-      if (method.isAsynchronous) flags |= 1 << 10;
-      if (method.isGenerator) flags |= 1 << 11;
+      if (method.firstFragment.isAsynchronous) flags |= 1 << 10;
+      if (method.firstFragment.isGenerator) flags |= 1 << 11;
 
       buffer.writeln("    // Extension method: $extName.${method.name}");
       buffer.writeln('    r.MethodMirrorData(');
@@ -732,40 +738,44 @@ class ReflectionGenerator {
       buffer.writeln('    ),');
     }
 
-    // Extension getters/setters
-    for (final accessor in ext.accessors) {
-      if (accessor.isPrivate) continue;
+    // Extension getters
+    for (final getter in ext.getters) {
+      if (getter.isPrivate) continue;
 
-      final invokerIndex = _extensionMethodInvokerIndices[accessor] ?? -1;
+      final invokerIndex = _extensionMethodInvokerIndices[getter] ?? -1;
+      var flags = 1 << 4; // getter flag
+      flags |= 1 << 9; // extension flag
 
-      if (accessor.isGetter) {
-        var flags = 1 << 4; // getter flag
-        flags |= 1 << 9; // extension flag
+      buffer.writeln("    // Extension getter: $extName.${getter.name}");
+      buffer.writeln('    r.GetterMirrorData(');
+      buffer.writeln("      '${getter.name}',  // name");
+      buffer.writeln('      $flags,  // flags');
+      buffer.writeln('      $extIndex,  // owner index (extension index)');
+      buffer.writeln('      -1,  // return type ref index');
+      buffer.writeln('      $invokerIndex,  // invoker index');
+      buffer.writeln('      const [],  // annotation indices');
+      buffer.writeln('    ),');
+    }
 
-        buffer.writeln("    // Extension getter: $extName.${accessor.name}");
-        buffer.writeln('    r.GetterMirrorData(');
-        buffer.writeln("      '${accessor.name}',  // name");
-        buffer.writeln('      $flags,  // flags');
-        buffer.writeln('      $extIndex,  // owner index (extension index)');
-        buffer.writeln('      -1,  // return type ref index');
-        buffer.writeln('      $invokerIndex,  // invoker index');
-        buffer.writeln('      const [],  // annotation indices');
-        buffer.writeln('    ),');
-      } else if (accessor.isSetter) {
-        final propName = accessor.name.replaceAll('=', '');
-        var flags = 1 << 5; // setter flag
-        flags |= 1 << 9; // extension flag
+    // Extension setters
+    for (final setter in ext.setters) {
+      if (setter.isPrivate) continue;
 
-        buffer.writeln("    // Extension setter: $extName.$propName");
-        buffer.writeln('    r.SetterMirrorData(');
-        buffer.writeln("      '$propName',  // name");
-        buffer.writeln('      $flags,  // flags');
-        buffer.writeln('      $extIndex,  // owner index (extension index)');
-        buffer.writeln('      -1,  // parameter type ref index');
-        buffer.writeln('      $invokerIndex,  // invoker index');
-        buffer.writeln('      const [],  // annotation indices');
-        buffer.writeln('    ),');
-      }
+      final invokerIndex = _extensionMethodInvokerIndices[setter] ?? -1;
+      final setterName = setter.name ?? '';
+      final propName = setterName.replaceAll('=', '');
+      var flags = 1 << 5; // setter flag
+      flags |= 1 << 9; // extension flag
+
+      buffer.writeln("    // Extension setter: $extName.$propName");
+      buffer.writeln('    r.SetterMirrorData(');
+      buffer.writeln("      '$propName',  // name");
+      buffer.writeln('      $flags,  // flags');
+      buffer.writeln('      $extIndex,  // owner index (extension index)');
+      buffer.writeln('      -1,  // parameter type ref index');
+      buffer.writeln('      $invokerIndex,  // invoker index');
+      buffer.writeln('      const [],  // annotation indices');
+      buffer.writeln('    ),');
     }
   }
 
@@ -776,8 +786,8 @@ class ReflectionGenerator {
 
       final invokerIndex = _memberInvokerIndices[func] ?? -1;
       var flags = 0;
-      if (func.isAsynchronous) flags |= 1 << 10;
-      if (func.isGenerator) flags |= 1 << 11;
+      if (func.firstFragment.isAsynchronous) flags |= 1 << 10;
+      if (func.firstFragment.isGenerator) flags |= 1 << 11;
 
       buffer.writeln("    // Global function: ${func.name}");
       buffer.writeln('    r.MethodMirrorData(');
@@ -823,13 +833,13 @@ class ReflectionGenerator {
     for (final cls in result.classes) {
       for (final ctor in cls.constructors) {
         if (ctor.isPrivate) continue;
-        for (final param in ctor.parameters) {
+        for (final param in ctor.formalParameters) {
           _writeParameterData(buffer, param);
         }
       }
       for (final method in cls.methods) {
         if (method.isPrivate) continue;
-        for (final param in method.parameters) {
+        for (final param in method.formalParameters) {
           _writeParameterData(buffer, param);
         }
       }
@@ -838,13 +848,13 @@ class ReflectionGenerator {
     // Generate parameters for global functions
     for (final func in result.globalFunctions) {
       if (func.isPrivate) continue;
-      for (final param in func.parameters) {
+      for (final param in func.formalParameters) {
         _writeParameterData(buffer, param);
       }
     }
   }
 
-  void _writeParameterData(StringBuffer buffer, ParameterElement param) {
+  void _writeParameterData(StringBuffer buffer, FormalParameterElement param) {
     var flags = 0;
     if (param.isRequired) flags |= 1 << 0;
     if (param.isNamed) flags |= 1 << 1;
@@ -872,8 +882,8 @@ class ReflectionGenerator {
   int _computeMethodFlags(MethodElement method) {
     var flags = 1 << 6; // method flag
     if (method.isStatic) flags |= 1 << 0;
-    if (method.isAsynchronous) flags |= 1 << 10;
-    if (method.isGenerator) flags |= 1 << 11;
+    if (method.firstFragment.isAsynchronous) flags |= 1 << 10;
+    if (method.firstFragment.isGenerator) flags |= 1 << 11;
     return flags;
   }
 
@@ -946,7 +956,7 @@ class ReflectionGenerator {
     final superElement = supertype.element;
     // Object has no meaningful superclass
     if (superElement.name == 'Object' &&
-        superElement.library.source.uri.toString() == 'dart:core') {
+        superElement.library.firstFragment.source.uri.toString() == 'dart:core') {
       return -1;
     }
     return _typeIndices[superElement] ?? -1;
@@ -1055,7 +1065,7 @@ class ReflectionGenerator {
     }
 
     // Check if this type's package is excluded from coverage
-    final uri = element.library.source.uri.toString();
+    final uri = element.library.firstFragment.source.uri.toString();
     if (uri.startsWith('dart:')) {
       return true; // Dart SDK types are declarations-only
     }
@@ -1134,7 +1144,7 @@ class ReflectionGenerator {
   }
 
   String _getPrefix(Element element) {
-    final uri = element.library?.source.uri.toString();
+    final uri = element.library?.firstFragment.source.uri.toString();
     if (uri == null) return '';
     return _libraryPrefixes[uri] ?? '';
   }
@@ -1162,7 +1172,7 @@ class ReflectionGenerator {
       final pattern = config.coverageConfig.constructors.pattern;
       if (pattern != null && pattern.isNotEmpty) {
         final name = element.name;
-        if (name.isEmpty) {
+        if (name == null || name.isEmpty) {
           return config.coverageConfig.constructors.unnamed;
         }
         return GlobMatcher(pattern).matches(name);
@@ -1177,7 +1187,9 @@ class ReflectionGenerator {
         if (!config.coverageConfig.instanceMembers.enabled) return false;
         final pattern = config.coverageConfig.instanceMembers.pattern;
         if (pattern != null && pattern.isNotEmpty) {
-          return GlobMatcher(pattern).matches(element.name);
+          final methodName = element.name;
+          if (methodName == null) return true;
+          return GlobMatcher(pattern).matches(methodName);
         }
         return true;
       }

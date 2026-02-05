@@ -1,0 +1,15 @@
+# Build configuration for tom_analyzer reflection generation
+# 
+# This build.yaml configures the reflection generator for tom_core_server.
+
+targets:
+  $default:
+    builders:
+      tom_analyzer|tom_analyzer_reflection:
+        enabled: true
+        generate_for:
+          - lib/main.dart
+        options:
+          barrels:
+            - lib/main.dart
+          follow_re_exports: true

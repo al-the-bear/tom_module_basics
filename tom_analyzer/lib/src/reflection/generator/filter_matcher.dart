@@ -109,18 +109,18 @@ class FilterMatcher {
     }
 
     // Check annotations
-    if (matchesAnnotation(element.metadata)) return true;
+    if (matchesAnnotation(element.metadata.annotations)) return true;
 
     return false;
   }
 
   String _getElementId(Element element) {
-    final libraryUri = element.library?.source.uri.toString() ?? '';
+    final libraryUri = element.library?.firstFragment.source.uri.toString() ?? '';
     return '$libraryUri#${element.name}';
   }
 
   String? _getPackageName(Element element) {
-    final uri = element.library?.source.uri;
+    final uri = element.library?.firstFragment.source.uri;
     if (uri == null) return null;
     if (uri.scheme == 'package') {
       return uri.pathSegments.isNotEmpty ? uri.pathSegments.first : null;
@@ -132,7 +132,7 @@ class FilterMatcher {
   }
 
   String? _getFilePath(Element element) {
-    final uri = element.library?.source.uri;
+    final uri = element.library?.firstFragment.source.uri;
     if (uri == null) return null;
     return uri.toString();
   }
@@ -306,14 +306,14 @@ class AnnotationPattern {
 
     if (element is ConstructorElement) {
       // For constructor annotations, get the enclosing class name
-      // Use enclosingElement3 which is the current API
-      final enclosing = element.enclosingElement3;
+      // Use enclosingElement which is the current API in analyzer 8.x
+      final enclosing = element.enclosingElement;
       annotationName = enclosing.name;
-      final libraryUri = element.library.source.uri.toString();
+      final libraryUri = element.library.firstFragment.source.uri.toString();
       qualifiedName = '$libraryUri#$annotationName';
     } else if (element is PropertyAccessorElement) {
       annotationName = element.name;
-      final libraryUri = element.library.source.uri.toString();
+      final libraryUri = element.library.firstFragment.source.uri.toString();
       qualifiedName = '$libraryUri#$annotationName';
     } else {
       annotationName = element.name;
@@ -376,7 +376,7 @@ class InclusionResolver {
     if (packageName != null && defaults.isPackageIncluded(packageName)) {
       return true;
     }
-    if (defaults.hasIncludeAnnotation(element.metadata)) {
+    if (defaults.hasIncludeAnnotation(element.metadata.annotations)) {
       return true;
     }
 
@@ -392,7 +392,7 @@ class InclusionResolver {
   }
 
   String? _getPackageName(Element element) {
-    final uri = element.library?.source.uri;
+    final uri = element.library?.firstFragment.source.uri;
     if (uri == null) return null;
     if (uri.scheme == 'package') {
       return uri.pathSegments.isNotEmpty ? uri.pathSegments.first : null;

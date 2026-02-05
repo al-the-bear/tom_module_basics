@@ -42,7 +42,7 @@ class ReflectionAnalysisResult {
   final List<TypeAliasElement> typeAliases;
 
   /// All discovered global (top-level) functions.
-  final List<FunctionElement> globalFunctions;
+  final List<TopLevelFunctionElement> globalFunctions;
 
   /// All discovered global (top-level) variables.
   final List<TopLevelVariableElement> globalVariables;
@@ -101,7 +101,7 @@ class ReflectionAnalysisResult {
 
   /// All accessors (getters/setters) from all classes.
   List<PropertyAccessorElement> get allAccessors =>
-      classes.expand((c) => c.accessors).toList();
+      classes.expand((c) => [...c.getters, ...c.setters]).toList();
 
   // ═══════════════════════════════════════════════════════════════════════════
   // Annotation API (convenience methods for annotation discovery)
@@ -134,7 +134,7 @@ class ReflectionAnalysisResult {
     final result = <String, AnnotationInfo>{};
 
     void processElement(Element element, String kind, {String? parent}) {
-      for (final annotation in element.metadata) {
+      for (final annotation in element.metadata.annotations) {
         final annotationElement = annotation.element;
         if (annotationElement == null) continue;
 
@@ -142,12 +142,12 @@ class ReflectionAnalysisResult {
         String? sourceLibrary;
 
         if (annotationElement is ConstructorElement) {
-          final cls = annotationElement.enclosingElement3;
+          final cls = annotationElement.enclosingElement;
           annotationName = cls.name;
-          sourceLibrary = cls.library.source.uri.toString();
+          sourceLibrary = cls.library.firstFragment.source.uri.toString();
         } else if (annotationElement is PropertyAccessorElement) {
           annotationName = annotationElement.name;
-          sourceLibrary = annotationElement.library.source.uri.toString();
+          sourceLibrary = annotationElement.library.firstFragment.source.uri.toString();
         }
 
         if (annotationName == null) continue;
@@ -167,7 +167,7 @@ class ReflectionAnalysisResult {
           name: element.name ?? '<unnamed>',
           qualifiedName: qualifiedName,
           kind: kind,
-          library: element.library?.source.uri.toString() ?? 'unknown',
+          library: element.library?.firstFragment.source.uri.toString() ?? 'unknown',
           element: element,
         ));
       }
@@ -182,9 +182,11 @@ class ReflectionAnalysisResult {
       for (final method in cls.methods) {
         processElement(method, 'method', parent: cls.name);
       }
-      for (final accessor in cls.accessors) {
-        final kind = accessor.isGetter ? 'getter' : 'setter';
-        processElement(accessor, kind, parent: cls.name);
+      for (final getter in cls.getters) {
+        processElement(getter, 'getter', parent: cls.name);
+      }
+      for (final setter in cls.setters) {
+        processElement(setter, 'setter', parent: cls.name);
       }
       for (final ctor in cls.constructors) {
         processElement(ctor, 'constructor', parent: cls.name);
@@ -299,7 +301,7 @@ class EntryPointAnalyzer {
   final List<TypeAliasElement> _typeAliases = [];
 
   /// Collected global functions.
-  final List<FunctionElement> _globalFunctions = [];
+  final List<TopLevelFunctionElement> _globalFunctions = [];
 
   /// Collected global variables.
   final List<TopLevelVariableElement> _globalVariables = [];
@@ -434,7 +436,7 @@ class EntryPointAnalyzer {
   }
 
   Future<void> _processLibrary(LibraryElement library) async {
-    final uri = library.source.uri.toString();
+    final uri = library.firstFragment.source.uri.toString();
     if (_visitedLibraries.contains(uri)) return;
     _visitedLibraries.add(uri);
 
@@ -444,54 +446,52 @@ class EntryPointAnalyzer {
       _packageLibraries.putIfAbsent(packageName, () => []).add(uri);
     }
 
-    // Process top-level declarations
-    for (final unit in library.units) {
-      for (final cls in unit.classes) {
-        if (_shouldInclude(cls)) {
-          _addClass(cls, uri);
-        }
+    // Process top-level declarations directly from the library
+    for (final cls in library.classes) {
+      if (_shouldInclude(cls)) {
+        _addClass(cls, uri);
       }
+    }
 
-      for (final enm in unit.enums) {
-        if (_shouldInclude(enm)) {
-          _addEnum(enm, uri);
-        }
+    for (final enm in library.enums) {
+      if (_shouldInclude(enm)) {
+        _addEnum(enm, uri);
       }
+    }
 
-      for (final mixin in unit.mixins) {
-        if (_shouldInclude(mixin)) {
-          _addMixin(mixin, uri);
-        }
+    for (final mixin in library.mixins) {
+      if (_shouldInclude(mixin)) {
+        _addMixin(mixin, uri);
       }
+    }
 
-      for (final extType in unit.extensionTypes) {
-        if (_shouldInclude(extType)) {
-          _addExtensionType(extType, uri);
-        }
+    for (final extType in library.extensionTypes) {
+      if (_shouldInclude(extType)) {
+        _addExtensionType(extType, uri);
       }
+    }
 
-      for (final ext in unit.extensions) {
-        if (_shouldIncludeExtension(ext)) {
-          _addExtension(ext);
-        }
+    for (final ext in library.extensions) {
+      if (_shouldIncludeExtension(ext)) {
+        _addExtension(ext);
       }
+    }
 
-      for (final alias in unit.typeAliases) {
-        if (_shouldInclude(alias)) {
-          _addTypeAlias(alias);
-        }
+    for (final alias in library.typeAliases) {
+      if (_shouldInclude(alias)) {
+        _addTypeAlias(alias);
       }
+    }
 
-      for (final func in unit.functions) {
-        if (_shouldInclude(func)) {
-          _addGlobalFunction(func);
-        }
+    for (final func in library.topLevelFunctions) {
+      if (_shouldInclude(func)) {
+        _addGlobalFunction(func);
       }
+    }
 
-      for (final variable in unit.topLevelVariables) {
-        if (_shouldInclude(variable)) {
-          _addGlobalVariable(variable);
-        }
+    for (final variable in library.topLevelVariables) {
+      if (_shouldInclude(variable)) {
+        _addGlobalVariable(variable);
       }
     }
 
@@ -525,7 +525,7 @@ class EntryPointAnalyzer {
 
   /// Extract source info for a single element.
   Future<void> _extractElementSourceInfo(Element element, String kind) async {
-    final source = element.source;
+    final source = element.firstFragment.libraryFragment?.source;
     if (source == null) return;
 
     final path = source.fullName;
@@ -612,7 +612,7 @@ class EntryPointAnalyzer {
   /// Get qualified name for an element.
   String _getQualifiedName(Element element) {
     final library = element.library;
-    final libraryUri = library?.source.uri.toString() ?? 'unknown';
+    final libraryUri = library?.firstFragment.source.uri.toString() ?? 'unknown';
     return '$libraryUri#${element.name}';
   }
 
@@ -668,7 +668,7 @@ class EntryPointAnalyzer {
     _typeAliases.add(alias);
   }
 
-  void _addGlobalFunction(FunctionElement func) {
+  void _addGlobalFunction(TopLevelFunctionElement func) {
     if (_globalFunctions
         .any((f) => f.name == func.name && f.library == func.library)) {
       return;
@@ -737,17 +737,18 @@ class EntryPointAnalyzer {
     final depConfig = config.dependencyConfig.typeAnnotations;
     final currentPackage = _getPackageName(element);
 
-    for (final annotation in element.metadata) {
+    for (final annotation in element.metadata.annotations) {
       final annotationElement = annotation.element;
       if (annotationElement == null) continue;
 
       // Get the annotation type
       Element? typeElement;
       if (annotationElement is ConstructorElement) {
-        typeElement = annotationElement.enclosingElement3;
+        typeElement = annotationElement.enclosingElement;
       } else if (annotationElement is PropertyAccessorElement) {
         // Const variable annotation like @tomReflection
-        final variable = annotationElement.variable2;
+        // In analyzer 8.x, use variable3 (nullable) instead of variable2
+        final variable = annotationElement.variable3;
         if (variable != null) {
           final varType = variable.type;
           if (varType is InterfaceType) {
@@ -766,13 +767,16 @@ class EntryPointAnalyzer {
 
       // Add the annotation type
       if (typeElement is ClassElement) {
-        final uri = typeElement.library.source.uri.toString();
+        final uri = typeElement.library.firstFragment.source.uri.toString();
         _addClass(typeElement, uri);
 
         // Track for marker scanning
         final markerConfig = config.dependencyConfig.markerAnnotations;
         if (markerConfig.enabled) {
-          _discoveredAnnotations.add(typeElement.name);
+          final typeName = typeElement.name;
+          if (typeName != null) {
+            _discoveredAnnotations.add(typeName);
+          }
 
           // Also check if this annotation references other marker annotations
           if (markerConfig.followAnnotationChains) {
@@ -809,19 +813,22 @@ class EntryPointAnalyzer {
       for (final field in type.element.fields) {
         if (field.type.isDartCoreType) {
           // This field holds a Type - try to get the actual type
-          final fieldValue = value.getField(field.name);
-          if (fieldValue != null) {
-            final typeValue = fieldValue.toTypeValue();
-            if (typeValue is InterfaceType) {
-              final element = typeValue.element;
-              final isExternal = _getPackageName(element) != currentPackage;
-              if (!isExternal || depConfig.external) {
-                if (element is ClassElement) {
-                  final uri = element.library.source.uri.toString();
-                  _addClass(element, uri);
-                } else if (element is EnumElement) {
-                  final uri = element.library.source.uri.toString();
-                  _addEnum(element, uri);
+          final fieldName = field.name;
+          if (fieldName != null) {
+            final fieldValue = value.getField(fieldName);
+            if (fieldValue != null) {
+              final typeValue = fieldValue.toTypeValue();
+              if (typeValue is InterfaceType) {
+                final element = typeValue.element;
+                final isExternal = _getPackageName(element) != currentPackage;
+                if (!isExternal || depConfig.external) {
+                  if (element is ClassElement) {
+                    final uri = element.library.firstFragment.source.uri.toString();
+                    _addClass(element, uri);
+                  } else if (element is EnumElement) {
+                    final uri = element.library.firstFragment.source.uri.toString();
+                    _addEnum(element, uri);
+                  }
                 }
               }
             }
@@ -887,7 +894,7 @@ class EntryPointAnalyzer {
 
       // Add the superclass
       if (current is ClassElement) {
-        final uri = current.library.source.uri.toString();
+        final uri = current.library.firstFragment.source.uri.toString();
         _addClass(current, uri);
       }
 
@@ -911,7 +918,7 @@ class EntryPointAnalyzer {
 
       // Add interface
       if (interfaceElement is ClassElement) {
-        final uri = interfaceElement.library.source.uri.toString();
+        final uri = interfaceElement.library.firstFragment.source.uri.toString();
         _addClass(interfaceElement, uri);
       }
     }
@@ -932,7 +939,7 @@ class EntryPointAnalyzer {
 
       // Add mixin
       if (mixinElement is MixinElement) {
-        final uri = mixinElement.library.source.uri.toString();
+        final uri = mixinElement.library.firstFragment.source.uri.toString();
         _addMixin(mixinElement, uri);
       }
     }
@@ -951,7 +958,7 @@ class EntryPointAnalyzer {
     for (final method in element.methods) {
       _processTypeForArguments(
           method.returnType, currentPackage, depConfig.external);
-      for (final param in method.parameters) {
+      for (final param in method.formalParameters) {
         _processTypeForArguments(
             param.type, currentPackage, depConfig.external);
       }
@@ -968,10 +975,10 @@ class EntryPointAnalyzer {
       if (!isExternal || includeExternal) {
         final element = type.element;
         if (element is ClassElement) {
-          final uri = element.library.source.uri.toString();
+          final uri = element.library.firstFragment.source.uri.toString();
           _addClass(element, uri);
         } else if (element is EnumElement) {
-          final uri = element.library.source.uri.toString();
+          final uri = element.library.firstFragment.source.uri.toString();
           _addEnum(element, uri);
         }
       }
@@ -1007,7 +1014,7 @@ class EntryPointAnalyzer {
   }
 
   String? _getPackageName(Element element) {
-    final uri = element.library?.source.uri;
+    final uri = element.library?.firstFragment.source.uri;
     if (uri == null) return null;
     if (uri.scheme == 'package') {
       return uri.pathSegments.isNotEmpty ? uri.pathSegments.first : null;

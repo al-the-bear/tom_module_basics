@@ -461,10 +461,10 @@ class TomAnalyzer {
       onTypes: element.superclassConstraints.map((t) => _typeRef(t, registry)).toList(),
       implementsTypes: element.interfaces.map((t) => _typeRef(t, registry)).toList(),
       typeParameters: element.typeParameters.map((t) => _typeParameter(t, registry)).toList(),
-      methods: const [],
-      fields: const [],
-      getters: const [],
-      setters: const [],
+      methods: [],
+      fields: [],
+      getters: [],
+      setters: [],
     );
 
     mixinInfo.methods.addAll(element.methods.map((m) => _mapMethod(m, mixinInfo, registry)));
@@ -485,10 +485,10 @@ class TomAnalyzer {
       documentation: element.documentationComment,
       extendedType: _typeRef(element.extendedType, registry),
       typeParameters: element.typeParameters.map((t) => _typeParameter(t, registry)).toList(),
-      methods: const [],
-      fields: const [],
-      getters: const [],
-      setters: const [],
+      methods: [],
+      fields: [],
+      getters: [],
+      setters: [],
     );
 
     extensionInfo.methods.addAll(element.methods.map((m) => _mapMethod(m, extensionInfo, registry)));
@@ -509,11 +509,11 @@ class TomAnalyzer {
       documentation: element.documentationComment,
       representationType: _typeRef(element.representation.type, registry),
       typeParameters: element.typeParameters.map((t) => _typeParameter(t, registry)).toList(),
-      methods: const [],
-      fields: const [],
-      getters: const [],
-      setters: const [],
-      constructors: const [],
+      methods: [],
+      fields: [],
+      getters: [],
+      setters: [],
+      constructors: [],
     );
 
     extensionTypeInfo.methods
@@ -741,11 +741,23 @@ class TomAnalyzer {
     return TypeParameterInfo(
       id: registry.idGen.nextId('typeParam'),
       name: element.displayName,
-      bound: element.bound != null ? _typeRef(element.bound!, registry) : null,
+      bound: element.bound != null ? _typeRef(element.bound!, registry, {}) : null,
     );
   }
 
-  TypeReference _typeRef(analyzer_types.DartType type, _ModelRegistry registry) {
+  TypeReference _typeRef(analyzer_types.DartType type, _ModelRegistry registry, [Set<analyzer_types.DartType>? visited]) {
+    // Prevent infinite recursion for self-referential type parameters
+    visited ??= {};
+    if (visited.contains(type)) {
+      return TypeReference(
+        id: registry.idGen.nextId('type'),
+        name: type.getDisplayString(withNullability: true),
+        qualifiedName: type.getDisplayString(withNullability: true),
+        isTypeParameter: type is analyzer_types.TypeParameterType,
+      );
+    }
+    visited = {...visited, type};
+    
     if (type is analyzer_types.FunctionType) {
       return TypeReference(
         id: registry.idGen.nextId('type'),
@@ -755,7 +767,7 @@ class TomAnalyzer {
         isNullable: type.nullabilitySuffix.name == 'question',
         functionType: FunctionTypeInfo(
           id: registry.idGen.nextId('functionType'),
-          returnType: _typeRef(type.returnType, registry),
+          returnType: _typeRef(type.returnType, registry, visited),
           typeParameters: type.typeParameters.map((t) => _typeParameter(t, registry)).toList(),
           parameters: type.formalParameters.map((p) => _mapParameter(p, registry)).toList(),
         ),
@@ -768,7 +780,7 @@ class TomAnalyzer {
         name: type.getDisplayString(withNullability: true),
         qualifiedName: type.getDisplayString(withNullability: true),
         isTypeParameter: true,
-        typeParameterBound: _typeRef(type.bound, registry),
+        typeParameterBound: _typeRef(type.bound, registry, visited),
       );
     }
 
@@ -779,7 +791,7 @@ class TomAnalyzer {
         id: registry.idGen.nextId('type'),
         name: element.displayName,
         qualifiedName: qualified,
-        typeArguments: type.typeArguments.map((t) => _typeRef(t, registry)).toList(),
+        typeArguments: type.typeArguments.map((t) => _typeRef(t, registry, visited)).toList(),
         isNullable: type.nullabilitySuffix.name == 'question',
       );
     }

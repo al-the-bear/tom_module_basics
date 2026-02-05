@@ -1,0 +1,26 @@
+id: analysis_1
+timestamp: "2026-02-05T10:37:45.044551"
+dartSdkVersion: unknown
+analyzerVersion: 8.x
+schemaVersion: 1.0
+rootPackageId: pkg_1
+packages:
+  -
+    id: pkg_1
+    name: lib
+    version: null
+    rootPath: /Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_analyzer/test/build_examples/reflect_dart_overview/lib
+    isRoot: true
+    libraries:
+
+    dependencies:
+
+    devDependencies:
+libraries:
+
+files:
+
+errors:
+
+metadata:
+  barrelPath: /Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_analyzer/test/build_examples/reflect_dart_overview/lib/main.r.dart
