@@ -2,9 +2,9 @@ import 'package:test/test.dart';
 import 'package:tom_analyzer/src/reflection/generator/generator.dart';
 
 void main() {
-  group('AnalysisResult', () {
+  group('ReflectionAnalysisResult', () {
     test('empty result has zero counts', () {
-      const result = AnalysisResult();
+      final result = ReflectionAnalysisResult();
 
       expect(result.classes, isEmpty);
       expect(result.enums, isEmpty);
@@ -21,22 +21,22 @@ void main() {
     test('typeCount sums all type categories', () {
       // We can't easily create mock Element instances, so we test the
       // count calculation logic indirectly through the empty result
-      const result = AnalysisResult();
+      final result = ReflectionAnalysisResult();
       expect(result.typeCount, 0);
     });
 
     test('globalMemberCount sums functions and variables', () {
-      const result = AnalysisResult();
+      final result = ReflectionAnalysisResult();
       expect(result.globalMemberCount, 0);
     });
 
     test('packageLibraries is empty by default', () {
-      const result = AnalysisResult();
+      final result = ReflectionAnalysisResult();
       expect(result.packageLibraries, isEmpty);
     });
 
     test('libraryTypes is empty by default', () {
-      const result = AnalysisResult();
+      final result = ReflectionAnalysisResult();
       expect(result.libraryTypes, isEmpty);
     });
   });

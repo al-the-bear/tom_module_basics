@@ -14,3 +14,7 @@ export 'src/serialization/yaml_serializer.dart';
 export 'src/reflection/reflection_model.dart';
 export 'src/reflection/reflection_generator.dart';
 export 'src/reflection/runtime_reflection.dart';
+export 'src/reflection/generator/entry_point_analyzer.dart'
+    hide AnnotationInfo, AnnotatedElementInfo;
+export 'src/reflection/generator/reflection_config.dart';
+export 'src/reflection/generator/source_info.dart';

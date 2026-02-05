@@ -38,6 +38,9 @@ class ReflectionConfig {
   /// Configuration for coverage (what invokers to generate).
   final CoverageConfig coverageConfig;
 
+  /// Configuration for source code extraction (optional, memory-intensive).
+  final SourceExtractionConfig sourceExtractionConfig;
+
   /// Whether to include private members (default: false).
   final bool includePrivate;
 
@@ -51,6 +54,7 @@ class ReflectionConfig {
     this.filters = const [],
     this.dependencyConfig = const DependencyConfig(),
     this.coverageConfig = const CoverageConfig(),
+    this.sourceExtractionConfig = const SourceExtractionConfig(),
     this.includePrivate = false,
     this.raw = const {},
   });
@@ -108,6 +112,12 @@ class ReflectionConfig {
         ? CoverageConfig.fromMap(covMap)
         : const CoverageConfig();
 
+    // Parse source_extraction_config
+    final sourceMap = map['source_extraction'];
+    final sourceExtractionConfig = sourceMap is Map<String, dynamic>
+        ? SourceExtractionConfig.fromMap(sourceMap)
+        : const SourceExtractionConfig();
+
     final includePrivate = map['include_private'] == true;
 
     return ReflectionConfig(
@@ -117,6 +127,7 @@ class ReflectionConfig {
       filters: filters,
       dependencyConfig: dependencyConfig,
       coverageConfig: coverageConfig,
+      sourceExtractionConfig: sourceExtractionConfig,
       includePrivate: includePrivate,
       raw: map,
     );
@@ -278,6 +289,12 @@ class DependencyConfig {
   /// Subtype inclusion settings.
   final SubtypeConfig subtypes;
 
+  /// Code body analysis settings.
+  final CodeBodyConfig codeBodies;
+
+  /// Marker annotation scanning settings.
+  final MarkerAnnotationConfig markerAnnotations;
+
   const DependencyConfig({
     this.superclasses = const SuperclassConfig(),
     this.interfaces = const InterfaceConfig(),
@@ -285,6 +302,8 @@ class DependencyConfig {
     this.typeArguments = const TypeArgumentConfig(),
     this.typeAnnotations = const TypeAnnotationConfig(),
     this.subtypes = const SubtypeConfig(),
+    this.codeBodies = const CodeBodyConfig(),
+    this.markerAnnotations = const MarkerAnnotationConfig(),
   });
 
   static DependencyConfig fromMap(Map<String, dynamic> map) {
@@ -294,6 +313,8 @@ class DependencyConfig {
     final typeArgMap = map['type_arguments'];
     final typeAnnMap = map['type_annotations'];
     final subMap = map['subtypes'];
+    final codeMap = map['code_bodies'];
+    final markerMap = map['marker_annotations'];
 
     return DependencyConfig(
       superclasses: superMap is Map<String, dynamic>
@@ -314,6 +335,12 @@ class DependencyConfig {
       subtypes: subMap is Map<String, dynamic>
           ? SubtypeConfig.fromMap(subMap)
           : const SubtypeConfig(),
+      codeBodies: codeMap is Map<String, dynamic>
+          ? CodeBodyConfig.fromMap(codeMap)
+          : const CodeBodyConfig(),
+      markerAnnotations: markerMap is Map<String, dynamic>
+          ? MarkerAnnotationConfig.fromMap(markerMap)
+          : const MarkerAnnotationConfig(),
     );
   }
 }
@@ -418,15 +445,31 @@ class TypeAnnotationConfig {
   final bool enabled;
 
   /// Whether to follow annotations transitively.
+  ///
+  /// If true, when an annotation type is discovered, also discover
+  /// annotations used on that annotation type (meta-annotations).
   final bool transitive;
 
   /// Whether to include external annotation types.
   final bool external;
 
+  /// Whether to include types referenced in annotation arguments.
+  ///
+  /// For example: `@MyAnnotation(SomeClass)` would include `SomeClass`.
+  final bool includeArgumentTypes;
+
+  /// Whether to scan for all types marked with discovered annotations.
+  ///
+  /// If true, when a marker annotation like `@tomReflection` is discovered,
+  /// the analyzer will scan the codebase for all types using that annotation.
+  final bool scanMarkedTypes;
+
   const TypeAnnotationConfig({
     this.enabled = true,
     this.transitive = false,
     this.external = true,
+    this.includeArgumentTypes = true,
+    this.scanMarkedTypes = false,
   });
 
   static TypeAnnotationConfig fromMap(Map<String, dynamic> map) {
@@ -434,6 +477,8 @@ class TypeAnnotationConfig {
       enabled: map['enabled'] != false,
       transitive: map['transitive'] == true,
       external: map['external'] != false,
+      includeArgumentTypes: map['include_argument_types'] != false,
+      scanMarkedTypes: map['scan_marked_types'] == true,
     );
   }
 }
@@ -450,6 +495,89 @@ class SubtypeConfig {
   static SubtypeConfig fromMap(Map<String, dynamic> map) {
     return SubtypeConfig(
       enabled: map['enabled'] == true,
+    );
+  }
+}
+
+/// Configuration for analyzing code bodies (method/constructor/function bodies).
+class CodeBodyConfig {
+  /// Whether to analyze code bodies for type references.
+  final bool enabled;
+
+  /// Whether to include external types found in code bodies.
+  final bool external;
+
+  /// Depth limit for following types in code bodies (-1 = unlimited).
+  final int depth;
+
+  /// Whether to include types used in variable declarations.
+  final bool includeVariableTypes;
+
+  /// Whether to include types used in constructor/method invocations.
+  final bool includeInvocationTypes;
+
+  /// Whether to include types used in type casts and type tests.
+  final bool includeTypeOperations;
+
+  const CodeBodyConfig({
+    this.enabled = false,
+    this.external = true,
+    this.depth = 1,
+    this.includeVariableTypes = true,
+    this.includeInvocationTypes = true,
+    this.includeTypeOperations = true,
+  });
+
+  static CodeBodyConfig fromMap(Map<String, dynamic> map) {
+    return CodeBodyConfig(
+      enabled: map['enabled'] == true,
+      external: map['external'] != false,
+      depth: _readInt(map['depth']) ?? 1,
+      includeVariableTypes: map['include_variable_types'] != false,
+      includeInvocationTypes: map['include_invocation_types'] != false,
+      includeTypeOperations: map['include_type_operations'] != false,
+    );
+  }
+}
+
+/// Configuration for marker annotation scanning.
+///
+/// This allows discovering all types marked with specific annotations,
+/// similar to how dependency injection frameworks work.
+class MarkerAnnotationConfig {
+  /// Whether marker annotation scanning is enabled.
+  final bool enabled;
+
+  /// Annotation names to treat as markers (e.g., 'tomReflection').
+  ///
+  /// When one of these annotations is discovered (either directly
+  /// or transitively), scan the codebase for all types using it.
+  final List<String> markerAnnotations;
+
+  /// Package patterns to scan for marked types (glob patterns).
+  ///
+  /// If empty, only scans packages already in scope.
+  final List<String> scanPackages;
+
+  /// Whether to follow annotation chains.
+  ///
+  /// If true: `@tomReflectionInfo` uses `tomReflection`, so finding
+  /// `tomReflectionInfo` also triggers scanning for `tomReflection` markers.
+  final bool followAnnotationChains;
+
+  const MarkerAnnotationConfig({
+    this.enabled = false,
+    this.markerAnnotations = const [],
+    this.scanPackages = const [],
+    this.followAnnotationChains = true,
+  });
+
+  static MarkerAnnotationConfig fromMap(Map<String, dynamic> map) {
+    return MarkerAnnotationConfig(
+      enabled: map['enabled'] == true,
+      markerAnnotations: _readStringList(map['marker_annotations']),
+      scanPackages: _readStringList(map['scan_packages']),
+      followAnnotationChains: map['follow_annotation_chains'] != false,
     );
   }
 }
@@ -675,6 +803,75 @@ class DeclarationCoverageConfig {
       enabled: map['enabled'] != false,
       parameters: map['parameters'] != false,
       defaultValues: map['default_values'] == true,
+    );
+  }
+}
+
+/// Source extraction configuration.
+///
+/// Controls whether and how source code, comments, and AST information
+/// are extracted during analysis. This is memory-intensive and optional.
+class SourceExtractionConfig {
+  /// Whether source extraction is enabled.
+  final bool enabled;
+
+  /// Whether to include full source code of declarations.
+  final bool includeSourceCode;
+
+  /// Whether to include documentation comments.
+  final bool includeDocComments;
+
+  /// Whether to include all comments (including inline).
+  final bool includeAllComments;
+
+  /// Whether to include line/column information.
+  final bool includeLineInfo;
+
+  /// Maximum source code length per declaration (0 = unlimited).
+  final int maxSourceLength;
+
+  /// Whether to store file source contents (for regeneration).
+  final bool storeFileContents;
+
+  const SourceExtractionConfig({
+    this.enabled = false,
+    this.includeSourceCode = false,
+    this.includeDocComments = true,
+    this.includeAllComments = false,
+    this.includeLineInfo = true,
+    this.maxSourceLength = 0,
+    this.storeFileContents = false,
+  });
+
+  /// No source extraction (default, fastest).
+  static const disabled = SourceExtractionConfig(enabled: false);
+
+  /// Documentation comments only (minimal memory).
+  static const docOnly = SourceExtractionConfig(
+    enabled: true,
+    includeDocComments: true,
+    includeLineInfo: true,
+  );
+
+  /// Full source extraction (most memory).
+  static const full = SourceExtractionConfig(
+    enabled: true,
+    includeSourceCode: true,
+    includeDocComments: true,
+    includeAllComments: true,
+    includeLineInfo: true,
+    storeFileContents: true,
+  );
+
+  static SourceExtractionConfig fromMap(Map<String, dynamic> map) {
+    return SourceExtractionConfig(
+      enabled: map['enabled'] == true,
+      includeSourceCode: map['include_source_code'] == true,
+      includeDocComments: map['include_doc_comments'] != false,
+      includeAllComments: map['include_all_comments'] == true,
+      includeLineInfo: map['include_line_info'] != false,
+      maxSourceLength: _readInt(map['max_source_length']) ?? 0,
+      storeFileContents: map['store_file_contents'] == true,
     );
   }
 }

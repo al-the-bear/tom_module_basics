@@ -131,7 +131,7 @@ class MultiEntryGenerator {
   Future<MultiEntryResult> _generateCombinedOutput() async {
     try {
       // Analyze all entry points
-      final allResults = <AnalysisResult>[];
+      final allResults = <ReflectionAnalysisResult>[];
 
       for (final entryPoint in config.entryPoints) {
         final singleConfig = ReflectionConfig(
@@ -170,7 +170,7 @@ class MultiEntryGenerator {
   }
 
   /// Merge multiple analysis results into one.
-  AnalysisResult _mergeResults(List<AnalysisResult> results) {
+  ReflectionAnalysisResult _mergeResults(List<ReflectionAnalysisResult> results) {
     // Use sets to deduplicate
     final classes = <ClassElement>{};
     final enums = <EnumElement>{};
@@ -202,7 +202,7 @@ class MultiEntryGenerator {
       }
     }
 
-    return AnalysisResult(
+    return ReflectionAnalysisResult(
       classes: classes.toList(),
       enums: enums.toList(),
       mixins: mixins.toList(),

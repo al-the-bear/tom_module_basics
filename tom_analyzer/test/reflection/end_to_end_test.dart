@@ -20,7 +20,7 @@ void main() {
 
     group('sample_models.dart analysis', () {
       late ReflectionGenerator generator;
-      late AnalysisResult result;
+      late ReflectionAnalysisResult result;
 
       setUpAll(() async {
         final entryPoint = p.join(fixturesPath, 'sample_models.dart');

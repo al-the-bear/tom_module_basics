@@ -4,7 +4,8 @@
 /// containing reflection data structures and invokers.
 library;
 
-export 'entry_point_analyzer.dart' show AnalysisResult, EntryPointAnalyzer;
+export 'entry_point_analyzer.dart'
+    show ReflectionAnalysisResult, EntryPointAnalyzer;
 export 'filter_matcher.dart'
     show
         AnnotationPattern,
@@ -15,3 +16,4 @@ export 'filter_matcher.dart'
 export 'multi_entry_generator.dart' show MultiEntryGenerator, MultiEntryResult;
 export 'reflection_config.dart';
 export 'reflection_generator.dart' show ReflectionGenerator;
+export 'source_info.dart';

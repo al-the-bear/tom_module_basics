@@ -75,6 +75,9 @@ export 'parameter_mirror.dart';
 // API
 export 'reflection_api.dart';
 
+// Utilities
+export 'cross_reference.dart';
+
 // Errors
 export 'errors.dart';
 

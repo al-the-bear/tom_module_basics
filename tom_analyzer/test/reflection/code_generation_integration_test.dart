@@ -11,13 +11,13 @@ void main() {
   group('ReflectionGenerator - Code Generation Integration', () {
     group('generateFromResult with empty result', () {
       late ReflectionGenerator generator;
-      late AnalysisResult emptyResult;
+      late ReflectionAnalysisResult emptyResult;
 
       setUp(() {
         generator = ReflectionGenerator.fromMap({
           'entry_points': [],
         });
-        emptyResult = AnalysisResult();
+        emptyResult = ReflectionAnalysisResult();
       });
 
       test('generates valid Dart code structure', () async {
@@ -77,7 +77,7 @@ void main() {
         final generator = ReflectionGenerator.fromMap({
           'entry_points': [],
         });
-        final code = await generator.generateFromResult(AnalysisResult());
+        final code = await generator.generateFromResult(ReflectionAnalysisResult());
 
         // Check for basic Dart syntax elements
         expect(code, contains(';'));
@@ -91,7 +91,7 @@ void main() {
         final generator = ReflectionGenerator.fromMap({
           'entry_points': [],
         });
-        final code = await generator.generateFromResult(AnalysisResult());
+        final code = await generator.generateFromResult(ReflectionAnalysisResult());
 
         final openBraces = '{'.allMatches(code).length;
         final closeBraces = '}'.allMatches(code).length;
@@ -103,7 +103,7 @@ void main() {
         final generator = ReflectionGenerator.fromMap({
           'entry_points': [],
         });
-        final code = await generator.generateFromResult(AnalysisResult());
+        final code = await generator.generateFromResult(ReflectionAnalysisResult());
 
         final openParens = '('.allMatches(code).length;
         final closeParens = ')'.allMatches(code).length;
@@ -115,7 +115,7 @@ void main() {
         final generator = ReflectionGenerator.fromMap({
           'entry_points': [],
         });
-        final code = await generator.generateFromResult(AnalysisResult());
+        final code = await generator.generateFromResult(ReflectionAnalysisResult());
 
         final openBrackets = '['.allMatches(code).length;
         final closeBrackets = ']'.allMatches(code).length;
@@ -129,7 +129,7 @@ void main() {
         final generator = ReflectionGenerator.fromMap({
           'entry_points': [],
         });
-        final code = await generator.generateFromResult(AnalysisResult());
+        final code = await generator.generateFromResult(ReflectionAnalysisResult());
 
         // Should have invokers list, even if empty
         expect(code, contains('invokers'));
@@ -141,7 +141,7 @@ void main() {
         final generator = ReflectionGenerator.fromMap({
           'entry_points': [],
         });
-        final code = await generator.generateFromResult(AnalysisResult());
+        final code = await generator.generateFromResult(ReflectionAnalysisResult());
 
         // Should have package-related data
         expect(code, contains('packages'));
@@ -154,8 +154,8 @@ void main() {
           'entry_points': [],
         });
 
-        final code1 = await generator.generateFromResult(AnalysisResult());
-        final code2 = await generator.generateFromResult(AnalysisResult());
+        final code1 = await generator.generateFromResult(ReflectionAnalysisResult());
+        final code2 = await generator.generateFromResult(ReflectionAnalysisResult());
 
         // Both generations should produce the same output
         expect(code1, equals(code2));
@@ -167,11 +167,11 @@ void main() {
         });
 
         // First generation
-        await generator.generateFromResult(AnalysisResult());
+        await generator.generateFromResult(ReflectionAnalysisResult());
 
         // Second generation should not throw
         expect(
-          () async => await generator.generateFromResult(AnalysisResult()),
+          () async => await generator.generateFromResult(ReflectionAnalysisResult()),
           returnsNormally,
         );
       });
@@ -207,7 +207,7 @@ void main() {
         final generator = ReflectionGenerator.fromMap({
           'entry_points': [],
         });
-        final code = await generator.generateFromResult(AnalysisResult());
+        final code = await generator.generateFromResult(ReflectionAnalysisResult());
 
         // Runtime should be imported as 'r'
         expect(code, contains("as r;"));
@@ -219,7 +219,7 @@ void main() {
         final generator = ReflectionGenerator.fromMap({
           'entry_points': [],
         });
-        final code = await generator.generateFromResult(AnalysisResult());
+        final code = await generator.generateFromResult(ReflectionAnalysisResult());
 
         // Should have classes/types section (even if empty)
         expect(code, anyOf(contains('classes'), contains('types')));

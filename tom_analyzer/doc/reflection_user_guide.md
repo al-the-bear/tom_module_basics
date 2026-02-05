@@ -550,6 +550,99 @@ void main() {
 - **The reflection output is deterministic** and sorted, ideal for diffs and caching.
 - **One reflection file per entry point** - if you have multiple binaries, each gets its own reflection data.
 
+## Analysis-Time API
+
+The `AnalysisResult` from `EntryPointAnalyzer` provides build-time access to discovered elements. This is useful for tooling, code generation, and static analysis.
+
+### Accessing analysis results programmatically
+
+```dart
+import 'package:tom_analyzer/tom_analyzer.dart';
+
+Future<void> main() async {
+  final config = ReflectionConfig.load(path: 'tom_analyzer.yaml');
+  final analyzer = EntryPointAnalyzer(config);
+  final result = await analyzer.analyze();
+  
+  print('Found ${result.classes.length} classes');
+  print('Found ${result.globalFunctions.length} global functions');
+}
+```
+
+### Annotation discovery
+
+The `AnalysisResult` provides convenient access to all annotations used in the analyzed code:
+
+```dart
+// Get all annotations with their usages
+for (final entry in result.annotations.entries) {
+  final name = entry.key;
+  final info = entry.value;
+  print('@$name: ${info.usageCount} usages');
+  
+  // Usages grouped by element kind
+  for (final kind in info.usagesByKind.keys) {
+    print('  $kind: ${info.usagesByKind[kind]!.length}');
+  }
+}
+
+// Find all elements with a specific annotation
+final reflectable = result.getAnnotatedElements('tomReflector');
+for (final element in reflectable) {
+  print('Reflectable: ${element.name}');
+}
+
+// Check if an annotation is used
+if (result.hasAnnotation('JsonSerializable')) {
+  print('Project uses JSON serialization');
+}
+```
+
+### Flattened member access
+
+Access all members across all classes without nested loops:
+
+```dart
+// All methods from all classes
+for (final method in result.allMethods) {
+  if (method.isDeprecated) {
+    print('Deprecated: ${method.enclosingElement3.name}.${method.name}');
+  }
+}
+
+// All fields from all classes
+for (final field in result.allFields) {
+  print('${field.enclosingElement3.name}.${field.name}: ${field.type}');
+}
+
+// All constructors from all classes
+for (final ctor in result.allConstructors) {
+  print('${ctor.enclosingElement3.name}.${ctor.name}');
+}
+```
+
+### AnnotationInfo structure
+
+```dart
+class AnnotationInfo {
+  String name;           // e.g., "override", "Deprecated"
+  String qualifiedName;  // e.g., "dart:core#override"
+  String sourceLibrary;  // e.g., "dart:core"
+  List<AnnotatedElementInfo> usages;
+  
+  int get usageCount;
+  Map<String, List<AnnotatedElementInfo>> get usagesByKind;
+}
+
+class AnnotatedElementInfo {
+  String name;           // Element name
+  String qualifiedName;  // e.g., "MyClass.myMethod"
+  String kind;           // "class", "method", "field", etc.
+  String library;        // Library URI
+  Element element;       // The actual analyzer Element
+}
+```
+
 ## Configuration Reference
 
 ### Default behavior
@@ -657,3 +750,79 @@ Field matching syntax:
 - Field values are matched using glob patterns
 - Annotations on superclasses do NOT cause subclasses to be included
 - Only directly annotated elements are matched
+---
+
+## Source Code Extraction
+
+The analyzer can optionally extract full source code, comments, and AST information for all discovered declarations. This is useful for documentation tools, code visualization, and source regeneration.
+
+### Enabling Source Extraction
+
+In YAML configuration:
+
+```yaml
+source_extraction:
+  enabled: true
+  include_source_code: true
+  include_doc_comments: true
+  include_all_comments: true
+  include_line_info: true
+  store_file_contents: true
+```
+
+Programmatically:
+
+```dart
+final config = ReflectionConfig(
+  entryPoints: ['lib/main.dart'],
+  sourceExtractionConfig: SourceExtractionConfig.full,
+);
+
+// Or with specific options:
+final config = ReflectionConfig(
+  entryPoints: ['lib/main.dart'],
+  sourceExtractionConfig: const SourceExtractionConfig(
+    enabled: true,
+    includeDocComments: true,
+    includeLineInfo: true,
+  ),
+);
+```
+
+### Using Source Info
+
+```dart
+final result = await analyzer.analyze();
+final sourceInfo = result.sourceInfo;
+
+if (sourceInfo != null) {
+  // Get source info for a class
+  for (final cls in result.classes) {
+    final qualifiedName = '${cls.library.source.uri}#${cls.name}';
+    final info = sourceInfo.get(qualifiedName);
+    
+    if (info != null) {
+      print('${cls.name} at line ${info.line}');
+      print('  Doc: ${info.docComment?.split('\n').first}');
+    }
+  }
+  
+  // Serialize for storage
+  final json = sourceInfo.toJsonString();
+  
+  // Later, restore:
+  final restored = SourceInfoCollection.fromJsonString(json);
+}
+```
+
+### Memory Considerations
+
+Source extraction is memory-intensive. Use the appropriate preset:
+
+| Preset | Use Case | Memory |
+|--------|----------|--------|
+| `disabled` | Default, no source info | None |
+| `docOnly` | Documentation extraction only | Low |
+| `full` | Complete source for regeneration | High |
+
+For large codebases (1000+ types), prefer `docOnly` or disable entirely.

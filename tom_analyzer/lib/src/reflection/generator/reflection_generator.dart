@@ -27,7 +27,7 @@ class ReflectionGenerator {
   final ReflectionConfig config;
 
   /// Analysis result (populated after analyze()).
-  AnalysisResult? _analysisResult;
+  ReflectionAnalysisResult? _analysisResult;
 
   /// Import prefix counter.
   int _prefixCounter = 0;
@@ -93,7 +93,7 @@ class ReflectionGenerator {
   }
 
   /// Analyze entry points and discover types.
-  Future<AnalysisResult> analyze() async {
+  Future<ReflectionAnalysisResult> analyze() async {
     final analyzer = EntryPointAnalyzer(config);
     _analysisResult = await analyzer.analyze();
     return _analysisResult!;
@@ -113,7 +113,7 @@ class ReflectionGenerator {
   ///
   /// This is useful for multi-entry-point generation where results
   /// from multiple analyses are merged before code generation.
-  Future<String> generateFromResult(AnalysisResult result) async {
+  Future<String> generateFromResult(ReflectionAnalysisResult result) async {
     _analysisResult = result;
 
     // Reset counters
@@ -188,7 +188,7 @@ class ReflectionGenerator {
     buffer.writeln();
   }
 
-  void _writeImports(StringBuffer buffer, AnalysisResult result) {
+  void _writeImports(StringBuffer buffer, ReflectionAnalysisResult result) {
     // Runtime import
     buffer.writeln("import 'package:tom_analyzer/reflection_runtime.dart' as r;");
     buffer.writeln();
@@ -261,7 +261,7 @@ class ReflectionGenerator {
     buffer.writeln();
   }
 
-  void _writePackageStructure(StringBuffer buffer, AnalysisResult result) {
+  void _writePackageStructure(StringBuffer buffer, ReflectionAnalysisResult result) {
     buffer.writeln('// ═══════════════════════════════════════════════════════════════════');
     buffer.writeln('// Package and Library Structure');
     buffer.writeln('// ═══════════════════════════════════════════════════════════════════');
@@ -314,7 +314,7 @@ class ReflectionGenerator {
     buffer.writeln();
   }
 
-  void _writeInvokers(StringBuffer buffer, AnalysisResult result) {
+  void _writeInvokers(StringBuffer buffer, ReflectionAnalysisResult result) {
     buffer.writeln('// ═══════════════════════════════════════════════════════════════════');
     buffer.writeln('// Invokers Array');
     buffer.writeln('// ═══════════════════════════════════════════════════════════════════');
@@ -515,7 +515,7 @@ class ReflectionGenerator {
     }
   }
 
-  void _writeReflectionData(StringBuffer buffer, AnalysisResult result) {
+  void _writeReflectionData(StringBuffer buffer, ReflectionAnalysisResult result) {
     buffer.writeln('// ═══════════════════════════════════════════════════════════════════');
     buffer.writeln('// Reflection Data Structure');
     buffer.writeln('// ═══════════════════════════════════════════════════════════════════');
@@ -571,7 +571,7 @@ class ReflectionGenerator {
     buffer.writeln();
   }
 
-  void _writeDeclarations(StringBuffer buffer, AnalysisResult result) {
+  void _writeDeclarations(StringBuffer buffer, ReflectionAnalysisResult result) {
     // Generate declaration data for all class members
     for (final cls in result.classes) {
       _writeClassDeclarations(buffer, cls);
@@ -769,7 +769,7 @@ class ReflectionGenerator {
     }
   }
 
-  void _writeGlobalDeclarations(StringBuffer buffer, AnalysisResult result) {
+  void _writeGlobalDeclarations(StringBuffer buffer, ReflectionAnalysisResult result) {
     // Global functions
     for (final func in result.globalFunctions) {
       if (func.isPrivate) continue;
@@ -818,7 +818,7 @@ class ReflectionGenerator {
     }
   }
 
-  void _writeParameters(StringBuffer buffer, AnalysisResult result) {
+  void _writeParameters(StringBuffer buffer, ReflectionAnalysisResult result) {
     // Generate parameters for constructors and methods
     for (final cls in result.classes) {
       for (final ctor in cls.constructors) {
@@ -1011,7 +1011,7 @@ class ReflectionGenerator {
   /// - It's from an external package with limited depth
   /// - It's explicitly excluded from coverage
   /// - It's abstract (no constructor invokers needed)
-  void _computeTypeIndices(AnalysisResult result) {
+  void _computeTypeIndices(ReflectionAnalysisResult result) {
     var index = 0;
 
     // Index all classes
@@ -1083,7 +1083,7 @@ class ReflectionGenerator {
   }
 
   /// Pre-computes extension indices and maps them to applicable classes.
-  void _computeExtensionIndices(AnalysisResult result) {
+  void _computeExtensionIndices(ReflectionAnalysisResult result) {
     var index = 0;
 
     for (final ext in result.extensions) {

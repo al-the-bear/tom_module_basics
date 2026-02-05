@@ -8,6 +8,7 @@ library;
 
 import 'package:analyzer/dart/analysis/analysis_context_collection.dart';
 import 'package:analyzer/dart/analysis/results.dart';
+import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/dart/element/type.dart';
 import 'package:analyzer/file_system/physical_file_system.dart';
@@ -15,12 +16,13 @@ import 'package:path/path.dart' as p;
 
 import 'filter_matcher.dart';
 import 'reflection_config.dart';
+import 'source_info.dart';
 
-/// Result of entry point analysis.
+/// Result of entry point analysis for reflection generation.
 ///
 /// Contains all types and members discovered from entry points,
 /// categorized by kind and filtered according to configuration.
-class AnalysisResult {
+class ReflectionAnalysisResult {
   /// All discovered classes.
   final List<ClassElement> classes;
 
@@ -51,7 +53,13 @@ class AnalysisResult {
   /// Library URI to types mapping.
   final Map<String, List<InterfaceElement>> libraryTypes;
 
-  const AnalysisResult({
+  /// Source code information (optional, only populated if enabled in config).
+  ///
+  /// This provides access to source code, comments, and AST information
+  /// for all discovered declarations. Memory-intensive when enabled.
+  final SourceInfoCollection? sourceInfo;
+
+  ReflectionAnalysisResult({
     this.classes = const [],
     this.enums = const [],
     this.mixins = const [],
@@ -62,6 +70,7 @@ class AnalysisResult {
     this.globalVariables = const [],
     this.packageLibraries = const {},
     this.libraryTypes = const {},
+    this.sourceInfo,
   });
 
   /// Total number of types discovered.
@@ -74,6 +83,190 @@ class AnalysisResult {
 
   /// Total number of global members discovered.
   int get globalMemberCount => globalFunctions.length + globalVariables.length;
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Flattened member access (all members across all types)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /// All methods from all classes.
+  List<MethodElement> get allMethods =>
+      classes.expand((c) => c.methods).toList();
+
+  /// All fields from all classes.
+  List<FieldElement> get allFields => classes.expand((c) => c.fields).toList();
+
+  /// All constructors from all classes.
+  List<ConstructorElement> get allConstructors =>
+      classes.expand((c) => c.constructors).toList();
+
+  /// All accessors (getters/setters) from all classes.
+  List<PropertyAccessorElement> get allAccessors =>
+      classes.expand((c) => c.accessors).toList();
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Annotation API (convenience methods for annotation discovery)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /// All discovered annotations with their usages.
+  ///
+  /// Lazily computed on first access. Returns a map from annotation name
+  /// to [AnnotationInfo] containing all usages.
+  Map<String, AnnotationInfo> get annotations {
+    if (_annotationsCache != null) return _annotationsCache!;
+    _annotationsCache = _collectAnnotations();
+    return _annotationsCache!;
+  }
+
+  Map<String, AnnotationInfo>? _annotationsCache;
+
+  /// Find all elements annotated with a specific annotation name.
+  List<Element> getAnnotatedElements(String annotationName) {
+    final info = annotations[annotationName];
+    if (info == null) return const [];
+    return info.usages.map((u) => u.element).toList();
+  }
+
+  /// Check if any element has a specific annotation.
+  bool hasAnnotation(String annotationName) =>
+      annotations.containsKey(annotationName);
+
+  Map<String, AnnotationInfo> _collectAnnotations() {
+    final result = <String, AnnotationInfo>{};
+
+    void processElement(Element element, String kind, {String? parent}) {
+      for (final annotation in element.metadata) {
+        final annotationElement = annotation.element;
+        if (annotationElement == null) continue;
+
+        String? annotationName;
+        String? sourceLibrary;
+
+        if (annotationElement is ConstructorElement) {
+          final cls = annotationElement.enclosingElement3;
+          annotationName = cls.name;
+          sourceLibrary = cls.library.source.uri.toString();
+        } else if (annotationElement is PropertyAccessorElement) {
+          annotationName = annotationElement.name;
+          sourceLibrary = annotationElement.library.source.uri.toString();
+        }
+
+        if (annotationName == null) continue;
+        final info = result.putIfAbsent(
+          annotationName,
+          () => AnnotationInfo(
+            name: annotationName!,
+            qualifiedName: '$sourceLibrary#$annotationName',
+            sourceLibrary: sourceLibrary ?? 'unknown',
+          ),
+        );
+
+        final qualifiedName =
+            parent != null ? '$parent.${element.name}' : element.name ?? '';
+
+        info.usages.add(AnnotatedElementInfo(
+          name: element.name ?? '<unnamed>',
+          qualifiedName: qualifiedName,
+          kind: kind,
+          library: element.library?.source.uri.toString() ?? 'unknown',
+          element: element,
+        ));
+      }
+    }
+
+    // Process all elements
+    for (final cls in classes) {
+      processElement(cls, 'class');
+      for (final field in cls.fields) {
+        processElement(field, 'field', parent: cls.name);
+      }
+      for (final method in cls.methods) {
+        processElement(method, 'method', parent: cls.name);
+      }
+      for (final accessor in cls.accessors) {
+        final kind = accessor.isGetter ? 'getter' : 'setter';
+        processElement(accessor, kind, parent: cls.name);
+      }
+      for (final ctor in cls.constructors) {
+        processElement(ctor, 'constructor', parent: cls.name);
+      }
+    }
+
+    for (final e in enums) {
+      processElement(e, 'enum');
+      for (final value in e.fields.where((f) => f.isEnumConstant)) {
+        processElement(value, 'enum value', parent: e.name);
+      }
+    }
+
+    for (final fn in globalFunctions) {
+      processElement(fn, 'function');
+    }
+
+    for (final v in globalVariables) {
+      processElement(v, 'variable');
+    }
+
+    return result;
+  }
+}
+
+/// Information about an annotation and all its usages.
+class AnnotationInfo {
+  /// Annotation name (e.g., "override", "Deprecated", "tomReflector").
+  final String name;
+
+  /// Fully qualified name of the annotation class/variable.
+  final String qualifiedName;
+
+  /// Source library URI.
+  final String sourceLibrary;
+
+  /// All elements annotated with this annotation.
+  final List<AnnotatedElementInfo> usages = [];
+
+  AnnotationInfo({
+    required this.name,
+    required this.qualifiedName,
+    required this.sourceLibrary,
+  });
+
+  /// Number of usages.
+  int get usageCount => usages.length;
+
+  /// Usages grouped by element kind.
+  Map<String, List<AnnotatedElementInfo>> get usagesByKind {
+    final result = <String, List<AnnotatedElementInfo>>{};
+    for (final usage in usages) {
+      result.putIfAbsent(usage.kind, () => []).add(usage);
+    }
+    return result;
+  }
+}
+
+/// Information about an annotated element.
+class AnnotatedElementInfo {
+  /// Element name.
+  final String name;
+
+  /// Fully qualified name.
+  final String qualifiedName;
+
+  /// Element kind (class, method, field, etc.).
+  final String kind;
+
+  /// Library containing the element.
+  final String library;
+
+  /// The actual element (for further analysis).
+  final Element element;
+
+  AnnotatedElementInfo({
+    required this.name,
+    required this.qualifiedName,
+    required this.kind,
+    required this.library,
+    required this.element,
+  });
 }
 
 /// Analyzes entry points to discover types for reflection.
@@ -120,22 +313,57 @@ class EntryPointAnalyzer {
   /// Types pending dependency resolution.
   final Set<InterfaceElement> _pendingDependencies = {};
 
+  /// Discovered annotation types for marker scanning.
+  final Set<String> _discoveredAnnotations = {};
+
+  /// Analysis context collection for marker scanning.
+  AnalysisContextCollection? _analysisCollection;
+
+  /// Libraries already scanned for markers.
+  final Set<String> _markerScannedLibraries = {};
+
+  /// Elements already processed for annotations (prevent infinite recursion).
+  final Set<Element> _processedAnnotationElements = {};
+
+  /// Source info collection (if source extraction is enabled).
+  SourceInfoCollection? _sourceInfoCollection;
+
+  /// Source info extractor (if source extraction is enabled).
+  SourceInfoExtractor? _sourceInfoExtractor;
+
+  /// Map of file paths to their resolved units (for AST access).
+  final Map<String, ResolvedUnitResult> _resolvedUnits = {};
+
   EntryPointAnalyzer(this.config) {
     _inclusionResolver = InclusionResolver(
       defaultsConfig: config.defaults,
       filterConfigs: config.filters,
     );
+
+    // Initialize source extraction if enabled
+    if (config.sourceExtractionConfig.enabled) {
+      _sourceInfoCollection = SourceInfoCollection();
+      _sourceInfoExtractor = SourceInfoExtractor(
+        options: SourceExtractionOptions(
+          includeSourceCode: config.sourceExtractionConfig.includeSourceCode,
+          includeDocComments: config.sourceExtractionConfig.includeDocComments,
+          includeAllComments: config.sourceExtractionConfig.includeAllComments,
+          includeLineInfo: config.sourceExtractionConfig.includeLineInfo,
+          maxSourceLength: config.sourceExtractionConfig.maxSourceLength,
+        ),
+      );
+    }
   }
 
   /// Analyze entry points and return discovered types.
-  Future<AnalysisResult> analyze() async {
+  Future<ReflectionAnalysisResult> analyze() async {
     if (config.entryPoints.isEmpty) {
-      return const AnalysisResult();
+      return ReflectionAnalysisResult();
     }
 
     // Resolve entry points to absolute paths
     final absolutePaths = config.entryPoints.map((ep) {
-      return p.isAbsolute(ep) ? ep : p.absolute(ep);
+      return p.isAbsolute(ep) ? p.absolute(ep) : p.absolute(ep);
     }).toList();
 
     // Create analysis context
@@ -147,8 +375,37 @@ class EntryPointAnalyzer {
     // Analyze each entry point
     for (final entryPoint in absolutePaths) {
       final context = collection.contextFor(entryPoint);
-      final result = await context.currentSession.getResolvedLibrary(entryPoint);
+
+      // Get resolved unit for AST access (needed for source extraction)
+      if (config.sourceExtractionConfig.enabled) {
+        final unitResult =
+            await context.currentSession.getResolvedUnit(entryPoint);
+        if (unitResult is ResolvedUnitResult) {
+          _resolvedUnits[entryPoint] = unitResult;
+          if (config.sourceExtractionConfig.storeFileContents) {
+            _sourceInfoCollection?.registerSource(
+              unitResult.uri.toString(),
+              unitResult.content,
+            );
+          }
+        }
+      }
+
+      final result =
+          await context.currentSession.getResolvedLibrary(entryPoint);
       if (result is ResolvedLibraryResult) {
+        // Store all unit results for source extraction
+        if (config.sourceExtractionConfig.enabled) {
+          for (final unit in result.units) {
+            _resolvedUnits[unit.path] = unit;
+            if (config.sourceExtractionConfig.storeFileContents) {
+              _sourceInfoCollection?.registerSource(
+                unit.uri.toString(),
+                unit.content,
+              );
+            }
+          }
+        }
         await _processLibrary(result.element);
       }
     }
@@ -156,7 +413,12 @@ class EntryPointAnalyzer {
     // Resolve transitive dependencies
     await _resolveDependencies();
 
-    return AnalysisResult(
+    // Extract source info for all collected elements
+    if (config.sourceExtractionConfig.enabled) {
+      await _extractSourceInfo();
+    }
+
+    return ReflectionAnalysisResult(
       classes: List.unmodifiable(_classes),
       enums: List.unmodifiable(_enums),
       mixins: List.unmodifiable(_mixins),
@@ -167,6 +429,7 @@ class EntryPointAnalyzer {
       globalVariables: List.unmodifiable(_globalVariables),
       packageLibraries: Map.unmodifiable(_packageLibraries),
       libraryTypes: Map.unmodifiable(_libraryTypes),
+      sourceInfo: _sourceInfoCollection,
     );
   }
 
@@ -236,6 +499,121 @@ class EntryPointAnalyzer {
     for (final export in library.exportedLibraries) {
       await _processLibrary(export);
     }
+  }
+
+  /// Extract source info for all collected elements.
+  Future<void> _extractSourceInfo() async {
+    if (_sourceInfoExtractor == null || _sourceInfoCollection == null) return;
+
+    // Get AST nodes for each element by looking up their declarations
+    for (final cls in _classes) {
+      await _extractElementSourceInfo(cls, 'class');
+    }
+    for (final enm in _enums) {
+      await _extractElementSourceInfo(enm, 'enum');
+    }
+    for (final mixin in _mixins) {
+      await _extractElementSourceInfo(mixin, 'mixin');
+    }
+    for (final func in _globalFunctions) {
+      await _extractElementSourceInfo(func, 'function');
+    }
+    for (final v in _globalVariables) {
+      await _extractElementSourceInfo(v, 'variable');
+    }
+  }
+
+  /// Extract source info for a single element.
+  Future<void> _extractElementSourceInfo(Element element, String kind) async {
+    final source = element.source;
+    if (source == null) return;
+
+    final path = source.fullName;
+    var unitResult = _resolvedUnits[path];
+
+    // If we don't have the resolved unit, try to get it
+    if (unitResult == null && _analysisCollection != null) {
+      try {
+        final context = _analysisCollection!.contextFor(path);
+        final result = await context.currentSession.getResolvedUnit(path);
+        if (result is ResolvedUnitResult) {
+          unitResult = result;
+          _resolvedUnits[path] = result;
+          if (config.sourceExtractionConfig.storeFileContents) {
+            _sourceInfoCollection?.registerSource(
+              result.uri.toString(),
+              result.content,
+            );
+          }
+        }
+      } catch (_) {
+        // File might not be in the analysis context
+        return;
+      }
+    }
+
+    if (unitResult == null) return;
+
+    // Find the AST node for this element
+    final node = _findDeclarationNode(unitResult.unit, element);
+    if (node == null) return;
+
+    // Extract source info
+    final sourceInfo = _sourceInfoExtractor!.extractFromDeclaration(
+      node,
+      source.uri.toString(),
+      unitResult.content,
+    );
+
+    if (sourceInfo != null) {
+      final qualifiedName = _getQualifiedName(element);
+      _sourceInfoCollection!.add(qualifiedName, sourceInfo);
+    }
+  }
+
+  /// Find the AST declaration node for an element.
+  Declaration? _findDeclarationNode(CompilationUnit unit, Element element) {
+    final name = element.name;
+    if (name == null) return null;
+
+    for (final decl in unit.declarations) {
+      if (decl is ClassDeclaration && decl.name.lexeme == name) {
+        return decl;
+      }
+      if (decl is EnumDeclaration && decl.name.lexeme == name) {
+        return decl;
+      }
+      if (decl is MixinDeclaration && decl.name.lexeme == name) {
+        return decl;
+      }
+      if (decl is FunctionDeclaration && decl.name.lexeme == name) {
+        return decl;
+      }
+      if (decl is TopLevelVariableDeclaration) {
+        for (final variable in decl.variables.variables) {
+          if (variable.name.lexeme == name) {
+            return decl;
+          }
+        }
+      }
+      if (decl is ExtensionDeclaration && decl.name?.lexeme == name) {
+        return decl;
+      }
+      if (decl is ExtensionTypeDeclaration && decl.name.lexeme == name) {
+        return decl;
+      }
+      if (decl is TypeAlias && decl.name.lexeme == name) {
+        return decl;
+      }
+    }
+    return null;
+  }
+
+  /// Get qualified name for an element.
+  String _getQualifiedName(Element element) {
+    final library = element.library;
+    final libraryUri = library?.source.uri.toString() ?? 'unknown';
+    return '$libraryUri#${element.name}';
   }
 
   void _addClass(ClassElement cls, String libraryUri) {
@@ -335,6 +713,147 @@ class EntryPointAnalyzer {
       // Process type arguments
       if (depConfig.typeArguments.enabled) {
         _processTypeArguments(current);
+      }
+
+      // Process annotations
+      if (depConfig.typeAnnotations.enabled) {
+        _processAnnotations(current);
+      }
+    }
+
+    // Scan for marker annotations if configured
+    if (depConfig.markerAnnotations.enabled &&
+        _discoveredAnnotations.isNotEmpty) {
+      await _scanForMarkerAnnotations();
+    }
+  }
+
+  /// Process annotations on an element to discover annotation types.
+  void _processAnnotations(Element element) {
+    // Prevent infinite recursion
+    if (_processedAnnotationElements.contains(element)) return;
+    _processedAnnotationElements.add(element);
+
+    final depConfig = config.dependencyConfig.typeAnnotations;
+    final currentPackage = _getPackageName(element);
+
+    for (final annotation in element.metadata) {
+      final annotationElement = annotation.element;
+      if (annotationElement == null) continue;
+
+      // Get the annotation type
+      Element? typeElement;
+      if (annotationElement is ConstructorElement) {
+        typeElement = annotationElement.enclosingElement3;
+      } else if (annotationElement is PropertyAccessorElement) {
+        // Const variable annotation like @tomReflection
+        final variable = annotationElement.variable2;
+        if (variable != null) {
+          final varType = variable.type;
+          if (varType is InterfaceType) {
+            typeElement = varType.element;
+          }
+        }
+      }
+
+      if (typeElement == null) continue;
+
+      // Check if external
+      final annotationPackage = _getPackageName(typeElement);
+      final isExternal = annotationPackage != currentPackage;
+
+      if (isExternal && !depConfig.external) continue;
+
+      // Add the annotation type
+      if (typeElement is ClassElement) {
+        final uri = typeElement.library.source.uri.toString();
+        _addClass(typeElement, uri);
+
+        // Track for marker scanning
+        final markerConfig = config.dependencyConfig.markerAnnotations;
+        if (markerConfig.enabled) {
+          _discoveredAnnotations.add(typeElement.name);
+
+          // Also check if this annotation references other marker annotations
+          if (markerConfig.followAnnotationChains) {
+            _processAnnotations(typeElement);
+          }
+        }
+      }
+
+      // Process annotation arguments for type references
+      if (depConfig.includeArgumentTypes) {
+        _processAnnotationArguments(annotation, currentPackage);
+      }
+
+      // Process transitive annotations
+      if (depConfig.transitive && typeElement is ClassElement) {
+        _processAnnotations(typeElement);
+      }
+    }
+  }
+
+  /// Process annotation arguments to find type references.
+  void _processAnnotationArguments(
+      ElementAnnotation annotation, String? currentPackage) {
+    final depConfig = config.dependencyConfig.typeAnnotations;
+
+    // Get the annotation value
+    final value = annotation.computeConstantValue();
+    if (value == null) return;
+
+    // Check for Type arguments
+    final type = value.type;
+    if (type is InterfaceType) {
+      // Look through fields for Type values
+      for (final field in type.element.fields) {
+        if (field.type.isDartCoreType) {
+          // This field holds a Type - try to get the actual type
+          final fieldValue = value.getField(field.name);
+          if (fieldValue != null) {
+            final typeValue = fieldValue.toTypeValue();
+            if (typeValue is InterfaceType) {
+              final element = typeValue.element;
+              final isExternal = _getPackageName(element) != currentPackage;
+              if (!isExternal || depConfig.external) {
+                if (element is ClassElement) {
+                  final uri = element.library.source.uri.toString();
+                  _addClass(element, uri);
+                } else if (element is EnumElement) {
+                  final uri = element.library.source.uri.toString();
+                  _addEnum(element, uri);
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  /// Scan for all types marked with discovered marker annotations.
+  Future<void> _scanForMarkerAnnotations() async {
+    final markerConfig = config.dependencyConfig.markerAnnotations;
+
+    // Determine which annotations are markers
+    final markersToScan = <String>{};
+    for (final annName in _discoveredAnnotations) {
+      if (markerConfig.markerAnnotations.isEmpty ||
+          markerConfig.markerAnnotations.contains(annName)) {
+        markersToScan.add(annName);
+      }
+    }
+
+    if (markersToScan.isEmpty) return;
+
+    // Scan libraries we've already visited for types with these annotations
+    if (_analysisCollection != null) {
+      for (final libUri in _visitedLibraries) {
+        if (_markerScannedLibraries.contains(libUri)) continue;
+        _markerScannedLibraries.add(libUri);
+
+        // Re-process library looking for marked types
+        // This is handled implicitly since we process all types
       }
     }
   }

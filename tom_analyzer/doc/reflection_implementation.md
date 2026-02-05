@@ -3146,13 +3146,318 @@ Approximate reflection file sizes:
 
 ---
 
+## Analysis-Time API
+
+The `EntryPointAnalyzer` provides build-time analysis capabilities separate from the runtime reflection API. These APIs help with code generation, tooling, and static analysis.
+
+### AnalysisResult
+
+The `AnalysisResult` class returned by `EntryPointAnalyzer.analyze()` provides access to all discovered elements:
+
+```dart
+class AnalysisResult {
+  // Type collections
+  final List<ClassElement> classes;
+  final List<EnumElement> enums;
+  final List<MixinElement> mixins;
+  final List<ExtensionElement> extensions;
+  final List<ExtensionTypeElement> extensionTypes;
+  final List<TypeAliasElement> typeAliases;
+  
+  // Global members
+  final List<FunctionElement> globalFunctions;
+  final List<TopLevelVariableElement> globalVariables;
+  
+  // Package/Library structure
+  final Map<String, List<String>> packageLibraries;
+  final Map<String, List<InterfaceElement>> libraryTypes;
+  
+  // Counts
+  int get typeCount;
+  int get globalMemberCount;
+  
+  // ═══════════════════════════════════════════════════════════════════
+  // Annotation API (convenience methods for annotation discovery)
+  // ═══════════════════════════════════════════════════════════════════
+  
+  /// All discovered annotations with their usages.
+  Map<String, AnnotationInfo> get annotations;
+  
+  /// Find all elements annotated with a specific annotation name.
+  List<Element> getAnnotatedElements(String annotationName);
+  
+  /// Find all elements annotated with a specific type.
+  List<Element> getAnnotatedElementsOfType<T>();
+  
+  /// Check if any element has a specific annotation.
+  bool hasAnnotation(String annotationName);
+  
+  // ═══════════════════════════════════════════════════════════════════
+  // Flattened member access (all members across all types)
+  // ═══════════════════════════════════════════════════════════════════
+  
+  /// All methods from all classes.
+  List<MethodElement> get allMethods;
+  
+  /// All fields from all classes.
+  List<FieldElement> get allFields;
+  
+  /// All constructors from all classes.
+  List<ConstructorElement> get allConstructors;
+  
+  /// All accessors (getters/setters) from all classes.
+  List<PropertyAccessorElement> get allAccessors;
+}
+```
+
+### AnnotationInfo
+
+Detailed information about an annotation and its usages:
+
+```dart
+class AnnotationInfo {
+  /// Annotation name (e.g., "override", "Deprecated", "tomReflector").
+  final String name;
+  
+  /// Fully qualified name of the annotation class/variable.
+  final String qualifiedName;
+  
+  /// Source library URI.
+  final String sourceLibrary;
+  
+  /// All elements annotated with this annotation.
+  final List<AnnotatedElementInfo> usages;
+  
+  /// Number of usages.
+  int get usageCount => usages.length;
+  
+  /// Usages grouped by element kind.
+  Map<String, List<AnnotatedElementInfo>> get usagesByKind;
+}
+
+class AnnotatedElementInfo {
+  /// Element name.
+  final String name;
+  
+  /// Fully qualified name.
+  final String qualifiedName;
+  
+  /// Element kind (class, method, field, etc.).
+  final String kind;
+  
+  /// Library containing the element.
+  final String library;
+  
+  /// The actual element (for further analysis).
+  final Element element;
+  
+  /// Annotation arguments (if available).
+  final Map<String, dynamic>? arguments;
+}
+```
+
+### Usage Examples
+
+```dart
+// Analyze entry points
+final config = ReflectionConfig.load(path: 'tom_analyzer.yaml');
+final analyzer = EntryPointAnalyzer(config);
+final result = await analyzer.analyze();
+
+// Find all classes with @tomReflector annotation
+final reflectableClasses = result.getAnnotatedElements('tomReflector')
+    .whereType<ClassElement>()
+    .toList();
+
+// Get annotation usage statistics
+for (final entry in result.annotations.entries) {
+  final name = entry.key;
+  final info = entry.value;
+  print('@$name: ${info.usageCount} usages');
+  
+  for (final kind in info.usagesByKind.keys) {
+    print('  $kind: ${info.usagesByKind[kind]!.length}');
+  }
+}
+
+// Find all deprecated methods
+final deprecatedMethods = result.allMethods
+    .where((m) => m.metadata.any((a) => 
+        a.element?.enclosingElement3?.name == 'Deprecated'))
+    .toList();
+
+// Check if serialization annotations are used
+if (result.hasAnnotation('JsonSerializable')) {
+  print('Project uses JSON serialization');
+}
+```
+
+### Annotation Filter in Config
+
+Filter types based on annotations in the configuration file:
+
+```yaml
+filters:
+  - include:
+      annotations:
+        - tomReflector
+        - Serializable
+        - JsonSerializable
+      options:
+        members: all
+        
+  - exclude:
+      annotations:
+        - internal
+        - deprecated
+```
+
+This allows selecting types for reflection based on their annotations without modifying source code.
+
+---
+
+## Source Code Extraction (Optional)
+
+The analyzer supports optional source code extraction for complete AST parsing. This feature is memory-intensive and disabled by default.
+
+### Configuration
+
+Enable source extraction in the configuration:
+
+```yaml
+source_extraction:
+  enabled: true
+  include_source_code: true    # Full source code of declarations
+  include_doc_comments: true   # Documentation comments
+  include_all_comments: true   # All comments including inline
+  include_line_info: true      # Line/column information
+  max_source_length: 0         # 0 = unlimited
+  store_file_contents: true    # Store complete file source
+```
+
+### Programmatic Configuration
+
+```dart
+final config = ReflectionConfig(
+  entryPoints: ['lib/main.dart'],
+  sourceExtractionConfig: const SourceExtractionConfig(
+    enabled: true,
+    includeSourceCode: true,
+    includeDocComments: true,
+    includeAllComments: true,
+    includeLineInfo: true,
+    storeFileContents: true,
+  ),
+);
+```
+
+Preset configurations:
+- `SourceExtractionConfig.disabled` - No extraction (default)
+- `SourceExtractionConfig.docOnly` - Only doc comments and line info
+- `SourceExtractionConfig.full` - Complete source extraction
+
+### SourceInfo Classes
+
+```dart
+/// Source range information.
+class SourceRange {
+  final int offset;
+  final int length;
+  int get end => offset + length;
+}
+
+/// Comment information.
+class CommentInfo {
+  final CommentType type;  // doc, singleLine, multiLine
+  final SourceRange range;
+  final String? text;
+}
+
+/// Source information for a declaration.
+class SourceInfo {
+  final String fileUri;
+  final SourceRange range;
+  final SourceRange? docCommentRange;
+  final String? docComment;
+  final List<CommentInfo> comments;
+  final String? sourceCode;
+  final int? line;
+  final int? column;
+}
+
+/// Collection of source info for all declarations.
+class SourceInfoCollection {
+  SourceInfo? get(String qualifiedName);
+  String? getSource(String fileUri);
+  int get count;
+  String get estimatedMemorySize;
+  
+  // Serialization
+  Map<String, dynamic> toJson();
+  String toJsonString({bool pretty = false});
+  factory SourceInfoCollection.fromJsonString(String json);
+}
+```
+
+### Accessing Source Info
+
+```dart
+final result = await analyzer.analyze();
+
+// Check if source info is available
+if (result.sourceInfo != null) {
+  final sourceInfo = result.sourceInfo!;
+  
+  // Get source for a class
+  for (final cls in result.classes) {
+    final qualifiedName = '${cls.library.source.uri}#${cls.name}';
+    final info = sourceInfo.get(qualifiedName);
+    
+    if (info != null) {
+      print('${cls.name}:');
+      print('  Line: ${info.line}');
+      print('  Doc: ${info.docComment?.split('\n').first}');
+      print('  Source length: ${info.sourceCode?.length ?? 0}');
+    }
+  }
+  
+  // Get stored file contents
+  final fileSource = sourceInfo.getSource('file:///path/to/file.dart');
+  
+  // Serialize for storage
+  final json = sourceInfo.toJsonString(pretty: true);
+  
+  // Memory usage
+  print('Memory: ${sourceInfo.estimatedMemorySize}');
+}
+```
+
+### Use Cases
+
+1. **Source regeneration**: Recreate source code from analysis
+2. **Documentation extraction**: Extract all doc comments
+3. **Code visualization**: Show source in tools with line numbers
+4. **Diff/comparison**: Compare source across versions
+5. **AST-based transformations**: Modify source based on analysis
+
+### Memory Considerations
+
+Source extraction is memory-intensive:
+- Small codebase (30 classes): ~30 KB
+- Medium codebase (600 classes): ~3-5 MB
+- Large codebase (1000+ classes): 10+ MB
+
+Use `SourceExtractionConfig.docOnly` for reduced memory when full source isn't needed.
+
+---
+
 ## Known Limitations
 
 1. **Type reification**: `isSubtypeOf<S>()` relies on Dart's type system and may not work correctly with generic types at runtime.
 
 2. **Cross-package privates**: Private members cannot be accessed from generated code.
 
-3. **Documentation**: Doc comments and source locations are not captured.
+3. **Source extraction memory**: Full source code extraction is memory-intensive - use sparingly for large codebases.
 
 4. **Generic instantiation**: Type arguments for generic classes are not fully preserved at runtime.
 
