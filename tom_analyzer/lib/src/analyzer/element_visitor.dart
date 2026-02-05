@@ -1,7 +1,7 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:analyzer/dart/element/element.dart';
-import 'package:analyzer/dart/element/visitor.dart';
+import 'package:analyzer/dart/element/visitor2.dart';
 
 /// Collects analyzer elements during traversal.
 class ElementVisitorResult {
@@ -11,14 +11,14 @@ class ElementVisitorResult {
   final extensions = <ExtensionElement>[];
   final extensionTypes = <ExtensionTypeElement>[];
   final typeAliases = <TypeAliasElement>[];
-  final functions = <FunctionElement>[];
+  final functions = <TopLevelFunctionElement>[];
   final topLevelVariables = <TopLevelVariableElement>[];
   final accessors = <PropertyAccessorElement>[];
   final constructors = <ConstructorElement>[];
 }
 
 /// Basic analyzer visitor that gathers key element types.
-class TomElementVisitor extends GeneralizingElementVisitor<void> {
+class TomElementVisitor extends GeneralizingElementVisitor2<void> {
   final ElementVisitorResult result;
 
   TomElementVisitor(this.result);
@@ -60,9 +60,9 @@ class TomElementVisitor extends GeneralizingElementVisitor<void> {
   }
 
   @override
-  void visitFunctionElement(FunctionElement element) {
+  void visitTopLevelFunctionElement(TopLevelFunctionElement element) {
     result.functions.add(element);
-    super.visitFunctionElement(element);
+    super.visitTopLevelFunctionElement(element);
   }
 
   @override

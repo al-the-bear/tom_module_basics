@@ -13,7 +13,8 @@ class AnnotationParser {
   AnnotationInfo _parse(ElementAnnotation annotation) {
     final element = annotation.element;
     final name = element?.displayName ?? annotation.toSource();
-    final libraryUri = element?.librarySource?.uri.toString();
+    // In analyzer 8.x, source is on the fragment, not the element
+    final libraryUri = element?.library?.firstFragment.source.uri.toString();
     final qualifiedName = libraryUri == null ? name : '$libraryUri.$name';
 
     return AnnotationInfo(

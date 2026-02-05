@@ -116,7 +116,7 @@ class TomAnalyzer {
         continue;
       }
 
-      final uri = result.element.source.uri;
+      final uri = result.element.firstFragment.source.uri;
       if (!_isInPackage(uri, rootPath, packageName)) {
         continue;
       }
@@ -137,7 +137,7 @@ class TomAnalyzer {
 
       if (followReExports) {
         for (final exportedLibrary in result.element.exportedLibraries) {
-          final exportUri = exportedLibrary.source.uri;
+          final exportUri = exportedLibrary.firstFragment.source.uri;
           if (_shouldFollowReExport(
             exportUri,
             rootPath,
@@ -146,7 +146,7 @@ class TomAnalyzer {
             skipReExports,
           )) {
             if (queuedUris.add(exportUri)) {
-              pendingExports.add(exportedLibrary.source.fullName);
+              pendingExports.add(exportedLibrary.firstFragment.source.fullName);
             }
           }
         }
@@ -159,7 +159,7 @@ class TomAnalyzer {
       if (exportResult is! analysis_results.ResolvedLibraryResult) {
         continue;
       }
-      final exportUri = exportResult.element.source.uri;
+      final exportUri = exportResult.element.firstFragment.source.uri;
       if (analysisResult.libraries.containsKey(exportUri)) {
         continue;
       }
@@ -174,7 +174,7 @@ class TomAnalyzer {
 
       if (followReExports) {
         for (final exportedLibrary in exportResult.element.exportedLibraries) {
-          final nextUri = exportedLibrary.source.uri;
+          final nextUri = exportedLibrary.firstFragment.source.uri;
           if (_shouldFollowReExport(
             nextUri,
             rootPath,
@@ -183,7 +183,7 @@ class TomAnalyzer {
             skipReExports,
           )) {
             if (queuedUris.add(nextUri)) {
-              pendingExports.add(exportedLibrary.source.fullName);
+              pendingExports.add(exportedLibrary.firstFragment.source.fullName);
             }
           }
         }
@@ -249,7 +249,8 @@ class TomAnalyzer {
     analyzer.LibraryElement libraryElement,
     String rootPath,
   ) {
-    final uri = libraryElement.source.uri;
+    final source = libraryElement.firstFragment.source;
+    final uri = source.uri;
     final packageInfo = registry.packageForUri(uri, rootPath);
 
     final libraryId = registry.idGen.nextId('lib');
@@ -257,7 +258,7 @@ class TomAnalyzer {
       registry,
       packageInfo,
       uri,
-      libraryElement.source.fullName,
+      source.fullName,
       isPart: false,
       partOfDirective: null,
     );
@@ -267,7 +268,7 @@ class TomAnalyzer {
 
     final libraryInfo = LibraryInfo(
       id: libraryId,
-      name: libraryElement.name,
+      name: libraryElement.displayName,
       uri: uri,
       package: packageInfo,
       mainSourceFile: mainFileInfo,
@@ -288,30 +289,36 @@ class TomAnalyzer {
 
     registry.registerLibrary(libraryInfo);
 
-    for (final element in libraryElement.topLevelElements) {
-      if (element is analyzer.ClassElement) {
-        libraryInfo.classes.add(_mapClass(element, libraryInfo, registry));
-      } else if (element is analyzer.EnumElement) {
-        libraryInfo.enums.add(_mapEnum(element, libraryInfo, registry));
-      } else if (element is analyzer.MixinElement) {
-        libraryInfo.mixins.add(_mapMixin(element, libraryInfo, registry));
-      } else if (element is analyzer.ExtensionElement) {
-        libraryInfo.extensions.add(_mapExtension(element, libraryInfo, registry));
-      } else if (element is analyzer.ExtensionTypeElement) {
-        libraryInfo.extensionTypes.add(_mapExtensionType(element, libraryInfo, registry));
-      } else if (element is analyzer.TypeAliasElement) {
-        libraryInfo.typeAliases.add(_mapTypeAlias(element, libraryInfo, registry));
-      } else if (element is analyzer.FunctionElement) {
-        libraryInfo.functions.add(_mapFunction(element, libraryInfo, registry));
-      } else if (element is analyzer.TopLevelVariableElement) {
-        libraryInfo.variables.add(_mapTopLevelVariable(element, libraryInfo, registry));
-      } else if (element is analyzer.PropertyAccessorElement) {
-        if (element.isGetter) {
-          libraryInfo.getters.add(_mapGetter(element, libraryInfo, registry));
-        } else if (element.isSetter) {
-          libraryInfo.setters.add(_mapSetter(element, libraryInfo, registry));
-        }
-      }
+    // Map all top-level elements from the library
+    for (final element in libraryElement.classes) {
+      libraryInfo.classes.add(_mapClass(element, libraryInfo, registry));
+    }
+    for (final element in libraryElement.enums) {
+      libraryInfo.enums.add(_mapEnum(element, libraryInfo, registry));
+    }
+    for (final element in libraryElement.mixins) {
+      libraryInfo.mixins.add(_mapMixin(element, libraryInfo, registry));
+    }
+    for (final element in libraryElement.extensions) {
+      libraryInfo.extensions.add(_mapExtension(element, libraryInfo, registry));
+    }
+    for (final element in libraryElement.extensionTypes) {
+      libraryInfo.extensionTypes.add(_mapExtensionType(element, libraryInfo, registry));
+    }
+    for (final element in libraryElement.typeAliases) {
+      libraryInfo.typeAliases.add(_mapTypeAlias(element, libraryInfo, registry));
+    }
+    for (final element in libraryElement.topLevelFunctions) {
+      libraryInfo.functions.add(_mapFunction(element, libraryInfo, registry));
+    }
+    for (final element in libraryElement.topLevelVariables) {
+      libraryInfo.variables.add(_mapTopLevelVariable(element, libraryInfo, registry));
+    }
+    for (final element in libraryElement.getters) {
+      libraryInfo.getters.add(_mapGetter(element, libraryInfo, registry));
+    }
+    for (final element in libraryElement.setters) {
+      libraryInfo.setters.add(_mapSetter(element, libraryInfo, registry));
     }
 
     // TODO: Populate imports/exports once analyzer API usage is finalized.
@@ -352,7 +359,7 @@ class TomAnalyzer {
   ClassInfo _mapClass(analyzer.ClassElement element, LibraryInfo libraryInfo, _ModelRegistry registry) {
     final classInfo = ClassInfo(
       id: registry.idGen.nextId('class'),
-      name: element.name,
+      name: element.displayName,
       qualifiedName: _qualifiedName(element),
       library: libraryInfo,
       sourceFile: libraryInfo.mainSourceFile,
@@ -395,7 +402,7 @@ class TomAnalyzer {
   EnumInfo _mapEnum(analyzer.EnumElement element, LibraryInfo libraryInfo, _ModelRegistry registry) {
     final enumInfo = EnumInfo(
       id: registry.idGen.nextId('enum'),
-      name: element.name,
+      name: element.displayName,
       qualifiedName: _qualifiedName(element),
       library: libraryInfo,
       sourceFile: libraryInfo.mainSourceFile,
@@ -415,7 +422,7 @@ class TomAnalyzer {
       enumInfo.values.add(
         EnumValueInfo(
           id: registry.idGen.nextId('enumValue'),
-          name: value.name,
+          name: value.displayName,
           parentEnum: enumInfo,
           index: enumInfo.values.length,
           documentation: value.documentationComment,
@@ -445,7 +452,7 @@ class TomAnalyzer {
   MixinInfo _mapMixin(analyzer.MixinElement element, LibraryInfo libraryInfo, _ModelRegistry registry) {
     final mixinInfo = MixinInfo(
       id: registry.idGen.nextId('mixin'),
-      name: element.name,
+      name: element.displayName,
       qualifiedName: _qualifiedName(element),
       library: libraryInfo,
       sourceFile: libraryInfo.mainSourceFile,
@@ -494,7 +501,7 @@ class TomAnalyzer {
   ExtensionTypeInfo _mapExtensionType(analyzer.ExtensionTypeElement element, LibraryInfo libraryInfo, _ModelRegistry registry) {
     final extensionTypeInfo = ExtensionTypeInfo(
       id: registry.idGen.nextId('extensionType'),
-      name: element.name,
+      name: element.displayName,
       qualifiedName: _qualifiedName(element),
       library: libraryInfo,
       sourceFile: libraryInfo.mainSourceFile,
@@ -523,7 +530,7 @@ class TomAnalyzer {
   TypeAliasInfo _mapTypeAlias(analyzer.TypeAliasElement element, LibraryInfo libraryInfo, _ModelRegistry registry) {
     return TypeAliasInfo(
       id: registry.idGen.nextId('typedef'),
-      name: element.name,
+      name: element.displayName,
       qualifiedName: _qualifiedName(element),
       library: libraryInfo,
       sourceFile: libraryInfo.mainSourceFile,
@@ -534,10 +541,10 @@ class TomAnalyzer {
     );
   }
 
-  FunctionInfo _mapFunction(analyzer.FunctionElement element, LibraryInfo libraryInfo, _ModelRegistry registry) {
+  FunctionInfo _mapFunction(analyzer.TopLevelFunctionElement element, LibraryInfo libraryInfo, _ModelRegistry registry) {
     return FunctionInfo(
       id: registry.idGen.nextId('function'),
-      name: element.name,
+      name: element.displayName,
       qualifiedName: _qualifiedName(element),
       library: libraryInfo,
       sourceFile: libraryInfo.mainSourceFile,
@@ -545,9 +552,10 @@ class TomAnalyzer {
       documentation: element.documentationComment,
       returnType: _typeRef(element.returnType, registry),
       typeParameters: element.typeParameters.map((t) => _typeParameter(t, registry)).toList(),
-      parameters: element.parameters.map((p) => _mapParameter(p, registry)).toList(),
-      isAsync: element.isAsynchronous,
-      isGenerator: element.isGenerator,
+      parameters: element.formalParameters.map((p) => _mapParameter(p, registry)).toList(),
+      // In analyzer 8.x, isAsynchronous and isGenerator are on the fragment
+      isAsync: element.firstFragment.isAsynchronous,
+      isGenerator: element.firstFragment.isGenerator,
       isExternal: element.isExternal,
     );
   }
@@ -559,7 +567,7 @@ class TomAnalyzer {
   ) {
     return VariableInfo(
       id: registry.idGen.nextId('variable'),
-      name: element.name,
+      name: element.displayName,
       qualifiedName: _qualifiedName(element),
       owningLibrary: libraryInfo,
       sourceFile: libraryInfo.mainSourceFile,
@@ -585,7 +593,7 @@ class TomAnalyzer {
     }
     return FieldInfo(
       id: registry.idGen.nextId('field'),
-      name: element.name,
+      name: element.displayName,
       qualifiedName: _qualifiedName(element),
       declaringType: declaringType,
       owningLibrary: ownerLibrary,
@@ -613,7 +621,7 @@ class TomAnalyzer {
     }
     return MethodInfo(
       id: registry.idGen.nextId('method'),
-      name: element.name,
+      name: element.displayName,
       qualifiedName: _qualifiedName(element),
       declaringType: declaringType,
       owningLibrary: ownerLibrary,
@@ -622,7 +630,7 @@ class TomAnalyzer {
       documentation: element.documentationComment,
       returnType: _typeRef(element.returnType, registry),
       typeParameters: element.typeParameters.map((t) => _typeParameter(t, registry)).toList(),
-      parameters: element.parameters.map((p) => _mapParameter(p, registry)).toList(),
+      parameters: element.formalParameters.map((p) => _mapParameter(p, registry)).toList(),
       isAsync: false,
       isGenerator: false,
       isExternal: element.isExternal,
@@ -661,8 +669,8 @@ class TomAnalyzer {
     _ModelRegistry registry, {
     TypeDeclaration? declaringType,
   }) {
-    final parameter = element.parameters.isNotEmpty
-      ? _mapParameter(element.parameters.first, registry)
+    final parameter = element.formalParameters.isNotEmpty
+      ? _mapParameter(element.formalParameters.first, registry)
         : ParameterInfo(
             id: registry.idGen.nextId('param'),
             name: 'value',
@@ -701,13 +709,13 @@ class TomAnalyzer {
     }
     return ConstructorInfo(
       id: registry.idGen.nextId('ctor'),
-      name: element.name,
+      name: element.displayName,
       qualifiedName: _qualifiedName(element),
       declaringType: ownerType,
       sourceFile: ownerType.sourceFile,
       location: _location(element),
       documentation: element.documentationComment,
-      parameters: element.parameters.map((p) => _mapParameter(p, registry)).toList(),
+      parameters: element.formalParameters.map((p) => _mapParameter(p, registry)).toList(),
       isExternal: element.isExternal,
       isConst: element.isConst,
       isFactory: element.isFactory,
@@ -716,10 +724,10 @@ class TomAnalyzer {
     );
   }
 
-  ParameterInfo _mapParameter(analyzer.ParameterElement element, _ModelRegistry registry) {
+  ParameterInfo _mapParameter(analyzer.FormalParameterElement element, _ModelRegistry registry) {
     return ParameterInfo(
       id: registry.idGen.nextId('param'),
-      name: element.name,
+      name: element.displayName,
       type: _typeRef(element.type, registry),
       isRequired: element.isRequiredNamed || element.isRequiredPositional,
       isNamed: element.isNamed,
@@ -732,7 +740,7 @@ class TomAnalyzer {
   TypeParameterInfo _typeParameter(analyzer.TypeParameterElement element, _ModelRegistry registry) {
     return TypeParameterInfo(
       id: registry.idGen.nextId('typeParam'),
-      name: element.name,
+      name: element.displayName,
       bound: element.bound != null ? _typeRef(element.bound!, registry) : null,
     );
   }
@@ -748,8 +756,8 @@ class TomAnalyzer {
         functionType: FunctionTypeInfo(
           id: registry.idGen.nextId('functionType'),
           returnType: _typeRef(type.returnType, registry),
-          typeParameters: type.typeFormals.map((t) => _typeParameter(t, registry)).toList(),
-          parameters: type.parameters.map((p) => _mapParameter(p, registry)).toList(),
+          typeParameters: type.typeParameters.map((t) => _typeParameter(t, registry)).toList(),
+          parameters: type.formalParameters.map((p) => _mapParameter(p, registry)).toList(),
         ),
       );
     }
@@ -769,7 +777,7 @@ class TomAnalyzer {
       final qualified = _qualifiedName(element);
       return TypeReference(
         id: registry.idGen.nextId('type'),
-        name: element.name,
+        name: element.displayName,
         qualifiedName: qualified,
         typeArguments: type.typeArguments.map((t) => _typeRef(t, registry)).toList(),
         isNullable: type.nullabilitySuffix.name == 'question',
@@ -786,13 +794,15 @@ class TomAnalyzer {
   }
 
   SourceLocation _location(analyzer.Element element) {
-    final offset = element.nameOffset;
-    final length = element.nameLength;
+    // In analyzer 8.x, nameOffset and nameLength are on the fragment, not the element
+    final offset = element.firstFragment.nameOffset ?? 0;
+    final length = element.displayName.length;
     return SourceLocation(line: 0, column: 0, offset: offset, length: length);
   }
 
   String _qualifiedName(analyzer.Element element) {
-    final libraryUri = element.librarySource?.uri.toString() ?? '';
+    // In analyzer 8.x, source is on the fragment, not the element
+    final libraryUri = element.library?.firstFragment.source.uri.toString() ?? '';
     final name = element.displayName;
     return '$libraryUri.$name';
   }

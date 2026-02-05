@@ -28,8 +28,8 @@ class TypeResolver {
         functionType: FunctionTypeInfo(
           id: idGenerator.nextId('functionType'),
           returnType: resolve(type.returnType),
-          typeParameters: type.typeFormals.map(_typeParameter).toList(),
-          parameters: type.parameters.map(_parameter).toList(),
+          typeParameters: type.typeParameters.map(_typeParameter).toList(),
+          parameters: type.formalParameters.map(_parameter).toList(),
         ),
       );
     }
@@ -50,7 +50,7 @@ class TypeResolver {
       final resolved = resolveElement?.call(element);
       return TypeReference(
         id: idGenerator.nextId('type'),
-        name: element.name,
+        name: element.displayName,
         qualifiedName: qualified,
         typeArguments: type.typeArguments.map(resolve).toList(),
         isNullable: type.nullabilitySuffix == NullabilitySuffix.question,
@@ -70,15 +70,15 @@ class TypeResolver {
   TypeParameterInfo _typeParameter(analyzer.TypeParameterElement element) {
     return TypeParameterInfo(
       id: idGenerator.nextId('typeParam'),
-      name: element.name,
+      name: element.displayName,
       bound: element.bound != null ? resolve(element.bound!) : null,
     );
   }
 
-  ParameterInfo _parameter(analyzer.ParameterElement element) {
+  ParameterInfo _parameter(analyzer.FormalParameterElement element) {
     return ParameterInfo(
       id: idGenerator.nextId('param'),
-      name: element.name,
+      name: element.displayName,
       type: resolve(element.type),
       isRequired: element.isRequiredNamed || element.isRequiredPositional,
       isNamed: element.isNamed,
@@ -89,7 +89,8 @@ class TypeResolver {
   }
 
   String _qualifiedName(analyzer.Element element) {
-    final libraryUri = element.librarySource?.uri.toString() ?? '';
+    // In analyzer 8.x, source is on the fragment, not the element
+    final libraryUri = element.library?.firstFragment.source.uri.toString() ?? '';
     final name = element.displayName;
     return '$libraryUri.$name';
   }
