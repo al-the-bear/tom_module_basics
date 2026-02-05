@@ -1,0 +1,18 @@
+targets:
+  $default:
+    builders:
+      tom_analyzer|tom_analyzer:
+        enabled: true
+        generate_for:
+          - lib/sample_code.dart
+        options:
+          includePrivate: false
+          includeInherited: true
+          
+      tom_analyzer|tom_analyzer_reflection:
+        enabled: true
+        generate_for:
+          - lib/sample_code.dart
+        options:
+          includePrivate: false
+          includeInherited: true
