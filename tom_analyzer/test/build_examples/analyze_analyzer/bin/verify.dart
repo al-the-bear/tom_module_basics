@@ -7,7 +7,6 @@ import 'package:analyzer/dart/analysis/analysis_context_collection.dart';
 import 'package:analyzer/dart/analysis/results.dart' as analyzer_results;
 import 'package:analyzer/dart/ast/ast.dart' as analyzer_ast;
 import 'package:analyzer/dart/analysis/utilities.dart';
-import 'package:analyzer/dart/ast/token.dart' as analyzer_token;
 import 'package:analyzer/file_system/physical_file_system.dart';
 import 'package:tom_analyzer/tom_analyzer.dart' as tom;
 import 'package:tom_d4rt_ast/ast_converter.dart';
@@ -283,18 +282,17 @@ Future<_CompareSummary> _compareAstDetails(
       final analyzerRoot = parsed.unit;
       final astRoot = converter.convertCompilationUnit(parsed.unit);
 
-      final analyzerSnapshot = _snapshotFromAnalyzer(analyzerRoot);
-      final astSnapshot = _snapshotFromJson(astRoot.toJson());
-
-      summary.filesCompared++;
       final before = log.length;
-      _diffSnapshots(
-        analyzerSnapshot,
-        astSnapshot,
+      _compareAst(
+        analyzerRoot,
+        astRoot,
+        converter,
         filePath,
         log,
         maxDiffs,
       );
+
+      summary.filesCompared++;
       if (log.length > before) {
         summary.filesWithDiffs++;
       }
@@ -308,106 +306,252 @@ Future<_CompareSummary> _compareAstDetails(
   return summary;
 }
 
-class _NodeSnapshot {
+class _VisitEntry<T> {
   final String type;
   final int offset;
   final int length;
-  final List<_NodeSnapshot> children;
+  final T node;
+  final String path;
 
-  _NodeSnapshot({
+  _VisitEntry({
     required this.type,
     required this.offset,
     required this.length,
-    required this.children,
+    required this.node,
+    required this.path,
   });
 }
 
-_NodeSnapshot _snapshotFromAnalyzer(analyzer_ast.AstNode node) {
-  final children = <_NodeSnapshot>[];
-  for (final entity in node.childEntities) {
-    if (entity is analyzer_ast.AstNode) {
-      children.add(_snapshotFromAnalyzer(entity));
-    } else if (entity is analyzer_token.Token) {
-      children.add(
-        _NodeSnapshot(
-          type: 'Token(${entity.lexeme})',
-          offset: entity.offset,
-          length: entity.length,
-          children: const [],
-        ),
-      );
+void _compareAst(
+  analyzer_ast.AstNode analyzerRoot,
+  SAstNode astRoot,
+  AstConverter converter,
+  String filePath,
+  List<String> log,
+  int maxDiffs,
+) {
+  final analyzerVisits = <_VisitEntry<analyzer_ast.AstNode>>[];
+  final astVisits = <_VisitEntry<Map<String, dynamic>>>[];
+
+  _collectAnalyzerVisits(analyzerRoot, analyzerVisits, filePath);
+  _collectAstJsonVisitsSorted(astRoot.toJson(), astVisits, filePath);
+
+  final astByKey = <String, List<Map<String, dynamic>>>{};
+  for (final entry in astVisits) {
+    final key = _nodeKey(entry.type, entry.offset);
+    (astByKey[key] ??= <Map<String, dynamic>>[]).add(entry.node);
+  }
+
+  final analyzerKeys = <String>[];
+  final analyzerFilteredVisits = <_VisitEntry<analyzer_ast.AstNode>>[];
+  for (final entry in analyzerVisits) {
+    final converted = _convertAnalyzerNode(entry.node, converter);
+    if (converted == null || converted.nodeType == 'Unknown') {
+      continue;
+    }
+    final key = _nodeKey(converted.nodeType, converted.offset);
+    if (!astByKey.containsKey(key)) {
+      continue;
+    }
+    analyzerKeys.add(key);
+    analyzerFilteredVisits.add(entry);
+  }
+
+  final keyCounts = <String, int>{};
+  for (final key in analyzerKeys) {
+    keyCounts[key] = (keyCounts[key] ?? 0) + 1;
+  }
+
+  final filteredAstVisits = <_VisitEntry<Map<String, dynamic>>>[];
+  for (final entry in astVisits) {
+    final key = _nodeKey(entry.type, entry.offset);
+    final remaining = keyCounts[key] ?? 0;
+    if (remaining > 0) {
+      filteredAstVisits.add(entry);
+      keyCounts[key] = remaining - 1;
     }
   }
 
-  return _NodeSnapshot(
-    type: node.runtimeType.toString(),
-    offset: node.offset,
-    length: node.length,
-    children: children,
-  );
+  if (analyzerKeys.length != filteredAstVisits.length) {
+    log.add(
+      '$filePath: visitCount ${analyzerKeys.length} != ${filteredAstVisits.length}',
+    );
+    if (log.length >= maxDiffs) return;
+  }
+
+  final minLen = analyzerKeys.length < filteredAstVisits.length
+      ? analyzerKeys.length
+      : filteredAstVisits.length;
+
+  for (var i = 0; i < minLen; i++) {
+    if (log.length >= maxDiffs) return;
+
+    final analyzerEntry = analyzerFilteredVisits[i];
+    final astEntry = filteredAstVisits[i];
+    final converted = _convertAnalyzerNode(analyzerEntry.node, converter);
+
+    if (converted == null) {
+      log.add('${analyzerEntry.path}: converter returned null');
+      continue;
+    }
+    if (converted.nodeType == 'Unknown') {
+      log.add('${analyzerEntry.path}: unsupported analyzer node');
+      continue;
+    }
+
+    // Traversal order check (filtered)
+    final convertedKey = _nodeKey(converted.nodeType, converted.offset);
+    final astKey = _nodeKey(astEntry.type, astEntry.offset);
+    if (convertedKey != astKey) {
+      final convertedDetail = _nodeKeyDetail(
+        converted.nodeType,
+        converted.offset,
+        converted.length,
+      );
+      final astDetail = _nodeKeyDetail(
+        astEntry.type,
+        astEntry.offset,
+        astEntry.length,
+      );
+      log.add('${analyzerEntry.path}: order mismatch $convertedDetail != $astDetail');
+      if (log.length >= maxDiffs) return;
+    }
+
+    // Detailed comparison by key to avoid cascade diffs
+    final bucket = astByKey[convertedKey];
+    if (bucket == null || bucket.isEmpty) {
+      final convertedDetail = _nodeKeyDetail(
+        converted.nodeType,
+        converted.offset,
+        converted.length,
+      );
+      log.add('${analyzerEntry.path}: missing node $convertedDetail');
+      continue;
+    }
+
+    final expected = SAstNodeFactory.fromJson(bucket.first);
+    if (expected == null) {
+      log.add('${analyzerEntry.path}: unable to deserialize expected node');
+      continue;
+    }
+
+    final detailLog = <String>[];
+    if (!converted.equals(expected, detailLog)) {
+      for (final line in detailLog) {
+        if (log.length >= maxDiffs) break;
+        log.add('${analyzerEntry.path}: $line');
+      }
+    }
+  }
 }
 
-_NodeSnapshot _snapshotFromJson(Map<String, dynamic> json) {
-  final children = <_NodeSnapshot>[];
+SAstNode? _convertAnalyzerNode(
+  analyzer_ast.AstNode node,
+  AstConverter converter,
+) {
+  if (node is analyzer_ast.CompilationUnit) {
+    return converter.convertCompilationUnit(node);
+  }
+  return converter.convert(node);
+}
 
-  final keys = json.keys.toList()..sort();
-  for (final key in keys) {
-    final value = json[key];
+String _nodeKey(String type, int offset) {
+  return '$type@$offset';
+}
+
+String _nodeKeyDetail(String type, int offset, int length) {
+  return '$type@$offset:$length';
+}
+
+void _collectAnalyzerVisits(
+  analyzer_ast.AstNode node,
+  List<_VisitEntry<analyzer_ast.AstNode>> visits,
+  String path,
+) {
+  if (_shouldSkipAnalyzerNode(node)) {
+    return;
+  }
+
+  visits.add(
+    _VisitEntry(
+      type: node.runtimeType.toString(),
+      offset: node.offset,
+      length: node.length,
+      node: node,
+      path: path,
+    ),
+  );
+
+  final children = <analyzer_ast.AstNode>[];
+  for (final entity in node.childEntities) {
+    if (entity is analyzer_ast.AstNode) {
+      children.add(entity);
+    }
+  }
+
+  var index = 0;
+  for (final child in children) {
+    _collectAnalyzerVisits(child, visits, '$path/$index:${child.runtimeType}');
+    index++;
+  }
+}
+
+void _collectAstJsonVisitsSorted(
+  Map<String, dynamic> json,
+  List<_VisitEntry<Map<String, dynamic>>> visits,
+  String path,
+) {
+  final nodeType = json['nodeType'] as String?;
+  if (nodeType == null || _shouldSkipAstNodeType(nodeType)) {
+    return;
+  }
+
+  visits.add(
+    _VisitEntry(
+      type: nodeType,
+      offset: json['offset'] as int? ?? -1,
+      length: json['length'] as int? ?? -1,
+      node: json,
+      path: path,
+    ),
+  );
+
+  final childNodes = _extractAstJsonChildren(json);
+
+  var index = 0;
+  for (final child in childNodes) {
+    _collectAstJsonVisitsSorted(
+      child,
+      visits,
+      '$path/$index:${child['nodeType']}',
+    );
+    index++;
+  }
+}
+
+List<Map<String, dynamic>> _extractAstJsonChildren(Map<String, dynamic> json) {
+  final children = <Map<String, dynamic>>[];
+  for (final value in json.values) {
     if (value is Map && value['nodeType'] is String) {
-      children.add(_snapshotFromJson(value.cast<String, dynamic>()));
+      children.add(value.cast<String, dynamic>());
     } else if (value is List) {
       for (final item in value) {
         if (item is Map && item['nodeType'] is String) {
-          children.add(_snapshotFromJson(item.cast<String, dynamic>()));
+          children.add(item.cast<String, dynamic>());
         }
       }
     }
   }
-
-  return _NodeSnapshot(
-    type: json['nodeType'] as String? ?? 'Unknown',
-    offset: json['offset'] as int? ?? -1,
-    length: json['length'] as int? ?? -1,
-    children: children,
-  );
+  return children;
 }
 
-void _diffSnapshots(
-  _NodeSnapshot left,
-  _NodeSnapshot right,
-  String path,
-  List<String> log,
-  int maxDiffs,
-) {
-  if (log.length >= maxDiffs) return;
+bool _shouldSkipAnalyzerNode(analyzer_ast.AstNode node) {
+  return node is analyzer_ast.Comment ||
+      node is analyzer_ast.CommentReference;
+}
 
-  if (left.type != right.type) {
-    log.add('$path: type ${left.type} != ${right.type}');
-    if (log.length >= maxDiffs) return;
-  }
-  if (left.offset != right.offset || left.length != right.length) {
-    log.add(
-      '$path: span ${left.offset}:${left.length} != ${right.offset}:${right.length}',
-    );
-    if (log.length >= maxDiffs) return;
-  }
-
-  if (left.children.length != right.children.length) {
-    log.add(
-      '$path: childCount ${left.children.length} != ${right.children.length}',
-    );
-    if (log.length >= maxDiffs) return;
-  }
-
-  final minLen = left.children.length < right.children.length
-      ? left.children.length
-      : right.children.length;
-
-  for (var i = 0; i < minLen; i++) {
-    final childPath = '$path/$i:${left.children[i].type}';
-    _diffSnapshots(left.children[i], right.children[i], childPath, log, maxDiffs);
-    if (log.length >= maxDiffs) return;
-  }
+bool _shouldSkipAstNodeType(String nodeType) {
+  return nodeType == 'Comment';
 }
 
 /// Scan Dart files using the Dart analyzer directly and collect statistics
