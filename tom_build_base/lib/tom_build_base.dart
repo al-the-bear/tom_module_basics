@@ -25,8 +25,16 @@
 /// final scanner = ProjectScanner(
 ///   isProjectCallback: (path) => File('$path/pubspec.yaml').existsSync(),
 /// );
+///
+/// // Check if build.yaml defines a builder (should be ignored by CLI tools)
+/// if (isBuildYamlBuilderDefinition(projectPath)) {
+///   print('Skipping builder definition package');
+///   return;
+/// }
 /// ```
 library;
+
+export 'src/build_yaml_utils.dart';
 
 export 'src/build_config.dart';
 export 'src/path_utils.dart';

@@ -10,3 +10,33 @@ builders:
       r"$lib$": ["version.g.info"]
     auto_apply: none
     build_to: source
+
+targets:
+  $default:
+    builders:
+      # Self-version: generates version.g.dart for the versioner tool itself
+      tom_version_builder:version_builder:
+        enabled: true
+        options:
+          output: lib/src/version.g.dart
+          includeGitCommit: true
+          variablePrefix: versionerTool
+      
+      tom_compiler_builder:compiler_builder:
+        enabled: true
+        options:
+          compiles:
+            # macOS ARM64 - compile for self + all Linux targets
+            - commandline:
+                - mkdir -p <HOME>/.tom/bin/${target_platform}
+                - dart compile exe ${file} --target-os=${target_os} -o <HOME>/.tom/bin/${target_platform}/${file.name}
+              files: bin/versioner.dart
+              targets: [darwin-arm64, linux-x64, linux-arm64, linux-armhf]
+              platforms: [darwin-arm64]
+            
+            # Other platforms - compile for self only
+            - commandline:
+                - mkdir -p <HOME>/.tom/bin/${target_platform}
+                - dart compile exe ${file} -o <HOME>/.tom/bin/${target_platform}/${file.name}
+              files: bin/versioner.dart
+              platforms: [darwin-x64, linux-*, win32-*]

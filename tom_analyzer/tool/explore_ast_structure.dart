@@ -227,7 +227,7 @@ class AstSerializer {
       'parameters': _serializeParameters(node.parameters),
       'initializers': node.initializers.map((i) => i.toSource()).toList(),
       'redirectedConstructor': node.redirectedConstructor?.toSource(),
-      'body': node.body?.toSource(),
+      'body': node.body.toSource(),
     };
   }
 

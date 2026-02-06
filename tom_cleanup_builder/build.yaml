@@ -1,0 +1,44 @@
+# Build configuration for tom_cleanup_builder
+#
+# This registers the cleanup_builder as a builder that can be used by other packages.
+
+builders:
+  cleanup_builder:
+    import: "package:tom_cleanup_builder/builder.dart"
+    builder_factories: ["cleanupBuilder"]
+    build_extensions:
+      r"$lib$": [".cleanup.done"]
+    auto_apply: none
+    build_to: source
+
+targets:
+  $default:
+    builders:
+      # Version builder - generates version.g.dart with build info
+      tom_version_builder:version_builder:
+        enabled: true
+        options:
+          output: lib/src/version.g.dart
+          includeGitCommit: true
+          variablePrefix: cleanupTool
+      
+      tom_compiler_builder:compiler_builder:
+        enabled: true
+        options:
+          compiles:
+            # macOS ARM64 - compile for self + all Linux targets
+            # Using multiple commands: compile then make executable
+            - commandline:
+                - mkdir -p <HOME>/.tom/bin/${target_platform}
+                - dart compile exe ${file} --target-os=${target_os} -o <HOME>/.tom/bin/${target_platform}/${file.name}
+                - chmod +x <HOME>/.tom/bin/${target_platform}/${file.name}
+              files: bin/cleanup.dart
+              targets: [darwin-arm64, linux-x64, linux-arm64, linux-armhf]
+              platforms: [darwin-arm64]
+            
+            # Other platforms - compile for self only (single command - still works)
+            - commandline:
+                - mkdir -p <HOME>/.tom/bin/${target_platform}
+                - dart compile exe ${file} -o <HOME>/.tom/bin/${target_platform}/${file.name}
+              files: bin/cleanup.dart
+              platforms: [darwin-x64, linux-*, win32-*]

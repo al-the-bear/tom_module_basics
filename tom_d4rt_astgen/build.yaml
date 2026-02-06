@@ -1,0 +1,42 @@
+# Build configuration for tom_d4rt_astgen
+#
+# This registers the astgen builder as a builder that can be used by other packages.
+
+builders:
+  astgen:
+    import: "package:tom_d4rt_astgen/builder.dart"
+    builder_factories: ["astgenBuilder"]
+    build_extensions:
+      r"$lib$": [".astgen.done"]
+    auto_apply: none
+    build_to: source
+
+targets:
+  $default:
+    builders:
+      # Version builder - generates version.g.dart with build info
+      tom_version_builder:version_builder:
+        enabled: true
+        options:
+          output: lib/src/version.g.dart
+          includeGitCommit: true
+          variablePrefix: astgenTool
+      
+      tom_compiler_builder:compiler_builder:
+        enabled: true
+        options:
+          compiles:
+            # macOS ARM64 - compile for self + all Linux targets
+            - commandline:
+                - mkdir -p <HOME>/.tom/bin/${target_platform}
+                - dart compile exe ${file} --target-os=${target_os} -o <HOME>/.tom/bin/${target_platform}/${file.name}
+              files: bin/astgen.dart
+              targets: [darwin-arm64, linux-x64, linux-arm64, linux-armhf]
+              platforms: [darwin-arm64]
+            
+            # Other platforms - compile for self only
+            - commandline:
+                - mkdir -p <HOME>/.tom/bin/${target_platform}
+                - dart compile exe ${file} -o <HOME>/.tom/bin/${target_platform}/${file.name}
+              files: bin/astgen.dart
+              platforms: [darwin-x64, linux-*, win32-*]

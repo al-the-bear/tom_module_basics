@@ -78,7 +78,7 @@ void main() async {
   
   // Find classes in our file
   final fileClasses = result.classes.where((cls) {
-    return cls.library.source.uri.toString() == fileUri;
+    return cls.library.firstFragment.source.uri.toString() == fileUri;
   }).toList();
   
   print('Classes in test file: ${fileClasses.length}');
@@ -106,7 +106,7 @@ void main() async {
   print('');
   print('=== Test 4: Function Source Recovery ===');
   final fileFunctions = result.globalFunctions.where((fn) {
-    return fn.library.source.uri.toString() == fileUri;
+    return fn.library.firstFragment.source.uri.toString() == fileUri;
   }).toList();
   
   print('Functions in test file: ${fileFunctions.length}');

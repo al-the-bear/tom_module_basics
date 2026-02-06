@@ -85,13 +85,13 @@ void main(List<String> args) async {
     print('CLASSES (${result.classes.length})');
     print('name,constructors,methods,fields,getters,setters');
     for (final cls in result.classes) {
+      final className = cls.name ?? '<unnamed>';
       final ctors = cls.constructors.length;
       final methods = cls.methods.length;
       final fields = cls.fields.length;
-      final accessors = cls.accessors;
-      final getters = accessors.where((a) => a.isGetter).length;
-      final setters = accessors.where((a) => a.isSetter).length;
-      print('${cls.name},$ctors,$methods,$fields,$getters,$setters');
+      final getters = cls.getters.length;
+      final setters = cls.setters.length;
+      print('$className,$ctors,$methods,$fields,$getters,$setters');
     }
     return;
   }
@@ -152,12 +152,12 @@ void main(List<String> args) async {
   int totalSetters = 0;
 
   for (final cls in result.classes) {
+    final className = cls.name ?? '<unnamed>';
     final ctors = cls.constructors.length;
     final methods = cls.methods.length;
     final fields = cls.fields.length;
-    final accessors = cls.accessors;
-    final getters = accessors.where((a) => a.isGetter).length;
-    final setters = accessors.where((a) => a.isSetter).length;
+    final getters = cls.getters.length;
+    final setters = cls.setters.length;
 
     totalCtors += ctors;
     totalMethods += methods;
@@ -165,8 +165,9 @@ void main(List<String> args) async {
     totalGetters += getters;
     totalSetters += setters;
 
-    final name =
-        cls.name.length > 25 ? '${cls.name.substring(0, 22)}...' : cls.name;
+    final name = className.length > 25
+      ? '${className.substring(0, 22)}...'
+      : className;
 
     print(
         '  ${name.padRight(25)} │ ${ctors.toString().padLeft(5)} │ ${methods.toString().padLeft(5)} │ ${fields.toString().padLeft(5)} │ ${getters.toString().padLeft(5)} │ ${setters.toString().padLeft(5)}');
@@ -186,7 +187,7 @@ void main(List<String> args) async {
 
     if (cls.constructors.isNotEmpty) {
       print(
-          '    Constructors: ${cls.constructors.map((c) => c.name.isEmpty ? '(default)' : c.name).join(', ')}');
+          '    Constructors: ${cls.constructors.map((c) => (c.name?.isEmpty ?? true) ? '(default)' : c.name).join(', ')}');
     }
     if (cls.methods.isNotEmpty) {
       print('    Methods: ${cls.methods.map((m) => m.name).join(', ')}');
@@ -194,7 +195,7 @@ void main(List<String> args) async {
     if (cls.fields.isNotEmpty) {
       print('    Fields: ${cls.fields.map((f) => f.name).join(', ')}');
     }
-    final getterNames = cls.accessors.where((a) => a.isGetter).map((g) => g.name);
+    final getterNames = cls.getters.map((g) => g.name);
     if (getterNames.isNotEmpty) {
       print('    Getters: ${getterNames.join(', ')}');
     }
@@ -245,7 +246,7 @@ void main(List<String> args) async {
     if (ext.methods.isNotEmpty) {
       print('    Methods: ${ext.methods.map((m) => m.name).join(', ')}');
     }
-    final getterNames = ext.accessors.where((a) => a.isGetter).map((g) => g.name);
+    final getterNames = ext.getters.map((g) => g.name);
     if (getterNames.isNotEmpty) {
       print('    Getters: ${getterNames.join(', ')}');
     }

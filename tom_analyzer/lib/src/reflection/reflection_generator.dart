@@ -13,10 +13,110 @@ class ReflectionGenerator {
     final libraries = result.libraries.values.toList()
       ..sort((a, b) => a.uri.toString().compareTo(b.uri.toString()));
 
+    final usedLibraryUris = <Uri>{};
+
+    for (final cls in result.allClasses) {
+      if (_isPrivate(cls.name) || !_canImport(cls.library.uri)) {
+        continue;
+      }
+      if (!_shouldInclude(cls)) {
+        continue;
+      }
+      usedLibraryUris.add(cls.library.uri);
+    }
+
+    for (final enm in result.allEnums) {
+      if (_isPrivate(enm.name) || !_canImport(enm.library.uri)) {
+        continue;
+      }
+      if (!_shouldInclude(enm)) {
+        continue;
+      }
+      usedLibraryUris.add(enm.library.uri);
+    }
+
+    for (final mixin in result.allMixins) {
+      if (_isPrivate(mixin.name) || !_canImport(mixin.library.uri)) {
+        continue;
+      }
+      if (!_shouldInclude(mixin)) {
+        continue;
+      }
+      usedLibraryUris.add(mixin.library.uri);
+    }
+
+    for (final ext in result.allExtensions) {
+      if (_isPrivate(ext.name) || !_canImport(ext.library.uri)) {
+        continue;
+      }
+      if (!_shouldInclude(ext)) {
+        continue;
+      }
+      usedLibraryUris.add(ext.library.uri);
+    }
+
+    for (final extType in result.allExtensionTypes) {
+      if (_isPrivate(extType.name) || !_canImport(extType.library.uri)) {
+        continue;
+      }
+      if (!_shouldInclude(extType)) {
+        continue;
+      }
+      usedLibraryUris.add(extType.library.uri);
+    }
+
+    for (final alias in result.allTypeAliases) {
+      if (_isPrivate(alias.name) || !_canImport(alias.library.uri)) {
+        continue;
+      }
+      if (!_shouldInclude(alias)) {
+        continue;
+      }
+      usedLibraryUris.add(alias.library.uri);
+    }
+
+    for (final library in libraries) {
+      if (!_canImport(library.uri)) {
+        continue;
+      }
+
+      var hasGlobals = false;
+      for (final variable in library.variables) {
+        if (_isPrivate(variable.name) || !_shouldInclude(variable)) continue;
+        hasGlobals = true;
+        break;
+      }
+      if (!hasGlobals) {
+        for (final getter in library.getters) {
+          if (_isPrivate(getter.name) || !_shouldInclude(getter)) continue;
+          hasGlobals = true;
+          break;
+        }
+      }
+      if (!hasGlobals) {
+        for (final setter in library.setters) {
+          if (_isPrivate(setter.name) || !_shouldInclude(setter)) continue;
+          hasGlobals = true;
+          break;
+        }
+      }
+      if (!hasGlobals) {
+        for (final function in library.functions) {
+          if (_isPrivate(function.name) || !_shouldInclude(function)) continue;
+          hasGlobals = true;
+          break;
+        }
+      }
+
+      if (hasGlobals) {
+        usedLibraryUris.add(library.uri);
+      }
+    }
+
     final importAliases = <Uri, String>{};
     var importIndex = 0;
-    for (final library in libraries) {
-      final uri = library.uri;
+    for (final uri in usedLibraryUris.toList()
+      ..sort((a, b) => a.toString().compareTo(b.toString()))) {
       if (!_canImport(uri)) {
         continue;
       }

@@ -16,3 +16,5 @@ linter:
     type_annotate_public_apis: false
     # Disable file_names - we use numbered prefixes for ordering (e.g., 01_example.dart)
     file_names: false
+    # Disable dangling_library_doc_comments - generated bridge files may have doc comments at top
+    dangling_library_doc_comments: false

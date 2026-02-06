@@ -1,0 +1,13 @@
+# Tom Build Configuration for Cleanup Test Project
+
+cleanup:
+  - '**/*.g.dart'
+  - '**/*.freezed.dart'
+  - '**/*.nonexistent.dart'
+  - globs:
+      - 'lib/generated/**'
+    excludes:
+      - 'lib/generated/keep_me.dart'
+
+excludes:
+  - '**/important.g.dart'

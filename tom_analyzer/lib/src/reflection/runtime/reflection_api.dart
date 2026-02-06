@@ -22,6 +22,7 @@ import 'method_mirror.dart';
 import 'field_mirror.dart';
 import 'constructor_mirror.dart';
 import 'getter_setter_mirror.dart';
+import 'reflection_data.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // ReflectionApi
@@ -36,6 +37,18 @@ import 'getter_setter_mirror.dart';
 /// - Scoped APIs for packages and libraries
 /// - Trait-based element processing
 abstract class ReflectionApi {
+  /// Create a reflection API from generated data.
+  ///
+  /// Note: This factory method requires a concrete implementation to be
+  /// provided. Use the generator to create a ReflectionApi implementation.
+  static ReflectionApi fromData(ReflectionData data) {
+    // TODO: Replace with generated implementation
+    throw UnimplementedError(
+      'ReflectionApi.fromData requires a generated implementation. '
+      'Use the reflection generator to create a concrete ReflectionApi.',
+    );
+  }
+
   // ═══════════════════════════════════════════════════════════════════════
   // Type Lookup by Dart Type (compile-time type known)
   // ═══════════════════════════════════════════════════════════════════════

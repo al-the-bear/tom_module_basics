@@ -65,9 +65,12 @@ void main(List<String> args) async {
       _collectAnnotations(method, 'method', annotationUsages, packageFilter,
           parent: cls.name);
     }
-    for (final accessor in cls.accessors) {
-      final kind = accessor.isGetter ? 'getter' : 'setter';
-      _collectAnnotations(accessor, kind, annotationUsages, packageFilter,
+    for (final getter in cls.getters) {
+      _collectAnnotations(getter, 'getter', annotationUsages, packageFilter,
+          parent: cls.name);
+    }
+    for (final setter in cls.setters) {
+      _collectAnnotations(setter, 'setter', annotationUsages, packageFilter,
           parent: cls.name);
     }
     for (final ctor in cls.constructors) {
@@ -160,11 +163,11 @@ void _collectAnnotations(
   if (packageFilter != null) {
     final lib = element.library;
     if (lib == null) return;
-    final uri = lib.source.uri.toString();
+    final uri = lib.firstFragment.source.uri.toString();
     if (!uri.contains(packageFilter)) return;
   }
 
-  for (final annotation in element.metadata) {
+  for (final annotation in element.metadata.annotations) {
     final annotationElement = annotation.element;
     if (annotationElement == null) continue;
 
@@ -173,13 +176,13 @@ void _collectAnnotations(
 
     if (annotationElement is ConstructorElement) {
       // Class-based annotation like @TomComponent()
-      final cls = annotationElement.enclosingElement3;
+      final cls = annotationElement.enclosingElement;
       annotationName = cls.name;
-      sourceLibrary = cls.library?.source.uri.toString();
+      sourceLibrary = cls.library.firstFragment.source.uri.toString();
     } else if (annotationElement is PropertyAccessorElement) {
       // Const variable annotation like @override, @deprecated
       annotationName = annotationElement.name;
-      sourceLibrary = annotationElement.library.source.uri.toString();
+      sourceLibrary = annotationElement.library.firstFragment.source.uri.toString();
     }
 
     if (annotationName == null) continue;
@@ -200,7 +203,7 @@ void _collectAnnotations(
       name: element.name ?? '<unnamed>',
       qualifiedName: qualifiedName,
       kind: kind,
-      library: element.library?.source.uri.toString() ?? 'unknown',
+      library: element.library?.firstFragment.source.uri.toString() ?? 'unknown',
     ));
   }
 }

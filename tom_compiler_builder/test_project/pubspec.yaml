@@ -1,0 +1,15 @@
+name: test_compiler
+description: Test project for tom_compiler_builder
+version: 1.0.0
+publish_to: none
+
+environment:
+  sdk: ^3.10.4
+
+dependencies:
+
+dev_dependencies:
+  lints: ^6.0.0
+  build_runner: ^2.4.15
+  tom_compiler_builder:
+    path: ../

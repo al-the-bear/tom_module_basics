@@ -188,9 +188,8 @@ Map<String, Object?> _extractSerializableInfo(Declaration decl, String source) {
   if (decl is NamedCompilationUnitMember) {
     name = decl.name.lexeme;
   }
-  if (decl is AnnotatedNode) {
-    docComment = decl.documentationComment;
-  }
+  final annotatedDecl = decl as AnnotatedNode;
+  docComment = annotatedDecl.documentationComment;
 
   return {
     'name': name,

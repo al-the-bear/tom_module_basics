@@ -50,8 +50,8 @@ void main() {
   print('');
   print('--- Generic Typedefs ---');
 
-  int intCompare(Object? a, Object? b) => a.compareTo(b);
-  int strCompare(Object? a, Object? b) => a.compareTo(b);
+  int intCompare(int a, int b) => a.compareTo(b);
+  int strCompare(String a, String b) => a.compareTo(b);
 
   print('typedef Comparator<T> = int Function(T a, T b);');
   print('');
@@ -63,8 +63,8 @@ void main() {
 
   // Mapper typedef
   print('');
-  Object? intToString(Object? i) => 'Number: $i';
-  Object? stringLength(Object? s) => s.length;
+  String intToString(int i) => 'Number: $i';
+  int stringLength(String s) => s.length;
 
   print('typedef Mapper<T, R> = R Function(T input);');
   print('');
@@ -73,9 +73,9 @@ void main() {
 
   // Predicate typedef
   print('');
-  bool isEven(Object? n) => n % 2 == 0;
-  bool isPositive(Object? n) => n > 0;
-  bool isEmpty(Object? s) => s.isEmpty;
+  bool isEven(int n) => n % 2 == 0;
+  bool isPositive(int n) => n > 0;
+  bool isEmpty(String s) => s.isEmpty;
 
   print('typedef Predicate<T> = bool Function(T value);');
   print('');
@@ -144,11 +144,11 @@ void main() {
   // Factory typedefs
   print('');
   print('--- Factory Typedefs ---');
-  Object? userFactory() => User('New User', 0);
+  User userFactory() => User('New User', 0);
   var newUser = userFactory();
   print('Created user: ${newUser.name}, id: ${newUser.id}');
 
-  Object? namedFactory(Object? name) => User(name, 1);
+  User namedFactory(String name) => User(name, 1);
   var alice = namedFactory('Alice');
   print('Created user: ${alice.name}, id: ${alice.id}');
 

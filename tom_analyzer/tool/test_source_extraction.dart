@@ -78,7 +78,7 @@ void main() async {
   print('=== Classes with Source Info ===');
   for (final cls in result.classes) {
     final qualifiedName =
-        '${cls.library.source.uri}#${cls.name}';
+      '${cls.library.firstFragment.source.uri}#${cls.name}';
     final info = sourceInfo.get(qualifiedName);
 
     print('');
@@ -141,8 +141,8 @@ void main() async {
     // Try finding it in sources
     print('Looking for source by file path...');
     for (final cls in result.classes) {
-      final qualifiedName =
-          '${cls.library.source.uri}#${cls.name}';
+        final qualifiedName =
+          '${cls.library.firstFragment.source.uri}#${cls.name}';
       final info = sourceInfo.get(qualifiedName);
       if (info != null) {
         final fileSource = sourceInfo.getSource(info.fileUri);

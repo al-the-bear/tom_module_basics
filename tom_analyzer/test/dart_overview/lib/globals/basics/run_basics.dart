@@ -228,7 +228,7 @@ void main() {
   int multiply(int a, int b) => a * b;
   print('multiply(4, 5): ${multiply(4, 5)}');
 
-  bool isEven(Object? n) => n % 2 == 0;
+  bool isEven(Object? n) => n is num && n % 2 == 0;
   print('isEven(4): ${isEven(4)}');
   print('isEven(5): ${isEven(5)}');
 

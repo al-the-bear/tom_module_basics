@@ -1,0 +1,42 @@
+# Build configuration for tom_compiler_builder
+#
+# This registers the compiler_builder as a builder that can be used by other packages.
+
+builders:
+  compiler_builder:
+    import: "package:tom_compiler_builder/builder.dart"
+    builder_factories: ["compilerBuilder"]
+    build_extensions: {r"$lib$": [".compiler.done"]}
+    auto_apply: none
+    required_inputs: []
+
+targets:
+  $default:
+    builders:
+      # Version builder - generates version.g.dart with build info
+      tom_version_builder:version_builder:
+        enabled: true
+        options:
+          output: lib/src/version.g.dart
+          includeGitCommit: true
+          variablePrefix: compilerTool
+      
+      tom_compiler_builder:compiler_builder:
+        enabled: true
+        options:
+          compiles:
+            # macOS ARM64 - compile for self + all Linux targets
+            - commandline:
+                - mkdir -p <HOME>/.tom/bin/${target_platform}
+                - dart compile exe ${file} --target-os=${target_os} -o <HOME>/.tom/bin/${target_platform}/${file.name}
+                - chmod +x <HOME>/.tom/bin/${target_platform}/${file.name}
+              files: bin/compiler.dart
+              targets: [darwin-arm64, linux-x64, linux-arm64, linux-armhf]
+              platforms: [darwin-arm64]
+            
+            # Other platforms - compile for self only
+            - commandline:
+                - mkdir -p <HOME>/.tom/bin/${target_platform}
+                - dart compile exe ${file} -o <HOME>/.tom/bin/${target_platform}/${file.name}
+              files: bin/compiler.dart
+              platforms: [darwin-x64, linux-*, win32-*]

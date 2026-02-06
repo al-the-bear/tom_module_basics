@@ -1,0 +1,17 @@
+# Build configuration for test_compiler project
+
+targets:
+  $default:
+    builders:
+      tom_compiler_builder:compiler_builder:
+        enabled: true
+        options:
+          compiles:
+            - commandline: dart compile exe ${file} -o bin/output/${target_platform}/hello
+              files: [bin/hello.dart]
+              targets: [darwin_arm64, linux_x64]
+              platforms: [darwin_arm64, darwin_x64, linux_*]
+            - commandline: dart compile exe ${file} -o bin/output/${target_platform}/hello.exe
+              files: [bin/hello.dart]
+              targets: [win32_x64]
+              platforms: [win32_*]

@@ -210,7 +210,7 @@ void main() async {
   elementsReport.writeln('');
   
   for (final cls in result.classes) {
-    final uri = cls.library.source.uri.toString();
+    final uri = cls.library.firstFragment.source.uri.toString();
     if (!uri.contains('dart_overview')) continue;
     
     final qualifiedName = '$uri#${cls.name}';

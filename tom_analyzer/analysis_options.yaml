@@ -13,6 +13,10 @@
 
 include: package:lints/recommended.yaml
 
+linter:
+  rules:
+    dangling_library_doc_comments: false
+
 # Uncomment the following section to specify additional rules.
 
 # linter:
@@ -23,6 +27,12 @@ analyzer:
   exclude:
     # AST module is incomplete (WIP) and not exported from the main library
     - lib/src/ast/**
+    # Generated reflection files that reference external packages not in pubspec
+    - doc/*.r.dart
+    - doc/**/*.r.dart
+    - test/build_examples/**/*.r.dart
+    # Test examples are separate projects with their own dependencies
+    - test/build_examples/**
 
 # For more information about the core and recommended set of lints, see
 # https://dart.dev/go/core-lints

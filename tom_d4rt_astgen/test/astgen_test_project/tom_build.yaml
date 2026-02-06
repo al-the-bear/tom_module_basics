@@ -1,0 +1,15 @@
+# Tom Build Configuration for AST Generator Test Project
+#
+# This file is used by the astgen tool to determine if this project
+# should be processed. The actual conversion configurations remain
+# in build.yaml.
+
+astgen:
+  # Project to process (. means current directory)
+  project: .
+  
+  # Enable verbose output for debugging
+  verbose: false
+  
+  # The tool will read build.yaml for actual conversion configurations
+  # This file just marks the project as an astgen consumer

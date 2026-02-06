@@ -70,11 +70,11 @@ void main() {
   Calculator calc = add;
   print('calc(7, 3) = ${calc(7, 3)}');
 
-  bool isPositive(Object? n) => n > 0;
+  bool isPositive(Object? n) => n is num && n > 0;
   print('isPositive(5) = ${isPositive(5)}');
   print('isPositive(-3) = ${isPositive(-3)}');
 
-  Object? getLength(Object? s) => s.length;
+  Object? getLength(Object? s) => s is String ? s.length : null;
   print('getLength("Hello") = ${getLength('Hello')}');
 
   // Tear-offs

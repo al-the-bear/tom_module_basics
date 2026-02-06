@@ -801,8 +801,8 @@ class TomAnalyzer {
     if (visited.contains(type)) {
       return TypeReference(
         id: registry.idGen.nextId('type'),
-        name: type.getDisplayString(withNullability: true),
-        qualifiedName: type.getDisplayString(withNullability: true),
+        name: type.getDisplayString(),
+        qualifiedName: type.getDisplayString(),
         isTypeParameter: type is analyzer_types.TypeParameterType,
       );
     }
@@ -811,8 +811,8 @@ class TomAnalyzer {
     if (type is analyzer_types.FunctionType) {
       return TypeReference(
         id: registry.idGen.nextId('type'),
-        name: type.getDisplayString(withNullability: true),
-        qualifiedName: type.getDisplayString(withNullability: true),
+        name: type.getDisplayString(),
+        qualifiedName: type.getDisplayString(),
         isFunction: true,
         isNullable: type.nullabilitySuffix.name == 'question',
         functionType: FunctionTypeInfo(
@@ -827,8 +827,8 @@ class TomAnalyzer {
     if (type is analyzer_types.TypeParameterType) {
       return TypeReference(
         id: registry.idGen.nextId('type'),
-        name: type.getDisplayString(withNullability: true),
-        qualifiedName: type.getDisplayString(withNullability: true),
+        name: type.getDisplayString(),
+        qualifiedName: type.getDisplayString(),
         isTypeParameter: true,
         typeParameterBound: _typeRef(type.bound, registry, visited),
       );
@@ -850,8 +850,8 @@ class TomAnalyzer {
 
     return TypeReference(
       id: registry.idGen.nextId('type'),
-      name: type.getDisplayString(withNullability: true),
-      qualifiedName: type.getDisplayString(withNullability: true),
+      name: type.getDisplayString(),
+      qualifiedName: type.getDisplayString(),
       isDynamic: type is analyzer_types.DynamicType,
       isVoid: type is analyzer_types.VoidType,
     );

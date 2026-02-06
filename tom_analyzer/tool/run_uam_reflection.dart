@@ -143,9 +143,8 @@ void main(List<String> args) async {
     final ctors = cls.constructors.length;
     final methods = cls.methods.length;
     final fields = cls.fields.length;
-    final accessors = cls.accessors;
-    final getters = accessors.where((a) => a.isGetter).length;
-    final setters = accessors.where((a) => a.isSetter).length;
+    final getters = cls.getters.length;
+    final setters = cls.setters.length;
     print('${cls.name},$ctors,$methods,$fields,$getters,$setters');
   }
 }

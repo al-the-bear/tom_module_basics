@@ -1,0 +1,7 @@
+name: test_cleanup_project
+description: Test project for cleanup builder
+version: 1.0.0
+publish_to: none
+
+environment:
+  sdk: ^3.10.4
