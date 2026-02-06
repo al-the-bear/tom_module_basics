@@ -212,6 +212,7 @@ class AstModelGenerator {
     buffer.writeln(
       '// ignore_for_file: non_constant_identifier_names, dangling_library_doc_comments',
     );
+    buffer.writeln('// ignore_for_file: deprecated_member_use');
     buffer.writeln('// ignore_for_file: one_member_abstracts');
     buffer.writeln('// ignore_for_file: invalid_override, inconsistent_inheritance');
     buffer.writeln('// ignore_for_file: duplicate_definition');
@@ -270,6 +271,7 @@ class AstModelGenerator {
     buffer.writeln('// Generated stub types for external dependencies');
     buffer.writeln('// ignore_for_file: unused_element, camel_case_types, one_member_abstracts');
     buffer.writeln('// ignore_for_file: duplicate_definition, constant_identifier_names');
+    buffer.writeln('// ignore_for_file: deprecated_member_use');
     buffer.writeln();
 
     // Token is always needed and never generated

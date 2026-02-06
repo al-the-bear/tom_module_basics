@@ -1,5 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
+// ignore_for_file: deprecated_member_use, unused_import, equal_keys_in_map
 library tom_analyzer.reflection;
 
 import 'package:tom_analyzer/tom_analyzer.dart' as ta;

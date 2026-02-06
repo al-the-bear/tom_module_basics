@@ -3,6 +3,7 @@
 // ignore_for_file: unused_element, unused_field, annotate_overrides
 // ignore_for_file: constant_identifier_names, unused_element_parameter
 // ignore_for_file: non_constant_identifier_names, dangling_library_doc_comments
+// ignore_for_file: deprecated_member_use
 // ignore_for_file: one_member_abstracts
 // ignore_for_file: invalid_override, inconsistent_inheritance
 // ignore_for_file: duplicate_definition

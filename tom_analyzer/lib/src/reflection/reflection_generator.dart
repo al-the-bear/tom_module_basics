@@ -21,6 +21,7 @@ class ReflectionGenerator {
 
     buffer.writeln('// GENERATED CODE - DO NOT MODIFY BY HAND');
     buffer.writeln('// coverage:ignore-file');
+    buffer.writeln('// ignore_for_file: deprecated_member_use, unused_import, equal_keys_in_map');
     buffer.writeln("library tom_analyzer.reflection;");
     buffer.writeln();
     buffer.writeln("import 'package:tom_analyzer/tom_analyzer.dart' as ta;");

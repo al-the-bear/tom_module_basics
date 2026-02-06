@@ -1,6 +1,7 @@
 // Generated stub types for external dependencies
 // ignore_for_file: unused_element, camel_case_types, one_member_abstracts
 // ignore_for_file: duplicate_definition, constant_identifier_names
+// ignore_for_file: deprecated_member_use
 
 /// Stub for analyzer Token type
 class Token {
