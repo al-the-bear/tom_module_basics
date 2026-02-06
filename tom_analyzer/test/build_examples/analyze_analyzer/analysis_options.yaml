@@ -1,0 +1,10 @@
+include: ../../../../analysis_options.yaml
+
+analyzer:
+  exclude:
+    - lib/src/analyzer/_stub_types.r.dart
+    - lib/src/analyzer/ast_model.r.dart
+    - lib/analyzer_model.r.dart
+    - lib/main.r.dart
+    - bin/generate_ast_model.r.dart
+    - bin/verify.r.dart
