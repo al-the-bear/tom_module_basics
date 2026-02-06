@@ -7,6 +7,7 @@ import 'package:analyzer/dart/analysis/analysis_context_collection.dart';
 import 'package:analyzer/dart/analysis/results.dart' as analyzer_results;
 import 'package:analyzer/dart/ast/ast.dart' as analyzer_ast;
 import 'package:analyzer/dart/analysis/utilities.dart';
+import 'package:analyzer/dart/ast/token.dart' as analyzer_token;
 import 'package:analyzer/file_system/physical_file_system.dart';
 import 'package:tom_analyzer/tom_analyzer.dart' as tom;
 import 'package:tom_d4rt_ast/ast_converter.dart';
@@ -206,6 +207,33 @@ void main() async {
   print('═══════════════════════════════════════════════════════════════════');
   print('');
 
+  // =========================================================================
+  // SECTION 5: Detailed AST vs Dart AST comparison
+  // =========================================================================
+  print('┌─────────────────────────────────────────────────────────────────┐');
+  print('│  SECTION 5: AST DETAIL COMPARISON                             │');
+  print('└─────────────────────────────────────────────────────────────────┘');
+  print('');
+
+  final detailLog = <String>[];
+  final detailSummary = await _compareAstDetails(
+    libraryFiles.files,
+    detailLog,
+    maxDiffs: 200,
+  );
+
+  print('FILES COMPARED: ${detailSummary.filesCompared}');
+  print('FILES WITH DIFFS: ${detailSummary.filesWithDiffs}');
+  print('DIFF COUNT (capped): ${detailLog.length}');
+  if (detailLog.isNotEmpty) {
+    print('');
+    print('SAMPLE DIFFS:');
+    for (final line in detailLog) {
+      print('  - $line');
+    }
+  }
+  print('');
+
   print('✓ Verification complete!');
 }
 
@@ -230,6 +258,156 @@ String _percentage(int ast, int analyzer) {
   if (analyzer == 0) return ast == 0 ? '0%' : '+∞%';
   final pct = ((ast - analyzer) / analyzer * 100).toStringAsFixed(1);
   return '$pct%';
+}
+
+class _CompareSummary {
+  int filesCompared = 0;
+  int filesWithDiffs = 0;
+}
+
+Future<_CompareSummary> _compareAstDetails(
+  List<String> filePaths,
+  List<String> log, {
+  int maxDiffs = 200,
+}) async {
+  final summary = _CompareSummary();
+  final converter = AstConverter();
+
+  for (final filePath in filePaths) {
+    if (log.length >= maxDiffs) break;
+    if (!File(filePath).existsSync()) continue;
+
+    try {
+      final content = File(filePath).readAsStringSync();
+      final parsed = parseString(content: content, path: filePath);
+      final analyzerRoot = parsed.unit;
+      final astRoot = converter.convertCompilationUnit(parsed.unit);
+
+      final analyzerSnapshot = _snapshotFromAnalyzer(analyzerRoot);
+      final astSnapshot = _snapshotFromJson(astRoot.toJson());
+
+      summary.filesCompared++;
+      final before = log.length;
+      _diffSnapshots(
+        analyzerSnapshot,
+        astSnapshot,
+        filePath,
+        log,
+        maxDiffs,
+      );
+      if (log.length > before) {
+        summary.filesWithDiffs++;
+      }
+    } catch (e) {
+      if (log.length < maxDiffs) {
+        log.add('$filePath: ERROR $e');
+      }
+    }
+  }
+
+  return summary;
+}
+
+class _NodeSnapshot {
+  final String type;
+  final int offset;
+  final int length;
+  final List<_NodeSnapshot> children;
+
+  _NodeSnapshot({
+    required this.type,
+    required this.offset,
+    required this.length,
+    required this.children,
+  });
+}
+
+_NodeSnapshot _snapshotFromAnalyzer(analyzer_ast.AstNode node) {
+  final children = <_NodeSnapshot>[];
+  for (final entity in node.childEntities) {
+    if (entity is analyzer_ast.AstNode) {
+      children.add(_snapshotFromAnalyzer(entity));
+    } else if (entity is analyzer_token.Token) {
+      children.add(
+        _NodeSnapshot(
+          type: 'Token(${entity.lexeme})',
+          offset: entity.offset,
+          length: entity.length,
+          children: const [],
+        ),
+      );
+    }
+  }
+
+  return _NodeSnapshot(
+    type: node.runtimeType.toString(),
+    offset: node.offset,
+    length: node.length,
+    children: children,
+  );
+}
+
+_NodeSnapshot _snapshotFromJson(Map<String, dynamic> json) {
+  final children = <_NodeSnapshot>[];
+
+  final keys = json.keys.toList()..sort();
+  for (final key in keys) {
+    final value = json[key];
+    if (value is Map && value['nodeType'] is String) {
+      children.add(_snapshotFromJson(value.cast<String, dynamic>()));
+    } else if (value is List) {
+      for (final item in value) {
+        if (item is Map && item['nodeType'] is String) {
+          children.add(_snapshotFromJson(item.cast<String, dynamic>()));
+        }
+      }
+    }
+  }
+
+  return _NodeSnapshot(
+    type: json['nodeType'] as String? ?? 'Unknown',
+    offset: json['offset'] as int? ?? -1,
+    length: json['length'] as int? ?? -1,
+    children: children,
+  );
+}
+
+void _diffSnapshots(
+  _NodeSnapshot left,
+  _NodeSnapshot right,
+  String path,
+  List<String> log,
+  int maxDiffs,
+) {
+  if (log.length >= maxDiffs) return;
+
+  if (left.type != right.type) {
+    log.add('$path: type ${left.type} != ${right.type}');
+    if (log.length >= maxDiffs) return;
+  }
+  if (left.offset != right.offset || left.length != right.length) {
+    log.add(
+      '$path: span ${left.offset}:${left.length} != ${right.offset}:${right.length}',
+    );
+    if (log.length >= maxDiffs) return;
+  }
+
+  if (left.children.length != right.children.length) {
+    log.add(
+      '$path: childCount ${left.children.length} != ${right.children.length}',
+    );
+    if (log.length >= maxDiffs) return;
+  }
+
+  final minLen = left.children.length < right.children.length
+      ? left.children.length
+      : right.children.length;
+
+  for (var i = 0; i < minLen; i++) {
+    final childPath = '$path/$i:${left.children[i].type}';
+    _diffSnapshots(left.children[i], right.children[i], childPath, log, maxDiffs);
+    if (log.length >= maxDiffs) return;
+  }
 }
 
 /// Scan Dart files using the Dart analyzer directly and collect statistics

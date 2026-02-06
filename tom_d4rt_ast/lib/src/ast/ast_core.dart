@@ -33,8 +33,90 @@ abstract class SAstNode {
     return encoder.convert(toJson());
   }
 
+  /// Compares this node with [other]. If [log] is provided, differences
+  /// are appended in a human-readable format with JSON-style paths.
+  bool equals(Object other, [List<String>? log]) {
+    if (identical(this, other)) {
+      return true;
+    }
+    if (other is! SAstNode) {
+      log?.add('Type mismatch: $runtimeType != ${other.runtimeType}');
+      return false;
+    }
+
+    final left = toJson();
+    final right = other.toJson();
+    return _diffJson(left, right, r'$', log);
+  }
+
+  @override
+  bool operator ==(Object other) => equals(other);
+
+  @override
+  int get hashCode => Object.hash(runtimeType, toJson().hashCode);
+
   /// Get the end offset
   int get end => offset + length;
+}
+
+bool _diffJson(
+  Object? left,
+  Object? right,
+  String path,
+  List<String>? log,
+) {
+  if (identical(left, right)) return true;
+
+  if (left == null || right == null) {
+    if (left == right) return true;
+    log?.add('$path: $left != $right');
+    return false;
+  }
+
+  if (left is Map && right is Map) {
+    final leftKeys = left.keys.toSet();
+    final rightKeys = right.keys.toSet();
+    var ok = true;
+
+    for (final key in leftKeys.difference(rightKeys)) {
+      ok = false;
+      log?.add('$path.$key: missing on right');
+    }
+    for (final key in rightKeys.difference(leftKeys)) {
+      ok = false;
+      log?.add('$path.$key: missing on left');
+    }
+
+    for (final key in leftKeys.intersection(rightKeys)) {
+      final nextPath = '$path.$key';
+      if (!_diffJson(left[key], right[key], nextPath, log)) {
+        ok = false;
+      }
+    }
+    return ok;
+  }
+
+  if (left is List && right is List) {
+    var ok = true;
+    if (left.length != right.length) {
+      ok = false;
+      log?.add('$path.length: ${left.length} != ${right.length}');
+    }
+    final minLen = left.length < right.length ? left.length : right.length;
+    for (var i = 0; i < minLen; i++) {
+      if (!_diffJson(left[i], right[i], '$path[$i]', log)) {
+        ok = false;
+      }
+    }
+    return ok;
+  }
+
+  if (left != right) {
+    log?.add('$path: $left != $right');
+    return false;
+  }
+
+  return true;
 }
 
 /// Serializable token representation
@@ -66,6 +148,42 @@ class SToken {
       tokenType: json['tokenType'] as String,
     );
   }
+
+  /// Compares this token with [other]. If [log] is provided, differences
+  /// are appended in a human-readable format with JSON-style paths.
+  bool equals(Object other, [List<String>? log]) {
+    if (identical(this, other)) {
+      return true;
+    }
+    if (other is! SToken) {
+      log?.add('Type mismatch: $runtimeType != ${other.runtimeType}');
+      return false;
+    }
+    var ok = true;
+    if (offset != other.offset) {
+      ok = false;
+      log?.add(r'$.offset: $offset != ${other.offset}');
+    }
+    if (length != other.length) {
+      ok = false;
+      log?.add(r'$.length: $length != ${other.length}');
+    }
+    if (lexeme != other.lexeme) {
+      ok = false;
+      log?.add(r'$.lexeme: $lexeme != ${other.lexeme}');
+    }
+    if (tokenType != other.tokenType) {
+      ok = false;
+      log?.add(r'$.tokenType: $tokenType != ${other.tokenType}');
+    }
+    return ok;
+  }
+
+  @override
+  bool operator ==(Object other) => equals(other);
+
+  @override
+  int get hashCode => Object.hash(offset, length, lexeme, tokenType);
 
   @override
   String toString() => 'SToken($lexeme)';

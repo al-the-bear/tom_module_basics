@@ -1,10 +1,11 @@
 /// Test script to verify round-trip serialization of AST
 ///
 /// Usage:
-///   dart run bin/test_roundtrip.dart <input.dart>
+///   dart run bin/test_roundtrip.dart `<input.dart>`
 ///
 /// Parses a Dart file, converts to serializable AST, serializes to JSON,
 /// deserializes back, and re-serializes to verify the data is preserved.
+library;
 
 import 'dart:convert';
 import 'dart:io';

@@ -5,6 +5,6 @@
 ///
 /// This library has NO dependency on the analyzer package.
 /// For converting from analyzer AST, use `ast_converter.dart` instead.
-library tom_d4rt_ast.ast;
+library;
 
 export 'src/ast/ast_core.dart';

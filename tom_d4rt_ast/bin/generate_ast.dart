@@ -1,9 +1,10 @@
 /// CLI tool to generate a serializable AST from Dart source files
 ///
 /// Usage:
-///   dart run bin/generate_ast.dart <input.dart> [output.json]
+///   dart run bin/generate_ast.dart `<input.dart>` [output.json]
 ///
 /// If output is not specified, it will be printed to stdout.
+library;
 
 import 'dart:convert';
 import 'dart:io';

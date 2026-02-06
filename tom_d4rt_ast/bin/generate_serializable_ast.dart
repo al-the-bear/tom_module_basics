@@ -5,6 +5,7 @@
 /// 1. Concrete implementations with backing fields
 /// 2. JSON serialization/deserialization support
 /// 3. Factory constructors for creating instances
+library;
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
@@ -202,10 +203,16 @@ class SerializableAstGenerator {
       'AnnotatedNode',
     ];
 
-    if (cls.interfaces.any((i) => astInterfaces.contains(i))) return true;
-    if (astInterfaces.contains(cls.name)) return true;
+    if (cls.interfaces.any((i) => astInterfaces.contains(i))) {
+      return true;
+    }
+    if (astInterfaces.contains(cls.name)) {
+      return true;
+    }
     if (cls.extendsClass != null &&
-        astInterfaces.contains(cls.extendsClass)) return true;
+        astInterfaces.contains(cls.extendsClass)) {
+      return true;
+    }
 
     return false;
   }
