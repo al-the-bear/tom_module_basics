@@ -8,6 +8,7 @@
 /// - Custom exceptions
 /// - Stack traces
 /// - Error vs Exception
+library;
 
 void main() {
   print('=== Error Handling ===');

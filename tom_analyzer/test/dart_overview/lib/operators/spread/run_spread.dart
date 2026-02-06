@@ -3,6 +3,7 @@
 /// Features covered:
 /// - Spread operator (...)
 /// - Null-aware spread (...?)
+library;
 
 // Helper functions to prevent compile-time optimization
 List<int>? getList(List<int>? l) => l;

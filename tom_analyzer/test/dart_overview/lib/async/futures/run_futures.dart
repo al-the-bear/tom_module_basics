@@ -7,6 +7,7 @@
 /// - Future.wait, Future.any
 /// - Future.delayed
 /// - Error handling with Futures
+library;
 
 import 'dart:async' show TimeoutException;
 

@@ -11,6 +11,7 @@
 /// - type_operators
 /// - spread
 /// - member_access
+library;
 
 import 'arithmetic/run_arithmetic.dart' as arithmetic;
 import 'comparison/run_comparison.dart' as comparison;

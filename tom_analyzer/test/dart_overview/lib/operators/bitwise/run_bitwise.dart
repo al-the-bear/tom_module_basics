@@ -5,6 +5,7 @@
 /// - Bitwise NOT (~)
 /// - Left shift (<<), Right shift (>>)
 /// - Unsigned right shift (>>>)
+library;
 
 void main() {
   print('=== Bitwise Operators ===\n');

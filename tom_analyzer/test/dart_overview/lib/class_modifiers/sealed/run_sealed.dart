@@ -6,6 +6,7 @@
 /// - Exhaustive switch expressions
 /// - Pattern matching with sealed types
 /// - Nested sealed hierarchies
+library;
 
 void main() {
   print('=== Sealed Classes ===');

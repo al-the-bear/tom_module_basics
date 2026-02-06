@@ -6,6 +6,7 @@
 /// - Exhaustiveness checking
 /// - Guards (when clause)
 /// - Complex pattern matching
+library;
 
 void main() {
   print('=== Switch Patterns ===');

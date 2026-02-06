@@ -7,6 +7,7 @@
 /// - Implementing interfaces
 /// - Using mixins
 /// - Pattern matching with enums
+library;
 
 void main() {
   print('=== Enums ===');

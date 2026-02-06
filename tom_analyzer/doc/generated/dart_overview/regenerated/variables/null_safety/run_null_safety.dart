@@ -6,6 +6,7 @@
 /// - Null coalescing (??)
 /// - Null coalescing assignment (??=)
 /// - Null assertion (!)
+library;
 
 void main() {
   print('=== Null Safety ===\n');
@@ -13,7 +14,7 @@ void main() {
   // Nullable types
   print('--- Nullable Types ---');
   String nonNullable = 'Always has a value';
-  String? nullable = null; // Can be null
+  String? nullable; // Can be null
   print('nonNullable: $nonNullable');
   print('nullable: $nullable');
 
@@ -22,7 +23,7 @@ void main() {
 
   // Nullable in collections
   List<String?> namesWithNulls = ['Alice', null, 'Bob'];
-  List<String>? nullableList = null;
+  List<String>? nullableList;
   print('namesWithNulls: $namesWithNulls');
   print('nullableList: $nullableList');
 
@@ -52,8 +53,8 @@ void main() {
   print('After assignment, maybeNull ?? "Default Value": $result');
 
   // Chained null coalescing
-  String? first = null;
-  String? second = null;
+  String? first;
+  String? second;
   String? third = 'Third';
   print('first ?? second ?? third: ${first ?? second ?? third}');
 

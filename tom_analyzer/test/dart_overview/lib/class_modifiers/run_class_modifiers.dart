@@ -3,6 +3,7 @@
 /// This script executes all examples in the class_modifiers area:
 /// - modifiers (abstract, base, interface, final, sealed, mixin class)
 /// - sealed (exhaustive pattern matching)
+library;
 
 import 'modifiers/run_modifiers.dart' as modifiers;
 import 'sealed/run_sealed.dart' as sealed;

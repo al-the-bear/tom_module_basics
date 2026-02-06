@@ -25,6 +25,7 @@
 /// 20. Globals - top-level variables, functions, getters/setters
 ///
 /// Run with: dart run_dart_overview.dart
+library;
 
 import 'variables/run_variables.dart' as variables;
 import 'operators/run_operators.dart' as operators;

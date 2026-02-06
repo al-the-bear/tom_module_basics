@@ -8,6 +8,7 @@
 /// - Mixin class
 /// - Method resolution order
 /// - Abstract methods in mixins
+library;
 
 void main() {
   print('=== Mixins ===');

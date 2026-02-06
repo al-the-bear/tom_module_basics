@@ -5,6 +5,7 @@
 /// - Compute-intensive operations
 /// - Passing data to isolates
 /// - Receiving results from isolates
+library;
 
 import 'dart:isolate';
 

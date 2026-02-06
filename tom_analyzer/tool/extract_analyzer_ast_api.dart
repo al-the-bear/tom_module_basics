@@ -1,10 +1,10 @@
-// ignore_for_file: avoid_print, deprecated_member_use
+// ignore_for_file: avoid_print
 import 'dart:convert';
 import 'dart:io';
 
 import 'package:analyzer/dart/analysis/analysis_context_collection.dart';
 import 'package:analyzer/dart/analysis/results.dart';
-import 'package:analyzer/dart/element/element2.dart';
+import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/dart/element/type.dart';
 import 'package:analyzer/file_system/physical_file_system.dart';
 
@@ -35,46 +35,17 @@ Future<void> main(List<String> args) async {
     exit(1);
   }
 
-  final library = result.element2;
+  final library = result.element;
 
-  // Collect all exported types
+  // Collect all exported types from the library export namespace.
   final exportedTypes = <String, Map<String, dynamic>>{};
+  final exportNamespace = library.exportNamespace;
 
-  // Get library fragment and its exports
-  final libraryFragment = library.fragments.first;
-  for (final export in libraryFragment.libraryExports) {
-    final exportedLibrary = export.exportedLibrary;
-    if (exportedLibrary == null) continue;
-
-    // Get all top-level elements from exported library
-    final allElements = <InterfaceElement2>[
-      ...exportedLibrary.classes,
-      ...exportedLibrary.enums,
-      ...exportedLibrary.mixins,
-    ];
-
-    for (final element in allElements) {
-      final name = element.name3;
-      if (name == null) continue;
-
-      // Check if it's exported (not hidden)
-      final combinators = export.combinators;
-      bool isExported = true;
-
-      for (final combinator in combinators) {
-        if (combinator is ShowElementCombinator) {
-          isExported = combinator.shownNames.contains(name);
-          if (!isExported) break;
-        } else if (combinator is HideElementCombinator) {
-          if (combinator.hiddenNames.contains(name)) {
-            isExported = false;
-            break;
-          }
-        }
-      }
-
-      if (!isExported) continue;
-
+  for (final entry in exportNamespace.definedNames2.entries) {
+    final name = entry.key;
+    final element = entry.value;
+    if (name.isEmpty) continue;
+    if (element is InterfaceElement) {
       // Skip implementation classes
       if (name.endsWith('Impl')) continue;
 
@@ -115,25 +86,25 @@ Future<void> main(List<String> args) async {
   print('  Concrete: $concreteCount');
 }
 
-Map<String, dynamic> _extractTypeInfo(InterfaceElement2 element) {
+Map<String, dynamic> _extractTypeInfo(InterfaceElement element) {
   final info = <String, dynamic>{
-    'name': element.name3,
-    'kind': element is ClassElement2
+    'name': element.name,
+    'kind': element is ClassElement
         ? 'class'
-        : element is MixinElement2
+        : element is MixinElement
             ? 'mixin'
-            : element is EnumElement2
+            : element is EnumElement
                 ? 'enum'
                 : 'interface',
-    'isAbstract': element is ClassElement2 && element.isAbstract,
-    'isSealed': element is ClassElement2 && element.isSealed,
+    'isAbstract': element is ClassElement && element.isAbstract,
+    'isSealed': element is ClassElement && element.isSealed,
   };
 
   // Get superclass
-  if (element is ClassElement2 && element.supertype != null) {
+  if (element is ClassElement && element.supertype != null) {
     final supertype = element.supertype!;
-    final superName = supertype.element3.name3;
-    if (superName != null && superName != 'Object') {
+    final superName = supertype.element.name;
+    if (superName != 'Object') {
       info['superclass'] = superName;
     }
   }
@@ -141,21 +112,21 @@ Map<String, dynamic> _extractTypeInfo(InterfaceElement2 element) {
   // Get interfaces
   if (element.interfaces.isNotEmpty) {
     info['interfaces'] = element.interfaces
-        .map((i) => i.element3.name3)
-        .where((n) => n != null && n != 'Object')
+        .map((i) => i.element.name)
+        .where((n) => n != 'Object')
         .toList();
   }
 
   // Get mixins
-  if (element is ClassElement2 && element.mixins.isNotEmpty) {
+  if (element is ClassElement && element.mixins.isNotEmpty) {
     info['mixins'] =
-        element.mixins.map((m) => m.element3.name3).whereType<String>().toList();
+        element.mixins.map((m) => m.element.name).whereType<String>().toList();
   }
 
   // Get type parameters
-  if (element.typeParameters2.isNotEmpty) {
-    info['typeParameters'] = element.typeParameters2.map((tp) {
-      final result = <String, dynamic>{'name': tp.name3};
+  if (element.typeParameters.isNotEmpty) {
+    info['typeParameters'] = element.typeParameters.map((tp) {
+      final result = <String, dynamic>{'name': tp.name};
       if (tp.bound != null) {
         result['bound'] = _typeToString(tp.bound!);
       }
@@ -164,10 +135,10 @@ Map<String, dynamic> _extractTypeInfo(InterfaceElement2 element) {
   }
 
   // Get public getters
-  final getters = element.getters2
+  final getters = element.getters
       .where((g) => g.isPublic)
       .map((g) => {
-            'name': g.name3,
+            'name': g.name,
             'type': _typeToString(g.returnType),
           })
       .toList();
@@ -176,10 +147,10 @@ Map<String, dynamic> _extractTypeInfo(InterfaceElement2 element) {
   }
 
   // Get public setters
-  final setters = element.setters2
+    final setters = element.setters
       .where((s) => s.isPublic)
       .map((s) => {
-            'name': s.name3?.replaceAll('=', ''),
+            'name': s.displayName.replaceAll('=', ''),
             'type': s.formalParameters.isNotEmpty
                 ? _typeToString(s.formalParameters.first.type)
                 : 'dynamic',
@@ -190,13 +161,13 @@ Map<String, dynamic> _extractTypeInfo(InterfaceElement2 element) {
   }
 
   // Get public methods
-  final methods = element.methods2
+    final methods = element.methods
       .where((m) => m.isPublic && !m.isStatic)
       .map((m) => {
-            'name': m.name3,
+      'name': m.name,
             'returnType': _typeToString(m.returnType),
             'parameters': m.formalParameters.map((p) => {
-                  'name': p.name3,
+        'name': p.name,
                   'type': _typeToString(p.type),
                   'isRequired': p.isRequired,
                   'isNamed': p.isNamed,
@@ -212,8 +183,7 @@ Map<String, dynamic> _extractTypeInfo(InterfaceElement2 element) {
 
 String _typeToString(DartType type) {
   if (type is InterfaceType) {
-    final name = type.element3.name3;
-    if (name == null) return 'dynamic';
+    final name = type.element.name ?? 'dynamic';
     if (type.typeArguments.isEmpty) {
       return name;
     }
@@ -221,7 +191,7 @@ String _typeToString(DartType type) {
     return '$name<$args>';
   }
   if (type is TypeParameterType) {
-    return type.element3.name3 ?? 'T';
+    return type.element.name ?? 'T';
   }
   if (type is FunctionType) {
     final params =

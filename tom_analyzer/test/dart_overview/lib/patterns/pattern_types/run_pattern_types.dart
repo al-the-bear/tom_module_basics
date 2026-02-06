@@ -13,6 +13,7 @@
 /// - Logical patterns (and, or)
 /// - Cast patterns
 /// - Null-check and null-assert patterns
+library;
 
 void main() {
   print('=== Pattern Types ===');

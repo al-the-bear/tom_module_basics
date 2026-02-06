@@ -5,6 +5,7 @@
 /// - Higher-order functions
 /// - Function types
 /// - Tear-offs
+library;
 
 void main() {
   print('=== Higher-Order Functions and Function Types ===');
@@ -69,11 +70,11 @@ void main() {
   Calculator calc = add;
   print('calc(7, 3) = ${calc(7, 3)}');
 
-  Predicate<int> isPositive = (n) => n > 0;
+  bool isPositive(Object? n) => n > 0;
   print('isPositive(5) = ${isPositive(5)}');
   print('isPositive(-3) = ${isPositive(-3)}');
 
-  Transformer<String, int> getLength = (s) => s.length;
+  Object? getLength(Object? s) => s.length;
   print('getLength("Hello") = ${getLength('Hello')}');
 
   // Tear-offs

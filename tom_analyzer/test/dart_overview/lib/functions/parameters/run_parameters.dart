@@ -6,6 +6,7 @@
 /// - Optional positional parameters
 /// - Default values
 /// - Required named parameters
+library;
 
 void main() {
   print('=== Function Parameters ===');

@@ -3,6 +3,7 @@
 /// Features covered:
 /// - Standard cascade (..)
 /// - Null-aware cascade (?..)
+library;
 
 void main() {
   print('=== Cascade Operators ===');
@@ -19,10 +20,10 @@ void main() {
   print('Without cascade: $list1');
 
   // With cascade
-  var list2 = <int>[]
-    ..add(4)
-    ..add(5)
-    ..add(6);
+  var list2 = <int>[4, 5, 6]
+    
+    
+    ;
   print('With cascade: $list2');
 
   // Cascade on object

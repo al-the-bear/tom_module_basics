@@ -4,6 +4,7 @@
 /// - futures
 /// - streams
 /// - isolates
+library;
 
 import 'futures/run_futures.dart' as futures;
 import 'streams/run_streams.dart' as streams;

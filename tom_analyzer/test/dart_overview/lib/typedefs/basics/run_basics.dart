@@ -6,6 +6,7 @@
 /// - Inline function types
 /// - Type aliases
 /// - Practical examples
+library;
 
 void main() {
   print('=== Typedefs ===');
@@ -14,9 +15,9 @@ void main() {
   // Basic function typedef
   print('--- Function Typedefs ---');
 
-  IntOperation add = (a, b) => a + b;
-  IntOperation multiply = (a, b) => a * b;
-  IntOperation subtract = (a, b) => a - b;
+  int add(int a, int b) => a + b;
+  int multiply(int a, int b) => a * b;
+  int subtract(int a, int b) => a - b;
 
   print('typedef IntOperation = int Function(int, int);');
   print('');
@@ -26,9 +27,9 @@ void main() {
 
   // String operation
   print('');
-  StringTransformer toUpper = (s) => s.toUpperCase();
-  StringTransformer toLower = (s) => s.toLowerCase();
-  StringTransformer reverse = (s) => s.split('').reversed.join();
+  String toUpper(String s) => s.toUpperCase();
+  String toLower(String s) => s.toLowerCase();
+  String reverse(String s) => s.split('').reversed.join();
 
   print('typedef StringTransformer = String Function(String);');
   print('');
@@ -39,18 +40,18 @@ void main() {
   // Void callbacks
   print('');
   print('--- Callback Typedefs ---');
-  VoidCallback callback = () => print('Callback executed!');
+  void callback() => print('Callback executed!');
   callback();
 
-  ValueCallback<String> stringCallback = (v) => print('Received: $v');
+  void stringCallback(Object? v) => print('Received: $v');
   stringCallback('test message');
 
   // Generic typedefs
   print('');
   print('--- Generic Typedefs ---');
 
-  Comparator<int> intCompare = (a, b) => a.compareTo(b);
-  Comparator<String> strCompare = (a, b) => a.compareTo(b);
+  int intCompare(Object? a, Object? b) => a.compareTo(b);
+  int strCompare(Object? a, Object? b) => a.compareTo(b);
 
   print('typedef Comparator<T> = int Function(T a, T b);');
   print('');
@@ -62,8 +63,8 @@ void main() {
 
   // Mapper typedef
   print('');
-  Mapper<int, String> intToString = (i) => 'Number: $i';
-  Mapper<String, int> stringLength = (s) => s.length;
+  Object? intToString(Object? i) => 'Number: $i';
+  Object? stringLength(Object? s) => s.length;
 
   print('typedef Mapper<T, R> = R Function(T input);');
   print('');
@@ -72,9 +73,9 @@ void main() {
 
   // Predicate typedef
   print('');
-  Predicate<int> isEven = (n) => n % 2 == 0;
-  Predicate<int> isPositive = (n) => n > 0;
-  Predicate<String> isEmpty = (s) => s.isEmpty;
+  bool isEven(Object? n) => n % 2 == 0;
+  bool isPositive(Object? n) => n > 0;
+  bool isEmpty(Object? s) => s.isEmpty;
 
   print('typedef Predicate<T> = bool Function(T value);');
   print('');
@@ -117,9 +118,9 @@ void main() {
   print('');
   print('--- Complex Function Types ---');
 
-  ConfiguredAction configAction = ({bool verbose = false}) {
+  void configAction({bool verbose = false}) {
     print('Action executed, verbose: $verbose');
-  };
+  }
   print('ConfiguredAction({verbose: false})');
   configAction();
   configAction(verbose: true);
@@ -143,11 +144,11 @@ void main() {
   // Factory typedefs
   print('');
   print('--- Factory Typedefs ---');
-  Factory<User> userFactory = () => User('New User', 0);
+  Object? userFactory() => User('New User', 0);
   var newUser = userFactory();
   print('Created user: ${newUser.name}, id: ${newUser.id}');
 
-  ParameterizedFactory<User, String> namedFactory = (name) => User(name, 1);
+  Object? namedFactory(Object? name) => User(name, 1);
   var alice = namedFactory('Alice');
   print('Created user: ${alice.name}, id: ${alice.id}');
 

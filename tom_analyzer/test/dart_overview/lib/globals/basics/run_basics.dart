@@ -7,6 +7,7 @@
 /// - Private declarations
 /// - External declarations (conceptual)
 /// - Type aliases at top level
+library;
 
 // ============================================
 // TOP-LEVEL VARIABLES
@@ -37,7 +38,7 @@ const Map<String, int> priorities = {'low': 1, 'medium': 2, 'high': 3};
 const Set<int> reservedIds = {0, 1, 100};
 
 // Late initialization
-late String lazyConfig = _loadConfig();
+String lazyConfig = _loadConfig();
 
 // Private variables
 String _internalState = 'ready';
@@ -224,14 +225,14 @@ void main() {
 
   // Type aliases
   print('--- Type Aliases ---');
-  IntOperation multiply = (a, b) => a * b;
+  int multiply(int a, int b) => a * b;
   print('multiply(4, 5): ${multiply(4, 5)}');
 
-  Predicate<int> isEven = (n) => n % 2 == 0;
+  bool isEven(Object? n) => n % 2 == 0;
   print('isEven(4): ${isEven(4)}');
   print('isEven(5): ${isEven(5)}');
 
-  VoidCallback callback = () => print('  Callback executed!');
+  void callback() => print('  Callback executed!');
   callback();
 
   JsonMap data = {'name': 'Alice', 'age': 30};

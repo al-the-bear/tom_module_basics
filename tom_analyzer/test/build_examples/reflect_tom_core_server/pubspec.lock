@@ -338,7 +338,7 @@ packages:
     source: hosted
     version: "2.0.0"
   mysql_client:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: mysql_client
       sha256: "6a0fdcbe3e0721c637f97ad24649be2f70dbce2b21ede8f962910e640f753fc2"
@@ -497,12 +497,11 @@ packages:
     source: path
     version: "1.0.0"
   tom_basics:
-    dependency: transitive
+    dependency: "direct main"
     description:
-      name: tom_basics
-      sha256: "51bd8263443317b49351e43a22b320a481c766ba791a75bbb1dc27d5f80ff88e"
-      url: "https://pub.dev"
-    source: hosted
+      path: "../../../../tom_basics"
+      relative: true
+    source: path
     version: "1.0.0"
   tom_basics_console:
     dependency: "direct main"
@@ -526,12 +525,11 @@ packages:
     source: path
     version: "1.0.0"
   tom_crypto:
-    dependency: transitive
+    dependency: "direct main"
     description:
-      name: tom_crypto
-      sha256: f6625daac5ad48541a5e4121c07c098e29256448984ab913ce867ccbecd43171
-      url: "https://pub.dev"
-    source: hosted
+      path: "../../../../../tom_module_crypto/tom_crypto"
+      relative: true
+    source: path
     version: "1.0.0"
   tom_d4rt_ast:
     dependency: transitive
@@ -541,12 +539,11 @@ packages:
     source: path
     version: "0.1.0"
   tom_reflection:
-    dependency: transitive
+    dependency: "direct main"
     description:
-      name: tom_reflection
-      sha256: "75a766b3e5e3a4a3f8c2ce8778237ab313990c0a0bcd28a7b9ca6915ac1a959a"
-      url: "https://pub.dev"
-    source: hosted
+      path: "../../../../../tom_module_reflection/tom_reflection"
+      relative: true
+    source: path
     version: "1.0.1"
   tuple:
     dependency: transitive

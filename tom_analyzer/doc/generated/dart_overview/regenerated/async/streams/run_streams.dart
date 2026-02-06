@@ -8,6 +8,7 @@
 /// - Broadcast streams
 /// - async* generators
 /// - Stream methods
+library;
 
 import 'dart:async';
 

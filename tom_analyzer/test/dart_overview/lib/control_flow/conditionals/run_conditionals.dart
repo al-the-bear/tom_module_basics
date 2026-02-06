@@ -5,6 +5,7 @@
 /// - if-else
 /// - if-else if-else chain
 /// - if-case (pattern matching)
+library;
 
 // Helper functions to prevent compile-time optimization
 bool getBool(bool b) => b;

@@ -2,6 +2,7 @@
 ///
 /// This script executes all examples in the extensions area:
 /// - basics
+library;
 
 import 'basics/run_basics.dart' as basics;
 

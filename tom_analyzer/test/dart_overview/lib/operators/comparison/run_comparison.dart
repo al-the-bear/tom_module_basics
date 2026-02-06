@@ -4,6 +4,7 @@
 /// - Equal (==) and not equal (!=)
 /// - Relational operators (>, <, >=, <=)
 /// - Identity comparison (identical())
+library;
 
 void main() {
   print('=== Comparison Operators ===\n');

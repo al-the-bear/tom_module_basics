@@ -6,6 +6,7 @@
 /// - Set operations (union, intersection, difference)
 /// - Checking membership
 /// - Iterating sets
+library;
 
 void main() {
   print('=== Set ===');
@@ -16,7 +17,7 @@ void main() {
   var literal = {1, 2, 3, 4, 5};
   var empty = <String>{};
   var constructor = <int>{};
-  var from = Set<int>.from([1, 2, 3, 3, 2, 1]); // Duplicates removed
+  var from = <int>{1, 2, 3, 3, 2, 1}; // Duplicates removed
   var identity = Set<int>.identity();
   var unmodifiable = Set<int>.unmodifiable({1, 2, 3});
 

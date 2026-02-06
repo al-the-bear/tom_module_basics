@@ -6,6 +6,7 @@
 /// - Default case
 /// - break and fall-through prevention
 /// - Switch on various types
+library;
 
 void main() {
   print('=== Switch Statement ===');

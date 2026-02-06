@@ -4,6 +4,7 @@
 /// - static const (class-level)
 /// - const constructors
 /// - Top-level constants
+library;
 
 void main() {
   print('=== Constants ===\n');
@@ -66,7 +67,7 @@ void main() {
   print('\n--- Compile-Time Constant Expressions ---');
   const doubled = maxRetries * 2;
   const message = 'App: $appName';
-  const combined = '$appName v${doubled}';
+  const combined = '$appName v$doubled';
   print('doubled: $doubled');
   print('message: $message');
   print('combined: $combined');

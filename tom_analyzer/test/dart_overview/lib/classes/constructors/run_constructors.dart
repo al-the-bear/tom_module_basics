@@ -8,6 +8,7 @@
 /// - Redirecting constructors
 /// - Const constructors
 /// - Factory constructors
+library;
 
 void main() {
   print('=== Constructors ===');
@@ -232,7 +233,7 @@ class PersonBase {
 class Employee extends PersonBase {
   final String department;
 
-  Employee(String name, int age, this.department) : super(name, age);
+  Employee(super.name, super.age, this.department);
 }
 
 // Super parameters (Dart 2.17+)

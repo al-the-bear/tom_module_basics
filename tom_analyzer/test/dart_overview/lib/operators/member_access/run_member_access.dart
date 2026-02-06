@@ -3,6 +3,7 @@
 /// Features covered:
 /// - Member access (.)
 /// - Operator overloading
+library;
 
 void main() {
   print('=== Member Access and Operator Overloading ===');

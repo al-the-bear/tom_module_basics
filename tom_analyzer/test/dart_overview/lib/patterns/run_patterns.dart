@@ -4,6 +4,7 @@
 /// - pattern_types
 /// - switch_patterns
 /// - destructuring
+library;
 
 import 'pattern_types/run_pattern_types.dart' as pattern_types;
 import 'switch_patterns/run_switch_patterns.dart' as switch_patterns;

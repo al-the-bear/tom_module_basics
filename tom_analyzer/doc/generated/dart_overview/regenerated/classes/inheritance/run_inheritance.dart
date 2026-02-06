@@ -6,6 +6,7 @@
 /// - super keyword
 /// - Method overriding
 /// - Abstract classes
+library;
 
 void main() {
   print('=== Inheritance and Interfaces ===');

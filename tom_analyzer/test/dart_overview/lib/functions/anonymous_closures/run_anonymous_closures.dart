@@ -4,6 +4,7 @@
 /// - Anonymous functions (lambdas)
 /// - Closures
 /// - Lexical scope
+library;
 
 void main() {
   print('=== Anonymous Functions and Closures ===');
@@ -13,17 +14,17 @@ void main() {
   print('--- Anonymous Functions ---');
 
   // Full syntax
-  var add = (int a, int b) {
+  int add(int a, int b) {
     return a + b;
-  };
+  }
   print('add(5, 3) = ${add(5, 3)}');
 
   // Arrow syntax
-  var multiply = (int a, int b) => a * b;
+  int multiply(int a, int b) => a * b;
   print('multiply(4, 7) = ${multiply(4, 7)}');
 
   // Without type annotations (inferred)
-  var greet = (name) => 'Hello, $name!';
+  String greet(name) => 'Hello, $name!';
   print('greet("Alice") = ${greet('Alice')}');
 
   // Passing anonymous functions to methods
@@ -45,11 +46,11 @@ void main() {
 
   // Multi-line anonymous function
   print('');
-  var processItem = (String item) {
+  String processItem(String item) {
     var trimmed = item.trim();
     var upper = trimmed.toUpperCase();
     return '[$upper]';
-  };
+  }
   print('processItem("  hello  ") = ${processItem('  hello  ')}');
 
   // Closures
@@ -58,7 +59,7 @@ void main() {
 
   // Closure capturing outer variable
   int multiplier = 10;
-  var multiplyBy = (int n) => n * multiplier;
+  int multiplyBy(int n) => n * multiplier;
   print('multiplyBy(5) with multiplier=10: ${multiplyBy(5)}');
 
   multiplier = 3;
@@ -105,14 +106,14 @@ void main() {
   print('--- Nested Closures ---');
   String level1 = 'Level 1';
 
-  var outer = () {
+  String Function() outer() {
     String level2 = 'Level 2';
 
     return () {
       String level3 = 'Level 3';
       return '$level1 -> $level2 -> $level3';
     };
-  };
+  }
 
   var inner = outer();
   print('Nested result: ${inner()}');

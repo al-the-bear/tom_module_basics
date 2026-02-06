@@ -7,6 +7,7 @@
 /// - loops
 /// - loop_control
 /// - assertions_collections
+library;
 
 import 'conditionals/run_conditionals.dart' as conditionals;
 import 'switch_statement/run_switch_statement.dart' as switch_statement;

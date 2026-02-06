@@ -6,6 +6,7 @@
 /// - Constructors
 /// - Methods
 /// - Getters and setters
+library;
 
 void main() {
   print('=== Class Declarations ===');

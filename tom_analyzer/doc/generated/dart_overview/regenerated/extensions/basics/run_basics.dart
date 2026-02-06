@@ -8,6 +8,7 @@
 /// - Static extensions
 /// - Extension types (Dart 3.3+)
 /// - Named vs anonymous extensions
+library;
 
 void main() {
   print('=== Extensions ===');

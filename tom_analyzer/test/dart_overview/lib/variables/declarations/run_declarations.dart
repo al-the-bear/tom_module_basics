@@ -6,6 +6,7 @@
 /// - final - single assignment
 /// - const - compile-time constants
 /// - late - late initialization
+library;
 
 void main() {
   print('=== Variable Declarations ===\n');

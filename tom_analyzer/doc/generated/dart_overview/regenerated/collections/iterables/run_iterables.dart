@@ -6,6 +6,7 @@
 /// - reduce, fold
 /// - any, every, take, skip
 /// - Lazy evaluation
+library;
 
 void main() {
   print('=== Iterable Operations ===');
@@ -20,7 +21,9 @@ void main() {
   }
 
   print('forEach:');
-  numbers.forEach((n) => print('  $n'));
+  for (var n in numbers) {
+    print('  $n');
+  }
 
   // map
   print('');

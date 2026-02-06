@@ -1,5 +1,6 @@
 /// Verification script that uses the generated reflection API
 /// to print statistics about the analyzed code.
+library;
 import 'package:reflect_tom_core_kernel/main.r.dart';
 
 void main() {

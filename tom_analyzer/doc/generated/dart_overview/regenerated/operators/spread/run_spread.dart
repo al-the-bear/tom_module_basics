@@ -3,6 +3,7 @@
 /// Features covered:
 /// - Spread operator (...)
 /// - Null-aware spread (...?)
+library;
 
 // Helper functions to prevent compile-time optimization
 List<int>? getList(List<int>? l) => l;
@@ -132,7 +133,7 @@ void main() {
   String? searchTerm = getString('dart');
   var queryParams = {
     ...baseParams,
-    if (searchTerm != null) 'search': searchTerm,
+    'search': ?searchTerm,
   };
   print('');
   print('Query params: $queryParams');

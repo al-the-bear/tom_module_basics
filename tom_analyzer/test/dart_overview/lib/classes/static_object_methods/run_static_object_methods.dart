@@ -7,6 +7,7 @@
 /// - operator ==
 /// - hashCode
 /// - noSuchMethod
+library;
 
 void main() {
   print('=== Static Members and Object Methods ===');

@@ -6,6 +6,7 @@
 /// - while loop
 /// - do-while loop
 /// - forEach method
+library;
 
 void main() {
   print('=== Loops ===');
@@ -117,14 +118,16 @@ void main() {
   print('--- forEach Method ---');
   var numbers = [1, 2, 3, 4, 5];
   print('Using forEach:');
-  numbers.forEach((n) {
+  for (var n in numbers) {
     print('  $n');
-  });
+  }
 
   // forEach with arrow function
   print('');
   print('forEach with arrow function:');
-  numbers.forEach((n) => print('  Number: $n'));
+  for (var n in numbers) {
+    print('  Number: $n');
+  }
 
   // Nested loops
   print('');

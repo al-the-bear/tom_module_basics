@@ -8,6 +8,7 @@
 /// - deferred loading
 /// - part/part of (legacy)
 /// - export
+library;
 
 // Standard library imports
 import 'dart:math';
@@ -40,8 +41,8 @@ void main() {
   // Using dart:math
   print('');
   print('--- dart:math ---');
-  print('pi: ${pi}');
-  print('e: ${e}');
+  print('pi: $pi');
+  print('e: $e');
   print('sqrt(16): ${sqrt(16)}');
   print('pow(2, 10): ${pow(2, 10)}');
   print('sin(pi/2): ${sin(pi / 2)}');
@@ -67,7 +68,7 @@ void main() {
   print('removeFirst: ${queue.removeFirst()}');
   print('After: $queue');
 
-  var linkedList = LinkedHashMap<String, int>();
+  var linkedList = <String, int>{};
   linkedList['a'] = 1;
   linkedList['b'] = 2;
   linkedList['c'] = 3;
@@ -168,7 +169,7 @@ void main() {
 class ExampleClass {
   String publicField = 'public';
   // ignore: unused_field
-  String _privateField = 'private';
+  final String _privateField = 'private';
 
   void publicMethod() {}
   void _privateMethod() {}

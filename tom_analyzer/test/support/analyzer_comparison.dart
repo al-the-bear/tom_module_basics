@@ -1,9 +1,7 @@
-// ignore_for_file: deprecated_member_use
-
 import 'dart:io';
 
 import 'package:analyzer/dart/analysis/results.dart' as analysis_results;
-import 'package:analyzer/dart/element/element2.dart' as analyzer_elements;
+import 'package:analyzer/dart/element/element.dart' as analyzer_elements;
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 import 'package:tom_analyzer/tom_analyzer.dart';
@@ -48,7 +46,7 @@ Future<void> compareAnalyzerToJson({
       continue;
     }
 
-    final library = result.element2;
+    final library = result.element;
     final libraryUri = library.uri;
     if (!_isInPackage(libraryUri, rootPath, packageName)) {
       continue;
@@ -78,15 +76,15 @@ Future<void> compareAnalyzerToJson({
   }
 }
 
-String _qualifiedName(analyzer_elements.Element2 element) {
-  final libraryUri = element.library2?.uri.toString() ?? '';
+String _qualifiedName(analyzer_elements.Element element) {
+  final libraryUri = element.library?.uri.toString() ?? '';
   final name = element.displayName;
   return '$libraryUri.$name';
 }
 
 void _expectElement(
   Set<String> names,
-  analyzer_elements.Element2 element,
+  analyzer_elements.Element element,
   String kind,
 ) {
   final name = element.displayName;

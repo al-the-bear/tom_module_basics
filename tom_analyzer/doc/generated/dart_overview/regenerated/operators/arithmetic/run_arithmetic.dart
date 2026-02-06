@@ -5,6 +5,7 @@
 /// - Integer division, modulo
 /// - Increment/decrement (pre and post)
 /// - Unary minus
+library;
 
 void main() {
   print('=== Arithmetic Operators ===\n');

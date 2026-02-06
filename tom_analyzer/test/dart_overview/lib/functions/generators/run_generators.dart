@@ -4,6 +4,7 @@
 /// - Synchronous generators (sync*)
 /// - Asynchronous generators (async*)
 /// - yield and yield*
+library;
 
 void main() async {
   print('=== Generators ===');

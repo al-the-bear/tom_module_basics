@@ -5,6 +5,7 @@
 /// - Return types
 /// - Arrow functions
 /// - main() function
+library;
 
 void main() {
   print('=== Function Declarations ===');

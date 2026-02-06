@@ -4,6 +4,7 @@
 /// - Type test (is)
 /// - Negated type test (is!)
 /// - Type cast (as)
+library;
 
 void main() {
   print('=== Type Operators ===');

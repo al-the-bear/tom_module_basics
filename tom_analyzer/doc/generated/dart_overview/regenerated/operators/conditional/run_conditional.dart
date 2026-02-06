@@ -5,6 +5,7 @@
 /// - Null coalescing (??)
 /// - Conditional member access (?.)
 /// - Conditional index access (?[])
+library;
 
 // Helper functions to prevent compile-time optimization
 String? getString(String? s) => s;

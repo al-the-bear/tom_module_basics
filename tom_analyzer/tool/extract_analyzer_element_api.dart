@@ -4,16 +4,13 @@
 /// This script uses the Dart analyzer to analyze the analyzer package itself
 /// and extract information about its element.dart API.
 
-library extract_analyzer_element_api;
-
-// ignore_for_file: deprecated_member_use
+library;
 
 import 'dart:io';
 
 import 'package:analyzer/dart/analysis/analysis_context_collection.dart';
 import 'package:analyzer/dart/analysis/results.dart';
 import 'package:analyzer/dart/element/element.dart';
-import 'package:analyzer/dart/element/type.dart';
 import 'package:path/path.dart' as p;
 
 void main(List<String> args) async {
@@ -311,8 +308,8 @@ ApiTypeInfo _extractExtensionTypeInfo(ExtensionTypeElement element) {
     superclass: null,
     interfaces: element.interfaces.map((i) => i.element.displayName).toList(),
     mixins: [],
-    fields: element.fields.map((f) => '${f.type.getDisplayString(withNullability: true)} ${f.displayName}').toList(),
-    getters: element.getters.map((g) => '${g.returnType.getDisplayString(withNullability: true)} get ${g.displayName}').toList(),
+    fields: element.fields.map((f) => '${f.type.getDisplayString()} ${f.displayName}').toList(),
+    getters: element.getters.map((g) => '${g.returnType.getDisplayString()} get ${g.displayName}').toList(),
     setters: element.setters.map((s) => 'set ${s.displayName}').toList(),
     methods: element.methods.map((m) => _formatMethod(m)).toList(),
   );
@@ -321,14 +318,14 @@ ApiTypeInfo _extractExtensionTypeInfo(ExtensionTypeElement element) {
 List<String> _extractFields(ClassElement element) {
   return element.fields
       .where((f) => !f.isStatic && !f.isSynthetic)
-      .map((f) => '${f.type.getDisplayString(withNullability: true)} ${f.displayName}')
+      .map((f) => '${f.type.getDisplayString()} ${f.displayName}')
       .toList();
 }
 
 List<String> _extractGetters(ClassElement element) {
   return element.getters
       .where((g) => !g.isStatic && !g.isSynthetic)
-      .map((g) => '${g.returnType.getDisplayString(withNullability: true)} get ${g.displayName}')
+      .map((g) => '${g.returnType.getDisplayString()} get ${g.displayName}')
       .toList();
 }
 
@@ -349,14 +346,14 @@ List<String> _extractMethods(ClassElement element) {
 List<String> _extractMixinFields(MixinElement element) {
   return element.fields
       .where((f) => !f.isStatic && !f.isSynthetic)
-      .map((f) => '${f.type.getDisplayString(withNullability: true)} ${f.displayName}')
+      .map((f) => '${f.type.getDisplayString()} ${f.displayName}')
       .toList();
 }
 
 List<String> _extractMixinGetters(MixinElement element) {
   return element.getters
       .where((g) => !g.isStatic && !g.isSynthetic)
-      .map((g) => '${g.returnType.getDisplayString(withNullability: true)} get ${g.displayName}')
+      .map((g) => '${g.returnType.getDisplayString()} get ${g.displayName}')
       .toList();
 }
 
@@ -377,7 +374,7 @@ List<String> _extractMixinMethods(MixinElement element) {
 List<String> _extractEnumGetters(EnumElement element) {
   return element.getters
       .where((g) => !g.isStatic && !g.isSynthetic)
-      .map((g) => '${g.returnType.getDisplayString(withNullability: true)} get ${g.displayName}')
+      .map((g) => '${g.returnType.getDisplayString()} get ${g.displayName}')
       .toList();
 }
 
@@ -390,7 +387,7 @@ List<String> _extractEnumMethods(EnumElement element) {
 
 String _formatMethod(MethodElement method) {
   final params = method.formalParameters.map((p) {
-    final type = p.type.getDisplayString(withNullability: true);
+    final type = p.type.getDisplayString();
     final name = p.displayName;
     if (p.isNamed) {
       if (p.isRequired) {
@@ -401,7 +398,7 @@ String _formatMethod(MethodElement method) {
     return '$type $name';
   }).join(', ');
   
-  final returnType = method.returnType.getDisplayString(withNullability: true);
+  final returnType = method.returnType.getDisplayString();
   return '$returnType ${method.displayName}($params)';
 }
 

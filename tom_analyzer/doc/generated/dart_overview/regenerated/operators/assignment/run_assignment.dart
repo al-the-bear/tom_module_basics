@@ -5,6 +5,7 @@
 /// - Compound assignment (+=, -=, *=, /=, ~/=, %=, etc.)
 /// - Null-aware assignment (??=)
 /// - Bitwise compound assignment (&=, |=, ^=, <<=, >>=)
+library;
 
 void main() {
   print('=== Assignment Operators ===\n');

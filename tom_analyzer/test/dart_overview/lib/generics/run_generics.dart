@@ -5,6 +5,7 @@
 /// - generic_functions
 /// - type_bounds
 /// - variance
+library;
 
 import 'generic_classes/run_generic_classes.dart' as generic_classes;
 import 'generic_functions/run_generic_functions.dart' as generic_functions;

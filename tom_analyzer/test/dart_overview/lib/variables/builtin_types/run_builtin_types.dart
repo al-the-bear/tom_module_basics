@@ -6,6 +6,7 @@
 /// - bool
 /// - Symbol
 /// - Runes (Unicode)
+library;
 
 void main() {
   print('=== Built-in Types ===\n');

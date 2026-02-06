@@ -6,6 +6,7 @@
 /// - Type inference with functions
 /// - Multiple type parameters
 /// - Higher-order generic functions
+library;
 
 void main() {
   print('=== Generic Functions ===');

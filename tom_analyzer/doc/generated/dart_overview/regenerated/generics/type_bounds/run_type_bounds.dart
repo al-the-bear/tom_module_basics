@@ -5,6 +5,7 @@
 /// - Multiple bounds (intersection types via mixins/interfaces)
 /// - Bounded type parameters
 /// - Type constraints in methods
+library;
 
 void main() {
   print('=== Type Bounds ===');

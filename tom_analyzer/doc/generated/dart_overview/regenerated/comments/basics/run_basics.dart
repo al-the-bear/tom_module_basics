@@ -17,11 +17,11 @@
 /// It uses triple slashes
 /// And can span multiple lines
 
-/**
- * This is also a documentation comment
- * using block comment style
- * Less common but valid
- */
+/// This is also a documentation comment
+/// using block comment style
+/// Less common but valid
+library;
+
 
 void main() {
   print('=== Comments ===');
@@ -277,7 +277,7 @@ class OldApi {
   /// Old method.
   ///
   /// @deprecated Use [Calculator.add] instead.
-  @deprecated
+  @Deprecated('Use Calculator.add() instead.')
   void oldMethod() {
     print('Old method called (deprecated)');
   }

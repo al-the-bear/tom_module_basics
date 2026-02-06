@@ -4,6 +4,7 @@
 /// - assert statements
 /// - Collection if
 /// - Collection for
+library;
 
 // Helper functions to prevent compile-time optimization
 bool getBool(bool b) => b;
@@ -170,7 +171,7 @@ void main() {
   String? searchTerm = getString(null);
   int? page = getInt(2);
   var queryParams = {
-    if (searchTerm != null) 'q': searchTerm,
+    'q': ?searchTerm,
     if (page != null) 'page': page.toString(),
     'limit': '10',
   };

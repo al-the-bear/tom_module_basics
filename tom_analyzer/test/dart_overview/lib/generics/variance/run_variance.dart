@@ -5,6 +5,7 @@
 /// - Invariance with generics
 /// - Generic type relationships
 /// - Type safety with generics
+library;
 
 void main() {
   print('=== Variance ===');

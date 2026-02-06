@@ -5,6 +5,7 @@
 /// - Return types
 /// - Arrow functions
 /// - main() function
+library;
 
 void main() {
   print('=== Function Declarations ===');
@@ -109,7 +110,7 @@ Map<String, dynamic> createUser(String name, int age) => {
     };
 
 // Type inference on return
-inferredReturn() {
+int inferredReturn() {
   return 42; // Return type inferred as int
 }
 

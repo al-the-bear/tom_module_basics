@@ -7,6 +7,7 @@
 /// - List methods (sort, reverse, shuffle)
 /// - Fixed-length vs growable lists
 /// - List comprehensions
+library;
 
 void main() {
   print('=== List ===');

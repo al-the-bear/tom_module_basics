@@ -1,14 +1,10 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-library tom_analyzer.reflection;
-
 import 'package:tom_analyzer/tom_analyzer.dart' as ta;
 import 'package:dart_overview/classes/declarations/run_declarations.dart' as lib0;
-import 'package:dart_overview/dart_overview.dart' as lib1;
 import 'package:dart_overview/enums/basics/run_basics.dart' as lib2;
 import 'package:dart_overview/generics/generic_classes/run_generic_classes.dart' as lib3;
 import 'package:dart_overview/run_dart_overview.dart' as lib4;
-import 'package:reflect_dart_overview/main.dart' as lib5;
 
 final _classes = <String, ta.ClassDescriptor>{
 'package:dart_overview/classes/declarations/run_declarations.dart.BankAccount': ta.ClassDescriptor(
@@ -18,10 +14,20 @@ final _classes = <String, ta.ClassDescriptor>{
   package: 'dart_overview',
   annotations: const [],
   typeParameters: const [],
+  isAbstract: false,
+  isSealed: false,
+  isFinal: false,
+  isBase: false,
+  isInterface: false,
+  isMixinClass: false,
   methods: <String, ta.MethodDescriptor>{
   'deposit': ta.MethodDescriptor(
     name: 'deposit',
     isStatic: false,
+    isAbstract: false,
+    isOperator: false,
+    returnTypeQualifiedName: 'void',
+    declaringClassQualifiedName: null,
     typeParameters: const [],
     parameters: [
 ta.ParameterDescriptor(name: 'amount',typeQualifiedName: 'dart:core.double',isRequired: true,isNamed: false,isPositional: true,hasDefaultValue: false,defaultValue: null,annotations: const [],)
@@ -33,6 +39,10 @@ ta.ParameterDescriptor(name: 'amount',typeQualifiedName: 'dart:core.double',isRe
   'withdraw': ta.MethodDescriptor(
     name: 'withdraw',
     isStatic: false,
+    isAbstract: false,
+    isOperator: false,
+    returnTypeQualifiedName: 'dart:core.bool',
+    declaringClassQualifiedName: null,
     typeParameters: const [],
     parameters: [
 ta.ParameterDescriptor(name: 'amount',typeQualifiedName: 'dart:core.double',isRequired: true,isNamed: false,isPositional: true,hasDefaultValue: false,defaultValue: null,annotations: const [],)
@@ -50,6 +60,7 @@ ta.ParameterDescriptor(name: 'amount',typeQualifiedName: 'dart:core.double',isRe
     isStatic: false,
     isFinal: true,
     isConst: false,
+    declaringClassQualifiedName: null,
     annotations: const [],
     getInstance: (Object instance) => (instance as lib0.BankAccount).accountNumber,
     setInstance: null,
@@ -62,6 +73,7 @@ ta.ParameterDescriptor(name: 'amount',typeQualifiedName: 'dart:core.double',isRe
     isStatic: false,
     isFinal: false,
     isConst: false,
+    declaringClassQualifiedName: null,
     annotations: const [],
     getInstance: (Object instance) => (instance as lib0.BankAccount).balance,
     setInstance: null,
@@ -99,10 +111,20 @@ ta.ParameterDescriptor(name: '_balance',typeQualifiedName: 'dart:core.double',is
   package: 'dart_overview',
   annotations: const [],
   typeParameters: const [],
+  isAbstract: false,
+  isSealed: false,
+  isFinal: false,
+  isBase: false,
+  isInterface: false,
+  isMixinClass: false,
   methods: <String, ta.MethodDescriptor>{
   'add': ta.MethodDescriptor(
     name: 'add',
     isStatic: false,
+    isAbstract: false,
+    isOperator: false,
+    returnTypeQualifiedName: 'dart:core.int',
+    declaringClassQualifiedName: null,
     typeParameters: const [],
     parameters: [
 ta.ParameterDescriptor(name: 'a',typeQualifiedName: 'dart:core.int',isRequired: true,isNamed: false,isPositional: true,hasDefaultValue: false,defaultValue: null,annotations: const [],),
@@ -115,6 +137,10 @@ ta.ParameterDescriptor(name: 'b',typeQualifiedName: 'dart:core.int',isRequired: 
   'subtract': ta.MethodDescriptor(
     name: 'subtract',
     isStatic: false,
+    isAbstract: false,
+    isOperator: false,
+    returnTypeQualifiedName: 'dart:core.int',
+    declaringClassQualifiedName: null,
     typeParameters: const [],
     parameters: [
 ta.ParameterDescriptor(name: 'a',typeQualifiedName: 'dart:core.int',isRequired: true,isNamed: false,isPositional: true,hasDefaultValue: false,defaultValue: null,annotations: const [],),
@@ -127,6 +153,10 @@ ta.ParameterDescriptor(name: 'b',typeQualifiedName: 'dart:core.int',isRequired: 
   'multiply': ta.MethodDescriptor(
     name: 'multiply',
     isStatic: false,
+    isAbstract: false,
+    isOperator: false,
+    returnTypeQualifiedName: 'dart:core.int',
+    declaringClassQualifiedName: null,
     typeParameters: const [],
     parameters: [
 ta.ParameterDescriptor(name: 'a',typeQualifiedName: 'dart:core.int',isRequired: true,isNamed: false,isPositional: true,hasDefaultValue: false,defaultValue: null,annotations: const [],),
@@ -139,6 +169,10 @@ ta.ParameterDescriptor(name: 'b',typeQualifiedName: 'dart:core.int',isRequired: 
   'divide': ta.MethodDescriptor(
     name: 'divide',
     isStatic: false,
+    isAbstract: false,
+    isOperator: false,
+    returnTypeQualifiedName: 'dart:core.double',
+    declaringClassQualifiedName: null,
     typeParameters: const [],
     parameters: [
 ta.ParameterDescriptor(name: 'a',typeQualifiedName: 'dart:core.int',isRequired: true,isNamed: false,isPositional: true,hasDefaultValue: false,defaultValue: null,annotations: const [],),
@@ -178,6 +212,12 @@ ta.ParameterDescriptor(name: 'b',typeQualifiedName: 'dart:core.int',isRequired: 
   package: 'dart_overview',
   annotations: const [],
   typeParameters: const [],
+  isAbstract: false,
+  isSealed: false,
+  isFinal: false,
+  isBase: false,
+  isInterface: false,
+  isMixinClass: false,
   methods: const {},
   staticMethods: const {},
   fields: <String, ta.FieldDescriptor>{
@@ -187,6 +227,7 @@ ta.ParameterDescriptor(name: 'b',typeQualifiedName: 'dart:core.int',isRequired: 
     isStatic: false,
     isFinal: true,
     isConst: false,
+    declaringClassQualifiedName: null,
     annotations: const [],
     getInstance: (Object instance) => (instance as lib0.Circle).radius,
     setInstance: null,
@@ -199,6 +240,7 @@ ta.ParameterDescriptor(name: 'b',typeQualifiedName: 'dart:core.int',isRequired: 
     isStatic: false,
     isFinal: false,
     isConst: false,
+    declaringClassQualifiedName: null,
     annotations: const [],
     getInstance: (Object instance) => (instance as lib0.Circle).diameter,
     setInstance: null,
@@ -211,6 +253,7 @@ ta.ParameterDescriptor(name: 'b',typeQualifiedName: 'dart:core.int',isRequired: 
     isStatic: false,
     isFinal: false,
     isConst: false,
+    declaringClassQualifiedName: null,
     annotations: const [],
     getInstance: (Object instance) => (instance as lib0.Circle).circumference,
     setInstance: null,
@@ -223,6 +266,7 @@ ta.ParameterDescriptor(name: 'b',typeQualifiedName: 'dart:core.int',isRequired: 
     isStatic: false,
     isFinal: false,
     isConst: false,
+    declaringClassQualifiedName: null,
     annotations: const [],
     getInstance: (Object instance) => (instance as lib0.Circle).circleArea,
     setInstance: null,
@@ -259,10 +303,20 @@ ta.ParameterDescriptor(name: 'radius',typeQualifiedName: 'dart:core.double',isRe
   package: 'dart_overview',
   annotations: const [],
   typeParameters: const [],
+  isAbstract: false,
+  isSealed: false,
+  isFinal: false,
+  isBase: false,
+  isInterface: false,
+  isMixinClass: false,
   methods: <String, ta.MethodDescriptor>{
   'bark': ta.MethodDescriptor(
     name: 'bark',
     isStatic: false,
+    isAbstract: false,
+    isOperator: false,
+    returnTypeQualifiedName: 'void',
+    declaringClassQualifiedName: null,
     typeParameters: const [],
     parameters: const [],
     annotations: const [],
@@ -278,6 +332,7 @@ ta.ParameterDescriptor(name: 'radius',typeQualifiedName: 'dart:core.double',isRe
     isStatic: false,
     isFinal: false,
     isConst: false,
+    declaringClassQualifiedName: null,
     annotations: const [],
     getInstance: (Object instance) => (instance as lib0.Dog).name,
     setInstance: (Object instance, Object? value) { (instance as lib0.Dog).name = value as dynamic; return null; },
@@ -290,6 +345,7 @@ ta.ParameterDescriptor(name: 'radius',typeQualifiedName: 'dart:core.double',isRe
     isStatic: false,
     isFinal: false,
     isConst: false,
+    declaringClassQualifiedName: null,
     annotations: const [],
     getInstance: (Object instance) => (instance as lib0.Dog).age,
     setInstance: (Object instance, Object? value) { (instance as lib0.Dog).age = value as dynamic; return null; },
@@ -327,10 +383,20 @@ ta.ParameterDescriptor(name: 'age',typeQualifiedName: 'dart:core.int',isRequired
   package: 'dart_overview',
   annotations: const [],
   typeParameters: const [],
+  isAbstract: false,
+  isSealed: false,
+  isFinal: false,
+  isBase: false,
+  isInterface: false,
+  isMixinClass: false,
   methods: <String, ta.MethodDescriptor>{
   'greet': ta.MethodDescriptor(
     name: 'greet',
     isStatic: false,
+    isAbstract: false,
+    isOperator: false,
+    returnTypeQualifiedName: 'void',
+    declaringClassQualifiedName: null,
     typeParameters: const [],
     parameters: const [],
     annotations: const [],
@@ -346,6 +412,7 @@ ta.ParameterDescriptor(name: 'age',typeQualifiedName: 'dart:core.int',isRequired
     isStatic: false,
     isFinal: false,
     isConst: false,
+    declaringClassQualifiedName: null,
     annotations: const [],
     getInstance: (Object instance) => (instance as lib0.Person).name,
     setInstance: (Object instance, Object? value) { (instance as lib0.Person).name = value as dynamic; return null; },
@@ -358,6 +425,7 @@ ta.ParameterDescriptor(name: 'age',typeQualifiedName: 'dart:core.int',isRequired
     isStatic: false,
     isFinal: false,
     isConst: false,
+    declaringClassQualifiedName: null,
     annotations: const [],
     getInstance: (Object instance) => (instance as lib0.Person).age,
     setInstance: (Object instance, Object? value) { (instance as lib0.Person).age = value as dynamic; return null; },
@@ -392,6 +460,12 @@ ta.ParameterDescriptor(name: 'age',typeQualifiedName: 'dart:core.int',isRequired
   package: 'dart_overview',
   annotations: const [],
   typeParameters: const [],
+  isAbstract: false,
+  isSealed: false,
+  isFinal: false,
+  isBase: false,
+  isInterface: false,
+  isMixinClass: false,
   methods: const {},
   staticMethods: const {},
   fields: <String, ta.FieldDescriptor>{
@@ -401,6 +475,7 @@ ta.ParameterDescriptor(name: 'age',typeQualifiedName: 'dart:core.int',isRequired
     isStatic: false,
     isFinal: false,
     isConst: false,
+    declaringClassQualifiedName: null,
     annotations: const [],
     getInstance: (Object instance) => (instance as lib0.Rectangle).width,
     setInstance: (Object instance, Object? value) { (instance as lib0.Rectangle).width = value as dynamic; return null; },
@@ -413,6 +488,7 @@ ta.ParameterDescriptor(name: 'age',typeQualifiedName: 'dart:core.int',isRequired
     isStatic: false,
     isFinal: false,
     isConst: false,
+    declaringClassQualifiedName: null,
     annotations: const [],
     getInstance: (Object instance) => (instance as lib0.Rectangle).height,
     setInstance: (Object instance, Object? value) { (instance as lib0.Rectangle).height = value as dynamic; return null; },
@@ -425,6 +501,7 @@ ta.ParameterDescriptor(name: 'age',typeQualifiedName: 'dart:core.int',isRequired
     isStatic: false,
     isFinal: false,
     isConst: false,
+    declaringClassQualifiedName: null,
     annotations: const [],
     getInstance: (Object instance) => (instance as lib0.Rectangle).area,
     setInstance: null,
@@ -437,6 +514,7 @@ ta.ParameterDescriptor(name: 'age',typeQualifiedName: 'dart:core.int',isRequired
     isStatic: false,
     isFinal: false,
     isConst: false,
+    declaringClassQualifiedName: null,
     annotations: const [],
     getInstance: (Object instance) => (instance as lib0.Rectangle).perimeter,
     setInstance: null,
@@ -449,6 +527,7 @@ ta.ParameterDescriptor(name: 'age',typeQualifiedName: 'dart:core.int',isRequired
     isStatic: false,
     isFinal: false,
     isConst: false,
+    declaringClassQualifiedName: null,
     annotations: const [],
     getInstance: null,
     setInstance: (Object instance, Object? value) { (instance as lib0.Rectangle).scale = value as dynamic; return null; },
@@ -486,10 +565,20 @@ ta.ParameterDescriptor(name: 'height',typeQualifiedName: 'dart:core.double',isRe
   package: 'dart_overview',
   annotations: const [],
   typeParameters: const [],
+  isAbstract: false,
+  isSealed: false,
+  isFinal: false,
+  isBase: false,
+  isInterface: false,
+  isMixinClass: false,
   methods: <String, ta.MethodDescriptor>{
   'toString': ta.MethodDescriptor(
     name: 'toString',
     isStatic: false,
+    isAbstract: false,
+    isOperator: false,
+    returnTypeQualifiedName: 'dart:core.String',
+    declaringClassQualifiedName: null,
     typeParameters: const [],
     parameters: const [],
     annotations: const [],
@@ -505,6 +594,7 @@ ta.ParameterDescriptor(name: 'height',typeQualifiedName: 'dart:core.double',isRe
     isStatic: false,
     isFinal: false,
     isConst: false,
+    declaringClassQualifiedName: null,
     annotations: const [],
     getInstance: (Object instance) => (instance as lib0.User).name,
     setInstance: (Object instance, Object? value) { (instance as lib0.User).name = value as dynamic; return null; },
@@ -517,6 +607,7 @@ ta.ParameterDescriptor(name: 'height',typeQualifiedName: 'dart:core.double',isRe
     isStatic: false,
     isFinal: false,
     isConst: false,
+    declaringClassQualifiedName: null,
     annotations: const [],
     getInstance: (Object instance) => (instance as lib0.User).email,
     setInstance: (Object instance, Object? value) { (instance as lib0.User).email = value as dynamic; return null; },
@@ -570,17 +661,27 @@ ta.ParameterDescriptor(name: 'email',typeQualifiedName: 'dart:core.String',isReq
   package: 'dart_overview',
   annotations: const [],
   typeParameters: const [],
+  isAbstract: true,
+  isSealed: false,
+  isFinal: false,
+  isBase: false,
+  isInterface: false,
+  isMixinClass: false,
   methods: <String, ta.MethodDescriptor>{
   'execute': ta.MethodDescriptor(
     name: 'execute',
     isStatic: false,
+    isAbstract: true,
+    isOperator: false,
+    returnTypeQualifiedName: 'dart:core.double',
+    declaringClassQualifiedName: null,
     typeParameters: const [],
     parameters: [
 ta.ParameterDescriptor(name: 'a',typeQualifiedName: 'dart:core.double',isRequired: true,isNamed: false,isPositional: true,hasDefaultValue: false,defaultValue: null,annotations: const [],),
 ta.ParameterDescriptor(name: 'b',typeQualifiedName: 'dart:core.double',isRequired: true,isNamed: false,isPositional: true,hasDefaultValue: false,defaultValue: null,annotations: const [],)
 ],
     annotations: const [],
-    invokeOn: (Object instance, List<dynamic> positional, Map<Symbol, dynamic> named) => Function.apply((instance as lib2.MathOperation).execute, positional, named),
+    invokeOn: null,
     invokeStatic: null,
   ),
   },
@@ -615,6 +716,12 @@ ta.ParameterDescriptor(name: 'b',typeQualifiedName: 'dart:core.double',isRequire
   typeParameters: [
 ta.TypeParameterDescriptor(name: 'T',boundQualifiedName: null,variance: null,)
 ],
+  isAbstract: false,
+  isSealed: false,
+  isFinal: false,
+  isBase: false,
+  isInterface: false,
+  isMixinClass: false,
   methods: const {},
   staticMethods: const {},
   fields: <String, ta.FieldDescriptor>{
@@ -624,6 +731,7 @@ ta.TypeParameterDescriptor(name: 'T',boundQualifiedName: null,variance: null,)
     isStatic: false,
     isFinal: true,
     isConst: false,
+    declaringClassQualifiedName: null,
     annotations: const [],
     getInstance: (Object instance) => (instance as lib3.Box).value,
     setInstance: null,
@@ -662,10 +770,20 @@ ta.ParameterDescriptor(name: 'value',typeQualifiedName: 'T',isRequired: true,isN
   typeParameters: [
 ta.TypeParameterDescriptor(name: 'T',boundQualifiedName: null,variance: null,)
 ],
+  isAbstract: false,
+  isSealed: false,
+  isFinal: false,
+  isBase: false,
+  isInterface: false,
+  isMixinClass: false,
   methods: <String, ta.MethodDescriptor>{
   'getOrElse': ta.MethodDescriptor(
     name: 'getOrElse',
     isStatic: false,
+    isAbstract: false,
+    isOperator: false,
+    returnTypeQualifiedName: 'T',
+    declaringClassQualifiedName: null,
     typeParameters: const [],
     parameters: [
 ta.ParameterDescriptor(name: 'defaultValue',typeQualifiedName: 'T',isRequired: true,isNamed: false,isPositional: true,hasDefaultValue: false,defaultValue: null,annotations: const [],)
@@ -677,6 +795,10 @@ ta.ParameterDescriptor(name: 'defaultValue',typeQualifiedName: 'T',isRequired: t
   'map': ta.MethodDescriptor(
     name: 'map',
     isStatic: false,
+    isAbstract: false,
+    isOperator: false,
+    returnTypeQualifiedName: 'package:dart_overview/generics/generic_classes/run_generic_classes.dart.Maybe',
+    declaringClassQualifiedName: null,
     typeParameters: [
 ta.TypeParameterDescriptor(name: 'R',boundQualifiedName: null,variance: null,)
 ],
@@ -696,6 +818,7 @@ ta.ParameterDescriptor(name: 'f',typeQualifiedName: 'R Function(T)',isRequired: 
     isStatic: false,
     isFinal: true,
     isConst: false,
+    declaringClassQualifiedName: null,
     annotations: const [],
     getInstance: (Object instance) => (instance as lib3.Maybe).hasValue,
     setInstance: null,
@@ -708,6 +831,7 @@ ta.ParameterDescriptor(name: 'f',typeQualifiedName: 'R Function(T)',isRequired: 
     isStatic: false,
     isFinal: false,
     isConst: false,
+    declaringClassQualifiedName: null,
     annotations: const [],
     getInstance: (Object instance) => (instance as lib3.Maybe).value,
     setInstance: null,
@@ -754,10 +878,20 @@ ta.ParameterDescriptor(name: 'value',typeQualifiedName: 'T',isRequired: true,isN
 ta.TypeParameterDescriptor(name: 'F',boundQualifiedName: null,variance: null,),
 ta.TypeParameterDescriptor(name: 'S',boundQualifiedName: null,variance: null,)
 ],
+  isAbstract: false,
+  isSealed: false,
+  isFinal: false,
+  isBase: false,
+  isInterface: false,
+  isMixinClass: false,
   methods: <String, ta.MethodDescriptor>{
   'swap': ta.MethodDescriptor(
     name: 'swap',
     isStatic: false,
+    isAbstract: false,
+    isOperator: false,
+    returnTypeQualifiedName: 'package:dart_overview/generics/generic_classes/run_generic_classes.dart.Pair',
+    declaringClassQualifiedName: null,
     typeParameters: const [],
     parameters: const [],
     annotations: const [],
@@ -767,6 +901,10 @@ ta.TypeParameterDescriptor(name: 'S',boundQualifiedName: null,variance: null,)
   'toString': ta.MethodDescriptor(
     name: 'toString',
     isStatic: false,
+    isAbstract: false,
+    isOperator: false,
+    returnTypeQualifiedName: 'dart:core.String',
+    declaringClassQualifiedName: null,
     typeParameters: const [],
     parameters: const [],
     annotations: const [],
@@ -782,6 +920,7 @@ ta.TypeParameterDescriptor(name: 'S',boundQualifiedName: null,variance: null,)
     isStatic: false,
     isFinal: true,
     isConst: false,
+    declaringClassQualifiedName: null,
     annotations: const [],
     getInstance: (Object instance) => (instance as lib3.Pair).first,
     setInstance: null,
@@ -794,6 +933,7 @@ ta.TypeParameterDescriptor(name: 'S',boundQualifiedName: null,variance: null,)
     isStatic: false,
     isFinal: true,
     isConst: false,
+    declaringClassQualifiedName: null,
     annotations: const [],
     getInstance: (Object instance) => (instance as lib3.Pair).second,
     setInstance: null,
@@ -833,10 +973,20 @@ ta.ParameterDescriptor(name: 'second',typeQualifiedName: 'S',isRequired: true,is
   typeParameters: [
 ta.TypeParameterDescriptor(name: 'T',boundQualifiedName: null,variance: null,)
 ],
+  isAbstract: false,
+  isSealed: false,
+  isFinal: false,
+  isBase: false,
+  isInterface: false,
+  isMixinClass: false,
   methods: <String, ta.MethodDescriptor>{
   'enqueue': ta.MethodDescriptor(
     name: 'enqueue',
     isStatic: false,
+    isAbstract: false,
+    isOperator: false,
+    returnTypeQualifiedName: 'void',
+    declaringClassQualifiedName: null,
     typeParameters: const [],
     parameters: [
 ta.ParameterDescriptor(name: 'item',typeQualifiedName: 'T',isRequired: true,isNamed: false,isPositional: true,hasDefaultValue: false,defaultValue: null,annotations: const [],)
@@ -848,6 +998,10 @@ ta.ParameterDescriptor(name: 'item',typeQualifiedName: 'T',isRequired: true,isNa
   'dequeue': ta.MethodDescriptor(
     name: 'dequeue',
     isStatic: false,
+    isAbstract: false,
+    isOperator: false,
+    returnTypeQualifiedName: 'T',
+    declaringClassQualifiedName: null,
     typeParameters: const [],
     parameters: const [],
     annotations: const [],
@@ -857,6 +1011,10 @@ ta.ParameterDescriptor(name: 'item',typeQualifiedName: 'T',isRequired: true,isNa
   'toString': ta.MethodDescriptor(
     name: 'toString',
     isStatic: false,
+    isAbstract: false,
+    isOperator: false,
+    returnTypeQualifiedName: 'dart:core.String',
+    declaringClassQualifiedName: null,
     typeParameters: const [],
     parameters: const [],
     annotations: const [],
@@ -872,6 +1030,7 @@ ta.ParameterDescriptor(name: 'item',typeQualifiedName: 'T',isRequired: true,isNa
     isStatic: false,
     isFinal: false,
     isConst: false,
+    declaringClassQualifiedName: null,
     annotations: const [],
     getInstance: (Object instance) => (instance as lib3.Queue).front,
     setInstance: null,
@@ -884,6 +1043,7 @@ ta.ParameterDescriptor(name: 'item',typeQualifiedName: 'T',isRequired: true,isNa
     isStatic: false,
     isFinal: false,
     isConst: false,
+    declaringClassQualifiedName: null,
     annotations: const [],
     getInstance: (Object instance) => (instance as lib3.Queue).isEmpty,
     setInstance: null,
@@ -896,6 +1056,7 @@ ta.ParameterDescriptor(name: 'item',typeQualifiedName: 'T',isRequired: true,isNa
     isStatic: false,
     isFinal: false,
     isConst: false,
+    declaringClassQualifiedName: null,
     annotations: const [],
     getInstance: (Object instance) => (instance as lib3.Queue).length,
     setInstance: null,
@@ -933,10 +1094,20 @@ ta.ParameterDescriptor(name: 'item',typeQualifiedName: 'T',isRequired: true,isNa
 ta.TypeParameterDescriptor(name: 'T',boundQualifiedName: null,variance: null,),
 ta.TypeParameterDescriptor(name: 'E',boundQualifiedName: null,variance: null,)
 ],
+  isAbstract: false,
+  isSealed: false,
+  isFinal: false,
+  isBase: false,
+  isInterface: false,
+  isMixinClass: false,
   methods: <String, ta.MethodDescriptor>{
   'fold': ta.MethodDescriptor(
     name: 'fold',
     isStatic: false,
+    isAbstract: false,
+    isOperator: false,
+    returnTypeQualifiedName: 'R',
+    declaringClassQualifiedName: null,
     typeParameters: [
 ta.TypeParameterDescriptor(name: 'R',boundQualifiedName: null,variance: null,)
 ],
@@ -957,6 +1128,7 @@ ta.ParameterDescriptor(name: 'onFailure',typeQualifiedName: 'R Function(E)',isRe
     isStatic: false,
     isFinal: true,
     isConst: false,
+    declaringClassQualifiedName: null,
     annotations: const [],
     getInstance: (Object instance) => (instance as lib3.Result).isSuccess,
     setInstance: null,
@@ -1004,10 +1176,20 @@ ta.ParameterDescriptor(name: 'value',typeQualifiedName: 'T',isRequired: true,isN
   typeParameters: [
 ta.TypeParameterDescriptor(name: 'T',boundQualifiedName: null,variance: null,)
 ],
+  isAbstract: false,
+  isSealed: false,
+  isFinal: false,
+  isBase: false,
+  isInterface: false,
+  isMixinClass: false,
   methods: <String, ta.MethodDescriptor>{
   'push': ta.MethodDescriptor(
     name: 'push',
     isStatic: false,
+    isAbstract: false,
+    isOperator: false,
+    returnTypeQualifiedName: 'void',
+    declaringClassQualifiedName: null,
     typeParameters: const [],
     parameters: [
 ta.ParameterDescriptor(name: 'item',typeQualifiedName: 'T',isRequired: true,isNamed: false,isPositional: true,hasDefaultValue: false,defaultValue: null,annotations: const [],)
@@ -1019,6 +1201,10 @@ ta.ParameterDescriptor(name: 'item',typeQualifiedName: 'T',isRequired: true,isNa
   'pop': ta.MethodDescriptor(
     name: 'pop',
     isStatic: false,
+    isAbstract: false,
+    isOperator: false,
+    returnTypeQualifiedName: 'T',
+    declaringClassQualifiedName: null,
     typeParameters: const [],
     parameters: const [],
     annotations: const [],
@@ -1028,6 +1214,10 @@ ta.ParameterDescriptor(name: 'item',typeQualifiedName: 'T',isRequired: true,isNa
   'peek': ta.MethodDescriptor(
     name: 'peek',
     isStatic: false,
+    isAbstract: false,
+    isOperator: false,
+    returnTypeQualifiedName: 'T',
+    declaringClassQualifiedName: null,
     typeParameters: const [],
     parameters: const [],
     annotations: const [],
@@ -1037,6 +1227,10 @@ ta.ParameterDescriptor(name: 'item',typeQualifiedName: 'T',isRequired: true,isNa
   'toString': ta.MethodDescriptor(
     name: 'toString',
     isStatic: false,
+    isAbstract: false,
+    isOperator: false,
+    returnTypeQualifiedName: 'dart:core.String',
+    declaringClassQualifiedName: null,
     typeParameters: const [],
     parameters: const [],
     annotations: const [],
@@ -1052,6 +1246,7 @@ ta.ParameterDescriptor(name: 'item',typeQualifiedName: 'T',isRequired: true,isNa
     isStatic: false,
     isFinal: false,
     isConst: false,
+    declaringClassQualifiedName: null,
     annotations: const [],
     getInstance: (Object instance) => (instance as lib3.Stack).isEmpty,
     setInstance: null,
@@ -1064,6 +1259,7 @@ ta.ParameterDescriptor(name: 'item',typeQualifiedName: 'T',isRequired: true,isNa
     isStatic: false,
     isFinal: false,
     isConst: false,
+    declaringClassQualifiedName: null,
     annotations: const [],
     getInstance: (Object instance) => (instance as lib3.Stack).length,
     setInstance: null,
@@ -1100,10 +1296,20 @@ ta.ParameterDescriptor(name: 'item',typeQualifiedName: 'T',isRequired: true,isNa
   typeParameters: [
 ta.TypeParameterDescriptor(name: 'T',boundQualifiedName: null,variance: null,)
 ],
+  isAbstract: false,
+  isSealed: false,
+  isFinal: false,
+  isBase: false,
+  isInterface: false,
+  isMixinClass: false,
   methods: <String, ta.MethodDescriptor>{
   'transform': ta.MethodDescriptor(
     name: 'transform',
     isStatic: false,
+    isAbstract: false,
+    isOperator: false,
+    returnTypeQualifiedName: 'package:dart_overview/generics/generic_classes/run_generic_classes.dart.Wrapper',
+    declaringClassQualifiedName: null,
     typeParameters: [
 ta.TypeParameterDescriptor(name: 'R',boundQualifiedName: null,variance: null,)
 ],
@@ -1123,6 +1329,7 @@ ta.ParameterDescriptor(name: 'f',typeQualifiedName: 'R Function(T)',isRequired: 
     isStatic: false,
     isFinal: false,
     isConst: false,
+    declaringClassQualifiedName: null,
     annotations: const [],
     getInstance: (Object instance) => (instance as lib3.Wrapper).value,
     setInstance: (Object instance, Object? value) { (instance as lib3.Wrapper).value = value as dynamic; return null; },
@@ -1188,6 +1395,7 @@ final _enums = <String, ta.MemberContainerDescriptor>{
     isStatic: false,
     isFinal: true,
     isConst: false,
+    declaringClassQualifiedName: null,
     annotations: const [],
     getInstance: (Object instance) => (instance as lib2.HttpStatus).code,
     setInstance: null,
@@ -1200,6 +1408,7 @@ final _enums = <String, ta.MemberContainerDescriptor>{
     isStatic: false,
     isFinal: true,
     isConst: false,
+    declaringClassQualifiedName: null,
     annotations: const [],
     getInstance: (Object instance) => (instance as lib2.HttpStatus).message,
     setInstance: null,
@@ -1212,6 +1421,7 @@ final _enums = <String, ta.MemberContainerDescriptor>{
     isStatic: false,
     isFinal: false,
     isConst: false,
+    declaringClassQualifiedName: null,
     annotations: const [],
     getInstance: (Object instance) => (instance as lib2.HttpStatus).isSuccess,
     setInstance: null,
@@ -1224,6 +1434,7 @@ final _enums = <String, ta.MemberContainerDescriptor>{
     isStatic: false,
     isFinal: false,
     isConst: false,
+    declaringClassQualifiedName: null,
     annotations: const [],
     getInstance: (Object instance) => (instance as lib2.HttpStatus).isError,
     setInstance: null,
@@ -1254,6 +1465,7 @@ final _enums = <String, ta.MemberContainerDescriptor>{
     isStatic: false,
     isFinal: true,
     isConst: false,
+    declaringClassQualifiedName: null,
     annotations: const [],
     getInstance: (Object instance) => (instance as lib2.LogLevel).severity,
     setInstance: null,
@@ -1279,6 +1491,10 @@ final _enums = <String, ta.MemberContainerDescriptor>{
   'execute': ta.MethodDescriptor(
     name: 'execute',
     isStatic: false,
+    isAbstract: false,
+    isOperator: false,
+    returnTypeQualifiedName: 'dart:core.double',
+    declaringClassQualifiedName: null,
     typeParameters: const [],
     parameters: [
 ta.ParameterDescriptor(name: 'a',typeQualifiedName: 'dart:core.double',isRequired: true,isNamed: false,isPositional: true,hasDefaultValue: false,defaultValue: null,annotations: const [],),
@@ -1297,6 +1513,7 @@ ta.ParameterDescriptor(name: 'b',typeQualifiedName: 'dart:core.double',isRequire
     isStatic: false,
     isFinal: true,
     isConst: false,
+    declaringClassQualifiedName: null,
     annotations: const [],
     getInstance: (Object instance) => (instance as lib2.Operation).symbol,
     setInstance: null,
@@ -1361,6 +1578,7 @@ ta.ParameterDescriptor(name: 'b',typeQualifiedName: 'dart:core.double',isRequire
     isStatic: false,
     isFinal: true,
     isConst: false,
+    declaringClassQualifiedName: null,
     annotations: const [],
     getInstance: (Object instance) => (instance as lib2.Season).months,
     setInstance: null,
@@ -1373,6 +1591,7 @@ ta.ParameterDescriptor(name: 'b',typeQualifiedName: 'dart:core.double',isRequire
     isStatic: false,
     isFinal: true,
     isConst: false,
+    declaringClassQualifiedName: null,
     annotations: const [],
     getInstance: (Object instance) => (instance as lib2.Season).avgTemperature,
     setInstance: null,
@@ -1400,6 +1619,10 @@ final _mixins = <String, ta.MemberContainerDescriptor>{
   'shouldLog': ta.MethodDescriptor(
     name: 'shouldLog',
     isStatic: false,
+    isAbstract: false,
+    isOperator: false,
+    returnTypeQualifiedName: 'dart:core.bool',
+    declaringClassQualifiedName: null,
     typeParameters: const [],
     parameters: [
 ta.ParameterDescriptor(name: 'minLevel',typeQualifiedName: 'package:dart_overview/enums/basics/run_basics.dart.LogLevel',isRequired: true,isNamed: false,isPositional: true,hasDefaultValue: false,defaultValue: null,annotations: const [],)
@@ -1417,6 +1640,7 @@ ta.ParameterDescriptor(name: 'minLevel',typeQualifiedName: 'package:dart_overvie
     isStatic: false,
     isFinal: false,
     isConst: false,
+    declaringClassQualifiedName: null,
     annotations: const [],
     getInstance: (Object instance) => (instance as lib2.LoggableMixin).severity,
     setInstance: null,

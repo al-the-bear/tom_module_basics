@@ -1,5 +1,5 @@
 id: analysis_1
-timestamp: "2026-02-05T13:17:44.610765"
+timestamp: "2026-02-06T08:25:45.302373"
 dartSdkVersion: unknown
 analyzerVersion: 8.x
 schemaVersion: "1.0"
@@ -372,7 +372,7 @@ libraries:
               definitionLibraryId: null
               isTypeParameter: false
               typeParameterBound: null
-              resolvedElementId: null
+              resolvedElementId: class_1
             defaultType: null
             variance: null
         constructors:
@@ -461,7 +461,7 @@ libraries:
                     definitionLibraryId: null
                     isTypeParameter: false
                     typeParameterBound: null
-                    resolvedElementId: null
+                    resolvedElementId: class_1
                   resolvedElementId: null
               isNullable: false
               isDynamic: false
@@ -572,7 +572,7 @@ libraries:
                         definitionLibraryId: null
                         isTypeParameter: false
                         typeParameterBound: null
-                        resolvedElementId: null
+                        resolvedElementId: class_1
                       resolvedElementId: null
                   isNullable: false
                   isDynamic: false
@@ -663,7 +663,7 @@ libraries:
                     definitionLibraryId: null
                     isTypeParameter: false
                     typeParameterBound: null
-                    resolvedElementId: null
+                    resolvedElementId: class_1
                   resolvedElementId: null
               isNullable: false
               isDynamic: false
@@ -721,7 +721,7 @@ libraries:
                     definitionLibraryId: null
                     isTypeParameter: false
                     typeParameterBound: null
-                    resolvedElementId: null
+                    resolvedElementId: class_1
                   resolvedElementId: null
                 isRequired: true
                 isNamed: false
@@ -827,7 +827,7 @@ libraries:
                     definitionLibraryId: null
                     isTypeParameter: false
                     typeParameterBound: null
-                    resolvedElementId: null
+                    resolvedElementId: class_1
                   resolvedElementId: null
                 isRequired: true
                 isNamed: false
@@ -911,7 +911,7 @@ libraries:
             definitionLibraryId: null
             isTypeParameter: false
             typeParameterBound: null
-            resolvedElementId: null
+            resolvedElementId: class_1
         mixins:
           -
             id: type_35
@@ -927,7 +927,7 @@ libraries:
             definitionLibraryId: null
             isTypeParameter: false
             typeParameterBound: null
-            resolvedElementId: null
+            resolvedElementId: mixin_1
           -
             id: type_36
             name: Serializable
@@ -942,7 +942,7 @@ libraries:
             definitionLibraryId: null
             isTypeParameter: false
             typeParameterBound: null
-            resolvedElementId: null
+            resolvedElementId: mixin_2
         typeParameters:
 
         constructors:
@@ -1686,7 +1686,7 @@ libraries:
             definitionLibraryId: null
             isTypeParameter: false
             typeParameterBound: null
-            resolvedElementId: null
+            resolvedElementId: class_1
         mixins:
           -
             id: type_62
@@ -1702,7 +1702,7 @@ libraries:
             definitionLibraryId: null
             isTypeParameter: false
             typeParameterBound: null
-            resolvedElementId: null
+            resolvedElementId: mixin_1
         typeParameters:
 
         constructors:
@@ -1813,7 +1813,7 @@ libraries:
                   definitionLibraryId: null
                   isTypeParameter: false
                   typeParameterBound: null
-                  resolvedElementId: null
+                  resolvedElementId: enum_2
                 isRequired: false
                 isNamed: true
                 isPositional: false
@@ -2199,7 +2199,7 @@ libraries:
               definitionLibraryId: null
               isTypeParameter: false
               typeParameterBound: null
-              resolvedElementId: null
+              resolvedElementId: enum_2
             isFinal: false
             isConst: false
             isLate: false
@@ -2634,7 +2634,7 @@ libraries:
               definitionLibraryId: null
               isTypeParameter: false
               typeParameterBound: null
-              resolvedElementId: null
+              resolvedElementId: class_5
             typeParameters:
               -
                 id: typeParam_5
@@ -3132,7 +3132,7 @@ libraries:
                   definitionLibraryId: null
                   isTypeParameter: false
                   typeParameterBound: null
-                  resolvedElementId: null
+                  resolvedElementId: enum_1
               isNullable: false
               isDynamic: false
               isVoid: false
@@ -3298,7 +3298,7 @@ libraries:
                   definitionLibraryId: null
                   isTypeParameter: false
                   typeParameterBound: null
-                  resolvedElementId: null
+                  resolvedElementId: enum_2
               isNullable: false
               isDynamic: false
               isVoid: false
@@ -4426,7 +4426,7 @@ libraries:
               definitionLibraryId: null
               isTypeParameter: false
               typeParameterBound: null
-              resolvedElementId: null
+              resolvedElementId: class_5
           isNullable: false
           isDynamic: false
           isVoid: false
@@ -4510,7 +4510,7 @@ libraries:
                 definitionLibraryId: null
                 isTypeParameter: false
                 typeParameterBound: null
-                resolvedElementId: null
+                resolvedElementId: class_1
               resolvedElementId: null
             typeParameters:
 
@@ -4605,7 +4605,7 @@ libraries:
               definitionLibraryId: null
               isTypeParameter: false
               typeParameterBound: null
-              resolvedElementId: null
+              resolvedElementId: class_1
             defaultType: null
             variance: null
     functions:
@@ -4981,7 +4981,7 @@ files:
     partOfDirective: null
     lines: 182
     contentHash: 7412f70a72dd4046753cc4cb9c89b71046df8a3a4c180a7220d6abf0be58c222
-    modified: "2026-02-05T12:00:00.000"
+    modified: "2026-02-05T13:24:42.000"
   -
     id: file_4
     path: /Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_analyzer/test/build_examples/analyzer_demo/lib/sample_code.dart
@@ -4991,7 +4991,7 @@ files:
     partOfDirective: null
     lines: 339
     contentHash: 6f6cb83a8cb749bf0ce62fd9eb08bf31f4d6ce56f455e2cb9a3a820e57896c9d
-    modified: "2026-02-05T11:59:32.000"
+    modified: "2026-02-05T13:24:42.000"
 errors:
 
 metadata:

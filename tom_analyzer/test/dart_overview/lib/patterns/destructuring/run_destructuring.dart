@@ -5,6 +5,7 @@
 /// - Assignment with patterns
 /// - For-in with patterns
 /// - Function parameters (conceptual)
+library;
 
 void main() {
   print('=== Destructuring ===');

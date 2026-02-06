@@ -6,7 +6,6 @@
 /// - Mixins
 /// - Extensions
 /// - Functions and methods
-library sample_code;
 
 // ============================================================================
 // ENUMS

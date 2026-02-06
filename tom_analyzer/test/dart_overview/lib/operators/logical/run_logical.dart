@@ -4,6 +4,7 @@
 /// - NOT (!)
 /// - AND (&&) with short-circuit evaluation
 /// - OR (||) with short-circuit evaluation
+library;
 
 // Helper functions to prevent compile-time optimization
 bool getTrue() => true;

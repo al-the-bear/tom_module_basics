@@ -4,6 +4,7 @@
 /// - assert statements
 /// - Collection if
 /// - Collection for
+library;
 
 // Helper functions to prevent compile-time optimization
 bool getBool(bool b) => b;

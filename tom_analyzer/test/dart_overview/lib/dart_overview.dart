@@ -1,7 +1,7 @@
 /// Dart Language Overview Library
 ///
 /// Exports the main demonstration runner and selected sub-modules.
-library dart_overview;
+library;
 
 // Main runner
 export 'run_dart_overview.dart';

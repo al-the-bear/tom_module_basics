@@ -9,10 +9,10 @@ environment:
 dependencies:
   dart_overview:
     path: ../../dart_overview
+  tom_analyzer:
+    path: ../../../
 
 dev_dependencies:
   build_runner: ^2.10.4
   build: ^4.0.3
-  tom_analyzer:
-    path: ../../../
   lints: ^5.0.0

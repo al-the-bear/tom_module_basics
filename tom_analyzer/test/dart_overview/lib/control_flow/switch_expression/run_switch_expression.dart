@@ -6,6 +6,7 @@
 /// - when clauses (guards)
 /// - Exhaustiveness checking
 /// - Multi-pattern cases
+library;
 
 void main() {
   print('=== Switch Expressions (Dart 3) ===');
@@ -173,7 +174,7 @@ void main() {
   print('--- Switch in Expressions ---');
   int statusCode = 200;
 
-  print('Status ${statusCode}: ${switch (statusCode) {
+  print('Status $statusCode: ${switch (statusCode) {
     200 => 'OK',
     201 => 'Created',
     400 => 'Bad Request',

@@ -7,6 +7,7 @@
 /// - final (prevent both inheritance and implementation outside library)
 /// - sealed (known set of subtypes, exhaustive switching)
 /// - mixin class (can be used as both class and mixin)
+library;
 
 void main() {
   print('=== Class Modifiers (Dart 3.0+) ===');

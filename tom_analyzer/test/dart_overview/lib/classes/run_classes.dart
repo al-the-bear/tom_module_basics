@@ -5,6 +5,7 @@
 /// - constructors
 /// - inheritance
 /// - static_object_methods
+library;
 
 import 'declarations/run_declarations.dart' as declarations;
 import 'constructors/run_constructors.dart' as constructors;

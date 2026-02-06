@@ -6,6 +6,7 @@
 /// - Type test (is)
 /// - Type cast (as)
 /// - Never type
+library;
 
 void main() {
   print('=== Type System ===\n');
@@ -40,7 +41,7 @@ void main() {
   print('runtimeType: ${obj.runtimeType}');
 
   // Object? can hold null
-  Object? nullableObj = null;
+  Object? nullableObj;
   print('Object? with null: $nullableObj');
   nullableObj = 'Not null anymore';
   print('Object? with value: $nullableObj');

@@ -6,6 +6,7 @@
 /// - anonymous_closures
 /// - higher_order
 /// - generators
+library;
 
 import 'declarations/run_declarations.dart' as declarations;
 import 'parameters/run_parameters.dart' as parameters;

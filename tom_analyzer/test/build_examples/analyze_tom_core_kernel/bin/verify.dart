@@ -1,5 +1,6 @@
 /// Verification script that reads the generated analysis YAML
 /// and prints statistics using the tom_analyzer object model.
+library;
 import 'dart:io';
 import 'package:tom_analyzer/tom_analyzer.dart';
 

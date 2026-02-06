@@ -5,7 +5,7 @@ import 'reflection_model.dart';
 class ReflectionGenerator {
   final bool includeDeprecatedMembers;
 
-  const ReflectionGenerator({this.includeDeprecatedMembers = true});
+  const ReflectionGenerator({this.includeDeprecatedMembers = false});
 
   String generate(ReflectionModel model) {
     final result = model.analysisResult;
@@ -25,14 +25,6 @@ class ReflectionGenerator {
 
     buffer.writeln('// GENERATED CODE - DO NOT MODIFY BY HAND');
     buffer.writeln('// coverage:ignore-file');
-    buffer.writeln(
-      '// ignore_for_file: depend_on_referenced_packages, implementation_imports, unnecessary_library_name');
-    if (includeDeprecatedMembers) {
-      buffer.writeln(
-          '// ignore_for_file: deprecated_member_use, unused_import, equal_keys_in_map');
-    }
-    buffer.writeln("library tom_analyzer.reflection;");
-    buffer.writeln();
     buffer.writeln("import 'package:tom_analyzer/tom_analyzer.dart' as ta;");
     for (final entry in importAliases.entries) {
       buffer.writeln("import '${entry.key}' as ${entry.value};");
@@ -1394,7 +1386,15 @@ class ReflectionGenerator {
   String _stringOrNull(String? value) =>
       value == null ? 'null' : "'${_escape(value)}'";
 
-  bool _canImport(Uri uri) => uri.scheme == 'package' || uri.scheme == 'dart';
+  bool _canImport(Uri uri) {
+    if (uri.scheme != 'package' && uri.scheme != 'dart') {
+      return false;
+    }
+    if (uri.scheme == 'package' && uri.path.contains('/src/')) {
+      return false;
+    }
+    return true;
+  }
 
   bool _shouldInclude(Element element) {
     if (includeDeprecatedMembers) {
@@ -1405,8 +1405,12 @@ class ReflectionGenerator {
 
   bool _hasDeprecatedAnnotation(List<AnnotationInfo> annotations) {
     for (final annotation in annotations) {
-      final name = annotation.name.toLowerCase();
-      if (name == 'deprecated') {
+      final rawName = annotation.name.trim().toLowerCase();
+      final normalizedName = rawName.startsWith('@')
+          ? rawName.substring(1)
+          : rawName;
+      final baseName = normalizedName.split('(').first;
+      if (baseName == 'deprecated') {
         return true;
       }
       final qualified = annotation.qualifiedName.toLowerCase();

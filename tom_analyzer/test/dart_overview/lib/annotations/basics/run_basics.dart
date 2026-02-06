@@ -7,6 +7,7 @@
 /// - Annotation targets (class, method, field, parameter)
 /// - Const values in annotations
 /// - Common annotation patterns
+library;
 
 void main() {
   print('=== Annotations ===');
@@ -159,7 +160,7 @@ class Dog extends Animal {
 
 // @deprecated example
 class LegacyClass {
-  @deprecated
+  @Deprecated('Use newMethod() instead. Removal in v2.0')
   void oldMethod() {
     print('Old method (deprecated)');
   }
@@ -189,11 +190,11 @@ class Route {
 }
 
 class Get extends Route {
-  const Get(String path) : super(path, method: 'GET');
+  const Get(super.path) : super(method: 'GET');
 }
 
 class Post extends Route {
-  const Post(String path) : super(path, method: 'POST');
+  const Post(super.path) : super(method: 'POST');
 }
 
 class JsonKey {

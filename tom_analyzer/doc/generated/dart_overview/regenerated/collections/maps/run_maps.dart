@@ -6,6 +6,7 @@
 /// - Accessing values
 /// - Map methods (update, putIfAbsent, containsKey)
 /// - Iterating maps
+library;
 
 void main() {
   print('=== Map ===');

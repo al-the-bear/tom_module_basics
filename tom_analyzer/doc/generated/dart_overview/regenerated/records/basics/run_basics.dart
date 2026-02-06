@@ -8,6 +8,7 @@
 /// - Record types
 /// - Record equality
 /// - Record destructuring
+library;
 
 void main() {
   print('=== Records ===');

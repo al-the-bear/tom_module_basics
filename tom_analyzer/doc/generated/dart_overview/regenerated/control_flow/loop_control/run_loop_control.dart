@@ -4,6 +4,7 @@
 /// - break
 /// - continue
 /// - Labels
+library;
 
 void main() {
   print('=== Loop Control Statements ===');

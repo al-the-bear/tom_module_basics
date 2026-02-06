@@ -5,6 +5,7 @@
 /// - sets
 /// - maps
 /// - iterables
+library;
 
 import 'lists/run_lists.dart' as lists;
 import 'sets/run_sets.dart' as sets;

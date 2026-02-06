@@ -6,6 +6,7 @@
 /// - Multiple type parameters
 /// - Generic methods in classes
 /// - Type inference
+library;
 
 void main() {
   print('=== Generic Classes ===');

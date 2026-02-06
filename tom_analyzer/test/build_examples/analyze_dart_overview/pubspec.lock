@@ -367,6 +367,13 @@ packages:
       relative: true
     source: path
     version: "1.0.0"
+  tom_d4rt:
+    dependency: transitive
+    description:
+      path: "../../../../../tom_module_d4rt/tom_d4rt"
+      relative: true
+    source: path
+    version: "1.6.1"
   tom_d4rt_ast:
     dependency: transitive
     description:
