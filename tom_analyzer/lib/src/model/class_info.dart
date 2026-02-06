@@ -26,6 +26,9 @@ class ClassInfo extends TypeDeclaration {
   @override
   final List<AnnotationInfo> annotations;
 
+  @override
+  final bool isDeprecated;
+
   final bool isAbstract;
   final bool isSealed;
   final bool isFinal;
@@ -51,6 +54,7 @@ class ClassInfo extends TypeDeclaration {
     required this.location,
     this.documentation,
     this.annotations = const [],
+    this.isDeprecated = false,
     this.isAbstract = false,
     this.isSealed = false,
     this.isFinal = false,

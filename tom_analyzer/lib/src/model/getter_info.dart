@@ -29,6 +29,9 @@ class GetterInfo extends ExecutableElement {
   @override
   final List<AnnotationInfo> annotations;
 
+  @override
+  final bool isDeprecated;
+
   final TypeReference returnType;
 
   @override
@@ -56,6 +59,7 @@ class GetterInfo extends ExecutableElement {
     this.owningLibrary,
     this.documentation,
     this.annotations = const [],
+    this.isDeprecated = false,
     this.parameters = const [],
     this.isAsync = false,
     this.isExternal = false,

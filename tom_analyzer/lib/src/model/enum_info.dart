@@ -26,6 +26,9 @@ class EnumInfo extends TypeDeclaration {
   @override
   final List<AnnotationInfo> annotations;
 
+  @override
+  final bool isDeprecated;
+
   final List<EnumValueInfo> values;
   final List<TypeReference> interfaces;
   final List<TypeReference> mixins;
@@ -44,6 +47,7 @@ class EnumInfo extends TypeDeclaration {
     required this.location,
     this.documentation,
     this.annotations = const [],
+    this.isDeprecated = false,
     this.values = const [],
     this.interfaces = const [],
     this.mixins = const [],

@@ -1400,7 +1400,7 @@ class ReflectionGenerator {
     if (includeDeprecatedMembers) {
       return true;
     }
-    return !_hasDeprecatedAnnotation(element.annotations);
+    return !element.isDeprecated && !_hasDeprecatedAnnotation(element.annotations);
   }
 
   bool _hasDeprecatedAnnotation(List<AnnotationInfo> annotations) {

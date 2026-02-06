@@ -26,6 +26,9 @@ class MixinInfo extends TypeDeclaration {
   @override
   final List<AnnotationInfo> annotations;
 
+  @override
+  final bool isDeprecated;
+
   final List<TypeReference> onTypes;
   final List<TypeReference> implementsTypes;
   final List<TypeParameterInfo> typeParameters;
@@ -43,6 +46,7 @@ class MixinInfo extends TypeDeclaration {
     required this.location,
     this.documentation,
     this.annotations = const [],
+    this.isDeprecated = false,
     this.onTypes = const [],
     this.implementsTypes = const [],
     this.typeParameters = const [],

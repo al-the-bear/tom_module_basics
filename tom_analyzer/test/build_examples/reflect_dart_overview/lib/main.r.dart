@@ -2,9 +2,11 @@
 // coverage:ignore-file
 import 'package:tom_analyzer/tom_analyzer.dart' as ta;
 import 'package:dart_overview/classes/declarations/run_declarations.dart' as lib0;
+import 'package:dart_overview/dart_overview.dart' as lib1;
 import 'package:dart_overview/enums/basics/run_basics.dart' as lib2;
 import 'package:dart_overview/generics/generic_classes/run_generic_classes.dart' as lib3;
 import 'package:dart_overview/run_dart_overview.dart' as lib4;
+import 'package:reflect_dart_overview/main.dart' as lib5;
 
 final _classes = <String, ta.ClassDescriptor>{
 'package:dart_overview/classes/declarations/run_declarations.dart.BankAccount': ta.ClassDescriptor(
@@ -581,7 +583,9 @@ ta.ParameterDescriptor(name: 'height',typeQualifiedName: 'dart:core.double',isRe
     declaringClassQualifiedName: null,
     typeParameters: const [],
     parameters: const [],
-    annotations: const [],
+    annotations: [
+ta.AnnotationDescriptor(name: 'override',qualifiedName: 'dart:core.override',positionalArguments: <Object?>[],namedArguments: const <String, Object?>{},)
+],
     invokeOn: (Object instance, List<dynamic> positional, Map<Symbol, dynamic> named) => Function.apply((instance as lib0.User).toString, positional, named),
     invokeStatic: null,
   ),
@@ -907,7 +911,9 @@ ta.TypeParameterDescriptor(name: 'S',boundQualifiedName: null,variance: null,)
     declaringClassQualifiedName: null,
     typeParameters: const [],
     parameters: const [],
-    annotations: const [],
+    annotations: [
+ta.AnnotationDescriptor(name: 'override',qualifiedName: 'dart:core.override',positionalArguments: <Object?>[],namedArguments: const <String, Object?>{},)
+],
     invokeOn: (Object instance, List<dynamic> positional, Map<Symbol, dynamic> named) => Function.apply((instance as lib3.Pair).toString, positional, named),
     invokeStatic: null,
   ),
@@ -1017,7 +1023,9 @@ ta.ParameterDescriptor(name: 'item',typeQualifiedName: 'T',isRequired: true,isNa
     declaringClassQualifiedName: null,
     typeParameters: const [],
     parameters: const [],
-    annotations: const [],
+    annotations: [
+ta.AnnotationDescriptor(name: 'override',qualifiedName: 'dart:core.override',positionalArguments: <Object?>[],namedArguments: const <String, Object?>{},)
+],
     invokeOn: (Object instance, List<dynamic> positional, Map<Symbol, dynamic> named) => Function.apply((instance as lib3.Queue).toString, positional, named),
     invokeStatic: null,
   ),
@@ -1233,7 +1241,9 @@ ta.ParameterDescriptor(name: 'item',typeQualifiedName: 'T',isRequired: true,isNa
     declaringClassQualifiedName: null,
     typeParameters: const [],
     parameters: const [],
-    annotations: const [],
+    annotations: [
+ta.AnnotationDescriptor(name: 'override',qualifiedName: 'dart:core.override',positionalArguments: <Object?>[],namedArguments: const <String, Object?>{},)
+],
     invokeOn: (Object instance, List<dynamic> positional, Map<Symbol, dynamic> named) => Function.apply((instance as lib3.Stack).toString, positional, named),
     invokeStatic: null,
   ),
@@ -1466,7 +1476,9 @@ final _enums = <String, ta.MemberContainerDescriptor>{
     isFinal: true,
     isConst: false,
     declaringClassQualifiedName: null,
-    annotations: const [],
+    annotations: [
+ta.AnnotationDescriptor(name: 'override',qualifiedName: 'dart:core.override',positionalArguments: <Object?>[],namedArguments: const <String, Object?>{},)
+],
     getInstance: (Object instance) => (instance as lib2.LogLevel).severity,
     setInstance: null,
     getStatic: null,
@@ -1500,7 +1512,9 @@ final _enums = <String, ta.MemberContainerDescriptor>{
 ta.ParameterDescriptor(name: 'a',typeQualifiedName: 'dart:core.double',isRequired: true,isNamed: false,isPositional: true,hasDefaultValue: false,defaultValue: null,annotations: const [],),
 ta.ParameterDescriptor(name: 'b',typeQualifiedName: 'dart:core.double',isRequired: true,isNamed: false,isPositional: true,hasDefaultValue: false,defaultValue: null,annotations: const [],)
 ],
-    annotations: const [],
+    annotations: [
+ta.AnnotationDescriptor(name: 'override',qualifiedName: 'dart:core.override',positionalArguments: <Object?>[],namedArguments: const <String, Object?>{},)
+],
     invokeOn: (Object instance, List<dynamic> positional, Map<Symbol, dynamic> named) => Function.apply((instance as lib2.Operation).execute, positional, named),
     invokeStatic: null,
   ),

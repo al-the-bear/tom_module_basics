@@ -29,6 +29,9 @@ class SetterInfo extends ExecutableElement {
   @override
   final List<AnnotationInfo> annotations;
 
+  @override
+  final bool isDeprecated;
+
   final ParameterInfo parameter;
 
   @override
@@ -56,6 +59,7 @@ class SetterInfo extends ExecutableElement {
     this.owningLibrary,
     this.documentation,
     this.annotations = const [],
+    this.isDeprecated = false,
     this.isAsync = false,
     this.isExternal = false,
     this.isStatic = false,

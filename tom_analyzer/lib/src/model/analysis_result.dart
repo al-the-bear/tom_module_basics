@@ -14,6 +14,9 @@ class AnalysisResult extends ContainerElement {
   @override
   final List<AnnotationInfo> annotations;
 
+  @override
+  final bool isDeprecated;
+
   final DateTime timestamp;
   final String dartSdkVersion;
   final String analyzerVersion;
@@ -40,6 +43,7 @@ class AnalysisResult extends ContainerElement {
     this.name = 'analysis_result',
     this.documentation,
     this.annotations = const [],
+    this.isDeprecated = false,
   });
 
   List<ClassInfo> get allClasses => libraries.values.expand((lib) => lib.classes).toList();

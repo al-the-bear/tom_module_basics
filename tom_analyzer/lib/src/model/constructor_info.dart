@@ -29,6 +29,9 @@ class ConstructorInfo extends ExecutableElement {
   final List<AnnotationInfo> annotations;
 
   @override
+  final bool isDeprecated;
+
+  @override
   final List<ParameterInfo> parameters;
 
   @override
@@ -54,6 +57,7 @@ class ConstructorInfo extends ExecutableElement {
     required this.location,
     this.documentation,
     this.annotations = const [],
+    this.isDeprecated = false,
     this.parameters = const [],
     this.isAsync = false,
     this.isExternal = false,

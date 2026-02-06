@@ -29,6 +29,9 @@ class VariableInfo extends VariableElement {
   final List<AnnotationInfo> annotations;
 
   @override
+  final bool isDeprecated;
+
+  @override
   final TypeReference type;
 
   @override
@@ -61,6 +64,7 @@ class VariableInfo extends VariableElement {
     required this.type,
     this.documentation,
     this.annotations = const [],
+    this.isDeprecated = false,
     this.isFinal = false,
     this.isConst = false,
     this.isLate = false,

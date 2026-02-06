@@ -336,7 +336,9 @@ ta.ParameterDescriptor(name: '_value',typeQualifiedName: 'T?',isRequired: true,i
     declaringClassQualifiedName: null,
     typeParameters: const [],
     parameters: const [],
-    annotations: const [],
+    annotations: [
+ta.AnnotationDescriptor(name: 'override',qualifiedName: 'dart:core.override',positionalArguments: <Object?>[],namedArguments: const <String, Object?>{},)
+],
     invokeOn: (Object instance, List<dynamic> positional, Map<Symbol, dynamic> named) => Function.apply((instance as lib0.Task).validate, positional, named),
     invokeStatic: null,
   ),
@@ -350,7 +352,9 @@ ta.ParameterDescriptor(name: '_value',typeQualifiedName: 'T?',isRequired: true,i
     isFinal: true,
     isConst: false,
     declaringClassQualifiedName: null,
-    annotations: const [],
+    annotations: [
+ta.AnnotationDescriptor(name: 'override',qualifiedName: 'dart:core.override',positionalArguments: <Object?>[],namedArguments: const <String, Object?>{},)
+],
     getInstance: (Object instance) => (instance as lib0.Task).id,
     setInstance: null,
     getStatic: null,
@@ -363,7 +367,9 @@ ta.ParameterDescriptor(name: '_value',typeQualifiedName: 'T?',isRequired: true,i
     isFinal: true,
     isConst: false,
     declaringClassQualifiedName: null,
-    annotations: const [],
+    annotations: [
+ta.AnnotationDescriptor(name: 'override',qualifiedName: 'dart:core.override',positionalArguments: <Object?>[],namedArguments: const <String, Object?>{},)
+],
     getInstance: (Object instance) => (instance as lib0.Task).createdAt,
     setInstance: null,
     getStatic: null,
@@ -376,7 +382,9 @@ ta.ParameterDescriptor(name: '_value',typeQualifiedName: 'T?',isRequired: true,i
     isFinal: false,
     isConst: false,
     declaringClassQualifiedName: null,
-    annotations: const [],
+    annotations: [
+ta.AnnotationDescriptor(name: 'override',qualifiedName: 'dart:core.override',positionalArguments: <Object?>[],namedArguments: const <String, Object?>{},)
+],
     getInstance: (Object instance) => (instance as lib0.Task).updatedAt,
     setInstance: (Object instance, Object? value) { (instance as lib0.Task).updatedAt = value as dynamic; return null; },
     getStatic: null,
@@ -555,7 +563,9 @@ ta.ParameterDescriptor(name: 'role',typeQualifiedName: 'dart:core.String',isRequ
     declaringClassQualifiedName: null,
     typeParameters: const [],
     parameters: const [],
-    annotations: const [],
+    annotations: [
+ta.AnnotationDescriptor(name: 'override',qualifiedName: 'dart:core.override',positionalArguments: <Object?>[],namedArguments: const <String, Object?>{},)
+],
     invokeOn: (Object instance, List<dynamic> positional, Map<Symbol, dynamic> named) => Function.apply((instance as lib0.User).validate, positional, named),
     invokeStatic: null,
   ),
@@ -568,7 +578,9 @@ ta.ParameterDescriptor(name: 'role',typeQualifiedName: 'dart:core.String',isRequ
     declaringClassQualifiedName: null,
     typeParameters: const [],
     parameters: const [],
-    annotations: const [],
+    annotations: [
+ta.AnnotationDescriptor(name: 'override',qualifiedName: 'dart:core.override',positionalArguments: <Object?>[],namedArguments: const <String, Object?>{},)
+],
     invokeOn: (Object instance, List<dynamic> positional, Map<Symbol, dynamic> named) => Function.apply((instance as lib0.User).toJson, positional, named),
     invokeStatic: null,
   ),
@@ -582,7 +594,9 @@ ta.ParameterDescriptor(name: 'role',typeQualifiedName: 'dart:core.String',isRequ
     isFinal: true,
     isConst: false,
     declaringClassQualifiedName: null,
-    annotations: const [],
+    annotations: [
+ta.AnnotationDescriptor(name: 'override',qualifiedName: 'dart:core.override',positionalArguments: <Object?>[],namedArguments: const <String, Object?>{},)
+],
     getInstance: (Object instance) => (instance as lib0.User).id,
     setInstance: null,
     getStatic: null,
@@ -595,7 +609,9 @@ ta.ParameterDescriptor(name: 'role',typeQualifiedName: 'dart:core.String',isRequ
     isFinal: true,
     isConst: false,
     declaringClassQualifiedName: null,
-    annotations: const [],
+    annotations: [
+ta.AnnotationDescriptor(name: 'override',qualifiedName: 'dart:core.override',positionalArguments: <Object?>[],namedArguments: const <String, Object?>{},)
+],
     getInstance: (Object instance) => (instance as lib0.User).createdAt,
     setInstance: null,
     getStatic: null,
@@ -608,7 +624,9 @@ ta.ParameterDescriptor(name: 'role',typeQualifiedName: 'dart:core.String',isRequ
     isFinal: false,
     isConst: false,
     declaringClassQualifiedName: null,
-    annotations: const [],
+    annotations: [
+ta.AnnotationDescriptor(name: 'override',qualifiedName: 'dart:core.override',positionalArguments: <Object?>[],namedArguments: const <String, Object?>{},)
+],
     getInstance: (Object instance) => (instance as lib0.User).updatedAt,
     setInstance: (Object instance, Object? value) { (instance as lib0.User).updatedAt = value as dynamic; return null; },
     getStatic: null,

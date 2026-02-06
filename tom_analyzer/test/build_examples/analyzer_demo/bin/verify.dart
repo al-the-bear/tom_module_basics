@@ -1,5 +1,7 @@
 /// Verification script that reads the generated analysis YAML
 /// and prints statistics to prove the analyzer ran correctly.
+library;
+
 import 'dart:io';
 import 'package:yaml/yaml.dart';
 

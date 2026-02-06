@@ -1,6 +1,11 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
 import 'package:tom_analyzer/tom_analyzer.dart' as ta;
+import 'package:analyze_tom_core_kernel/main.dart' as lib0;
+import 'package:tom_basics/tom_basics.dart' as lib1;
+import 'package:tom_core_kernel/tom_core_kernel.dart' as lib2;
+import 'package:tom_crypto/tom_crypto.dart' as lib3;
+import 'package:tom_reflection/generated.dart' as lib4;
 import 'package:tom_reflection/tom_reflection.dart' as lib5;
 
 final _classes = <String, ta.ClassDescriptor>{
@@ -29,7 +34,9 @@ final _classes = <String, ta.ClassDescriptor>{
     parameters: [
 ta.ParameterDescriptor(name: 'reflectee',typeQualifiedName: 'dart:core.Object',isRequired: true,isNamed: false,isPositional: true,hasDefaultValue: false,defaultValue: null,annotations: const [],)
 ],
-    annotations: const [],
+    annotations: [
+ta.AnnotationDescriptor(name: 'override',qualifiedName: 'dart:core.override',positionalArguments: <Object?>[],namedArguments: const <String, Object?>{},)
+],
     invokeOn: (Object instance, List<dynamic> positional, Map<Symbol, dynamic> named) => Function.apply((instance as lib5.Reflection).canReflect, positional, named),
     invokeStatic: null,
   ),
@@ -44,7 +51,9 @@ ta.ParameterDescriptor(name: 'reflectee',typeQualifiedName: 'dart:core.Object',i
     parameters: [
 ta.ParameterDescriptor(name: 'reflectee',typeQualifiedName: 'dart:core.Object',isRequired: true,isNamed: false,isPositional: true,hasDefaultValue: false,defaultValue: null,annotations: const [],)
 ],
-    annotations: const [],
+    annotations: [
+ta.AnnotationDescriptor(name: 'override',qualifiedName: 'dart:core.override',positionalArguments: <Object?>[],namedArguments: const <String, Object?>{},)
+],
     invokeOn: (Object instance, List<dynamic> positional, Map<Symbol, dynamic> named) => Function.apply((instance as lib5.Reflection).reflect, positional, named),
     invokeStatic: null,
   ),
@@ -59,7 +68,9 @@ ta.ParameterDescriptor(name: 'reflectee',typeQualifiedName: 'dart:core.Object',i
     parameters: [
 ta.ParameterDescriptor(name: 'type',typeQualifiedName: 'dart:core.Type',isRequired: true,isNamed: false,isPositional: true,hasDefaultValue: false,defaultValue: null,annotations: const [],)
 ],
-    annotations: const [],
+    annotations: [
+ta.AnnotationDescriptor(name: 'override',qualifiedName: 'dart:core.override',positionalArguments: <Object?>[],namedArguments: const <String, Object?>{},)
+],
     invokeOn: (Object instance, List<dynamic> positional, Map<Symbol, dynamic> named) => Function.apply((instance as lib5.Reflection).canReflectType, positional, named),
     invokeStatic: null,
   ),
@@ -74,7 +85,9 @@ ta.ParameterDescriptor(name: 'type',typeQualifiedName: 'dart:core.Type',isRequir
     parameters: [
 ta.ParameterDescriptor(name: 'type',typeQualifiedName: 'dart:core.Type',isRequired: true,isNamed: false,isPositional: true,hasDefaultValue: false,defaultValue: null,annotations: const [],)
 ],
-    annotations: const [],
+    annotations: [
+ta.AnnotationDescriptor(name: 'override',qualifiedName: 'dart:core.override',positionalArguments: <Object?>[],namedArguments: const <String, Object?>{},)
+],
     invokeOn: (Object instance, List<dynamic> positional, Map<Symbol, dynamic> named) => Function.apply((instance as lib5.Reflection).reflectType, positional, named),
     invokeStatic: null,
   ),
@@ -89,7 +102,9 @@ ta.ParameterDescriptor(name: 'type',typeQualifiedName: 'dart:core.Type',isRequir
     parameters: [
 ta.ParameterDescriptor(name: 'libraryName',typeQualifiedName: 'dart:core.String',isRequired: true,isNamed: false,isPositional: true,hasDefaultValue: false,defaultValue: null,annotations: const [],)
 ],
-    annotations: const [],
+    annotations: [
+ta.AnnotationDescriptor(name: 'override',qualifiedName: 'dart:core.override',positionalArguments: <Object?>[],namedArguments: const <String, Object?>{},)
+],
     invokeOn: (Object instance, List<dynamic> positional, Map<Symbol, dynamic> named) => Function.apply((instance as lib5.Reflection).findLibrary, positional, named),
     invokeStatic: null,
   ),

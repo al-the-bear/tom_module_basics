@@ -6,6 +6,7 @@ sealed class Element {
   String get name;
   String? get documentation;
   List<AnnotationInfo> get annotations;
+  bool get isDeprecated;
 
   bool hasAnnotation(String annotationName) {
     return annotations.any((annotation) => annotation.name == annotationName);

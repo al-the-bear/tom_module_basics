@@ -29,6 +29,9 @@ class MethodInfo extends ExecutableElement {
   @override
   final List<AnnotationInfo> annotations;
 
+  @override
+  final bool isDeprecated;
+
   final TypeReference returnType;
   final List<TypeParameterInfo> typeParameters;
 
@@ -60,6 +63,7 @@ class MethodInfo extends ExecutableElement {
     this.owningLibrary,
     this.documentation,
     this.annotations = const [],
+    this.isDeprecated = false,
     this.typeParameters = const [],
     this.parameters = const [],
     this.isAsync = false,

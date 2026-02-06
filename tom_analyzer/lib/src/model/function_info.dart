@@ -26,6 +26,9 @@ class FunctionInfo extends ExecutableElement {
   @override
   final List<AnnotationInfo> annotations;
 
+  @override
+  final bool isDeprecated;
+
   final TypeReference returnType;
   final List<TypeParameterInfo> typeParameters;
 
@@ -53,6 +56,7 @@ class FunctionInfo extends ExecutableElement {
     required this.returnType,
     this.documentation,
     this.annotations = const [],
+    this.isDeprecated = false,
     this.typeParameters = const [],
     this.parameters = const [],
     this.isAsync = false,

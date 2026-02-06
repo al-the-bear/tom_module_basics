@@ -14,6 +14,9 @@ class LibraryInfo extends ContainerElement {
   @override
   final List<AnnotationInfo> annotations;
 
+  @override
+  final bool isDeprecated;
+
   final Uri uri;
   final PackageInfo package;
   final FileInfo mainSourceFile;
@@ -39,6 +42,7 @@ class LibraryInfo extends ContainerElement {
     required this.mainSourceFile,
     this.documentation,
     this.annotations = const [],
+    this.isDeprecated = false,
     this.partFiles = const [],
     this.classes = const [],
     this.enums = const [],

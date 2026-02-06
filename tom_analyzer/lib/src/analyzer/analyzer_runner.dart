@@ -1,5 +1,3 @@
-// ignore_for_file: deprecated_member_use
-
 import 'dart:io';
 
 import 'package:analyzer/dart/analysis/analysis_context.dart' as analysis_context;
@@ -11,11 +9,14 @@ import 'package:path/path.dart' as p;
 import 'package:yaml/yaml.dart';
 
 import 'analyzer_context_builder.dart';
+import 'annotation_parser.dart';
 import '../model/model.dart';
 import '../serialization/id_generator.dart';
 
 /// Runs analyzer-based extraction of model information.
 class TomAnalyzer {
+  final AnnotationParser _annotationParser = AnnotationParser();
+
   Future<AnalysisResult> analyzeBarrel({
     required String barrelPath,
     String? workspaceRoot,
@@ -275,6 +276,9 @@ class TomAnalyzer {
       uri: uri,
       package: packageInfo,
       mainSourceFile: mainFileInfo,
+      documentation: libraryElement.documentationComment,
+      annotations: _annotationParser.parseAll(libraryElement.metadata.annotations),
+      isDeprecated: libraryElement.metadata.hasDeprecated,
       partFiles: partFiles,
       classes: [],
       enums: [],
@@ -368,6 +372,8 @@ class TomAnalyzer {
       sourceFile: libraryInfo.mainSourceFile,
       location: _location(element),
       documentation: element.documentationComment,
+      annotations: _annotationParser.parseAll(element.metadata.annotations),
+      isDeprecated: element.metadata.hasDeprecated,
       isAbstract: element.isAbstract,
       isSealed: element.isSealed,
       isFinal: element.isFinal,
@@ -411,6 +417,8 @@ class TomAnalyzer {
       sourceFile: libraryInfo.mainSourceFile,
       location: _location(element),
       documentation: element.documentationComment,
+      annotations: _annotationParser.parseAll(element.metadata.annotations),
+      isDeprecated: element.metadata.hasDeprecated,
       values: [],
       interfaces: element.interfaces.map((t) => _typeRef(t, registry)).toList(),
       mixins: element.mixins.map((t) => _typeRef(t, registry)).toList(),
@@ -429,6 +437,7 @@ class TomAnalyzer {
           parentEnum: enumInfo,
           index: enumInfo.values.length,
           documentation: value.documentationComment,
+          annotations: _annotationParser.parseAll(value.metadata.annotations),
         ),
       );
     }
@@ -461,6 +470,8 @@ class TomAnalyzer {
       sourceFile: libraryInfo.mainSourceFile,
       location: _location(element),
       documentation: element.documentationComment,
+      annotations: _annotationParser.parseAll(element.metadata.annotations),
+      isDeprecated: element.metadata.hasDeprecated,
       onTypes: element.superclassConstraints.map((t) => _typeRef(t, registry)).toList(),
       implementsTypes: element.interfaces.map((t) => _typeRef(t, registry)).toList(),
       typeParameters: element.typeParameters.map((t) => _typeParameter(t, registry)).toList(),
@@ -486,6 +497,8 @@ class TomAnalyzer {
       sourceFile: libraryInfo.mainSourceFile,
       location: _location(element),
       documentation: element.documentationComment,
+      annotations: _annotationParser.parseAll(element.metadata.annotations),
+      isDeprecated: element.metadata.hasDeprecated,
       extendedType: _typeRef(element.extendedType, registry),
       typeParameters: element.typeParameters.map((t) => _typeParameter(t, registry)).toList(),
       methods: [],
@@ -510,6 +523,8 @@ class TomAnalyzer {
       sourceFile: libraryInfo.mainSourceFile,
       location: _location(element),
       documentation: element.documentationComment,
+      annotations: _annotationParser.parseAll(element.metadata.annotations),
+      isDeprecated: element.metadata.hasDeprecated,
       representationType: _typeRef(element.representation.type, registry),
       typeParameters: element.typeParameters.map((t) => _typeParameter(t, registry)).toList(),
       methods: [],
@@ -539,6 +554,8 @@ class TomAnalyzer {
       sourceFile: libraryInfo.mainSourceFile,
       location: _location(element),
       documentation: element.documentationComment,
+      annotations: _annotationParser.parseAll(element.metadata.annotations),
+      isDeprecated: element.metadata.hasDeprecated,
       aliasedType: _typeRef(element.aliasedType, registry),
       typeParameters: element.typeParameters.map((t) => _typeParameter(t, registry)).toList(),
     );
@@ -553,6 +570,8 @@ class TomAnalyzer {
       sourceFile: libraryInfo.mainSourceFile,
       location: _location(element),
       documentation: element.documentationComment,
+      annotations: _annotationParser.parseAll(element.metadata.annotations),
+      isDeprecated: element.metadata.hasDeprecated,
       returnType: _typeRef(element.returnType, registry),
       typeParameters: element.typeParameters.map((t) => _typeParameter(t, registry)).toList(),
       parameters: element.formalParameters.map((p) => _mapParameter(p, registry)).toList(),
@@ -568,6 +587,9 @@ class TomAnalyzer {
     LibraryInfo libraryInfo,
     _ModelRegistry registry,
   ) {
+    final isDeprecated = element.metadata.hasDeprecated ||
+        (element.getter?.metadata.hasDeprecated ?? false) ||
+        (element.setter?.metadata.hasDeprecated ?? false);
     return VariableInfo(
       id: registry.idGen.nextId('variable'),
       name: element.displayName,
@@ -576,6 +598,8 @@ class TomAnalyzer {
       sourceFile: libraryInfo.mainSourceFile,
       location: _location(element),
       documentation: element.documentationComment,
+      annotations: _annotationParser.parseAll(element.metadata.annotations),
+      isDeprecated: isDeprecated,
       type: _typeRef(element.type, registry),
       isFinal: element.isFinal,
       isConst: element.isConst,
@@ -596,6 +620,9 @@ class TomAnalyzer {
     if (ownerLibrary == null) {
       throw StateError('Field without owning library');
     }
+    final isDeprecated = element.metadata.hasDeprecated ||
+        (element.getter?.metadata.hasDeprecated ?? false) ||
+        (element.setter?.metadata.hasDeprecated ?? false);
     return FieldInfo(
       id: registry.idGen.nextId('field'),
       name: element.displayName,
@@ -605,6 +632,8 @@ class TomAnalyzer {
       sourceFile: ownerLibrary.mainSourceFile,
       location: _location(element),
       documentation: element.documentationComment,
+      annotations: _annotationParser.parseAll(element.metadata.annotations),
+      isDeprecated: isDeprecated,
       type: _typeRef(element.type, registry),
       isFinal: element.isFinal,
       isConst: element.isConst,
@@ -637,6 +666,8 @@ class TomAnalyzer {
       sourceFile: declaringType?.sourceFile ?? ownerLibrary.mainSourceFile,
       location: _location(element),
       documentation: element.documentationComment,
+      annotations: _annotationParser.parseAll(element.metadata.annotations),
+      isDeprecated: element.metadata.hasDeprecated,
       returnType: _typeRef(element.returnType, registry),
       typeParameters: element.typeParameters.map((t) => _typeParameter(t, registry)).toList(),
       parameters: element.formalParameters.map((p) => _mapParameter(p, registry)).toList(),
@@ -664,6 +695,8 @@ class TomAnalyzer {
       sourceFile: libraryInfo.mainSourceFile,
       location: _location(element),
       documentation: element.documentationComment,
+      annotations: _annotationParser.parseAll(element.metadata.annotations),
+      isDeprecated: element.metadata.hasDeprecated,
       returnType: _typeRef(element.returnType, registry),
       isAsync: false,
       isExternal: element.isExternal,
@@ -699,6 +732,8 @@ class TomAnalyzer {
       sourceFile: libraryInfo.mainSourceFile,
       location: _location(element),
       documentation: element.documentationComment,
+      annotations: _annotationParser.parseAll(element.metadata.annotations),
+      isDeprecated: element.metadata.hasDeprecated,
       parameter: parameter,
       isAsync: false,
       isExternal: element.isExternal,
@@ -726,6 +761,8 @@ class TomAnalyzer {
       sourceFile: ownerType.sourceFile,
       location: _location(element),
       documentation: element.documentationComment,
+      annotations: _annotationParser.parseAll(element.metadata.annotations),
+      isDeprecated: element.metadata.hasDeprecated,
       parameters: element.formalParameters.map((p) => _mapParameter(p, registry)).toList(),
       isExternal: element.isExternal,
       isConst: element.isConst,
@@ -745,6 +782,8 @@ class TomAnalyzer {
       isPositional: element.isPositional,
       hasDefaultValue: element.hasDefaultValue,
       defaultValue: element.defaultValueCode,
+      documentation: element.documentationComment,
+      annotations: _annotationParser.parseAll(element.metadata.annotations),
     );
   }
 

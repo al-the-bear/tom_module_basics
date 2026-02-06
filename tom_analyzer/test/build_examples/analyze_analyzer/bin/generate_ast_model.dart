@@ -80,6 +80,7 @@ class AstModelGenerator {
   final IncludeMode includeMode;
   final Map<String, ClassData> _classMap = {};
   final Set<String> _knownTypes = {};
+  final Set<String> _deprecatedTypes = {};
   final Set<String> _exportedClassNames = {};
 
   // Core Dart types that don't need stubs
@@ -168,7 +169,11 @@ class AstModelGenerator {
         final clsMap = cls as YamlMap;
         final classData = ClassData.fromYaml(clsMap, uri);
         _classMap[classData.qualifiedName] = classData;
-        _knownTypes.add(classData.name);
+        if (classData.isDeprecated) {
+          _deprecatedTypes.add(classData.name);
+        } else {
+          _knownTypes.add(classData.name);
+        }
       }
     }
   }
@@ -182,6 +187,7 @@ class AstModelGenerator {
 
     for (final cls in _classMap.values) {
       // Only include abstract/interface classes (the public API)
+      if (cls.isDeprecated) continue;
       if (!cls.isAbstract && !cls.isInterface && !cls.isSealed) continue;
       allClasses.add(cls);
     }
@@ -212,7 +218,6 @@ class AstModelGenerator {
     buffer.writeln(
       '// ignore_for_file: non_constant_identifier_names, dangling_library_doc_comments',
     );
-    buffer.writeln('// ignore_for_file: deprecated_member_use');
     buffer.writeln('// ignore_for_file: one_member_abstracts');
     buffer.writeln('// ignore_for_file: invalid_override, inconsistent_inheritance');
     buffer.writeln('// ignore_for_file: duplicate_definition');
@@ -271,7 +276,6 @@ class AstModelGenerator {
     buffer.writeln('// Generated stub types for external dependencies');
     buffer.writeln('// ignore_for_file: unused_element, camel_case_types, one_member_abstracts');
     buffer.writeln('// ignore_for_file: duplicate_definition, constant_identifier_names');
-    buffer.writeln('// ignore_for_file: deprecated_member_use');
     buffer.writeln();
 
     // Token is always needed and never generated
@@ -555,6 +559,7 @@ abstract class Name {
 
     // Generate abstract getters for fields (properties)
     for (final field in cls.fields) {
+      if (field.isDeprecated) continue;
       if (field.isStatic) continue; // Skip static fields
       final typeName = _simplifyTypeName(field.type);
       if (!_isValidType(typeName)) continue;
@@ -567,6 +572,7 @@ abstract class Name {
 
     // Generate abstract method signatures
     for (final method in cls.methods) {
+      if (method.isDeprecated) continue;
       if (method.isStatic) continue; // Skip static methods
 
       final returnType = _simplifyTypeName(method.returnType);
@@ -647,6 +653,9 @@ abstract class Name {
   bool _isKnownType(String typeName) {
     // Remove generic parameters and nullability
     final baseName = typeName.replaceAll(RegExp(r'<.*>|\?'), '');
+    if (_deprecatedTypes.contains(baseName)) {
+      return false;
+    }
     return _knownTypes.contains(baseName) ||
         _coreTypes.contains(baseName) ||
         _stubTypes.contains(baseName);
@@ -781,6 +790,7 @@ class ClassData {
   final String qualifiedName;
   final String libraryUri;
   final String? documentation;
+  final bool isDeprecated;
   final bool isAbstract;
   final bool isSealed;
   final bool isFinal;
@@ -799,6 +809,7 @@ class ClassData {
     required this.qualifiedName,
     required this.libraryUri,
     this.documentation,
+    this.isDeprecated = false,
     this.isAbstract = false,
     this.isSealed = false,
     this.isFinal = false,
@@ -822,6 +833,7 @@ class ClassData {
       qualifiedName: yaml['qualifiedName'] as String? ?? '',
       libraryUri: libraryUri,
       documentation: yaml['documentation'] as String?,
+      isDeprecated: yaml['isDeprecated'] as bool? ?? false,
       isAbstract: yaml['isAbstract'] as bool? ?? false,
       isSealed: yaml['isSealed'] as bool? ?? false,
       isFinal: yaml['isFinal'] as bool? ?? false,
@@ -850,6 +862,7 @@ class TypeParamData {
 class FieldData {
   final String name;
   final String type;
+  final bool isDeprecated;
   final bool isStatic;
   final bool isFinal;
   final bool isConst;
@@ -859,6 +872,7 @@ class FieldData {
   FieldData({
     required this.name,
     required this.type,
+    this.isDeprecated = false,
     this.isStatic = false,
     this.isFinal = false,
     this.isConst = false,
@@ -871,6 +885,7 @@ class FieldData {
 class MethodData {
   final String name;
   final String returnType;
+  final bool isDeprecated;
   final bool isStatic;
   final bool isAbstract;
   final bool isOperator;
@@ -880,6 +895,7 @@ class MethodData {
   MethodData({
     required this.name,
     required this.returnType,
+    this.isDeprecated = false,
     this.isStatic = false,
     this.isAbstract = false,
     this.isOperator = false,
@@ -941,13 +957,14 @@ List<FieldData> _parseFields(dynamic yaml) {
     return FieldData(
       name: fieldMap['name'] as String? ?? '',
       type: typeMap?['qualifiedName'] as String? ?? 'dynamic',
+      isDeprecated: fieldMap['isDeprecated'] as bool? ?? false,
       isStatic: fieldMap['isStatic'] as bool? ?? false,
       isFinal: fieldMap['isFinal'] as bool? ?? false,
       isConst: fieldMap['isConst'] as bool? ?? false,
       isLate: fieldMap['isLate'] as bool? ?? false,
       hasInitializer: fieldMap['hasInitializer'] as bool? ?? false,
     );
-  }).toList();
+  }).where((field) => !field.isDeprecated).toList();
 }
 
 List<MethodData> _parseMethods(dynamic yaml) {
@@ -959,13 +976,14 @@ List<MethodData> _parseMethods(dynamic yaml) {
     return MethodData(
       name: methodMap['name'] as String? ?? '',
       returnType: returnTypeMap?['qualifiedName'] as String? ?? 'void',
+      isDeprecated: methodMap['isDeprecated'] as bool? ?? false,
       isStatic: methodMap['isStatic'] as bool? ?? false,
       isAbstract: methodMap['isAbstract'] as bool? ?? false,
       isOperator: methodMap['isOperator'] as bool? ?? false,
       typeParameters: _parseTypeParams(methodMap['typeParameters']),
       parameters: _parseParameters(methodMap['parameters']),
     );
-  }).toList();
+  }).where((method) => !method.isDeprecated).toList();
 }
 
 List<ParameterData> _parseParameters(dynamic yaml) {

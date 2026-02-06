@@ -26,6 +26,9 @@ class TypeAliasInfo extends TypeDeclaration {
   @override
   final List<AnnotationInfo> annotations;
 
+  @override
+  final bool isDeprecated;
+
   final TypeReference aliasedType;
   final List<TypeParameterInfo> typeParameters;
 
@@ -39,6 +42,7 @@ class TypeAliasInfo extends TypeDeclaration {
     required this.aliasedType,
     this.documentation,
     this.annotations = const [],
+    this.isDeprecated = false,
     this.typeParameters = const [],
   });
 }

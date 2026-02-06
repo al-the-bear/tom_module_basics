@@ -1,5 +1,5 @@
 id: analysis_1
-timestamp: "2026-02-06T08:27:28.045739"
+timestamp: "2026-02-06T09:03:06.376451"
 dartSdkVersion: unknown
 analyzerVersion: 8.x
 schemaVersion: "1.0"
@@ -41,9 +41,12 @@ libraries:
     mainSourceFileId: file_2
     partFileIds:
 
-    documentation: null
+    documentation: |
+      /// Verification script that uses the generated reflection API
+      /// to print statistics about the analyzed code.
     annotations:
 
+    isDeprecated: false
     classes:
 
     enums:
@@ -66,11 +69,12 @@ libraries:
         location:
           line: 0
           column: 0
-          offset: 170
+          offset: 179
           length: 4
         documentation: null
         annotations:
 
+        isDeprecated: false
         returnType:
           id: type_1
           name: void
@@ -111,9 +115,14 @@ libraries:
     mainSourceFileId: file_4
     partFileIds:
 
-    documentation: null
+    documentation: |
+      /// Reflection target for dart_overview
+      ///
+      /// This file imports the dart_overview library and serves as the 
+      /// entry point for reflection code generation.
     annotations:
 
+    isDeprecated: false
     classes:
 
     enums:
@@ -139,15 +148,19 @@ libraries:
     exports:
   -
     id: lib_5
-    name: dart_overview
+    name: ""
     uri: "package:dart_overview/dart_overview.dart"
     packageId: pkg_2
     mainSourceFileId: file_6
     partFileIds:
 
-    documentation: null
+    documentation: |
+      /// Dart Language Overview Library
+      ///
+      /// Exports the main demonstration runner and selected sub-modules.
     annotations:
 
+    isDeprecated: false
     classes:
 
     enums:
@@ -179,9 +192,19 @@ libraries:
     mainSourceFileId: file_8
     partFileIds:
 
-    documentation: null
+    documentation: |
+      /// Demonstrates Dart enums
+      ///
+      /// Features covered:
+      /// - Simple enums
+      /// - Enhanced enums (with fields, constructors, methods)
+      /// - Enum properties (name, index, values)
+      /// - Implementing interfaces
+      /// - Using mixins
+      /// - Pattern matching with enums
     annotations:
 
+    isDeprecated: false
     classes:
       -
         id: class_1
@@ -192,11 +215,12 @@ libraries:
         location:
           line: 0
           column: 0
-          offset: 4860
+          offset: 4869
           length: 13
         documentation: null
         annotations:
 
+        isDeprecated: false
         isAbstract: true
         isSealed: false
         isFinal: false
@@ -239,6 +263,7 @@ libraries:
             documentation: null
             annotations:
 
+            isDeprecated: false
             parameters:
 
             isAsync: false
@@ -259,11 +284,12 @@ libraries:
             location:
               line: 0
               column: 0
-              offset: 4885
+              offset: 4894
               length: 7
             documentation: null
             annotations:
 
+            isDeprecated: false
             returnType:
               id: type_3
               name: double
@@ -353,11 +379,12 @@ libraries:
         location:
           line: 0
           column: 0
-          offset: 3947
+          offset: 3956
           length: 3
         documentation: null
         annotations:
 
+        isDeprecated: false
         values:
           -
             id: enumValue_1
@@ -428,6 +455,7 @@ libraries:
             documentation: null
             annotations:
 
+            isDeprecated: false
             type:
               id: type_6
               name: List
@@ -485,6 +513,7 @@ libraries:
             documentation: null
             annotations:
 
+            isDeprecated: false
             parameters:
 
             isAsync: false
@@ -503,11 +532,12 @@ libraries:
         location:
           line: 0
           column: 0
-          offset: 4068
+          offset: 4077
           length: 6
         documentation: null
         annotations:
 
+        isDeprecated: false
         values:
           -
             id: enumValue_8
@@ -557,6 +587,7 @@ libraries:
             documentation: null
             annotations:
 
+            isDeprecated: false
             type:
               id: type_8
               name: List
@@ -603,11 +634,12 @@ libraries:
             location:
               line: 0
               column: 0
-              offset: 4284
+              offset: 4293
               length: 6
             documentation: null
             annotations:
 
+            isDeprecated: false
             type:
               id: type_10
               name: List
@@ -654,11 +686,12 @@ libraries:
             location:
               line: 0
               column: 0
-              offset: 4304
+              offset: 4313
               length: 14
             documentation: null
             annotations:
 
+            isDeprecated: false
             type:
               id: type_12
               name: int
@@ -702,6 +735,7 @@ libraries:
             documentation: null
             annotations:
 
+            isDeprecated: false
             parameters:
               -
                 id: param_3
@@ -783,11 +817,12 @@ libraries:
         location:
           line: 0
           column: 0
-          offset: 4424
+          offset: 4433
           length: 10
         documentation: null
         annotations:
 
+        isDeprecated: false
         values:
           -
             id: enumValue_12
@@ -851,6 +886,7 @@ libraries:
             documentation: null
             annotations:
 
+            isDeprecated: false
             type:
               id: type_16
               name: List
@@ -897,11 +933,12 @@ libraries:
             location:
               line: 0
               column: 0
-              offset: 4648
+              offset: 4657
               length: 4
             documentation: null
             annotations:
 
+            isDeprecated: false
             type:
               id: type_18
               name: int
@@ -934,11 +971,12 @@ libraries:
             location:
               line: 0
               column: 0
-              offset: 4669
+              offset: 4678
               length: 7
             documentation: null
             annotations:
 
+            isDeprecated: false
             type:
               id: type_19
               name: String
@@ -976,6 +1014,7 @@ libraries:
             documentation: null
             annotations:
 
+            isDeprecated: false
             type:
               id: type_20
               name: bool
@@ -1013,6 +1052,7 @@ libraries:
             documentation: null
             annotations:
 
+            isDeprecated: false
             type:
               id: type_21
               name: bool
@@ -1056,6 +1096,7 @@ libraries:
             documentation: null
             annotations:
 
+            isDeprecated: false
             parameters:
               -
                 id: param_5
@@ -1123,11 +1164,12 @@ libraries:
         location:
           line: 0
           column: 0
-          offset: 4922
+          offset: 4931
           length: 9
         documentation: null
         annotations:
 
+        isDeprecated: false
         values:
           -
             id: enumValue_18
@@ -1191,6 +1233,7 @@ libraries:
             documentation: null
             annotations:
 
+            isDeprecated: false
             type:
               id: type_28
               name: List
@@ -1237,11 +1280,12 @@ libraries:
             location:
               line: 0
               column: 0
-              offset: 5036
+              offset: 5045
               length: 6
             documentation: null
             annotations:
 
+            isDeprecated: false
             type:
               id: type_30
               name: String
@@ -1275,11 +1319,18 @@ libraries:
             location:
               line: 0
               column: 0
-              offset: 5099
+              offset: 5108
               length: 7
             documentation: null
             annotations:
+              -
+                name: override
+                qualifiedName: "dart:core.override"
+                constructorName: null
+                namedArguments:
 
+                positionalArguments:
+            isDeprecated: false
             returnType:
               id: type_25
               name: double
@@ -1373,6 +1424,7 @@ libraries:
             documentation: null
             annotations:
 
+            isDeprecated: false
             parameters:
               -
                 id: param_9
@@ -1415,11 +1467,12 @@ libraries:
         location:
           line: 0
           column: 0
-          offset: 5457
+          offset: 5466
           length: 8
         documentation: null
         annotations:
 
+        isDeprecated: false
         values:
           -
             id: enumValue_22
@@ -1483,6 +1536,7 @@ libraries:
             documentation: null
             annotations:
 
+            isDeprecated: false
             type:
               id: type_33
               name: List
@@ -1529,11 +1583,18 @@ libraries:
             location:
               line: 0
               column: 0
-              offset: 5561
+              offset: 5570
               length: 8
             documentation: null
             annotations:
+              -
+                name: override
+                qualifiedName: "dart:core.override"
+                constructorName: null
+                namedArguments:
 
+                positionalArguments:
+            isDeprecated: false
             type:
               id: type_35
               name: int
@@ -1577,6 +1638,7 @@ libraries:
             documentation: null
             annotations:
 
+            isDeprecated: false
             parameters:
               -
                 id: param_10
@@ -1619,11 +1681,12 @@ libraries:
         location:
           line: 0
           column: 0
-          offset: 5630
+          offset: 5639
           length: 8
         documentation: null
         annotations:
 
+        isDeprecated: false
         values:
           -
             id: enumValue_26
@@ -1673,6 +1736,7 @@ libraries:
             documentation: null
             annotations:
 
+            isDeprecated: false
             type:
               id: type_37
               name: List
@@ -1730,6 +1794,7 @@ libraries:
             documentation: null
             annotations:
 
+            isDeprecated: false
             parameters:
 
             isAsync: false
@@ -1748,11 +1813,12 @@ libraries:
         location:
           line: 0
           column: 0
-          offset: 5690
+          offset: 5699
           length: 4
         documentation: null
         annotations:
 
+        isDeprecated: false
         values:
           -
             id: enumValue_30
@@ -1795,6 +1861,7 @@ libraries:
             documentation: null
             annotations:
 
+            isDeprecated: false
             type:
               id: type_39
               name: List
@@ -1852,6 +1919,7 @@ libraries:
             documentation: null
             annotations:
 
+            isDeprecated: false
             parameters:
 
             isAsync: false
@@ -1871,11 +1939,12 @@ libraries:
         location:
           line: 0
           column: 0
-          offset: 5328
+          offset: 5337
           length: 13
         documentation: null
         annotations:
 
+        isDeprecated: false
         onTypes:
           -
             id: type_41
@@ -1907,11 +1976,12 @@ libraries:
             location:
               line: 0
               column: 0
-              offset: 5372
+              offset: 5381
               length: 9
             documentation: null
             annotations:
 
+            isDeprecated: false
             returnType:
               id: type_42
               name: bool
@@ -1977,6 +2047,7 @@ libraries:
             documentation: null
             annotations:
 
+            isDeprecated: false
             type:
               id: type_44
               name: int
@@ -2018,20 +2089,12 @@ libraries:
         location:
           line: 0
           column: 0
-          offset: 264
+          offset: 273
           length: 4
-        documentation: |
-          /// Demonstrates Dart enums
-          ///
-          /// Features covered:
-          /// - Simple enums
-          /// - Enhanced enums (with fields, constructors, methods)
-          /// - Enum properties (name, index, values)
-          /// - Implementing interfaces
-          /// - Using mixins
-          /// - Pattern matching with enums
+        documentation: null
         annotations:
 
+        isDeprecated: false
         returnType:
           id: type_45
           name: void
@@ -2072,9 +2135,18 @@ libraries:
     mainSourceFileId: file_10
     partFileIds:
 
-    documentation: null
+    documentation: |
+      /// Demonstrates Dart generic classes
+      ///
+      /// Features covered:
+      /// - Generic class declaration
+      /// - Type parameters
+      /// - Multiple type parameters
+      /// - Generic methods in classes
+      /// - Type inference
     annotations:
 
+    isDeprecated: false
     classes:
       -
         id: class_2
@@ -2085,11 +2157,12 @@ libraries:
         location:
           line: 0
           column: 0
-          offset: 2889
+          offset: 2898
           length: 3
         documentation: null
         annotations:
 
+        isDeprecated: false
         isAbstract: false
         isSealed: false
         isFinal: false
@@ -2137,6 +2210,7 @@ libraries:
             documentation: null
             annotations:
 
+            isDeprecated: false
             parameters:
               -
                 id: param_12
@@ -2197,11 +2271,12 @@ libraries:
             location:
               line: 0
               column: 0
-              offset: 2908
+              offset: 2917
               length: 5
             documentation: null
             annotations:
 
+            isDeprecated: false
             type:
               id: type_49
               name: T
@@ -2250,11 +2325,12 @@ libraries:
         location:
           line: 0
           column: 0
-          offset: 2987
+          offset: 2996
           length: 7
         documentation: null
         annotations:
 
+        isDeprecated: false
         isAbstract: false
         isSealed: false
         isFinal: false
@@ -2302,6 +2378,7 @@ libraries:
             documentation: null
             annotations:
 
+            isDeprecated: false
             parameters:
               -
                 id: param_13
@@ -2360,11 +2437,12 @@ libraries:
             location:
               line: 0
               column: 0
-              offset: 3048
+              offset: 3057
               length: 9
             documentation: null
             annotations:
 
+            isDeprecated: false
             returnType:
               id: type_54
               name: Wrapper
@@ -2530,11 +2608,12 @@ libraries:
             location:
               line: 0
               column: 0
-              offset: 3004
+              offset: 3013
               length: 5
             documentation: null
             annotations:
 
+            isDeprecated: false
             type:
               id: type_62
               name: T
@@ -2583,11 +2662,12 @@ libraries:
         location:
           line: 0
           column: 0
-          offset: 3154
+          offset: 3163
           length: 4
         documentation: null
         annotations:
 
+        isDeprecated: false
         isAbstract: false
         isSealed: false
         isFinal: false
@@ -2641,6 +2721,7 @@ libraries:
             documentation: null
             annotations:
 
+            isDeprecated: false
             parameters:
               -
                 id: param_16
@@ -2738,11 +2819,12 @@ libraries:
             location:
               line: 0
               column: 0
-              offset: 3250
+              offset: 3259
               length: 4
             documentation: null
             annotations:
 
+            isDeprecated: false
             returnType:
               id: type_69
               name: Pair
@@ -2835,11 +2917,18 @@ libraries:
             location:
               line: 0
               column: 0
-              offset: 3303
+              offset: 3312
               length: 8
             documentation: null
             annotations:
+              -
+                name: override
+                qualifiedName: "dart:core.override"
+                constructorName: null
+                namedArguments:
 
+                positionalArguments:
+            isDeprecated: false
             returnType:
               id: type_74
               name: String
@@ -2876,11 +2965,12 @@ libraries:
             location:
               line: 0
               column: 0
-              offset: 3177
+              offset: 3186
               length: 5
             documentation: null
             annotations:
 
+            isDeprecated: false
             type:
               id: type_75
               name: F
@@ -2927,11 +3017,12 @@ libraries:
             location:
               line: 0
               column: 0
-              offset: 3194
+              offset: 3203
               length: 6
             documentation: null
             annotations:
 
+            isDeprecated: false
             type:
               id: type_77
               name: S
@@ -2980,11 +3071,12 @@ libraries:
         location:
           line: 0
           column: 0
-          offset: 3368
+          offset: 3377
           length: 5
         documentation: null
         annotations:
 
+        isDeprecated: false
         isAbstract: false
         isSealed: false
         isFinal: false
@@ -3032,6 +3124,7 @@ libraries:
             documentation: null
             annotations:
 
+            isDeprecated: false
             parameters:
 
             isAsync: false
@@ -3052,11 +3145,12 @@ libraries:
             location:
               line: 0
               column: 0
-              offset: 3416
+              offset: 3425
               length: 4
             documentation: null
             annotations:
 
+            isDeprecated: false
             returnType:
               id: type_80
               name: void
@@ -3130,11 +3224,12 @@ libraries:
             location:
               line: 0
               column: 0
-              offset: 3455
+              offset: 3464
               length: 3
             documentation: null
             annotations:
 
+            isDeprecated: false
             returnType:
               id: type_83
               name: T
@@ -3184,11 +3279,12 @@ libraries:
             location:
               line: 0
               column: 0
-              offset: 3564
+              offset: 3573
               length: 4
             documentation: null
             annotations:
 
+            isDeprecated: false
             returnType:
               id: type_85
               name: T
@@ -3238,11 +3334,18 @@ libraries:
             location:
               line: 0
               column: 0
-              offset: 3757
+              offset: 3766
               length: 8
             documentation: null
             annotations:
+              -
+                name: override
+                qualifiedName: "dart:core.override"
+                constructorName: null
+                namedArguments:
 
+                positionalArguments:
+            isDeprecated: false
             returnType:
               id: type_87
               name: String
@@ -3279,11 +3382,12 @@ libraries:
             location:
               line: 0
               column: 0
-              offset: 3395
+              offset: 3404
               length: 6
             documentation: null
             annotations:
 
+            isDeprecated: false
             type:
               id: type_88
               name: List
@@ -3349,6 +3453,7 @@ libraries:
             documentation: null
             annotations:
 
+            isDeprecated: false
             type:
               id: type_91
               name: bool
@@ -3386,6 +3491,7 @@ libraries:
             documentation: null
             annotations:
 
+            isDeprecated: false
             type:
               id: type_92
               name: int
@@ -3420,11 +3526,12 @@ libraries:
         location:
           line: 0
           column: 0
-          offset: 3815
+          offset: 3824
           length: 5
         documentation: null
         annotations:
 
+        isDeprecated: false
         isAbstract: false
         isSealed: false
         isFinal: false
@@ -3472,6 +3579,7 @@ libraries:
             documentation: null
             annotations:
 
+            isDeprecated: false
             parameters:
 
             isAsync: false
@@ -3492,11 +3600,12 @@ libraries:
             location:
               line: 0
               column: 0
-              offset: 3863
+              offset: 3872
               length: 7
             documentation: null
             annotations:
 
+            isDeprecated: false
             returnType:
               id: type_94
               name: void
@@ -3570,11 +3679,12 @@ libraries:
             location:
               line: 0
               column: 0
-              offset: 3905
+              offset: 3914
               length: 7
             documentation: null
             annotations:
 
+            isDeprecated: false
             returnType:
               id: type_97
               name: T
@@ -3624,11 +3734,18 @@ libraries:
             location:
               line: 0
               column: 0
-              offset: 4214
+              offset: 4223
               length: 8
             documentation: null
             annotations:
+              -
+                name: override
+                qualifiedName: "dart:core.override"
+                constructorName: null
+                namedArguments:
 
+                positionalArguments:
+            isDeprecated: false
             returnType:
               id: type_99
               name: String
@@ -3665,11 +3782,12 @@ libraries:
             location:
               line: 0
               column: 0
-              offset: 3842
+              offset: 3851
               length: 6
             documentation: null
             annotations:
 
+            isDeprecated: false
             type:
               id: type_100
               name: List
@@ -3735,6 +3853,7 @@ libraries:
             documentation: null
             annotations:
 
+            isDeprecated: false
             type:
               id: type_103
               name: T
@@ -3786,6 +3905,7 @@ libraries:
             documentation: null
             annotations:
 
+            isDeprecated: false
             type:
               id: type_105
               name: bool
@@ -3823,6 +3943,7 @@ libraries:
             documentation: null
             annotations:
 
+            isDeprecated: false
             type:
               id: type_106
               name: int
@@ -3857,11 +3978,12 @@ libraries:
         location:
           line: 0
           column: 0
-          offset: 4278
+          offset: 4287
           length: 5
         documentation: null
         annotations:
 
+        isDeprecated: false
         isAbstract: false
         isSealed: false
         isFinal: false
@@ -3904,11 +4026,12 @@ libraries:
             location:
               line: 0
               column: 0
-              offset: 4340
+              offset: 4349
               length: 10
             documentation: null
             annotations:
 
+            isDeprecated: false
             parameters:
               -
                 id: param_20
@@ -3965,11 +4088,12 @@ libraries:
             location:
               line: 0
               column: 0
-              offset: 4412
+              offset: 4421
               length: 10
             documentation: null
             annotations:
 
+            isDeprecated: false
             parameters:
 
             isAsync: false
@@ -3990,11 +4114,12 @@ libraries:
             location:
               line: 0
               column: 0
-              offset: 4575
+              offset: 4584
               length: 9
             documentation: null
             annotations:
 
+            isDeprecated: false
             returnType:
               id: type_110
               name: T
@@ -4082,11 +4207,12 @@ libraries:
             location:
               line: 0
               column: 0
-              offset: 4655
+              offset: 4664
               length: 3
             documentation: null
             annotations:
 
+            isDeprecated: false
             returnType:
               id: type_114
               name: Maybe
@@ -4252,11 +4378,12 @@ libraries:
             location:
               line: 0
               column: 0
-              offset: 4300
+              offset: 4309
               length: 6
             documentation: null
             annotations:
 
+            isDeprecated: false
             type:
               id: type_122
               name: T?
@@ -4303,11 +4430,12 @@ libraries:
             location:
               line: 0
               column: 0
-              offset: 4321
+              offset: 4330
               length: 8
             documentation: null
             annotations:
 
+            isDeprecated: false
             type:
               id: type_124
               name: bool
@@ -4345,6 +4473,7 @@ libraries:
             documentation: null
             annotations:
 
+            isDeprecated: false
             type:
               id: type_125
               name: T
@@ -4393,11 +4522,12 @@ libraries:
         location:
           line: 0
           column: 0
-          offset: 4810
+          offset: 4819
           length: 6
         documentation: null
         annotations:
 
+        isDeprecated: false
         isAbstract: false
         isSealed: false
         isFinal: false
@@ -4446,11 +4576,12 @@ libraries:
             location:
               line: 0
               column: 0
-              offset: 4897
+              offset: 4906
               length: 14
             documentation: null
             annotations:
 
+            isDeprecated: false
             parameters:
               -
                 id: param_24
@@ -4507,11 +4638,12 @@ libraries:
             location:
               line: 0
               column: 0
-              offset: 4997
+              offset: 5006
               length: 14
             documentation: null
             annotations:
 
+            isDeprecated: false
             parameters:
               -
                 id: param_25
@@ -4570,11 +4702,12 @@ libraries:
             location:
               line: 0
               column: 0
-              offset: 5093
+              offset: 5102
               length: 4
             documentation: null
             annotations:
 
+            isDeprecated: false
             returnType:
               id: type_132
               name: R
@@ -4823,11 +4956,12 @@ libraries:
             location:
               line: 0
               column: 0
-              offset: 4836
+              offset: 4845
               length: 6
             documentation: null
             annotations:
 
+            isDeprecated: false
             type:
               id: type_144
               name: T?
@@ -4874,11 +5008,12 @@ libraries:
             location:
               line: 0
               column: 0
-              offset: 4855
+              offset: 4864
               length: 6
             documentation: null
             annotations:
 
+            isDeprecated: false
             type:
               id: type_146
               name: E?
@@ -4925,11 +5060,12 @@ libraries:
             location:
               line: 0
               column: 0
-              offset: 4876
+              offset: 4885
               length: 9
             documentation: null
             annotations:
 
+            isDeprecated: false
             type:
               id: type_148
               name: bool
@@ -4975,19 +5111,12 @@ libraries:
         location:
           line: 0
           column: 0
-          offset: 209
+          offset: 218
           length: 4
-        documentation: |
-          /// Demonstrates Dart generic classes
-          ///
-          /// Features covered:
-          /// - Generic class declaration
-          /// - Type parameters
-          /// - Multiple type parameters
-          /// - Generic methods in classes
-          /// - Type inference
+        documentation: null
         annotations:
 
+        isDeprecated: false
         returnType:
           id: type_149
           name: void
@@ -5028,9 +5157,18 @@ libraries:
     mainSourceFileId: file_12
     partFileIds:
 
-    documentation: null
+    documentation: |
+      /// Demonstrates Dart class declarations
+      ///
+      /// Features covered:
+      /// - Basic class declaration
+      /// - Instance variables (fields)
+      /// - Constructors
+      /// - Methods
+      /// - Getters and setters
     annotations:
 
+    isDeprecated: false
     classes:
       -
         id: class_9
@@ -5041,11 +5179,12 @@ libraries:
         location:
           line: 0
           column: 0
-          offset: 2272
+          offset: 2281
           length: 6
         documentation: null
         annotations:
 
+        isDeprecated: false
         isAbstract: false
         isSealed: false
         isFinal: false
@@ -5088,6 +5227,7 @@ libraries:
             documentation: null
             annotations:
 
+            isDeprecated: false
             parameters:
 
             isAsync: false
@@ -5108,11 +5248,12 @@ libraries:
             location:
               line: 0
               column: 0
-              offset: 2324
+              offset: 2333
               length: 5
             documentation: null
             annotations:
 
+            isDeprecated: false
             returnType:
               id: type_151
               name: void
@@ -5149,11 +5290,12 @@ libraries:
             location:
               line: 0
               column: 0
-              offset: 2290
+              offset: 2299
               length: 4
             documentation: null
             annotations:
 
+            isDeprecated: false
             type:
               id: type_152
               name: String
@@ -5186,11 +5328,12 @@ libraries:
             location:
               line: 0
               column: 0
-              offset: 2307
+              offset: 2316
               length: 3
             documentation: null
             annotations:
 
+            isDeprecated: false
             type:
               id: type_153
               name: int
@@ -5225,11 +5368,12 @@ libraries:
         location:
           line: 0
           column: 0
-          offset: 2406
+          offset: 2415
           length: 3
         documentation: null
         annotations:
 
+        isDeprecated: false
         isAbstract: false
         isSealed: false
         isFinal: false
@@ -5272,6 +5416,7 @@ libraries:
             documentation: null
             annotations:
 
+            isDeprecated: false
             parameters:
               -
                 id: param_30
@@ -5341,11 +5486,12 @@ libraries:
             location:
               line: 0
               column: 0
-              offset: 2475
+              offset: 2484
               length: 4
             documentation: null
             annotations:
 
+            isDeprecated: false
             returnType:
               id: type_157
               name: void
@@ -5382,11 +5528,12 @@ libraries:
             location:
               line: 0
               column: 0
-              offset: 2421
+              offset: 2430
               length: 4
             documentation: null
             annotations:
 
+            isDeprecated: false
             type:
               id: type_158
               name: String
@@ -5419,11 +5566,12 @@ libraries:
             location:
               line: 0
               column: 0
-              offset: 2433
+              offset: 2442
               length: 3
             documentation: null
             annotations:
 
+            isDeprecated: false
             type:
               id: type_159
               name: int
@@ -5458,11 +5606,12 @@ libraries:
         location:
           line: 0
           column: 0
-          offset: 2565
+          offset: 2574
           length: 4
         documentation: null
         annotations:
 
+        isDeprecated: false
         isAbstract: false
         isSealed: false
         isFinal: false
@@ -5505,6 +5654,7 @@ libraries:
             documentation: null
             annotations:
 
+            isDeprecated: false
             parameters:
               -
                 id: param_32
@@ -5572,11 +5722,12 @@ libraries:
             location:
               line: 0
               column: 0
-              offset: 2704
+              offset: 2713
               length: 10
             documentation: null
             annotations:
 
+            isDeprecated: false
             parameters:
 
             isAsync: false
@@ -5595,11 +5746,12 @@ libraries:
             location:
               line: 0
               column: 0
-              offset: 2815
+              offset: 2824
               length: 12
             documentation: null
             annotations:
 
+            isDeprecated: false
             parameters:
               -
                 id: param_34
@@ -5673,11 +5825,18 @@ libraries:
             location:
               line: 0
               column: 0
-              offset: 2949
+              offset: 2958
               length: 8
             documentation: null
             annotations:
+              -
+                name: override
+                qualifiedName: "dart:core.override"
+                constructorName: null
+                namedArguments:
 
+                positionalArguments:
+            isDeprecated: false
             returnType:
               id: type_166
               name: String
@@ -5714,11 +5873,12 @@ libraries:
             location:
               line: 0
               column: 0
-              offset: 2581
+              offset: 2590
               length: 4
             documentation: null
             annotations:
 
+            isDeprecated: false
             type:
               id: type_167
               name: String
@@ -5751,11 +5911,12 @@ libraries:
             location:
               line: 0
               column: 0
-              offset: 2596
+              offset: 2605
               length: 5
             documentation: null
             annotations:
 
+            isDeprecated: false
             type:
               id: type_168
               name: String
@@ -5790,11 +5951,12 @@ libraries:
         location:
           line: 0
           column: 0
-          offset: 3017
+          offset: 3026
           length: 10
         documentation: null
         annotations:
 
+        isDeprecated: false
         isAbstract: false
         isSealed: false
         isFinal: false
@@ -5837,6 +5999,7 @@ libraries:
             documentation: null
             annotations:
 
+            isDeprecated: false
             parameters:
 
             isAsync: false
@@ -5857,11 +6020,12 @@ libraries:
             location:
               line: 0
               column: 0
-              offset: 3036
+              offset: 3045
               length: 3
             documentation: null
             annotations:
 
+            isDeprecated: false
             returnType:
               id: type_170
               name: int
@@ -5946,11 +6110,12 @@ libraries:
             location:
               line: 0
               column: 0
-              offset: 3070
+              offset: 3079
               length: 8
             documentation: null
             annotations:
 
+            isDeprecated: false
             returnType:
               id: type_173
               name: int
@@ -6035,11 +6200,12 @@ libraries:
             location:
               line: 0
               column: 0
-              offset: 3109
+              offset: 3118
               length: 8
             documentation: null
             annotations:
 
+            isDeprecated: false
             returnType:
               id: type_176
               name: int
@@ -6124,11 +6290,12 @@ libraries:
             location:
               line: 0
               column: 0
-              offset: 3151
+              offset: 3160
               length: 6
             documentation: null
             annotations:
 
+            isDeprecated: false
             returnType:
               id: type_179
               name: double
@@ -6217,11 +6384,12 @@ libraries:
         location:
           line: 0
           column: 0
-          offset: 3225
+          offset: 3234
           length: 9
         documentation: null
         annotations:
 
+        isDeprecated: false
         isAbstract: false
         isSealed: false
         isFinal: false
@@ -6264,6 +6432,7 @@ libraries:
             documentation: null
             annotations:
 
+            isDeprecated: false
             parameters:
               -
                 id: param_43
@@ -6335,11 +6504,12 @@ libraries:
             location:
               line: 0
               column: 0
-              offset: 3246
+              offset: 3255
               length: 5
             documentation: null
             annotations:
 
+            isDeprecated: false
             type:
               id: type_185
               name: double
@@ -6372,11 +6542,12 @@ libraries:
             location:
               line: 0
               column: 0
-              offset: 3262
+              offset: 3271
               length: 6
             documentation: null
             annotations:
 
+            isDeprecated: false
             type:
               id: type_186
               name: double
@@ -6414,6 +6585,7 @@ libraries:
             documentation: null
             annotations:
 
+            isDeprecated: false
             type:
               id: type_187
               name: double
@@ -6451,6 +6623,7 @@ libraries:
             documentation: null
             annotations:
 
+            isDeprecated: false
             type:
               id: type_188
               name: double
@@ -6488,6 +6661,7 @@ libraries:
             documentation: null
             annotations:
 
+            isDeprecated: false
             type:
               id: type_189
               name: double
@@ -6522,11 +6696,12 @@ libraries:
         location:
           line: 0
           column: 0
-          offset: 3533
+          offset: 3542
           length: 11
         documentation: null
         annotations:
 
+        isDeprecated: false
         isAbstract: false
         isSealed: false
         isFinal: false
@@ -6569,6 +6744,7 @@ libraries:
             documentation: null
             annotations:
 
+            isDeprecated: false
             parameters:
               -
                 id: param_45
@@ -6638,11 +6814,12 @@ libraries:
             location:
               line: 0
               column: 0
-              offset: 3754
+              offset: 3763
               length: 7
             documentation: null
             annotations:
 
+            isDeprecated: false
             returnType:
               id: type_193
               name: void
@@ -6702,11 +6879,12 @@ libraries:
             location:
               line: 0
               column: 0
-              offset: 3845
+              offset: 3854
               length: 8
             documentation: null
             annotations:
 
+            isDeprecated: false
             returnType:
               id: type_195
               name: bool
@@ -6767,11 +6945,12 @@ libraries:
             location:
               line: 0
               column: 0
-              offset: 3562
+              offset: 3571
               length: 13
             documentation: null
             annotations:
 
+            isDeprecated: false
             type:
               id: type_197
               name: String
@@ -6804,11 +6983,12 @@ libraries:
             location:
               line: 0
               column: 0
-              offset: 3586
+              offset: 3595
               length: 8
             documentation: null
             annotations:
 
+            isDeprecated: false
             type:
               id: type_198
               name: double
@@ -6846,6 +7026,7 @@ libraries:
             documentation: null
             annotations:
 
+            isDeprecated: false
             type:
               id: type_199
               name: double
@@ -6880,11 +7061,12 @@ libraries:
         location:
           line: 0
           column: 0
-          offset: 4031
+          offset: 4040
           length: 6
         documentation: null
         annotations:
 
+        isDeprecated: false
         isAbstract: false
         isSealed: false
         isFinal: false
@@ -6927,6 +7109,7 @@ libraries:
             documentation: null
             annotations:
 
+            isDeprecated: false
             parameters:
               -
                 id: param_49
@@ -6973,11 +7156,12 @@ libraries:
             location:
               line: 0
               column: 0
-              offset: 4055
+              offset: 4064
               length: 6
             documentation: null
             annotations:
 
+            isDeprecated: false
             type:
               id: type_202
               name: double
@@ -7015,6 +7199,7 @@ libraries:
             documentation: null
             annotations:
 
+            isDeprecated: false
             type:
               id: type_203
               name: double
@@ -7052,6 +7237,7 @@ libraries:
             documentation: null
             annotations:
 
+            isDeprecated: false
             type:
               id: type_204
               name: double
@@ -7089,6 +7275,7 @@ libraries:
             documentation: null
             annotations:
 
+            isDeprecated: false
             type:
               id: type_205
               name: double
@@ -7134,19 +7321,12 @@ libraries:
         location:
           line: 0
           column: 0
-          offset: 196
+          offset: 205
           length: 4
-        documentation: |
-          /// Demonstrates Dart class declarations
-          ///
-          /// Features covered:
-          /// - Basic class declaration
-          /// - Instance variables (fields)
-          /// - Constructors
-          /// - Methods
-          /// - Getters and setters
+        documentation: null
         annotations:
 
+        isDeprecated: false
         returnType:
           id: type_206
           name: void
@@ -7187,9 +7367,37 @@ libraries:
     mainSourceFileId: file_14
     partFileIds:
 
-    documentation: null
+    documentation: |
+      /// Dart Language Overview - Master Runner
+      ///
+      /// This script runs all area demonstrations in the dart_overview folder.
+      ///
+      /// Areas covered (20 total):
+      /// 1.  Variables - declarations, types, null safety, constants
+      /// 2.  Operators - arithmetic, comparison, logical, bitwise, etc.
+      /// 3.  Control Flow - conditionals, switch, loops
+      /// 4.  Functions - declarations, parameters, closures, generators
+      /// 5.  Classes - declarations, constructors, inheritance
+      /// 6.  Class Modifiers - abstract, sealed, interface, mixin
+      /// 7.  Generics - generic classes, functions, bounds, variance
+      /// 8.  Collections - lists, sets, maps, iterables
+      /// 9.  Records - anonymous aggregate data structures
+      /// 10. Patterns - destructuring, matching, switch patterns
+      /// 11. Enums - simple and enhanced enumerations
+      /// 12. Mixins - code reuse through mixins
+      /// 13. Extensions - adding functionality to existing types
+      /// 14. Async - futures, streams, isolates
+      /// 15. Error Handling - try/catch, exceptions, stack traces
+      /// 16. Libraries - imports, exports, visibility
+      /// 17. Comments - documentation and code comments
+      /// 18. Typedefs - type aliases for functions and types
+      /// 19. Annotations - metadata annotations, built-in and custom
+      /// 20. Globals - top-level variables, functions, getters/setters
+      ///
+      /// Run with: dart run_dart_overview.dart
     annotations:
 
+    isDeprecated: false
     classes:
 
     enums:
@@ -7212,11 +7420,12 @@ libraries:
         location:
           line: 0
           column: 0
-          offset: 2433
+          offset: 2442
           length: 4
         documentation: null
         annotations:
 
+        isDeprecated: false
         returnType:
           id: type_207
           name: Future
@@ -7271,9 +7480,9 @@ files:
     libraryId: lib_2
     isPart: false
     partOfDirective: null
-    lines: 94
-    contentHash: 1d2e8fc1a1bd13eedefae71ce9e84c5de767f609abe8be0dea12ac6881a2ac97
-    modified: "2026-02-05T14:16:57.000"
+    lines: 95
+    contentHash: 7b70d8b96081808711452b6d1be89001d3f59b602c57ea2e329f00b2615b678b
+    modified: "2026-02-06T08:40:34.000"
   -
     id: file_4
     path: /Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_analyzer/test/build_examples/reflect_dart_overview/lib/main.dart
@@ -7292,8 +7501,8 @@ files:
     isPart: false
     partOfDirective: null
     lines: 13
-    contentHash: be2e8a25b51d76a627e3907aadb181bedf20f949f54c373a67b452120f829078
-    modified: "2026-02-05T13:24:42.000"
+    contentHash: 9fcc901d20a481ece6d678940ca2e5d829033294a6c93f0281c04053498641cd
+    modified: "2026-02-06T08:34:12.000"
   -
     id: file_8
     path: /Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_analyzer/test/dart_overview/lib/enums/basics/run_basics.dart
@@ -7301,9 +7510,9 @@ files:
     libraryId: lib_8
     isPart: false
     partOfDirective: null
-    lines: 235
-    contentHash: 6e69116060c769af992dc0c421ec767e7f0a500d7b98097dd88f4cdb57702ba3
-    modified: "2026-02-03T21:31:59.000"
+    lines: 236
+    contentHash: e2fbbf4f3b4a3b26ad8c5cde04400e507d391baf3393561f547077ae35f0ea6e
+    modified: "2026-02-06T08:34:12.000"
   -
     id: file_10
     path: /Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_analyzer/test/dart_overview/lib/generics/generic_classes/run_generic_classes.dart
@@ -7311,9 +7520,9 @@ files:
     libraryId: lib_10
     isPart: false
     partOfDirective: null
-    lines: 229
-    contentHash: 8dd70f832b7e944a84d6f6ce6cabd0767b6635a4e3e7e330d79859ff0b203541
-    modified: "2026-02-03T21:31:59.000"
+    lines: 230
+    contentHash: 6139c296770e134847c92622d80f712feb737d143633bfa21dc92287446d2cb6
+    modified: "2026-02-06T08:34:12.000"
   -
     id: file_12
     path: /Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_analyzer/test/dart_overview/lib/classes/declarations/run_declarations.dart
@@ -7321,9 +7530,9 @@ files:
     libraryId: lib_12
     isPart: false
     partOfDirective: null
-    lines: 188
-    contentHash: ccc6d9390d64ec0f7dff0b2df54f22e766dc96085f0e9142d2d3a0606d4ed6f5
-    modified: "2026-02-03T21:31:59.000"
+    lines: 189
+    contentHash: db8d3964a42f55eb33c39b9e87e254e81b538a4ee3e61e6784954eca164299b8
+    modified: "2026-02-06T08:34:12.000"
   -
     id: file_14
     path: /Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_analyzer/test/dart_overview/lib/run_dart_overview.dart
@@ -7331,9 +7540,9 @@ files:
     libraryId: lib_14
     isPart: false
     partOfDirective: null
-    lines: 258
-    contentHash: 37e0b1f364b1c6c2afb10ac4633e7a9239dee1914cfb472da0b1f7a3ae401150
-    modified: "2026-02-04T10:11:17.000"
+    lines: 259
+    contentHash: 5c107baf4aa4aa2ed5efd6b1bd4837efc1d79a19c63ac8d369815a60e645c51b
+    modified: "2026-02-06T08:34:12.000"
 errors:
 
 metadata:

@@ -3,7 +3,6 @@
 // ignore_for_file: unused_element, unused_field, annotate_overrides
 // ignore_for_file: constant_identifier_names, unused_element_parameter
 // ignore_for_file: non_constant_identifier_names, dangling_library_doc_comments
-// ignore_for_file: deprecated_member_use
 // ignore_for_file: one_member_abstracts
 // ignore_for_file: invalid_override, inconsistent_inheritance
 // ignore_for_file: duplicate_definition
@@ -48,18 +47,6 @@ abstract class AnalysisResult {
 
 abstract class AnalysisResultWithDiagnostics implements FileResult {
   List get diagnostics;
-  List get errors;
-
-}
-
-
-/// An element or fragment that can have either annotations (metadata), a
-/// documentation comment, or both associated with it.
-
-abstract class Annotatable {
-  String get documentationComment;
-  Metadata get metadata;
-  Metadata get metadata2;
 
 }
 
@@ -112,7 +99,6 @@ abstract class Annotation implements AstNode {
   Token get atSign;
   SimpleIdentifier get constructorName;
   Element get element;
-  Element get element2;
   ElementAnnotation get elementAnnotation;
   Identifier get name;
   AstNode get parent;
@@ -191,7 +177,6 @@ abstract class Assertion implements AstNode {
 
 abstract class AssignedVariablePattern implements VariablePattern {
   Element get element;
-  Element get element2;
 
 }
 
@@ -201,7 +186,7 @@ abstract class AssignedVariablePattern implements VariablePattern {
 ///    assignmentExpression ::=
 ///        [Expression] operator [Expression]
 
-abstract class AssignmentExpression implements NullShortableExpression, MethodReferenceExpression, CompoundAssignmentExpression {
+abstract class AssignmentExpression implements MethodReferenceExpression, CompoundAssignmentExpression {
   Expression get leftHandSide;
   Token get operator;
   Expression get rightHandSide;
@@ -391,7 +376,7 @@ abstract class BreakStatement implements Statement {
 ///        '[ ' expression '] '
 ///      | identifier
 
-abstract class CascadeExpression implements Expression, NullShortableExpression {
+abstract class CascadeExpression implements Expression {
   NodeList get cascadeSections;
   bool get isNullAware;
   Expression get target;
@@ -455,8 +440,6 @@ abstract class CatchClause implements AstNode {
 
 /// An 'exception' or 'stackTrace' parameter in [CatchClause].
 abstract class CatchClauseParameter extends AstNode {
-  LocalVariableElement get declaredElement;
-  LocalVariableElement get declaredElement2;
   LocalVariableFragment get declaredFragment;
   Token get name;
 
@@ -495,7 +478,6 @@ abstract class ClassDeclaration implements NamedCompilationUnitMember {
   ImplementsClause get implementsClause;
   Token get interfaceKeyword;
   Token get leftBracket;
-  Token get macroKeyword;
   NodeList get members;
   Token get mixinKeyword;
   ClassNamePart get namePart;
@@ -535,12 +517,6 @@ abstract class ClassElement implements InterfaceElement {
   bool get isSealed;
   bool get isValidMixin;
 
-  bool isExtendableIn(LibraryElement library);
-  bool isExtendableIn2(LibraryElement library);
-  bool isImplementableIn(LibraryElement library);
-  bool isImplementableIn2(LibraryElement library);
-  bool isMixableIn(LibraryElement library);
-  bool isMixableIn2(LibraryElement library);
 }
 
 
@@ -770,10 +746,8 @@ abstract class CompilationUnitMemberImpl extends DeclarationImpl implements Comp
 
 abstract class CompoundAssignmentExpression implements Expression {
   Element get readElement;
-  Element get readElement2;
   DartType get readType;
   Element get writeElement;
-  Element get writeElement2;
   DartType get writeType;
 
 }
@@ -896,7 +870,6 @@ abstract class ConstructorDeclaration implements ClassMember {
 abstract class ConstructorElement implements ExecutableElement {
   ConstructorElement get baseElement;
   InterfaceElement get enclosingElement;
-  InterfaceElement get enclosingElement2;
   ConstructorFragment get firstFragment;
   List get fragments;
   bool get isConst;
@@ -904,12 +877,9 @@ abstract class ConstructorElement implements ExecutableElement {
   bool get isFactory;
   bool get isGenerative;
   String get name;
-  String get name3;
   ConstructorElement get redirectedConstructor;
-  ConstructorElement get redirectedConstructor2;
   InterfaceType get returnType;
   ConstructorElement get superConstructor;
-  ConstructorElement get superConstructor2;
 
 }
 
@@ -937,7 +907,6 @@ abstract class ConstructorFragment implements ExecutableFragment {
   ConstructorElement get element;
   InstanceFragment get enclosingFragment;
   String get name;
-  String get name2;
   ConstructorFragment? get nextFragment;
   int get offset;
   int get periodOffset;
@@ -1063,7 +1032,6 @@ abstract class DartPatternImpl extends AstNodeImpl implements ListPatternElement
 abstract class DartType {
   InstantiatedTypeAliasElement get alias;
   Element get element;
-  Element get element3;
   DartType get extensionTypeErasure;
   bool get isBottom;
   bool get isDartAsyncFuture;
@@ -1085,11 +1053,9 @@ abstract class DartType {
   bool get isDartCoreString;
   bool get isDartCoreSymbol;
   bool get isDartCoreType;
-  String get name;
   NullabilitySuffix get nullabilitySuffix;
 
   InterfaceType asInstanceOf(InterfaceElement element);
-  InterfaceType asInstanceOf2(InterfaceElement element);
   String getDisplayString({bool withNullability});
 }
 
@@ -1115,8 +1081,6 @@ abstract class DeclarationImpl extends AnnotatedNodeImpl implements Declaration 
 ///        [Annotation] finalConstVarOrType [SimpleIdentifier]
 
 abstract class DeclaredIdentifier implements Declaration {
-  LocalVariableElement get declaredElement;
-  LocalVariableElement get declaredElement2;
   LocalVariableFragment get declaredFragment;
   bool get isConst;
   bool get isFinal;
@@ -1133,8 +1097,6 @@ abstract class DeclaredIdentifier implements Declaration {
 ///        ( 'var' | 'final' | 'final'? [TypeAnnotation])? [Identifier]
 
 abstract class DeclaredVariablePattern implements VariablePattern {
-  BindPatternVariableElement get declaredElement;
-  BindPatternVariableElement get declaredElement2;
   BindPatternVariableFragment get declaredFragment;
   Token get keyword;
   TypeAnnotation get type;
@@ -1192,7 +1154,6 @@ abstract class DirectiveUri {
 
 abstract class DirectiveUriWithLibrary extends DirectiveUriWithSource {
   LibraryElement get library;
-  LibraryElement get library2;
 
 }
 
@@ -1363,11 +1324,9 @@ abstract class DynamicType implements DartType {
 abstract class Element {
   Element get baseElement;
   List get children;
-  List get children2;
   String get displayName;
   String get documentationComment;
   Element get enclosingElement;
-  Element get enclosingElement2;
   Fragment get firstFragment;
   List get fragments;
   int get id;
@@ -1376,24 +1335,17 @@ abstract class Element {
   bool get isSynthetic;
   ElementKind get kind;
   LibraryElement get library;
-  LibraryElement get library2;
   String get lookupName;
   Metadata get metadata;
   String get name;
-  String get name3;
   Element get nonSynthetic;
-  Element get nonSynthetic2;
   AnalysisSession get session;
 
   String displayString({bool multiline, bool preferTypeAlias});
-  String displayString2({bool multiline, bool preferTypeAlias});
   String getExtendedDisplayName({String shortName});
-  String getExtendedDisplayName2({String shortName});
   bool isAccessibleIn(LibraryElement library);
-  bool isAccessibleIn2(LibraryElement library);
   bool isDeprecatedWithKind(String kind);
   void visitChildren<T>(ElementVisitor2 visitor);
-  void visitChildren2<T>(ElementVisitor2 visitor);
 }
 
 
@@ -1405,7 +1357,6 @@ abstract class ElementAnnotation {
   List get constantEvaluationErrors;
   String get deprecationKind;
   Element get element;
-  Element get element2;
   bool get isAlwaysThrows;
   bool get isAwaitNotRequired;
   bool get isDeprecated;
@@ -1444,21 +1395,11 @@ abstract class ElementAnnotation {
 }
 
 
-/// The declaration of an [Element].
-abstract class ElementDeclarationResult {
-  Fragment get fragment;
-  AstNode get node;
-  ParsedUnitResult get parsedUnit;
-  ResolvedUnitResult get resolvedUnit;
-
-}
-
-
 /// A directive within a library fragment.
 ///
 /// Clients may not extend, implement or mix-in this class.
 
-abstract class ElementDirective implements Annotatable {
+abstract class ElementDirective {
   LibraryFragment get libraryFragment;
   Metadata get metadata;
   DirectiveUri get uri;
@@ -1542,7 +1483,6 @@ abstract class EnumConstantDeclaration implements Declaration {
   EnumConstantArguments get arguments;
   Token get augmentKeyword;
   ConstructorElement get constructorElement;
-  ConstructorElement get constructorElement2;
   FieldFragment get declaredFragment;
   Token get name;
 
@@ -1580,7 +1520,6 @@ abstract class EnumDeclaration implements NamedCompilationUnitMember {
 
 abstract class EnumElement implements InterfaceElement {
   List get constants;
-  List get constants2;
   EnumFragment get firstFragment;
   List get fragments;
 
@@ -1593,7 +1532,6 @@ abstract class EnumElement implements InterfaceElement {
 
 abstract class EnumFragment implements InterfaceFragment {
   List get constants;
-  List get constants2;
   EnumElement get element;
   EnumFragment? get nextFragment;
   EnumFragment? get previousFragment;
@@ -1797,7 +1735,6 @@ abstract class ExtensionOnClause implements AstNode {
 abstract class ExtensionOverride implements Expression {
   ArgumentList get argumentList;
   ExtensionElement get element;
-  ExtensionElement get element2;
   DartType get extendedType;
   ImportPrefixReference get importPrefix;
   bool get isNullAware;
@@ -1843,9 +1780,7 @@ abstract class ExtensionTypeElement implements InterfaceElement {
   ExtensionTypeFragment get firstFragment;
   List get fragments;
   ConstructorElement get primaryConstructor;
-  ConstructorElement get primaryConstructor2;
   FieldElement get representation;
-  FieldElement get representation2;
   DartType get typeErasure;
 
 }
@@ -1860,10 +1795,6 @@ abstract class ExtensionTypeFragment implements InterfaceFragment {
   ExtensionTypeElement get element;
   ExtensionTypeFragment? get nextFragment;
   ExtensionTypeFragment? get previousFragment;
-  ConstructorFragment get primaryConstructor;
-  ConstructorFragment get primaryConstructor2;
-  FieldFragment get representation;
-  FieldFragment get representation2;
 
 }
 
@@ -1907,7 +1838,6 @@ abstract class FieldDeclaration implements ClassMember {
 abstract class FieldElement implements PropertyInducingElement {
   FieldElement get baseElement;
   InstanceElement get enclosingElement;
-  InstanceElement get enclosingElement2;
   FieldFragment get firstFragment;
   List get fragments;
   bool get isAbstract;
@@ -1946,7 +1876,6 @@ abstract class FieldFormalParameter implements NormalFormalParameter {
 
 abstract class FieldFormalParameterElement implements FormalParameterElement {
   FieldElement get field;
-  FieldElement get field2;
   FieldFormalParameterFragment get firstFragment;
   List get fragments;
 
@@ -2210,7 +2139,7 @@ abstract class FormalParameter implements AstNode {
 ///
 /// Clients may not extend, implement or mix-in this class.
 
-abstract class FormalParameterElement implements VariableElement, Annotatable, LocalElement {
+abstract class FormalParameterElement implements VariableElement, LocalElement {
   FormalParameterElement get baseElement;
   String get defaultValueCode;
   FormalParameterFragment get firstFragment;
@@ -2229,7 +2158,6 @@ abstract class FormalParameterElement implements VariableElement, Annotatable, L
   bool get isRequiredPositional;
   bool get isSuperFormal;
   List get typeParameters;
-  List get typeParameters2;
 
 }
 
@@ -2239,7 +2167,7 @@ abstract class FormalParameterElement implements VariableElement, Annotatable, L
 ///
 /// Clients may not extend, implement, or mix-in this class.
 
-abstract class FormalParameterFragment implements VariableFragment, Annotatable, LocalFragment {
+abstract class FormalParameterFragment implements VariableFragment, LocalFragment {
   FormalParameterElement get element;
   FormalParameterFragment? get nextFragment;
   int get offset;
@@ -2313,16 +2241,13 @@ abstract class FormalParameterList implements AstNode {
 
 abstract class Fragment {
   List get children;
-  List get children3;
   String get documentationComment;
   Element get element;
   Fragment get enclosingFragment;
   LibraryFragment get libraryFragment;
   Metadata get metadata;
   String get name;
-  String get name2;
   int get nameOffset;
-  int get nameOffset2;
   Fragment? get nextFragment;
   int get offset;
   Fragment? get previousFragment;
@@ -2356,7 +2281,6 @@ abstract class FunctionBody implements AstNode {
   Token get star;
 
   bool isPotentiallyMutatedInScope(VariableElement variable);
-  bool isPotentiallyMutatedInScope2(VariableElement variable);
 }
 
 
@@ -2369,7 +2293,6 @@ abstract class FunctionBodyImpl extends AstNodeImpl implements FunctionBody {
   Token get star;
 
   bool isPotentiallyMutatedInScope(VariableElement variable);
-  bool isPotentiallyMutatedInScope2(VariableElement variable);
 }
 
 
@@ -2428,7 +2351,7 @@ abstract class FunctionExpression implements Expression {
 ///    functionExpressionInvocation ::=
 ///        [Expression] [TypeArgumentList]? [ArgumentList]
 
-abstract class FunctionExpressionInvocation implements NullShortableExpression, InvocationExpression {
+abstract class FunctionExpressionInvocation implements InvocationExpression {
   ExecutableElement get element;
   Expression get function;
 
@@ -2626,7 +2549,6 @@ abstract class GenericTypeAlias implements TypeAlias {
 abstract class GetterElement implements PropertyAccessorElement {
   GetterElement get baseElement;
   SetterElement get correspondingSetter;
-  SetterElement get correspondingSetter2;
   GetterFragment get firstFragment;
   List get fragments;
 
@@ -2787,7 +2709,6 @@ abstract class ImportDirective implements NamespaceDirective {
 /// Reference to an import prefix name.
 abstract class ImportPrefixReference implements AstNode {
   Element get element;
-  Element get element2;
   Token get name;
   Token get period;
 
@@ -2799,7 +2720,7 @@ abstract class ImportPrefixReference implements AstNode {
 ///    indexExpression ::=
 ///        [Expression] '[' [Expression] ']'
 
-abstract class IndexExpression implements NullShortableExpression, MethodReferenceExpression {
+abstract class IndexExpression implements MethodReferenceExpression {
   Expression get index;
   bool get isCascaded;
   bool get isNullAware;
@@ -2834,36 +2755,24 @@ abstract class InstanceCreationExpression implements Expression {
 ///
 /// Clients may not extend, implement or mix-in this class.
 
-abstract class InstanceElement implements TypeDefiningElement, TypeParameterizedElement {
+abstract class InstanceElement implements TypeParameterizedElement {
   InstanceElement get baseElement;
   LibraryElement get enclosingElement;
-  LibraryElement get enclosingElement2;
   List get fields;
-  List get fields2;
   InstanceFragment get firstFragment;
   List get fragments;
   List get getters;
-  List get getters2;
   List get methods;
-  List get methods2;
   List get setters;
-  List get setters2;
   DartType get thisType;
 
   FieldElement getField(String name);
-  FieldElement getField2(String name);
   GetterElement getGetter(String name);
-  GetterElement getGetter2(String name);
   MethodElement getMethod(String name);
-  MethodElement getMethod2(String name);
   SetterElement getSetter(String name);
-  SetterElement getSetter2(String name);
   GetterElement lookUpGetter({required String name, required LibraryElement library});
-  GetterElement lookUpGetter2({required String name, required LibraryElement library});
   MethodElement lookUpMethod({required String name, required LibraryElement library});
-  MethodElement lookUpMethod2({required String name, required LibraryElement library});
   SetterElement lookUpSetter({required String name, required LibraryElement library});
-  SetterElement lookUpSetter2({required String name, required LibraryElement library});
 }
 
 
@@ -2871,16 +2780,14 @@ abstract class InstanceElement implements TypeDefiningElement, TypeParameterized
 ///
 /// Clients may not extend, implement or mix-in this class.
 
-abstract class InstanceFragment implements TypeDefiningFragment, TypeParameterizedFragment {
+abstract class InstanceFragment implements TypeParameterizedFragment {
   InstanceElement get element;
   LibraryFragment get enclosingFragment;
   List get fields;
-  List get fields2;
   List get getters;
   bool get isAugmentation;
   LibraryFragment get libraryFragment;
   List get methods;
-  List get methods2;
   InstanceFragment? get nextFragment;
   InstanceFragment? get previousFragment;
   List get setters;
@@ -2893,7 +2800,6 @@ abstract class InstanceFragment implements TypeDefiningFragment, TypeParameteriz
 
 abstract class InstantiatedTypeAliasElement {
   TypeAliasElement get element;
-  TypeAliasElement get element2;
   List get typeArguments;
 
 }
@@ -2926,7 +2832,6 @@ abstract class IntegerLiteral implements Literal {
 abstract class InterfaceElement implements InstanceElement {
   List get allSupertypes;
   List get constructors;
-  List get constructors2;
   InterfaceFragment get firstFragment;
   List get fragments;
   Map get inheritedConcreteMembers;
@@ -2937,18 +2842,15 @@ abstract class InterfaceElement implements InstanceElement {
   InterfaceType get supertype;
   InterfaceType get thisType;
   ConstructorElement get unnamedConstructor;
-  ConstructorElement get unnamedConstructor2;
 
   ExecutableElement getInheritedConcreteMember(Name name);
   ExecutableElement getInheritedMember(Name name);
   ExecutableElement getInterfaceMember(Name name);
   ConstructorElement getNamedConstructor(String name);
-  ConstructorElement getNamedConstructor2(String name);
   List getOverridden(Name name);
   InterfaceType instantiate({required List typeArguments, required NullabilitySuffix nullabilitySuffix});
   MethodElement lookUpConcreteMethod(String methodName, LibraryElement library);
   MethodElement lookUpInheritedMethod({required String methodName, required LibraryElement library});
-  MethodElement lookUpInheritedMethod2({required String methodName, required LibraryElement library});
 }
 
 
@@ -2958,13 +2860,9 @@ abstract class InterfaceElement implements InstanceElement {
 
 abstract class InterfaceFragment implements InstanceFragment {
   List get constructors;
-  List get constructors2;
   InterfaceElement get element;
-  List get interfaces;
-  List get mixins;
   InterfaceFragment? get nextFragment;
   InterfaceFragment? get previousFragment;
-  InterfaceType get supertype;
 
 }
 
@@ -2977,32 +2875,22 @@ abstract class InterfaceFragment implements InstanceFragment {
 abstract class InterfaceType implements ParameterizedType {
   List get allSupertypes;
   List get constructors;
-  List get constructors2;
   InterfaceElement get element;
-  InterfaceElement get element3;
   List get getters;
   List get interfaces;
   List get methods;
-  List get methods2;
   List get mixins;
   List get setters;
   InterfaceType get superclass;
   List get superclassConstraints;
 
   GetterElement getGetter(String name);
-  GetterElement getGetter2(String name);
   MethodElement getMethod(String name);
-  MethodElement getMethod2(String name);
   SetterElement getSetter(String name);
-  SetterElement getSetter2(String name);
   ConstructorElement lookUpConstructor(String name, LibraryElement library);
-  ConstructorElement lookUpConstructor2(String name, LibraryElement library);
   GetterElement lookUpGetter(String name, LibraryElement library, {bool concrete, bool inherited, bool recoveryStatic});
-  GetterElement lookUpGetter3(String name, LibraryElement library, {bool concrete, bool inherited, bool recoveryStatic});
   MethodElement lookUpMethod(String name, LibraryElement library, {bool concrete, bool inherited, bool recoveryStatic});
-  MethodElement lookUpMethod3(String name, LibraryElement library, {bool concrete, bool inherited, bool recoveryStatic});
   SetterElement lookUpSetter(String name, LibraryElement library, {bool concrete, bool inherited, bool recoveryStatic});
-  SetterElement lookUpSetter3(String name, LibraryElement library, {bool concrete, bool inherited, bool recoveryStatic});
 }
 
 
@@ -3115,7 +3003,6 @@ abstract class JoinPatternVariableElement implements PatternVariableElement {
   List get fragments;
   bool get isConsistent;
   List get variables;
-  List get variables2;
 
 }
 
@@ -3153,11 +3040,9 @@ abstract class Label implements AstNode {
 
 abstract class LabelElement implements Element {
   ExecutableElement get enclosingElement;
-  ExecutableElement get enclosingElement2;
   LabelFragment get firstFragment;
   List get fragments;
   LibraryElement get library;
-  LibraryElement get library2;
 
 }
 
@@ -3193,10 +3078,8 @@ abstract class LabeledStatement implements Statement {
 
 abstract class LibraryDirective implements Directive {
   LibraryElement get element;
-  LibraryElement get element2;
   Token get libraryKeyword;
   LibraryIdentifier get name;
-  LibraryIdentifier get name2;
   Token get semicolon;
 
 }
@@ -3206,13 +3089,11 @@ abstract class LibraryDirective implements Directive {
 ///
 /// Clients may not extend, implement or mix-in this class.
 
-abstract class LibraryElement implements Element, Annotatable {
+abstract class LibraryElement implements Element {
   List get classes;
   TopLevelFunctionElement get entryPoint;
-  TopLevelFunctionElement get entryPoint2;
   List get enums;
   List get exportedLibraries;
-  List get exportedLibraries2;
   List get extensions;
   List get extensionTypes;
   FeatureSet get featureSet;
@@ -3225,9 +3106,7 @@ abstract class LibraryElement implements Element, Annotatable {
   bool get isInSdk;
   LibraryLanguageVersion get languageVersion;
   LibraryElement get library;
-  LibraryElement get library2;
   TopLevelFunctionElement get loadLibraryFunction;
-  TopLevelFunctionElement get loadLibraryFunction2;
   List get mixins;
   AnalysisSession get session;
   List get setters;
@@ -3238,14 +3117,11 @@ abstract class LibraryElement implements Element, Annotatable {
   Uri get uri;
 
   ClassElement getClass(String name);
-  ClassElement getClass2(String name);
   EnumElement getEnum(String name);
-  EnumElement getEnum2(String name);
   ExtensionElement getExtension(String name);
   ExtensionTypeElement getExtensionType(String name);
   GetterElement getGetter(String name);
   MixinElement getMixin(String name);
-  MixinElement getMixin2(String name);
   SetterElement getSetter(String name);
   TopLevelFunctionElement getTopLevelFunction(String name);
   TopLevelVariableElement getTopLevelVariable(String name);
@@ -3259,7 +3135,6 @@ abstract class LibraryElement implements Element, Annotatable {
 
 abstract class LibraryElementResult implements SomeLibraryElementResult {
   LibraryElement get element;
-  LibraryElement get element2;
 
 }
 
@@ -3271,7 +3146,6 @@ abstract class LibraryElementResult implements SomeLibraryElementResult {
 abstract class LibraryExport implements ElementDirective {
   List get combinators;
   LibraryElement get exportedLibrary;
-  LibraryElement get exportedLibrary2;
   int get exportKeywordOffset;
 
 }
@@ -3280,29 +3154,19 @@ abstract class LibraryExport implements ElementDirective {
 /// The portion of a [LibraryElement] coming from a single compilation unit.
 abstract class LibraryFragment implements Fragment {
   List get accessibleExtensions;
-  List get accessibleExtensions2;
   List get classes;
-  List get classes2;
   LibraryElement get element;
   LibraryFragment get enclosingFragment;
   List get enums;
-  List get enums2;
   List get extensions;
-  List get extensions2;
   List get extensionTypes;
-  List get extensionTypes2;
   List get functions;
-  List get functions2;
   List get getters;
   List get importedLibraries;
-  List get importedLibraries2;
   List get libraryExports;
-  List get libraryExports2;
   List get libraryImports;
-  List get libraryImports2;
   LineInfo get lineInfo;
   List get mixins;
-  List get mixins2;
   LibraryFragment? get nextFragment;
   int get offset;
   List get partIncludes;
@@ -3311,9 +3175,7 @@ abstract class LibraryFragment implements Fragment {
   List get setters;
   Source get source;
   List get topLevelVariables;
-  List get topLevelVariables2;
   List get typeAliases;
-  List get typeAliases2;
 
 }
 
@@ -3336,11 +3198,9 @@ abstract class LibraryIdentifier implements Identifier {
 abstract class LibraryImport implements ElementDirective {
   List get combinators;
   LibraryElement get importedLibrary;
-  LibraryElement get importedLibrary2;
   int get importKeywordOffset;
   bool get isSynthetic;
   PrefixFragment get prefix;
-  PrefixFragment get prefix2;
 
 }
 
@@ -3458,7 +3318,7 @@ abstract class LocalFunctionFragment implements ExecutableFragment, LocalFragmen
 ///
 /// Clients may not extend, implement or mix-in this class.
 
-abstract class LocalVariableElement implements VariableElement, LocalElement, Annotatable {
+abstract class LocalVariableElement implements VariableElement, LocalElement {
   LocalVariableElement get baseElement;
   LocalVariableFragment get firstFragment;
   List get fragments;
@@ -3673,7 +3533,7 @@ abstract class MethodFragment implements ExecutableFragment {
 ///        ([Expression] '.')? [SimpleIdentifier] [TypeArgumentList]?
 ///        [ArgumentList]
 
-abstract class MethodInvocation implements NullShortableExpression, InvocationExpression {
+abstract class MethodInvocation implements InvocationExpression {
   bool get isCascaded;
   bool get isNullAware;
   SimpleIdentifier get methodName;
@@ -3735,8 +3595,6 @@ abstract class MixinElement implements InterfaceElement {
   bool get isImplementableOutside;
   List get superclassConstraints;
 
-  bool isImplementableIn(LibraryElement library);
-  bool isImplementableIn2(LibraryElement library);
 }
 
 
@@ -3775,7 +3633,6 @@ abstract class MixinOnClause implements AstNode {
 
 abstract class MultiplyDefinedElement implements Element {
   List get conflictingElements;
-  List get conflictingElements2;
   MultiplyDefinedFragment get firstFragment;
   List get fragments;
 
@@ -3823,7 +3680,6 @@ abstract class NamedCompilationUnitMemberImpl extends CompilationUnitMemberImpl 
 
 abstract class NamedExpression implements Expression {
   FormalParameterElement get element;
-  FormalParameterElement get element2;
   Expression get expression;
   Label get name;
 
@@ -3837,11 +3693,9 @@ abstract class NamedExpression implements Expression {
 
 abstract class NamedType implements TypeAnnotation {
   Element get element;
-  Element get element2;
   ImportPrefixReference get importPrefix;
   bool get isDeferred;
   Token get name;
-  Token get name2;
   DartType get type;
   TypeArgumentList get typeArguments;
 
@@ -3919,12 +3773,9 @@ abstract class NeverType implements DartType {
 abstract class NodeList<E extends AstNode> implements List {
   Token get beginToken;
   Token get endToken;
-  int get length;
   AstNode get owner;
 
   void accept(AstVisitor visitor);
-  void addAll(Iterable iterable);
-  void clear();
 }
 
 
@@ -3992,18 +3843,6 @@ abstract class NullCheckPattern implements DartPattern {
 
 abstract class NullLiteral implements Literal {
   Token get literal;
-
-}
-
-
-/// Abstract interface for expressions that may participate in null-shorting.
-///
-/// This is an analyzer-internal interface that was exposed through the public
-/// API by mistake. It is deprecated and will be removed in analyzer version
-/// 9.0.0.
-
-abstract class NullShortableExpression implements Expression {
-  Expression get nullShortingTermination;
 
 }
 
@@ -4091,7 +3930,6 @@ abstract class ParseStringResult {
 abstract class ParsedLibraryResult implements SomeParsedLibraryResult, AnalysisResult {
   List get units;
 
-  ElementDeclarationResult getElementDeclaration2(Fragment fragment);
   FragmentDeclarationResult getFragmentDeclaration(Fragment fragment);
 }
 
@@ -4113,7 +3951,6 @@ abstract class ParsedUnitResult implements SomeParsedUnitResult, AnalysisResultW
 ///        [Annotation] 'part' [StringLiteral] ';'
 
 abstract class PartDirective implements UriBasedDirective {
-  NodeList get configurations;
   PartInclude get partInclude;
   Token get partKeyword;
   Token get semicolon;
@@ -4168,7 +4005,6 @@ abstract class PatternAssignment implements Expression {
 abstract class PatternField implements AstNode {
   String get effectiveName;
   Element get element;
-  Element get element2;
   PatternFieldName get name;
   DartPattern get pattern;
 
@@ -4221,7 +4057,6 @@ abstract class PatternVariableElement implements LocalVariableElement {
   PatternVariableFragment get firstFragment;
   List get fragments;
   JoinPatternVariableElement get join;
-  JoinPatternVariableElement get join2;
 
 }
 
@@ -4234,7 +4069,6 @@ abstract class PatternVariableElement implements LocalVariableElement {
 abstract class PatternVariableFragment implements LocalVariableFragment {
   PatternVariableElement get element;
   JoinPatternVariableFragment get join;
-  JoinPatternVariableFragment get join2;
   PatternVariableFragment? get nextFragment;
   PatternVariableFragment? get previousFragment;
 
@@ -4246,7 +4080,7 @@ abstract class PatternVariableFragment implements LocalVariableFragment {
 ///    postfixExpression ::=
 ///        [Expression] [Token]
 
-abstract class PostfixExpression implements Expression, NullShortableExpression, MethodReferenceExpression, CompoundAssignmentExpression {
+abstract class PostfixExpression implements Expression, MethodReferenceExpression, CompoundAssignmentExpression {
   MethodElement get element;
   Expression get operand;
   Token get operator;
@@ -4263,7 +4097,6 @@ abstract class PrefixElement implements Element {
   List get fragments;
   List get imports;
   LibraryElement get library;
-  LibraryElement get library2;
 
 }
 
@@ -4273,7 +4106,7 @@ abstract class PrefixElement implements Element {
 ///    prefixExpression ::=
 ///        [Token] [Expression]
 
-abstract class PrefixExpression implements Expression, NullShortableExpression, MethodReferenceExpression, CompoundAssignmentExpression {
+abstract class PrefixExpression implements Expression, MethodReferenceExpression, CompoundAssignmentExpression {
   MethodElement get element;
   Expression get operand;
   Token get operator;
@@ -4336,7 +4169,7 @@ abstract class PrimaryConstructorName implements AstNode {
 ///    propertyAccess ::=
 ///        [Expression] '.' [SimpleIdentifier]
 
-abstract class PropertyAccess implements NullShortableExpression, CommentReferableExpression {
+abstract class PropertyAccess implements CommentReferableExpression {
   bool get isCascaded;
   bool get isNullAware;
   Token get operator;
@@ -4358,11 +4191,9 @@ abstract class PropertyAccess implements NullShortableExpression, CommentReferab
 abstract class PropertyAccessorElement implements ExecutableElement {
   PropertyAccessorElement get baseElement;
   Element get enclosingElement;
-  Element get enclosingElement2;
   PropertyAccessorFragment get firstFragment;
   List get fragments;
   PropertyInducingElement get variable;
-  PropertyInducingElement get variable3;
 
 }
 
@@ -4397,16 +4228,13 @@ abstract class PropertyAccessorFragment implements ExecutableFragment {
 ///
 /// Clients may not extend, implement or mix-in this class.
 
-abstract class PropertyInducingElement implements VariableElement, Annotatable {
+abstract class PropertyInducingElement implements VariableElement {
   PropertyInducingFragment get firstFragment;
   List get fragments;
   GetterElement get getter;
-  GetterElement get getter2;
   bool get hasInitializer;
   LibraryElement get library;
-  LibraryElement get library2;
   SetterElement get setter;
-  SetterElement get setter2;
 
 }
 
@@ -4416,7 +4244,7 @@ abstract class PropertyInducingElement implements VariableElement, Annotatable {
 ///
 /// Clients may not extend, implement or mix-in this class.
 
-abstract class PropertyInducingFragment implements VariableFragment, Annotatable {
+abstract class PropertyInducingFragment implements VariableFragment {
   PropertyInducingElement get element;
   bool get hasInitializer;
   bool get isAugmentation;
@@ -4586,7 +4414,6 @@ abstract class RedirectingConstructorInvocation implements ConstructorInitialize
 
 abstract class RelationalPattern implements DartPattern {
   MethodElement get element;
-  MethodElement get element2;
   Expression get operand;
   Token get operator;
 
@@ -4627,7 +4454,6 @@ abstract class RepresentationDeclaration implements AstNode {
 
 abstract class ResolvedLibraryResult implements ParsedLibraryResult, SomeResolvedLibraryResult {
   LibraryElement get element;
-  LibraryElement get element2;
   TypeProvider get typeProvider;
   List get units;
 
@@ -4643,7 +4469,6 @@ abstract class ResolvedLibraryResult implements ParsedLibraryResult, SomeResolve
 abstract class ResolvedUnitResult implements ParsedUnitResult, SomeResolvedUnitResult {
   bool get exists;
   LibraryElement get libraryElement;
-  LibraryElement get libraryElement2;
   LibraryFragment get libraryFragment;
   TypeProvider get typeProvider;
 
@@ -4740,7 +4565,6 @@ abstract class SetOrMapLiteral implements TypedLiteral {
 abstract class SetterElement implements PropertyAccessorElement {
   SetterElement get baseElement;
   GetterElement get correspondingGetter;
-  GetterElement get correspondingGetter2;
   SetterFragment get firstFragment;
   List get fragments;
 
@@ -5089,7 +4913,6 @@ abstract class SuperFormalParameterElement implements FormalParameterElement {
   SuperFormalParameterFragment get firstFragment;
   List get fragments;
   FormalParameterElement get superConstructorParameter;
-  FormalParameterElement get superConstructorParameter2;
 
 }
 
@@ -5370,12 +5193,9 @@ abstract class TypeAlias implements NamedCompilationUnitMember {
 ///
 /// Clients may not extend, implement or mix-in this class.
 
-abstract class TypeAliasElement implements TypeParameterizedElement, TypeDefiningElement {
-  Element get aliasedElement;
-  Element get aliasedElement2;
+abstract class TypeAliasElement implements TypeParameterizedElement {
   DartType get aliasedType;
   LibraryElement get enclosingElement;
-  LibraryElement get enclosingElement2;
   TypeAliasFragment get firstFragment;
   List get fragments;
 
@@ -5387,7 +5207,7 @@ abstract class TypeAliasElement implements TypeParameterizedElement, TypeDefinin
 ///
 /// Clients may not extend, implement or mix-in this class.
 
-abstract class TypeAliasFragment implements TypeParameterizedFragment, TypeDefiningFragment {
+abstract class TypeAliasFragment implements TypeParameterizedFragment {
   TypeAliasElement get element;
   LibraryFragment get enclosingFragment;
 
@@ -5436,30 +5256,6 @@ abstract class TypeArgumentList implements AstNode {
 }
 
 
-/// An element that defines a type.
-///
-/// Clients may not extend, implement or mix-in this class.
-
-abstract class TypeDefiningElement implements Element, Annotatable {
-  TypeDefiningFragment get firstFragment;
-  List get fragments;
-
-}
-
-
-/// The portion of a [TypeDefiningElement] contributed by a single declaration.
-///
-/// Clients may not extend, implement or mix-in this class.
-
-abstract class TypeDefiningFragment implements Fragment, Annotatable {
-  TypeDefiningElement get element;
-  TypeDefiningFragment? get nextFragment;
-  int get offset;
-  TypeDefiningFragment? get previousFragment;
-
-}
-
-
 /// An expression representing a type, such as the expression `int` in
 /// `var x = int;`.
 ///
@@ -5495,7 +5291,7 @@ abstract class TypeParameter implements Declaration {
 ///
 /// Clients may not extend, implement or mix-in this class.
 
-abstract class TypeParameterElement implements TypeDefiningElement {
+abstract class TypeParameterElement {
   TypeParameterElement get baseElement;
   DartType get bound;
   TypeParameterFragment get firstFragment;
@@ -5510,7 +5306,7 @@ abstract class TypeParameterElement implements TypeDefiningElement {
 ///
 /// Clients may not extend, implement or mix-in this class.
 
-abstract class TypeParameterFragment implements TypeDefiningFragment {
+abstract class TypeParameterFragment {
   TypeParameterElement get element;
   TypeParameterFragment? get nextFragment;
   TypeParameterFragment? get previousFragment;
@@ -5538,7 +5334,6 @@ abstract class TypeParameterList implements AstNode {
 abstract class TypeParameterType implements DartType {
   DartType get bound;
   TypeParameterElement get element;
-  TypeParameterElement get element3;
 
 }
 
@@ -5547,14 +5342,12 @@ abstract class TypeParameterType implements DartType {
 ///
 /// Clients may not extend, implement or mix-in this class.
 
-abstract class TypeParameterizedElement implements Element, Annotatable {
+abstract class TypeParameterizedElement implements Element {
   TypeParameterizedFragment get firstFragment;
   List get fragments;
   bool get isSimplyBounded;
   LibraryElement get library;
-  LibraryElement get library2;
   List get typeParameters;
-  List get typeParameters2;
 
 }
 
@@ -5564,12 +5357,11 @@ abstract class TypeParameterizedElement implements Element, Annotatable {
 ///
 /// Clients may not extend, implement or mix-in this class.
 
-abstract class TypeParameterizedFragment implements Fragment, Annotatable {
+abstract class TypeParameterizedFragment implements Fragment {
   TypeParameterizedElement get element;
   TypeParameterizedFragment? get nextFragment;
   TypeParameterizedFragment? get previousFragment;
   List get typeParameters;
-  List get typeParameters2;
 
 }
 
@@ -5643,8 +5435,6 @@ abstract class UriBasedDirectiveImpl extends DirectiveImpl implements UriBasedDi
 ///        name ('=' [Expression])?
 
 abstract class VariableDeclaration implements Declaration {
-  LocalVariableElement get declaredElement;
-  LocalVariableElement get declaredElement2;
   VariableFragment get declaredFragment;
   Token get equals;
   Expression get initializer;

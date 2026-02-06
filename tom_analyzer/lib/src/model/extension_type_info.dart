@@ -26,6 +26,9 @@ class ExtensionTypeInfo extends TypeDeclaration {
   @override
   final List<AnnotationInfo> annotations;
 
+  @override
+  final bool isDeprecated;
+
   final TypeReference representationType;
   final ConstructorInfo? primaryConstructor;
   final List<TypeParameterInfo> typeParameters;
@@ -46,6 +49,7 @@ class ExtensionTypeInfo extends TypeDeclaration {
     this.primaryConstructor,
     this.documentation,
     this.annotations = const [],
+    this.isDeprecated = false,
     this.typeParameters = const [],
     this.methods = const [],
     this.fields = const [],

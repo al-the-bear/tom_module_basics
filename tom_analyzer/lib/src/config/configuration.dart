@@ -24,7 +24,7 @@ class TomAnalyzerConfig {
     this.followReExports = true,
     this.followReExportPackages,
     this.skipReExports = const [],
-    this.includeDeprecatedMembers = true,
+    this.includeDeprecatedMembers = false,
     this.raw = const {},
   });
 
@@ -81,8 +81,8 @@ class TomAnalyzerConfig {
     final followParsed = _readFollowReExports(followValue);
     final skipReExports = _readStringList(map['skipReExports'] ?? map['skip_re_exports']);
     final includeDeprecatedMembers =
-        _readBool(map['include_deprecated_members'] ?? map['includeDeprecatedMembers']) ??
-            true;
+      _readBool(map['include_deprecated_members'] ?? map['includeDeprecatedMembers']) ??
+        false;
     return TomAnalyzerConfig(
       barrels: barrels,
       outputFormat: outputFormat,

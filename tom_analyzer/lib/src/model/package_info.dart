@@ -14,6 +14,9 @@ class PackageInfo extends ContainerElement {
   @override
   final List<AnnotationInfo> annotations;
 
+  @override
+  final bool isDeprecated;
+
   final String? version;
   final String rootPath;
   final List<LibraryInfo> libraries;
@@ -31,6 +34,7 @@ class PackageInfo extends ContainerElement {
     AnalysisResult? analysisResult,
     this.documentation,
     this.annotations = const [],
+    this.isDeprecated = false,
     this.version,
     this.libraries = const [],
     this.dependencies = const {},

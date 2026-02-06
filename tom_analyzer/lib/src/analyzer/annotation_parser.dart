@@ -1,5 +1,3 @@
-// ignore_for_file: deprecated_member_use
-
 import 'package:analyzer/dart/element/element.dart';
 
 import '../model/model.dart';
@@ -8,6 +6,16 @@ import '../model/model.dart';
 class AnnotationParser {
   List<AnnotationInfo> parseAll(Iterable<ElementAnnotation> annotations) {
     return annotations.map(_parse).toList();
+  }
+
+  bool hasDeprecated(Iterable<ElementAnnotation> annotations) {
+    for (final annotation in annotations) {
+      final info = _parse(annotation);
+      if (_isDeprecated(info)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   AnnotationInfo _parse(ElementAnnotation annotation) {
@@ -21,5 +29,16 @@ class AnnotationParser {
       name: name,
       qualifiedName: qualifiedName,
     );
+  }
+
+  bool _isDeprecated(AnnotationInfo info) {
+    final rawName = info.name.trim().toLowerCase();
+    final normalizedName = rawName.startsWith('@') ? rawName.substring(1) : rawName;
+    final baseName = normalizedName.split('(').first;
+    if (baseName == 'deprecated') {
+      return true;
+    }
+    final qualified = info.qualifiedName.toLowerCase();
+    return qualified == 'deprecated' || qualified.endsWith('.deprecated');
   }
 }
