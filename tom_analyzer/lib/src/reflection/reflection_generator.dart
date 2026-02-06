@@ -3,6 +3,10 @@ import 'reflection_model.dart';
 
 /// Generates reflection code from analysis results.
 class ReflectionGenerator {
+  final bool includeDeprecatedMembers;
+
+  const ReflectionGenerator({this.includeDeprecatedMembers = true});
+
   String generate(ReflectionModel model) {
     final result = model.analysisResult;
     final buffer = StringBuffer();
@@ -21,7 +25,10 @@ class ReflectionGenerator {
 
     buffer.writeln('// GENERATED CODE - DO NOT MODIFY BY HAND');
     buffer.writeln('// coverage:ignore-file');
-    buffer.writeln('// ignore_for_file: deprecated_member_use, unused_import, equal_keys_in_map');
+    if (includeDeprecatedMembers) {
+      buffer.writeln(
+          '// ignore_for_file: deprecated_member_use, unused_import, equal_keys_in_map');
+    }
     buffer.writeln("library tom_analyzer.reflection;");
     buffer.writeln();
     buffer.writeln("import 'package:tom_analyzer/tom_analyzer.dart' as ta;");
@@ -35,6 +42,9 @@ class ReflectionGenerator {
       if (_isPrivate(cls.name) || !_canImport(cls.library.uri)) {
         continue;
       }
+      if (!_shouldInclude(cls)) {
+        continue;
+      }
       buffer.writeln(_classDescriptor(cls, importAliases, result));
     }
     buffer.writeln('};');
@@ -42,6 +52,9 @@ class ReflectionGenerator {
     buffer.writeln('final _enums = <String, ta.MemberContainerDescriptor>{');
     for (final enm in result.allEnums..sort(_byQualifiedName)) {
       if (_isPrivate(enm.name) || !_canImport(enm.library.uri)) {
+        continue;
+      }
+      if (!_shouldInclude(enm)) {
         continue;
       }
       buffer.writeln(_memberContainer(enm, TypeKindWrapper.enumType, importAliases));
@@ -53,6 +66,9 @@ class ReflectionGenerator {
       if (_isPrivate(mix.name) || !_canImport(mix.library.uri)) {
         continue;
       }
+      if (!_shouldInclude(mix)) {
+        continue;
+      }
       buffer.writeln(_memberContainer(mix, TypeKindWrapper.mixinType, importAliases));
     }
     buffer.writeln('};');
@@ -60,6 +76,9 @@ class ReflectionGenerator {
     buffer.writeln('final _extensions = <String, ta.ExtensionDescriptor>{');
     for (final ext in result.allExtensions..sort(_byQualifiedName)) {
       if (_isPrivate(ext.name) || !_canImport(ext.library.uri)) {
+        continue;
+      }
+      if (!_shouldInclude(ext)) {
         continue;
       }
       buffer.writeln(_extensionDescriptor(ext, importAliases));
@@ -71,6 +90,9 @@ class ReflectionGenerator {
       if (_isPrivate(extType.name) || !_canImport(extType.library.uri)) {
         continue;
       }
+      if (!_shouldInclude(extType)) {
+        continue;
+      }
       buffer.writeln(_memberContainer(extType, TypeKindWrapper.extensionType, importAliases));
     }
     buffer.writeln('};');
@@ -78,6 +100,9 @@ class ReflectionGenerator {
     buffer.writeln('final _typeAliases = <String, ta.TypeAliasDescriptor>{');
     for (final alias in result.allTypeAliases..sort(_byQualifiedName)) {
       if (_isPrivate(alias.name) || !_canImport(alias.library.uri)) {
+        continue;
+      }
+      if (!_shouldInclude(alias)) {
         continue;
       }
       buffer.writeln(_typeAliasDescriptor(alias));
@@ -98,10 +123,16 @@ class ReflectionGenerator {
         if (_isPrivate(variable.name)) {
           continue;
         }
+        if (!_shouldInclude(variable)) {
+          continue;
+        }
         buffer.writeln(_globalVariable(variable, alias));
       }
       for (final getter in library.getters..sort(_byName)) {
         if (_isPrivate(getter.name)) {
+          continue;
+        }
+        if (!_shouldInclude(getter)) {
           continue;
         }
         buffer.writeln(_globalGetter(getter, alias));
@@ -110,10 +141,16 @@ class ReflectionGenerator {
         if (_isPrivate(setter.name)) {
           continue;
         }
+        if (!_shouldInclude(setter)) {
+          continue;
+        }
         buffer.writeln(_globalSetter(setter, alias));
       }
       for (final function in library.functions..sort(_byName)) {
         if (_isPrivate(function.name)) {
+          continue;
+        }
+        if (!_shouldInclude(function)) {
           continue;
         }
         buffer.writeln(_globalFunction(function, alias));
@@ -371,7 +408,11 @@ class ReflectionGenerator {
     
     // Add own methods (declaringClass = null means declared here)
     for (final method in ownMethods) {
-      if (_isPrivate(method.name) || method.isStatic != isStatic) continue;
+      if (_isPrivate(method.name) ||
+          method.isStatic != isStatic ||
+          !_shouldInclude(method)) {
+        continue;
+      }
       entries.add(_methodDescriptor(method, alias, typeName));
     }
     
@@ -379,12 +420,18 @@ class ReflectionGenerator {
     if (!isStatic) {
       for (final entry in inheritedMethods.entries) {
         final (method, declaringClass) = entry.value;
+        if (!_shouldInclude(method)) {
+          continue;
+        }
         entries.add(_methodDescriptor(method, alias, typeName,
             declaringClassQualifiedName: declaringClass));
       }
       
       // Add extension methods (with declaringClass set to extension)
       for (final (ext, method) in extensionMethods) {
+        if (!_shouldInclude(ext) || !_shouldInclude(method)) {
+          continue;
+        }
         final extAlias = importAliases[ext.library.uri] ?? alias;
         entries.add(_extensionMethodDescriptor(method, extAlias, ext.name, alias, typeName,
             declaringClassQualifiedName: ext.qualifiedName));
@@ -442,13 +489,20 @@ class ReflectionGenerator {
     final entries = <String>[];
     
     for (final field in ownFields) {
-      if (_isPrivate(field.name) || field.isStatic != isStatic) continue;
+      if (_isPrivate(field.name) ||
+          field.isStatic != isStatic ||
+          !_shouldInclude(field)) {
+        continue;
+      }
       entries.add(_fieldDescriptor(field, alias, typeName));
     }
     
     if (!isStatic) {
       for (final entry in inheritedFields.entries) {
         final (field, declaringClass) = entry.value;
+        if (!_shouldInclude(field)) {
+          continue;
+        }
         entries.add(_fieldDescriptor(field, alias, typeName,
             declaringClassQualifiedName: declaringClass));
       }
@@ -471,19 +525,29 @@ class ReflectionGenerator {
     final entries = <String>[];
     
     for (final getter in ownGetters) {
-      if (_isPrivate(getter.name) || getter.isStatic != isStatic) continue;
+      if (_isPrivate(getter.name) ||
+          getter.isStatic != isStatic ||
+          !_shouldInclude(getter)) {
+        continue;
+      }
       entries.add(_getterDescriptor(getter, alias, typeName));
     }
     
     if (!isStatic) {
       for (final entry in inheritedGetters.entries) {
         final (getter, declaringClass) = entry.value;
+        if (!_shouldInclude(getter)) {
+          continue;
+        }
         entries.add(_getterDescriptor(getter, alias, typeName,
             declaringClassQualifiedName: declaringClass));
       }
       
       // Add extension getters
       for (final (ext, getter) in extensionGetters) {
+        if (!_shouldInclude(ext) || !_shouldInclude(getter)) {
+          continue;
+        }
         final extAlias = importAliases[ext.library.uri] ?? alias;
         entries.add(_extensionGetterDescriptor(getter, extAlias, ext.name, alias, typeName,
             declaringClassQualifiedName: ext.qualifiedName));
@@ -536,19 +600,29 @@ class ReflectionGenerator {
     final entries = <String>[];
     
     for (final setter in ownSetters) {
-      if (_isPrivate(setter.name) || setter.isStatic != isStatic) continue;
+      if (_isPrivate(setter.name) ||
+          setter.isStatic != isStatic ||
+          !_shouldInclude(setter)) {
+        continue;
+      }
       entries.add(_setterDescriptor(setter, alias, typeName));
     }
     
     if (!isStatic) {
       for (final entry in inheritedSetters.entries) {
         final (setter, declaringClass) = entry.value;
+        if (!_shouldInclude(setter)) {
+          continue;
+        }
         entries.add(_setterDescriptor(setter, alias, typeName,
             declaringClassQualifiedName: declaringClass));
       }
       
       // Add extension setters
       for (final (ext, setter) in extensionSetters) {
+        if (!_shouldInclude(ext) || !_shouldInclude(setter)) {
+          continue;
+        }
         final extAlias = importAliases[ext.library.uri] ?? alias;
         entries.add(_extensionSetterDescriptor(setter, extAlias, ext.name, alias, typeName,
             declaringClassQualifiedName: ext.qualifiedName));
@@ -597,7 +671,7 @@ class ReflectionGenerator {
     final qualifiedName = cls.qualifiedName;
     final constructors = <String>[
       for (final ctor in cls.constructors..sort(_byName))
-        if (!_isPrivate(ctor.name))
+        if (!_isPrivate(ctor.name) && _shouldInclude(ctor))
           _constructorDescriptor(ctor, alias, cls.name,
               isAbstractClass: cls.isAbstract),
     ];
@@ -793,7 +867,9 @@ class ReflectionGenerator {
   }) {
     final entries = <String>[];
     for (final method in methods) {
-      if (_isPrivate(method.name) || method.isStatic != isStatic) {
+      if (_isPrivate(method.name) ||
+          method.isStatic != isStatic ||
+          !_shouldInclude(method)) {
         continue;
       }
       // Include operators - they will have null invokers but are tracked
@@ -851,7 +927,7 @@ class ReflectionGenerator {
   String _methodMapMetadataOnly(List<MethodInfo> methods) {
     final entries = <String>[];
     for (final method in methods) {
-      if (_isPrivate(method.name)) {
+      if (_isPrivate(method.name) || !_shouldInclude(method)) {
         continue;
       }
       entries.add(_methodDescriptorMetadata(method));
@@ -913,7 +989,9 @@ class ReflectionGenerator {
   }) {
     final entries = <String>[];
     for (final field in fields) {
-      if (_isPrivate(field.name) || field.isStatic != isStatic) {
+      if (_isPrivate(field.name) ||
+          field.isStatic != isStatic ||
+          !_shouldInclude(field)) {
         continue;
       }
       entries.add(_fieldDescriptor(field, alias, typeName));
@@ -964,7 +1042,7 @@ class ReflectionGenerator {
   String _fieldMapMetadataOnly(List<FieldInfo> fields) {
     final entries = <String>[];
     for (final field in fields) {
-      if (_isPrivate(field.name)) {
+      if (_isPrivate(field.name) || !_shouldInclude(field)) {
         continue;
       }
       entries.add(_fieldDescriptorMetadata(field));
@@ -1003,7 +1081,9 @@ class ReflectionGenerator {
   }) {
     final entries = <String>[];
     for (final getter in getters) {
-      if (_isPrivate(getter.name) || getter.isStatic != isStatic) {
+      if (_isPrivate(getter.name) ||
+          getter.isStatic != isStatic ||
+          !_shouldInclude(getter)) {
         continue;
       }
       entries.add(_getterDescriptor(getter, alias, typeName));
@@ -1041,7 +1121,7 @@ class ReflectionGenerator {
   String _getterMapMetadataOnly(List<GetterInfo> getters) {
     final entries = <String>[];
     for (final getter in getters) {
-      if (_isPrivate(getter.name)) {
+      if (_isPrivate(getter.name) || !_shouldInclude(getter)) {
         continue;
       }
       entries.add(_getterDescriptorMetadata(getter));
@@ -1077,7 +1157,9 @@ class ReflectionGenerator {
   }) {
     final entries = <String>[];
     for (final setter in setters) {
-      if (_isPrivate(setter.name) || setter.isStatic != isStatic) {
+      if (_isPrivate(setter.name) ||
+          setter.isStatic != isStatic ||
+          !_shouldInclude(setter)) {
         continue;
       }
       entries.add(_setterDescriptor(setter, alias, typeName));
@@ -1117,7 +1199,7 @@ class ReflectionGenerator {
   String _setterMapMetadataOnly(List<SetterInfo> setters) {
     final entries = <String>[];
     for (final setter in setters) {
-      if (_isPrivate(setter.name)) {
+      if (_isPrivate(setter.name) || !_shouldInclude(setter)) {
         continue;
       }
       entries.add(_setterDescriptorMetadata(setter));
@@ -1254,6 +1336,7 @@ class ReflectionGenerator {
   String _appliedExtensions(ClassInfo cls, AnalysisResult result) {
     final matches = result.allExtensions
         .where((ext) => ext.extendedType.qualifiedName == cls.qualifiedName)
+        .where(_shouldInclude)
         .map((ext) => ext.qualifiedName);
     return _stringList(matches);
   }
@@ -1310,6 +1393,27 @@ class ReflectionGenerator {
       value == null ? 'null' : "'${_escape(value)}'";
 
   bool _canImport(Uri uri) => uri.scheme == 'package' || uri.scheme == 'dart';
+
+  bool _shouldInclude(Element element) {
+    if (includeDeprecatedMembers) {
+      return true;
+    }
+    return !_hasDeprecatedAnnotation(element.annotations);
+  }
+
+  bool _hasDeprecatedAnnotation(List<AnnotationInfo> annotations) {
+    for (final annotation in annotations) {
+      final name = annotation.name.toLowerCase();
+      if (name == 'deprecated') {
+        return true;
+      }
+      final qualified = annotation.qualifiedName.toLowerCase();
+      if (qualified == 'deprecated' || qualified.endsWith('.deprecated')) {
+        return true;
+      }
+    }
+    return false;
+  }
 
   bool _isPrivate(String name) => name.startsWith('_');
 

@@ -12,6 +12,7 @@ class TomAnalyzerConfig {
   final bool followReExports;
   final List<String>? followReExportPackages;
   final List<String> skipReExports;
+  final bool includeDeprecatedMembers;
   final Map<String, dynamic> raw;
 
   const TomAnalyzerConfig({
@@ -23,6 +24,7 @@ class TomAnalyzerConfig {
     this.followReExports = true,
     this.followReExportPackages,
     this.skipReExports = const [],
+    this.includeDeprecatedMembers = true,
     this.raw = const {},
   });
 
@@ -32,6 +34,7 @@ class TomAnalyzerConfig {
     String? outputFile,
     String? reflectionOutputFile,
     String? workspaceRoot,
+    bool? includeDeprecatedMembers,
   }) {
     return TomAnalyzerConfig(
       barrels: barrels ?? this.barrels,
@@ -42,6 +45,8 @@ class TomAnalyzerConfig {
       followReExports: followReExports,
       followReExportPackages: followReExportPackages,
       skipReExports: skipReExports,
+      includeDeprecatedMembers:
+          includeDeprecatedMembers ?? this.includeDeprecatedMembers,
       raw: raw,
     );
   }
@@ -75,6 +80,9 @@ class TomAnalyzerConfig {
     final followValue = map['followReExports'] ?? map['follow_re_exports'];
     final followParsed = _readFollowReExports(followValue);
     final skipReExports = _readStringList(map['skipReExports'] ?? map['skip_re_exports']);
+    final includeDeprecatedMembers =
+        _readBool(map['include_deprecated_members'] ?? map['includeDeprecatedMembers']) ??
+            true;
     return TomAnalyzerConfig(
       barrels: barrels,
       outputFormat: outputFormat,
@@ -84,6 +92,7 @@ class TomAnalyzerConfig {
       followReExports: followParsed.followReExports,
       followReExportPackages: followParsed.followReExportPackages,
       skipReExports: skipReExports,
+      includeDeprecatedMembers: includeDeprecatedMembers,
       raw: map,
     );
   }
@@ -98,6 +107,10 @@ class TomAnalyzerConfig {
 
   static String? _readString(Object? value) {
     return value is String ? value : null;
+  }
+
+  static bool? _readBool(Object? value) {
+    return value is bool ? value : null;
   }
 
   static List<String> _readStringList(Object? value) {

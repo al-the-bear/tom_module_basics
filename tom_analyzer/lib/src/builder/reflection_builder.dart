@@ -44,7 +44,9 @@ class ReflectionBuilder implements Builder {
     );
 
     final model = ReflectionModel.fromAnalysis(result);
-    final generator = ReflectionGenerator();
+    final generator = ReflectionGenerator(
+      includeDeprecatedMembers: config.includeDeprecatedMembers,
+    );
     final content = generator.generate(model);
 
     final outputId = buildStep.inputId.changeExtension('.r.dart');
