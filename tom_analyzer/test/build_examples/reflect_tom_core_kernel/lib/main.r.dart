@@ -1,5 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
+// ignore_for_file: depend_on_referenced_packages, implementation_imports, unnecessary_library_name
 library tom_analyzer.reflection;
 
 import 'package:tom_analyzer/tom_analyzer.dart' as ta;

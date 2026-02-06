@@ -25,6 +25,8 @@ class ReflectionGenerator {
 
     buffer.writeln('// GENERATED CODE - DO NOT MODIFY BY HAND');
     buffer.writeln('// coverage:ignore-file');
+    buffer.writeln(
+      '// ignore_for_file: depend_on_referenced_packages, implementation_imports, unnecessary_library_name');
     if (includeDeprecatedMembers) {
       buffer.writeln(
           '// ignore_for_file: deprecated_member_use, unused_import, equal_keys_in_map');

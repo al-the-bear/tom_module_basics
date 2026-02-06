@@ -4,6 +4,10 @@
 /// This script uses the Dart analyzer to analyze the analyzer package itself
 /// and extract information about its element.dart API.
 
+library extract_analyzer_element_api;
+
+// ignore_for_file: deprecated_member_use
+
 import 'dart:io';
 
 import 'package:analyzer/dart/analysis/analysis_context_collection.dart';

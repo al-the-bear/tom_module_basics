@@ -23,6 +23,13 @@ analyzer:
   exclude:
     # AST module is incomplete (WIP) and not exported from the main library
     - lib/src/ast/**
+    # Test fixtures are intentionally non-idiomatic for documentation coverage
+    - test/dart_overview/**
+    # Generated build examples are large and include cross-package imports
+    - test/build_examples/**
+    # Generated docs and helper tools are excluded from strict analysis
+    - doc/**
+    - tool/**
 
 # For more information about the core and recommended set of lints, see
 # https://dart.dev/go/core-lints
