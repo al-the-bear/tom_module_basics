@@ -54,7 +54,9 @@ class CompilerConfig {
   final bool dryRun;
 
   // Compiler-specific options
+  final List<CommandSection> precompileSections;
   final List<CompileSection> compileSections;
+  final List<CommandSection> postcompileSections;
 
   const CompilerConfig({
     this.project,
@@ -64,7 +66,9 @@ class CompilerConfig {
     this.recursionExclude = const [],
     this.verbose = false,
     this.dryRun = false,
+    this.precompileSections = const [],
     this.compileSections = const [],
+    this.postcompileSections = const [],
   });
 
   /// Load configuration from tom_build.yaml file (compiler: section).
@@ -128,17 +132,37 @@ class CompilerConfig {
       final options = compilerBuilder['options'] as YamlMap?;
       if (options == null) return null;
 
+      // Parse precompile sections
+      final precompileSections = <CommandSection>[];
+      final precompileRaw = options['precompile'];
+      if (precompileRaw is YamlList) {
+        for (final item in precompileRaw) {
+          precompileSections.add(CommandSection.fromJson(item));
+        }
+      }
+
       // Parse compile sections
-      final sections = <CompileSection>[];
+      final compileSections = <CompileSection>[];
       final compilesRaw = options['compiles'];
       if (compilesRaw is YamlList) {
         for (final item in compilesRaw) {
-          sections.add(CompileSection.fromJson(item));
+          compileSections.add(CompileSection.fromJson(item));
+        }
+      }
+
+      // Parse postcompile sections
+      final postcompileSections = <CommandSection>[];
+      final postcompileRaw = options['postcompile'];
+      if (postcompileRaw is YamlList) {
+        for (final item in postcompileRaw) {
+          postcompileSections.add(CommandSection.fromJson(item));
         }
       }
 
       return CompilerConfig(
-        compileSections: sections,
+        precompileSections: precompileSections,
+        compileSections: compileSections,
+        postcompileSections: postcompileSections,
       );
     } catch (e) {
       if (_verbose) {
@@ -166,9 +190,15 @@ class CompilerConfig {
       recursionExclude: [...recursionExclude, ...other.recursionExclude],
       verbose: other.verbose || verbose,
       dryRun: other.dryRun || dryRun,
+      precompileSections: other.precompileSections.isNotEmpty
+          ? other.precompileSections
+          : precompileSections,
       compileSections: other.compileSections.isNotEmpty
           ? other.compileSections
           : compileSections,
+      postcompileSections: other.postcompileSections.isNotEmpty
+          ? other.postcompileSections
+          : postcompileSections,
     );
   }
 }
@@ -416,6 +446,16 @@ Future<bool> _processProject(String projectPath, CompilerConfig config) async {
   try {
     var compilationCount = 0;
 
+    // Run precompile sections
+    for (final section in projectConfig.precompileSections) {
+      await _runCommandSection(
+        section: section,
+        currentPlatform: currentPlatform,
+        config: config,
+        sectionName: 'precompile',
+      );
+    }
+
     // Process each compilation section
     for (final section in projectConfig.compileSections) {
       // Check if this section should run on current platform
@@ -468,6 +508,16 @@ Future<bool> _processProject(String projectPath, CompilerConfig config) async {
       }
     }
 
+    // Run postcompile sections
+    for (final section in projectConfig.postcompileSections) {
+      await _runCommandSection(
+        section: section,
+        currentPlatform: currentPlatform,
+        config: config,
+        sectionName: 'postcompile',
+      );
+    }
+
     if (compilationCount > 0) {
       print('Completed $compilationCount compilation(s)');
     }
@@ -475,6 +525,85 @@ Future<bool> _processProject(String projectPath, CompilerConfig config) async {
     return true;
   } finally {
     Directory.current = originalDir;
+  }
+}
+
+/// Run a command section (precompile or postcompile).
+Future<void> _runCommandSection({
+  required CommandSection section,
+  required String currentPlatform,
+  required CompilerConfig config,
+  required String sectionName,
+}) async {
+  // Check if this section should run on current platform
+  if (section.platforms.isNotEmpty) {
+    var matches = false;
+    for (final platform in section.platforms) {
+      if (PlatformUtils.matchesPlatform(platform, currentPlatform)) {
+        matches = true;
+        break;
+      }
+    }
+    if (!matches) {
+      if (config.verbose) {
+        print(
+            'Skipping $sectionName - current platform $currentPlatform not in platforms: ${section.platforms}');
+      }
+      return;
+    }
+  }
+
+  // Get current platform values
+  final currentOS = PlatformUtils.getTargetOS(currentPlatform);
+  final currentArch = PlatformUtils.getTargetArch(currentPlatform);
+  final currentPlatformDart = PlatformUtils.vsCodeToDartTarget(currentPlatform);
+
+  // Resolve placeholders and run commands
+  final commands = section.commandlines.map((template) {
+    var cmd = template
+        // Current platform placeholders
+        .replaceAll('\${current-os}', currentOS)
+        .replaceAll('\${current-arch}', currentArch)
+        .replaceAll('\${current-platform}', currentPlatformDart)
+        .replaceAll('\${current-platform-vs}', currentPlatform);
+
+    // Replace environment variables
+    return _replaceEnvVars(cmd);
+  }).toList();
+
+  print('Running $sectionName...');
+
+  if (config.dryRun) {
+    for (var i = 0; i < commands.length; i++) {
+      print('  [DRY RUN] Command ${i + 1}/${commands.length}: ${commands[i]}');
+    }
+    return;
+  }
+
+  // Execute commands sequentially
+  final environment = Map<String, String>.from(Platform.environment);
+
+  for (var i = 0; i < commands.length; i++) {
+    final command = commands[i];
+    final cmdNum = commands.length > 1 ? '${i + 1}/${commands.length}' : '';
+    final prefix = cmdNum.isEmpty ? '' : ' ($cmdNum)';
+
+    print('  Executing$prefix: $command');
+
+    final result = await Process.run(
+      '/bin/sh',
+      ['-c', command],
+      environment: environment,
+      runInShell: false,
+    );
+
+    if (result.exitCode != 0) {
+      print('  Failed $sectionName (exit code ${result.exitCode})');
+      if (result.stderr.toString().isNotEmpty) {
+        print('  Error: ${result.stderr}');
+      }
+      // Continue with other commands in precompile/postcompile
+    }
   }
 }
 
@@ -496,8 +625,11 @@ Future<bool> _compileFile({
   
   // Resolve placeholders in all command templates
   final dartTarget = PlatformUtils.vsCodeToDartTarget(targetPlatform);
-  final currentOS = PlatformUtils.getOSFromPlatform(currentPlatform);
-  final targetOS = PlatformUtils.getOSFromPlatform(targetPlatform);
+  final currentTargetOS = PlatformUtils.getTargetOS(currentPlatform);
+  final targetOS = PlatformUtils.getTargetOS(targetPlatform);
+  final currentTargetArch = PlatformUtils.getTargetArch(currentPlatform);
+  final targetArch = PlatformUtils.getTargetArch(targetPlatform);
+  final currentPlatformDart = PlatformUtils.vsCodeToDartTarget(currentPlatform);
   
   final commands = commandTemplates.map((template) {
     var cmd = template
@@ -509,15 +641,18 @@ Future<bool> _compileFile({
         .replaceAll('\${file.basename}', fileBasename)
         .replaceAll('\${file.extension}', fileExtension)
         .replaceAll('\${file.dir}', fileDir)
-        // Platform targets
-        .replaceAll('\${target}', dartTarget)
-        .replaceAll('\${target_platform}', targetPlatform)
-        .replaceAll('\${current_platform}', currentPlatform)
-        // OS names (user-friendly: macos, linux, windows)
-        .replaceAll('\${current_os}', currentOS)
-        .replaceAll('\${target_os}', targetOS);
+        // Target platform - dart compile options
+        .replaceAll('\${target-os}', targetOS)
+        .replaceAll('\${target-arch}', targetArch)
+        .replaceAll('\${target-platform}', dartTarget)
+        .replaceAll('\${target-platform-vs}', targetPlatform)
+        // Current platform
+        .replaceAll('\${current-os}', currentTargetOS)
+        .replaceAll('\${current-arch}', currentTargetArch)
+        .replaceAll('\${current-platform}', currentPlatformDart)
+        .replaceAll('\${current-platform-vs}', currentPlatform);
 
-    // Replace environment variables (angled brackets only)
+    // Replace environment variables
     return _replaceEnvVars(cmd);
   }).toList();
 
@@ -573,14 +708,21 @@ Future<bool> _compileFile({
 }
 
 /// Replace environment variable placeholders in command string.
-/// Only handles angled bracket format: <VAR>
+/// Handles both $VAR and [VAR] formats
 String _replaceEnvVars(String command) {
-  // Replace <VAR> pattern only
-  final varPattern = RegExp(r'<(\w+)>');
-  return command.replaceAllMapped(varPattern, (match) {
+  // Replace $VAR pattern
+  var result = command.replaceAllMapped(RegExp(r'\$(\w+)'), (match) {
     final varName = match.group(1)!;
     return Platform.environment[varName] ?? '';
   });
+  
+  // Replace [VAR] pattern
+  result = result.replaceAllMapped(RegExp(r'\[(\w+)\]'), (match) {
+    final varName = match.group(1)!;
+    return Platform.environment[varName] ?? '';
+  });
+  
+  return result;
 }
 
 void _printVersion() {

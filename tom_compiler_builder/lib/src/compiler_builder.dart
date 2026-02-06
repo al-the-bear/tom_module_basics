@@ -3,6 +3,54 @@ import 'dart:io';
 
 import 'package:build/build.dart';
 
+/// Configuration for a command section (precompile, postcompile).
+class CommandSection {
+  /// Command line templates with placeholders
+  final List<String> commandlines;
+
+  /// Platforms where these commands RUN (current platform filter)
+  final List<String> platforms;
+
+  CommandSection({
+    required this.commandlines,
+    List<String>? platforms,
+  }) : platforms = platforms ?? [];
+
+  /// Parse from JSON/YAML structure
+  factory CommandSection.fromJson(dynamic json) {
+    if (json is! Map) {
+      throw ArgumentError('CommandSection must be a map');
+    }
+
+    final commandlineRaw = json['commandline'];
+    List<String> commandlines;
+    if (commandlineRaw is String) {
+      commandlines = [commandlineRaw];
+    } else if (commandlineRaw is List) {
+      commandlines = commandlineRaw.map((e) => e.toString()).toList();
+    } else {
+      throw ArgumentError('commandline must be a string or list');
+    }
+
+    if (commandlines.isEmpty) {
+      throw ArgumentError('commandline cannot be empty');
+    }
+
+    final platformsRaw = json['platforms'];
+    List<String>? platforms;
+    if (platformsRaw is String) {
+      platforms = [platformsRaw];
+    } else if (platformsRaw is List) {
+      platforms = platformsRaw.map((e) => e.toString()).toList();
+    }
+
+    return CommandSection(
+      commandlines: commandlines,
+      platforms: platforms,
+    );
+  }
+}
+
 /// Configuration for a single compilation section.
 class CompileSection {
   /// Command line templates with placeholders (single string or list)
@@ -86,29 +134,50 @@ class CompileSection {
 
 /// Configuration for the compiler builder.
 class CompilerBuilderConfig {
+  final List<CommandSection> precompile;
   final List<CompileSection> compiles;
+  final List<CommandSection> postcompile;
 
   const CompilerBuilderConfig({
+    this.precompile = const [],
     required this.compiles,
+    this.postcompile = const [],
   });
 
   /// Load from build.yaml options
   factory CompilerBuilderConfig.fromOptions(Map<String, dynamic> options) {
+    // Parse precompile sections
+    final precompileSections = <CommandSection>[];
+    final precompileRaw = options['precompile'];
+    if (precompileRaw is List) {
+      for (final item in precompileRaw) {
+        precompileSections.add(CommandSection.fromJson(item));
+      }
+    }
+
+    // Parse compile sections
+    final compileSections = <CompileSection>[];
     final compilesRaw = options['compiles'];
-    if (compilesRaw == null) {
-      return const CompilerBuilderConfig(compiles: []);
+    if (compilesRaw is List) {
+      for (final item in compilesRaw) {
+        compileSections.add(CompileSection.fromJson(item));
+      }
     }
 
-    if (compilesRaw is! List) {
-      throw ArgumentError('compiles must be a list');
+    // Parse postcompile sections
+    final postcompileSections = <CommandSection>[];
+    final postcompileRaw = options['postcompile'];
+    if (postcompileRaw is List) {
+      for (final item in postcompileRaw) {
+        postcompileSections.add(CommandSection.fromJson(item));
+      }
     }
 
-    final sections = <CompileSection>[];
-    for (final item in compilesRaw) {
-      sections.add(CompileSection.fromJson(item));
-    }
-
-    return CompilerBuilderConfig(compiles: sections);
+    return CompilerBuilderConfig(
+      precompile: precompileSections,
+      compiles: compileSections,
+      postcompile: postcompileSections,
+    );
   }
 }
 

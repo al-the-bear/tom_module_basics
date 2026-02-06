@@ -27,18 +27,22 @@ targets:
         options:
           compiles:
             # macOS ARM64 - compile for self + all Linux targets
-            # Using multiple commands: compile then make executable
             - commandline:
-                - mkdir -p <HOME>/.tom/bin/${target_platform}
-                - dart compile exe ${file} --target-os=${target_os} -o <HOME>/.tom/bin/${target_platform}/${file.name}
-                - chmod +x <HOME>/.tom/bin/${target_platform}/${file.name}
+                - mkdir -p $HOME/.tom/bin/${target-platform-vs}
+                - dart compile exe ${file} --target-os=${target-os} -o $HOME/.tom/bin/${target-platform-vs}/${file.name}
               files: bin/cleanup.dart
               targets: [darwin-arm64, linux-x64, linux-arm64, linux-armhf]
               platforms: [darwin-arm64]
             
-            # Other platforms - compile for self only (single command - still works)
+            # Other platforms - compile for self only
             - commandline:
-                - mkdir -p <HOME>/.tom/bin/${target_platform}
-                - dart compile exe ${file} -o <HOME>/.tom/bin/${target_platform}/${file.name}
+                - mkdir -p $HOME/.tom/bin/${target-platform-vs}
+                - dart compile exe ${file} -o $HOME/.tom/bin/${target-platform-vs}/${file.name}
               files: bin/cleanup.dart
               platforms: [darwin-x64, linux-*, win32-*]
+
+          postcompile:
+            # Make binaries executable on Unix-like systems
+            - commandline:
+                - chmod -R +x $HOME/.tom/bin/${current-platform-vs}/
+              platforms: [macos, linux]

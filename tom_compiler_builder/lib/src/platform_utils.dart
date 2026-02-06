@@ -104,9 +104,9 @@ class PlatformUtils {
     return normalizedPlatforms.contains(normalizedTarget);
   }
 
-  /// Get OS name from VS Code platform (e.g., darwin-arm64 -> macos)
-  /// Returns user-friendly OS name: macos, linux, or windows
-  static String getOSFromPlatform(String platform) {
+  /// Get OS name from VS Code platform for dart compile --target-os
+  /// Returns: linux, macos, windows (dart compile option format)
+  static String getTargetOS(String platform) {
     final normalized = platform.toLowerCase().replaceAll('_', '-');
     if (normalized.startsWith('darwin-')) return 'macos';
     if (normalized.startsWith('linux-')) return 'linux';
@@ -116,10 +116,23 @@ class PlatformUtils {
     return normalized.split('-').first;
   }
 
-  /// Get architecture from VS Code platform (e.g., darwin-arm64 -> arm64)
-  static String getArchFromPlatform(String platform) {
+  /// Get architecture from VS Code platform for dart compile --target-arch
+  /// Returns: arm, arm64, x64 (dart compile option format)
+  static String getTargetArch(String platform) {
     final normalized = platform.replaceAll('_', '-');
     final parts = normalized.split('-');
-    return parts.length > 1 ? parts.last : '';
+    final arch = parts.length > 1 ? parts.last : '';
+    
+    // Map to dart compile architecture names
+    switch (arch) {
+      case 'armhf':
+        return 'arm';
+      case 'arm64':
+        return 'arm64';
+      case 'x64':
+        return 'x64';
+      default:
+        return arch;
+    }
   }
 }

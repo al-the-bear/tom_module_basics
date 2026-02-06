@@ -68,40 +68,80 @@ targets:
         enabled: true
         options:
           compiles:
-            - commandline: dart compile exe ${file} -o bin/${target_platform}/app
+            - commandline:
+                - mkdir -p $HOME/.tom/bin/${target-platform-vs}
+                - dart compile exe ${file} --target-os=${target-os} -o $HOME/.tom/bin/${target-platform-vs}/${file.name}
               files: [bin/app.dart, bin/tool.dart]
-              targets: [darwin_arm64, linux_x64, win32_x64]
-              platforms: [darwin_*, linux_*]
-            - commandline: dart compile exe ${file} -o bin/${target_platform}/app.exe
-              files: [bin/app.dart]
-              targets: [win32_x64, win32_arm64]
-              platforms: [win32_*]
+              targets: [darwin-arm64, linux-x64, win32-x64]
+              platforms: [darwin-*, linux-*]
+
+          postcompile:
+            - commandline:
+                - chmod -R +x $HOME/.tom/bin/${current-platform-vs}/
+              platforms: [macos, linux]
 ```
 
 ## Configuration Fields
+
+### `precompile` (list, optional)
+
+Commands to run BEFORE compilation starts. Runs once per project.
+
+```yaml
+precompile:
+  - commandline:
+      - echo "Starting compilation..."
+    platforms: [macos, linux]
+```
+
+**Fields:**
+- `commandline` (string or list, required): Commands to execute
+- `platforms` (string or list, optional): Host platforms where this runs
+
+**Available placeholders:** `${current-os}`, `${current-arch}`, `${current-platform}`, `${current-platform-vs}`
 
 ### `compiles` (list, required)
 
 List of compilation configurations, each with:
 
-#### `commandline` (string, required)
+#### `commandline` (string or list, required)
 
-Command template with placeholders:
+Command template with placeholders. Can be a single string or a list for multiple commands (executed sequentially with fail-fast):
 
 **File placeholders:**
-- `${file}` or `[file]` - Source file being compiled
+- `${file}` - Full source file path
+- `${file.path}` - Normalized file path
+- `${file.name}` - Filename without extension (e.g., `app` from `bin/app.dart`)
+- `${file.basename}` - Filename with extension (e.g., `app.dart`)
+- `${file.extension}` - File extension (e.g., `.dart`)
+- `${file.dir}` - Directory containing the file (e.g., `bin`)
 
-**Platform placeholders:**
-- `${target}` or `[target]` - Dart compiler target format (e.g., `macos-arm64`, `linux-x64`)
-- `${target_platform}` or `[target_platform]` - VS Code format (e.g., `darwin_arm64`, `linux_x64`)
-- `${current_platform}` or `[current_platform]` - Current platform in VS Code format
+**Target platform placeholders (for dart compile options):**
+- `${target-os}` - Target OS for `--target-os` option: `linux`, `macos`, `windows`
+- `${target-arch}` - Target architecture for `--target-arch` option: `arm`, `arm64`, `x64`
+- `${target-platform}` - Combined target: `macos-arm64`, `linux-x64`, `windows-x64`, etc.
+- `${target-platform-vs}` - VS Code format: `darwin-arm64`, `linux-x64`, `win32-x64`
+
+**Current platform placeholders:**
+- `${current-os}` - Current OS (where compilation runs): `linux`, `macos`, `windows`
+- `${current-arch}` - Current architecture: `arm`, `arm64`, `x64`
+- `${current-platform}` - Current platform in dart target format: `macos-arm64`, `linux-x64`
+- `${current-platform-vs}` - Current platform in VS Code format: `darwin-arm64`, `linux-x64`
 
 **Environment variables:**
-- `$VAR` or `[VAR]` - Environment variable value (e.g., `$OUTPUT`, `[BUILD_DIR]`)
+- `$VAR` - Environment variable value (e.g., `$HOME`, `$USER`)
+- `[VAR]` - Alternative syntax for environment variables
 
-**Example:**
+**Example - Single command:**
 ```yaml
-commandline: dart compile exe ${file} -o $OUTPUT/${target_platform}/${file}
+commandline: dart compile exe ${file} --target-os=${target-os} -o $HOME/.tom/bin/${target-platform-vs}/${file.name}
+```
+
+**Example - Multiple commands:**
+```yaml
+commandline:
+  - mkdir -p $HOME/.tom/bin/${target-platform-vs}
+  - dart compile exe ${file} --target-os=${target-os} -o $HOME/.tom/bin/${target-platform-vs}/${file.name}
 ```
 
 #### `files` (string or list, required)
@@ -123,30 +163,45 @@ Each file will be compiled separately for each target.
 Target platforms to compile FOR (cross-compilation targets).
 
 **Platform name formats:**
-- **VS Code format**: `darwin_arm64`, `linux_x64`, `win32_x64`, `linux_arm64`
-- **Generic OS**: `linux` (all Linux architectures), `macos`, `windows`
-- **Wildcards**: `linux_*` (matches `linux_x64`, `linux_arm64`, `linux_arm`)
+- **Specific platforms**: `darwin-arm64`, `linux-x64`, `win32-x64`, `linux-arm64`
+- **Short forms**: `linux`, `macos`, `windows` - expands to all architectures for that OS
+- **Wildcards**: `linux-*` (matches `linux-x64`, `linux-arm64`, `linux-armhf`)
+
+**Short form expansion:**
+- `linux` → `linux-x64`, `linux-arm64`, `linux-armhf`
+- `macos` or `darwin` → `darwin-arm64`, `darwin-x64`
+- `windows` or `win32` → `win32-x64`, `win32-arm64`
 
 **Default behavior:** If omitted, compiles only for current platform.
 
 **Examples:**
 ```yaml
 # Single target
-targets: darwin_arm64
+targets: darwin-arm64
 
 # Multiple specific targets
-targets: [darwin_arm64, linux_x64, win32_x64]
+targets: [darwin-arm64, linux-x64, win32-x64]
 
-# All Linux architectures
+# All Linux architectures (short form)
 targets: linux
 
+# All macOS + all Linux (short forms)
+targets: [macos, linux]
+
 # Wildcard match
-targets: [darwin_*, linux_*]
+targets: [darwin-*, linux-*]
 ```
 
 #### `platforms` (string or list, optional)
 
 Platforms where this compilation section should RUN (host platform filter).
+
+**Platform name formats:** Same as `targets` - supports specific platforms, short forms, and wildcards.
+
+**Short form expansion:**
+- `linux` → `linux-x64`, `linux-arm64`, `linux-armhf`
+- `macos` or `darwin` → `darwin-arm64`, `darwin-x64`
+- `windows` or `win32` → `win32-x64`, `win32-arm64`
 
 **Use case:** Platform-specific compilation commands (e.g., different file extensions)
 
@@ -154,43 +209,80 @@ Platforms where this compilation section should RUN (host platform filter).
 
 **Examples:**
 ```yaml
-# Only run on macOS
-platforms: darwin_*
+# Only run on any macOS
+platforms: darwin-*
+
+# Only run on macOS (short form - all variants)
+platforms: macos
 
 # Only run on Windows
-platforms: [win32_x64, win32_arm64]
+platforms: [win32-x64, win32-arm64]
 
-# Run on macOS and Linux
-platforms: [darwin_*, linux_*]
+# Run on macOS and Linux (short forms)
+platforms: [macos, linux]
+
+# Run on macOS and Linux (wildcards)
+platforms: [darwin-*, linux-*]
 ```
+
+### `postcompile` (list, optional)
+
+Commands to run AFTER all compilations complete. Runs once per project.
+
+```yaml
+postcompile:
+  - commandline:
+      - chmod -R +x $HOME/.tom/bin/${current-platform-vs}/
+    platforms: [macos, linux]
+```
+
+**Fields:**
+- `commandline` (string or list, required): Commands to execute
+- `platforms` (string or list, optional): Host platforms where this runs
+
+**Available placeholders:** `${current-os}`, `${current-arch}`, `${current-platform}`, `${current-platform-vs}`
+
+**Use case:** Make compiled binaries executable, run post-processing, cleanup temporary files.
 
 ## Platform Names
 
 ### Supported Formats
 
-The tool uses VS Code platform naming (with dashes):
+The tool uses VS Code platform naming (with dashes) for `targets` and `platforms` settings:
 
-#### VS Code Platform Names (Standard)
-- `darwin-arm64` - macOS ARM64 (Apple Silicon)
-- `darwin-x64` - macOS x64 (Intel)
-- `linux-x64` - Linux x64
-- `linux-arm64` - Linux ARM64
-- `linux-armhf` - Linux ARM32
-- `win32-x64` - Windows x64
-- `win32-arm64` - Windows ARM64
+#### VS Code Platform Names (for targets/platforms settings)
+| Platform | Description |
+|----------|-------------|
+| `darwin-arm64` | macOS ARM64 (Apple Silicon) |
+| `darwin-x64` | macOS x64 (Intel) |
+| `linux-x64` | Linux x64 |
+| `linux-arm64` | Linux ARM64 |
+| `linux-armhf` | Linux ARM32 |
+| `win32-x64` | Windows x64 |
+| `win32-arm64` | Windows ARM64 |
 
-#### Generic OS Names
-- `linux` - All Linux architectures
-- `macos` or `darwin` - All macOS architectures
-- `windows` or `win32` - All Windows architectures
+#### Short Forms (for both targets and platforms)
+| Short Form | Expands To |
+|------------|------------|
+| `linux` | `linux-x64`, `linux-arm64`, `linux-armhf` |
+| `macos` or `darwin` | `darwin-arm64`, `darwin-x64` |
+| `windows` or `win32` | `win32-x64`, `win32-arm64` |
 
-#### Dart Compiler Targets (automatic conversion)
-- `macos-arm64` - macOS ARM64
-- `macos-x64` - macOS x64
-- `linux-x64` - Linux x64
-- `linux-arm64` - Linux ARM64
-- `windows-x64` - Windows x64
-- `windows-arm64` - Windows ARM64
+#### Dart Compile Target Platform (`${target-platform}` placeholder)
+| OS | Architecture | Target Name |
+|----|--------------|-------------|
+| Windows | x64 | `windows-x64` |
+| Windows | ARM64 | `windows-arm64` |
+| Linux | x64 | `linux-x64` |
+| Linux | ARM64 | `linux-arm64` |
+| macOS | x64 (Intel) | `macos-x64` |
+| macOS | ARM64 (Apple Silicon) | `macos-arm64` |
+
+#### Dart Compile Options
+| Placeholder | Values | Usage |
+|-------------|--------|-------|
+| `${target-os}` | `linux`, `macos`, `windows` | For `--target-os` option |
+| `${target-arch}` | `arm`, `arm64`, `x64` | For `--target-arch` option |
 
 **The tool automatically converts between formats as needed.**
 
@@ -268,7 +360,7 @@ targets:
 
 ### Example 2: Cross-Platform Compilation
 
-Compile for multiple platforms:
+Compile for multiple platforms with cross-compilation:
 
 ```yaml
 # build.yaml
@@ -279,9 +371,17 @@ targets:
         enabled: true
         options:
           compiles:
-            - commandline: dart compile exe ${file} -o $OUTPUT/${target_platform}/${file}
+            - commandline:
+                - mkdir -p $HOME/.tom/bin/${target-platform-vs}
+                - dart compile exe ${file} --target-os=${target-os} -o $HOME/.tom/bin/${target-platform-vs}/${file.name}
               files: [bin/app.dart, bin/cli.dart]
-              targets: [darwin_arm64, darwin_x64, linux_x64, linux_arm64]
+              targets: [darwin-arm64, linux-x64, linux-arm64]
+              platforms: [darwin-arm64]  # Only run on macOS ARM64
+
+          postcompile:
+            - commandline:
+                - chmod -R +x $HOME/.tom/bin/${current-platform-vs}/
+              platforms: [macos, linux]
 ```
 
 ### Example 3: Platform-Specific Commands
@@ -298,16 +398,23 @@ targets:
         options:
           compiles:
             # Unix-like systems (macOS, Linux)
-            - commandline: dart compile exe ${file} -o bin/output/${target_platform}/app
+            - commandline:
+                - mkdir -p $HOME/.tom/bin/${target-platform-vs}
+                - dart compile exe ${file} --target-os=${target-os} -o $HOME/.tom/bin/${target-platform-vs}/${file.name}
               files: bin/app.dart
-              targets: [darwin_arm64, darwin_x64, linux_x64]
-              platforms: [darwin_*, linux_*]
+              targets: [macos, linux]
+              platforms: [macos, linux]
             
             # Windows systems
-            - commandline: dart compile exe ${file} -o bin\\output\\${target_platform}\\app.exe
+            - commandline: dart compile exe ${file} -o bin\\output\\${target-platform-vs}\\${file.name}.exe
               files: bin/app.dart
-              targets: [win32_x64, win32_arm64]
-              platforms: [win32_*]
+              targets: windows
+              platforms: windows
+
+          postcompile:
+            - commandline:
+                - chmod -R +x $HOME/.tom/bin/${current-platform-vs}/
+              platforms: [macos, linux]
 ```
 
 ### Example 4: Using Environment Variables
@@ -321,7 +428,9 @@ targets:
         enabled: true
         options:
           compiles:
-            - commandline: dart compile exe ${file} -o $BUILD_DIR/${target_platform}/app
+            - commandline:
+                - mkdir -p $BUILD_DIR/${target-platform-vs}
+                - dart compile exe ${file} --target-os=${target-os} -o $BUILD_DIR/${target-platform-vs}/${file.name}
               files: bin/app.dart
               targets: linux
 ```
@@ -330,7 +439,7 @@ Set environment variable before running:
 
 ```bash
 export BUILD_DIR=/path/to/output
-dart run tom_compiler_builder:compiler
+compiler --project=.
 ```
 
 ### Example 5: Multiple Files and Targets
@@ -344,15 +453,56 @@ targets:
         enabled: true
         options:
           compiles:
-            - commandline: dart compile exe ${file} -o bin/${target_platform}/$(basename ${file} .dart)
+            - commandline:
+                - mkdir -p $HOME/.tom/bin/${target-platform-vs}
+                - dart compile exe ${file} --target-os=${target-os} -o $HOME/.tom/bin/${target-platform-vs}/${file.name}
               files:
                 - bin/app.dart
                 - bin/cli.dart
                 - bin/server.dart
-              targets: [darwin_arm64, linux_x64, win32_x64]
+              targets: [darwin-arm64, linux-x64, win32-x64]
+
+          postcompile:
+            - commandline:
+                - chmod -R +x $HOME/.tom/bin/${current-platform-vs}/
+              platforms: [macos, linux]
 ```
 
 This will compile 3 files × 3 targets = 9 executables.
+
+### Example 6: Full Cross-Compilation Setup
+
+Compile from macOS ARM64 to multiple platforms:
+
+```yaml
+# build.yaml
+targets:
+  $default:
+    builders:
+      tom_compiler_builder:compiler_builder:
+        enabled: true
+        options:
+          compiles:
+            # macOS ARM64 host - cross-compile to self + all Linux targets
+            - commandline:
+                - mkdir -p $HOME/.tom/bin/${target-platform-vs}
+                - dart compile exe ${file} --target-os=${target-os} -o $HOME/.tom/bin/${target-platform-vs}/${file.name}
+              files: bin/my_tool.dart
+              targets: [darwin-arm64, linux-x64, linux-arm64, linux-armhf]
+              platforms: [darwin-arm64]
+            
+            # Other platforms - compile for self only
+            - commandline:
+                - mkdir -p $HOME/.tom/bin/${target-platform-vs}
+                - dart compile exe ${file} -o $HOME/.tom/bin/${target-platform-vs}/${file.name}
+              files: bin/my_tool.dart
+              platforms: [darwin-x64, linux-*, win32-*]
+
+          postcompile:
+            - commandline:
+                - chmod -R +x $HOME/.tom/bin/${current-platform-vs}/
+              platforms: [macos, linux]
+```
 
 ## Output Format
 
@@ -362,12 +512,17 @@ Compiler running
 ============================================================
 
 Project: my_app
-Compiling: bin/app.dart -> darwin_arm64
+Compiling: bin/app.dart -> darwin-arm64
+  Executing (1/2): mkdir -p /Users/me/.tom/bin/darwin-arm64
+  Executing (2/2): dart compile exe bin/app.dart --target-os=macos -o /Users/me/.tom/bin/darwin-arm64/app
   Success
-Compiling: bin/app.dart -> linux_x64
-  Failed (exit code 254)
-  Error: AOT compilation failed
-Completed 1 compilation(s)
+Compiling: bin/app.dart -> linux-x64
+  Executing (1/2): mkdir -p /Users/me/.tom/bin/linux-x64
+  Executing (2/2): dart compile exe bin/app.dart --target-os=linux -o /Users/me/.tom/bin/linux-x64/app
+  Success
+Running postcompile...
+  Executing: chmod -R +x /Users/me/.tom/bin/darwin-arm64/
+Completed 2 compilation(s)
 
 Compiler: Processed 1 project(s)
 ```

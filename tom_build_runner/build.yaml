@@ -1,0 +1,12 @@
+targets:
+  $default:
+    builders:
+      tom_version_builder:version_builder:
+        enabled: true
+        generate_for:
+          - bin/build_runner.dart
+        options:
+          package_name: build_runner_tool
+          build_date_env: buildRunnerToolBuildDate
+          git_commit_env: buildRunnerToolGitCommit
+          version_env: buildRunnerToolVersion
