@@ -1,15 +1,17 @@
-import 'package:tom_d4rt_ast/tom_d4rt_ast.dart';
+import 'dart:convert';
+
+import 'package:analyzer/dart/analysis/utilities.dart';
 import 'package:test/test.dart';
+import 'package:tom_d4rt_ast/ast_converter.dart';
 
 void main() {
   group('AST Serialization', () {
     test('SSimpleIdentifier serialization round-trip', () {
       final identifier = SSimpleIdentifier(
-        token: SToken(
-          offset: 0,
-          lexeme: 'testVar',
-          type: STokenType.identifier,
-        ),
+        offset: 0,
+        length: 7,
+        name: 'testVar',
+        inDeclarationContext: false,
       );
 
       final json = identifier.toJson();
@@ -17,15 +19,13 @@ void main() {
 
       expect(restored.name, equals('testVar'));
       expect(restored.offset, equals(0));
+      expect(restored.length, equals(7));
     });
 
     test('SIntegerLiteral serialization round-trip', () {
       final literal = SIntegerLiteral(
-        literal: SToken(
-          offset: 10,
-          lexeme: '42',
-          type: STokenType.integerLiteral,
-        ),
+        offset: 10,
+        length: 2,
         value: 42,
       );
 
@@ -34,6 +34,36 @@ void main() {
 
       expect(restored.value, equals(42));
       expect(restored.offset, equals(10));
+    });
+
+    test('Full Dart code round-trip serialization', () {
+      const dartCode = '''
+void hello() {
+  print('Hello, world!');
+}
+''';
+
+      // Parse
+      final parseResult = parseString(content: dartCode);
+
+      // Convert to serializable AST
+      final converter = AstConverter();
+      final ast = converter.convertCompilationUnit(parseResult.unit);
+
+      // Serialize
+      final jsonEncoder = JsonEncoder.withIndent('  ');
+      final json1 = jsonEncoder.convert(ast.toJson());
+
+      // Deserialize
+      final decoded = jsonDecode(json1) as Map<String, dynamic>;
+      final ast2 = SCompilationUnit.fromJson(decoded);
+
+      // Re-serialize
+      final json2 = jsonEncoder.convert(ast2.toJson());
+
+      // Compare
+      expect(json1, equals(json2));
+      expect(ast.declarations.length, equals(1));
     });
   });
 }

@@ -1,20 +1,31 @@
-import 'package:tom_d4rt_ast/tom_d4rt_ast.dart';
+import 'dart:convert';
+
+import 'package:analyzer/dart/analysis/utilities.dart';
+import 'package:tom_d4rt_ast/ast_converter.dart';
 
 void main() {
-  // Example: Create a simple AST node and serialize it
-  final identifier = SSimpleIdentifier(
-    token: SToken(
-      offset: 0,
-      lexeme: 'hello',
-      type: STokenType.identifier,
-    ),
-  );
+  // Example: Parse a Dart snippet and serialize it to JSON
+  const dartCode = '''
+void hello() {
+  print('Hello, world!');
+}
+''';
+
+  // Parse the Dart code
+  final parseResult = parseString(content: dartCode);
+
+  // Convert to serializable AST
+  final converter = AstConverter();
+  final ast = converter.convertCompilationUnit(parseResult.unit);
 
   // Serialize to JSON
-  final json = identifier.toJson();
-  print('JSON: $json');
+  final jsonEncoder = JsonEncoder.withIndent('  ');
+  final json = jsonEncoder.convert(ast.toJson());
+  print('AST JSON:');
+  print(json);
 
   // Deserialize from JSON
-  final restored = SSimpleIdentifier.fromJson(json);
-  print('Restored: ${restored.name}');
+  final decoded = jsonDecode(json) as Map<String, dynamic>;
+  final restored = SCompilationUnit.fromJson(decoded);
+  print('\nRestored AST has ${restored.declarations.length} declarations');
 }

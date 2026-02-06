@@ -1,6 +1,7 @@
 /// Verification script that reads the generated analysis YAML
 /// and compares it with AST generation results and direct analyzer results.
 library;
+import 'dart:convert';
 import 'dart:io';
 import 'package:analyzer/dart/analysis/analysis_context_collection.dart';
 import 'package:analyzer/dart/analysis/results.dart' as analyzer_results;
@@ -107,6 +108,8 @@ void main() async {
   print('  Functions:     ${analyzerStats.functions}');
   print('');
 
+  final libraryFiles = _collectLibraryFilePaths(result);
+
   // =========================================================================
   // SECTION 2: Dart Analyzer Results (direct analysis)
   // =========================================================================
@@ -115,8 +118,13 @@ void main() async {
   print('└─────────────────────────────────────────────────────────────────┘');
   print('');
 
-  final dartAnalyzerStats = await _scanWithDartAnalyzer();
+  final dartAnalyzerStats = await _scanWithDartAnalyzer(libraryFiles.files);
 
+  print('LIBRARIES TOTAL: ${libraryFiles.totalLibraries}');
+  print('LIBRARIES SKIPPED (dart:): ${libraryFiles.skippedDart}');
+  if (libraryFiles.unresolved.isNotEmpty) {
+    print('LIBRARIES UNRESOLVED: ${libraryFiles.unresolved.length}');
+  }
   print('FILES SCANNED: ${dartAnalyzerStats.filesScanned}');
   print('');
 
@@ -144,7 +152,7 @@ void main() async {
   print('');
 
   // Find all Dart files in the analyzer package
-  final astStats = await _scanWithAstGenerator(result);
+  final astStats = await _scanWithAstGenerator(libraryFiles.files);
 
   print('FILES SCANNED: ${astStats.filesScanned}');
   print('');
@@ -225,34 +233,29 @@ String _percentage(int ast, int analyzer) {
 }
 
 /// Scan Dart files using the Dart analyzer directly and collect statistics
-Future<_DartAnalyzerStats> _scanWithDartAnalyzer() async {
+Future<_DartAnalyzerStats> _scanWithDartAnalyzer(List<String> filePaths) async {
   final stats = _DartAnalyzerStats();
-  final analyzerRoot = _findAnalyzerRoot();
-  if (analyzerRoot == null) {
-    print('  Warning: Could not locate analyzer package root.');
+  if (filePaths.isEmpty) {
     return stats;
   }
 
-  final libDir = Directory('$analyzerRoot/lib');
-  if (!libDir.existsSync()) {
-    print('  Warning: Analyzer lib directory not found: ${libDir.path}');
-    return stats;
+  final directories = <String>{};
+  for (final filePath in filePaths) {
+    directories.add(_normalizePath(File(filePath).parent.path));
   }
 
   final collection = AnalysisContextCollection(
-    includedPaths: [libDir.path],
+    includedPaths: directories.toList(),
     resourceProvider: PhysicalResourceProvider.INSTANCE,
   );
 
-  for (final entity in libDir.listSync(recursive: true)) {
-    if (entity is! File) continue;
-    if (!entity.path.endsWith('.dart')) continue;
-
+  for (final filePath in filePaths) {
+    if (!File(filePath).existsSync()) continue;
     stats.filesScanned++;
 
-    final context = collection.contextFor(entity.path);
+    final context = collection.contextFor(filePath);
     final session = context.currentSession;
-    final resolved = await session.getResolvedUnit(entity.path);
+    final resolved = await session.getResolvedUnit(filePath);
 
     if (resolved is! analyzer_results.ResolvedUnitResult) continue;
     final unit = resolved.unit;
@@ -328,28 +331,11 @@ void _countAnalyzerMember(
 }
 
 /// Scan Dart files using the AST generator and collect statistics
-Future<_AstStats> _scanWithAstGenerator(tom.AnalysisResult result) async {
+Future<_AstStats> _scanWithAstGenerator(List<String> filePaths) async {
   final stats = _AstStats();
   final converter = AstConverter();
 
-  // Get the library paths from the analysis result
-  for (final library in result.libraries.values) {
-    final uriString = library.uri.toString();
-    
-    // Skip dart: libraries - we can't read those directly
-    if (uriString.startsWith('dart:')) continue;
-    
-    // Convert package URI to file path
-    String? filePath;
-    if (uriString.startsWith('package:analyzer/')) {
-      // Find the analyzer package location
-      filePath = _resolvePackageUri(uriString);
-    }
-    
-    if (filePath == null || !File(filePath).existsSync()) {
-      continue;
-    }
-
+  for (final filePath in filePaths) {
     try {
       final content = File(filePath).readAsStringSync();
       final parseResult = parseString(content: content, path: filePath);
@@ -419,70 +405,90 @@ void _countMember(SAstNode member, _AstStats stats) {
   }
 }
 
-String? _resolvePackageUri(String uri) {
-  // Parse package:analyzer/path/to/file.dart
-  if (!uri.startsWith('package:analyzer/')) return null;
-  
-  final relativePath = uri.substring('package:analyzer/'.length);
-  
-  // Try common locations for the analyzer package
-  final possiblePaths = [
-    // From pubspec.lock, find the cached package
-    '${Platform.environment['HOME']}/.pub-cache/hosted/pub.dev/analyzer-8.4.1/lib/$relativePath',
-    '${Platform.environment['HOME']}/.pub-cache/hosted/pub.dev/analyzer-8.4.0/lib/$relativePath',
-    // Add more versions as needed
-  ];
-  
-  // Also check via .dart_tool/package_config.json
-  final packageConfig = File('.dart_tool/package_config.json');
-  if (packageConfig.existsSync()) {
-    try {
-      final content = packageConfig.readAsStringSync();
-      // Simple regex to find analyzer path
-      final match = RegExp(r'"name":\s*"analyzer"[^}]*"rootUri":\s*"([^"]+)"').firstMatch(content);
-      if (match != null) {
-        var rootUri = match.group(1)!;
-        if (rootUri.startsWith('file://')) {
-          rootUri = rootUri.substring(7);
-        }
-        final path = '$rootUri/lib/$relativePath';
-        if (File(path).existsSync()) {
-          return path;
-        }
-      }
-    } catch (_) {}
-  }
-  
-  for (final path in possiblePaths) {
-    if (File(path).existsSync()) {
-      return path;
+_LibraryFiles _collectLibraryFilePaths(tom.AnalysisResult result) {
+  final files = <String>{};
+  final unresolved = <String>[];
+  var skippedDart = 0;
+  final packageRoots = _loadPackageRoots();
+
+  for (final library in result.libraries.values) {
+    final uriString = library.uri.toString();
+    if (uriString.startsWith('dart:')) {
+      skippedDart++;
+      continue;
     }
+
+    String? filePath;
+    if (uriString.startsWith('package:')) {
+      filePath = _resolvePackageUri(uriString, packageRoots);
+    } else if (uriString.startsWith('file:')) {
+      filePath = Uri.parse(uriString).toFilePath();
+    } else if (uriString.startsWith('/')) {
+      filePath = uriString;
+    } else {
+      filePath = uriString;
+    }
+
+    if (filePath == null || !File(filePath).existsSync()) {
+      unresolved.add(uriString);
+      continue;
+    }
+
+    files.add(_normalizePath(File(filePath).absolute.path));
   }
-  
-  return null;
+
+  return _LibraryFiles(
+    files: files.toList()..sort(),
+    totalLibraries: result.libraries.length,
+    skippedDart: skippedDart,
+    unresolved: unresolved,
+  );
 }
 
-String? _findAnalyzerRoot() {
+Map<String, String> _loadPackageRoots() {
   final packageConfig = File('.dart_tool/package_config.json');
-  if (!packageConfig.existsSync()) return null;
+  if (!packageConfig.existsSync()) return {};
 
   try {
     final content = packageConfig.readAsStringSync();
-    final match = RegExp(r'"name":\s*"analyzer"[^}]*"rootUri":\s*"([^"]+)"')
-        .firstMatch(content);
-    if (match == null) return null;
+    final data = jsonDecode(content) as Map<String, dynamic>;
+    final packages = data['packages'] as List<dynamic>? ?? [];
+    final root = packageConfig.parent.uri;
 
-    var rootUri = match.group(1)!;
-    if (rootUri.startsWith('file://')) {
-      rootUri = rootUri.substring(7);
-      return rootUri.endsWith('/') ? rootUri.substring(0, rootUri.length - 1) : rootUri;
+    final map = <String, String>{};
+    for (final entry in packages) {
+      final pkg = entry as Map<String, dynamic>;
+      final name = pkg['name'] as String?;
+      final rootUri = pkg['rootUri'] as String?;
+      if (name == null || rootUri == null) continue;
+
+      final resolved = root.resolve(rootUri).toFilePath();
+      map[name] = resolved.endsWith('/')
+          ? resolved.substring(0, resolved.length - 1)
+          : resolved;
     }
 
-    final resolved = packageConfig.parent.uri.resolve(rootUri).toFilePath();
-    return resolved.endsWith('/') ? resolved.substring(0, resolved.length - 1) : resolved;
+    return map;
   } catch (_) {
-    return null;
+    return {};
   }
+}
+
+String? _resolvePackageUri(String uri, Map<String, String> packageRoots) {
+  if (!uri.startsWith('package:')) return null;
+  final rest = uri.substring('package:'.length);
+  final slashIndex = rest.indexOf('/');
+  if (slashIndex == -1) return null;
+  final packageName = rest.substring(0, slashIndex);
+  final relativePath = rest.substring(slashIndex + 1);
+  final root = packageRoots[packageName];
+  if (root == null) return null;
+  final base = root.endsWith('/lib') ? root : '$root/lib';
+  return _normalizePath(File('$base/$relativePath').absolute.path);
+}
+
+String _normalizePath(String path) {
+  return Uri.file(path).normalizePath().toFilePath();
 }
 
 class _AnalyzerStats {
@@ -518,6 +524,20 @@ class _AnalyzerStats {
       methods +
       fields +
       functions;
+}
+
+class _LibraryFiles {
+  final List<String> files;
+  final int totalLibraries;
+  final int skippedDart;
+  final List<String> unresolved;
+
+  _LibraryFiles({
+    required this.files,
+    required this.totalLibraries,
+    required this.skippedDart,
+    required this.unresolved,
+  });
 }
 
 class _DartAnalyzerStats {

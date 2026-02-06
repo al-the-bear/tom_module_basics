@@ -1,25 +1,9 @@
-/// Serializable AST model for Dart code.
+/// Serializable AST model for Dart code interpretation without analyzer dependency.
 ///
-/// This library provides AST node classes that:
-/// 1. Mirror the structure of `package:analyzer/dart/ast/ast.dart`
-/// 2. Can be serialized to/from JSON or compact binary format
-/// 3. Can be interpreted without the analyzer dependency
-///
-/// ## Usage
-///
-/// **Runtime (without analyzer):**
-/// ```dart
-/// import 'package:tom_d4rt_ast/tom_d4rt_ast.dart';
-///
-/// final ast = SCompilationUnit.fromJson(json);
-/// final result = ast.accept(MyInterpreterVisitor());
-/// ```
-///
-/// ## Package Structure
-///
-/// - `ast.dart` - Main AST library with all node classes (via parts)
-/// - `token.dart` - Serializable token representation
+/// This package provides abstract AST classes that mirror the analyzer package's
+/// public API, but can be used independently for code interpretation and
+/// serialization purposes.
 library;
 
-export 'src/ast.dart';
-export 'src/token.dart';
+export 'src/analyzer/_stub_types.dart';
+export 'src/analyzer/ast_model.dart';
