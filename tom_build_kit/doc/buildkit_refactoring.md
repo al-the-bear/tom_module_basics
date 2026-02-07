@@ -1,31 +1,49 @@
 # Build Kit Configuration Refactoring
 
-## Status: In Progress — v3
+## Status: Complete — v4
 
 ### Execution Summary
 
 **Completed:**
 - ✅ TODO 1: Rename workspace config to `tom_build_master.yaml`, add `findWorkspaceRoot()` to ToolBase, update all tools
-- ✅ TODO 2 (partial): Migrated versioner `variablePrefix` from `build.yaml` to project `tom_build.yaml` (7 projects)
-- ✅ TODO 3 (partial): Removed `build.yaml` reading from versioner and runner tools
-- ✅ TODO 6 (partial): Added `TomBuildConfig.loadMaster()`, unified config loading for versioner/runner
-- ✅ TODO 7: Added standard pipelines (generate, clean, test, analyze, format, deps, ast, bridges) to `tom_build_master.yaml`
-- ✅ Bug fixes: Cleanup activation bug (bare key), d4rtgen toolKey `'dartgen'` → `'d4rtgen'`, `-R`/`-r` flag swap
-- ✅ Compiler: Removed local `_findWorkspaceRoot()`, uses `ToolBase.findWorkspaceRoot()`
+- ✅ TODO 2: Migrate all tool config to `tom_build.yaml`:
+  - Versioner `variablePrefix` from `build.yaml` to project `tom_build.yaml` (7 projects)
+  - Astgen conversion config from `build.yaml` to `tom_build.yaml` (test project)
+  - D4rtgen bridge config from `build.yaml`/`d4rt_bridging.json` to `tom_build.yaml` (3 production + 4 examples)
+- ✅ TODO 3: Remove `build.yaml` reading from all tools:
+  - Versioner and runner: done in v3
+  - Astgen: `--config` default changed to `tom_build.yaml`, removed `build.yaml` fallback
+  - D4rtgen: `BuildConfigLoader.loadFromBuildYaml()` → `loadFromTomBuildYaml()`, removed JSON fallback
+  - D4rtgen CLI: updated `_isD4rtProject()`, `_processProjectDirect()`, `_printBuildYamlSection()`
+  - Cleaned `build.yaml` files: removed `d4rt_bridge_builder` sections (kept version_builder, reflection_generator)
+- ✅ TODO 4: Navigation/scanning redesign:
+  - Added shared `navigation:` section to `tom_build_master.yaml`
+  - Removed `scan:`/`recursive:` from individual tool sections in master config
+  - `TomBuildConfig._loadFromFile()` merges `navigation:` section as defaults
+  - Fixed `recursionExclude` bug: now properly passed from `ToolBase.findProjects()` → `ProjectDiscovery.scanForProjects()`
+  - `ProjectDiscovery.scanForProjects()` accepts and applies `recursionExclude` glob patterns
+- ✅ TODO 5: Full astgen/d4rtgen tool adaptation (config format migration)
+- ✅ TODO 6: Unified config loading via `TomBuildConfig.loadMaster()` across all tools
+- ✅ TODO 7: Standard pipelines (generate, clean, test, analyze, format, deps, ast, bridges)
+- ✅ TODO 8: Unified merge rules — `ConfigMerger` utility with three strategies:
+  - `mergeSections()`: project replaces workspace if non-empty
+  - `mergeAdditive()`: union of workspace + project (deduplicated)
+  - `mergeScalar()`: project overrides if explicitly set
+  - `mergeMaps()`: project entries override workspace entries
+- ✅ Bug fixes: Cleanup activation bug, d4rtgen toolKey, `-R`/`-r` flag swap
+- ✅ Deleted all 6 `d4rt_bridging.json` files (production + examples)
 
-**Deferred:**
-- ❌ TODO 2 (remaining): Migrate astgen conversion config from `build.yaml` to `tom_build.yaml`
-- ❌ TODO 2 (remaining): Migrate d4rtgen bridge config from `build.yaml`/`d4rt_bridging.json` to `tom_build.yaml`
-- ❌ TODO 3 (remaining): Remove `build.yaml` reading from astgen/d4rtgen
-- ❌ TODO 4: Navigation/scanning redesign (scanning always active, `--project` disables scanning)
-- ❌ TODO 5: Full astgen/d4rtgen tool adaptation (config format migration)
-- ❌ TODO 8: Unified merge rules across all tools
-- ❌ d4rt_bridging.json removal (7 files — requires d4rtgen config migration first)
-
-**Commits:**
+**Commits (Phase 1 — v3):**
 - `6b8f512` (tom_module_basics): buildkit config refactoring — all tool updates
 - `942b257` (tom_module_d4rt): fix d4rtgen toolKey, add versioner variable-prefix
 - `f339623` (tom2): rename tom_build_master.yaml, project config migrations, standard pipelines
+
+**Commits (Phase 2 — v4):**
+- `4a84a7d` (tom_module_basics): migrate astgen from build.yaml to tom_build.yaml
+- `74a5df1` (tom_module_d4rt): migrate d4rtgen from build.yaml/d4rt_bridging.json to tom_build.yaml
+- `4e8030d` (tom2): migrate d4rtgen config, clean build.yaml files, delete d4rt_bridging.json
+- `910807d` (tom_module_basics): shared navigation section, ConfigMerger, recursionExclude fix
+- `2ba238b` (tom2): add navigation section to tom_build_master.yaml
 
 ## Overview
 
