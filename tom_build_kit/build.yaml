@@ -31,14 +31,14 @@ targets:
   $default:
     builders:
       # Version builder - generates version.g.dart with build info
-      tom_build_kit|version_builder:
+      tom_build_kit:version_builder:
         enabled: true
         options:
           output: lib/src/version.g.dart
           includeGitCommit: true
           variablePrefix: buildkit
 
-      tom_build_kit|compiler_builder:
+      tom_build_kit:compiler_builder:
         enabled: true
         options:
           compiles:
@@ -46,7 +46,13 @@ targets:
             - commandline:
                 - mkdir -p $HOME/.tom/bin/${target-platform-vs}
                 - dart compile exe ${file} --target-os=${target-os} -o $HOME/.tom/bin/${target-platform-vs}/${file.name}
-              files: bin/buildkit.dart
+              files:
+                - bin/buildkit.dart
+                - bin/cleanup.dart
+                - bin/compiler.dart
+                - bin/dependencies.dart
+                - bin/runner.dart
+                - bin/versioner.dart
               targets: [darwin-arm64, linux-x64, linux-arm64, linux-armhf]
               platforms: [darwin-arm64]
             
@@ -54,7 +60,13 @@ targets:
             - commandline:
                 - mkdir -p $HOME/.tom/bin/${target-platform-vs}
                 - dart compile exe ${file} -o $HOME/.tom/bin/${target-platform-vs}/${file.name}
-              files: bin/buildkit.dart
+              files:
+                - bin/buildkit.dart
+                - bin/cleanup.dart
+                - bin/compiler.dart
+                - bin/dependencies.dart
+                - bin/runner.dart
+                - bin/versioner.dart
               platforms: [darwin-x64, linux-*, win32-*]
 
           postcompile:
@@ -64,7 +76,7 @@ targets:
               platforms: [macos, linux]
 
 # Configuration for the runner tool
-tom_build_runner:
+tom_build_kit:
   build_runner:
     exclude-builders:
-      - tom_build_kit|compiler_builder
+      - tom_build_kit:compiler_builder
