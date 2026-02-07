@@ -354,7 +354,13 @@ class CleanupTool extends ToolBase {
     var sections = projectConfig.cleanupSections;
     if (sections.isEmpty) {
       sections = [
-        CleanupSection(globs: ['build', '.dart_tool/build']),
+        CleanupSection(globs: [
+          'build',
+          '.dart_tool/build',
+          '**/*.g.dart',
+          '**/*.r.dart',
+          '**/*.b.dart',
+        ]),
       ];
     }
 
