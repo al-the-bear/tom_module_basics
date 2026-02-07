@@ -11,9 +11,10 @@ This document captures the refactoring plan for Build Kit's configuration loadin
 1. **Single config file per level**: `tom_build_master.yaml` at workspace root, `tom_build.yaml` per project
 2. **`build.yaml` is for build_runner only**: The only builder remaining in `build.yaml` is the reflection builder
 3. **All buildkit tool config lives in `tom_build.yaml`**: versioner, compiler, cleanup, runner, astgen, d4rtgen
-4. **Scanning is always active**: `--scan .` is the implicit default; `--project` disables scanning
-5. **No backward compatibility needed**: Single workspace, full migration
-6. **External tools (astgen, d4rtgen) are first-class**: Treated as internal commands, may become built-in later
+4. **Runner wraps build_runner**: The runner tool executes `dart run build_runner` under the hood, providing an integrated build experience within buildkit
+5. **Scanning is always active**: `--scan .` is the implicit default; `--project` disables scanning
+6. **No backward compatibility needed**: Single workspace, full migration
+7. **External tools (astgen, d4rtgen) are first-class**: Treated as internal commands, may become built-in later
 
 ---
 
@@ -101,7 +102,7 @@ Projects with custom `variablePrefix` in `build.yaml`:
 
 **Resolution**: Fix the toolKey to `d4rtgen` and migrate bridge config from `build.yaml`/`d4rt_bridging.json` to `tom_build.yaml` `d4rtgen:` section.
 
-7 projects have `d4rt_bridging.json` files (legacy format to be deprecated after migration).
+7 projects have `d4rt_bridging.json` files. After migration, `d4rt_bridging.json` support will be **completely removed** from d4rtgen — the tool will only read from `tom_build.yaml`.
 
 ### Astgen Migration Detail
 
@@ -116,9 +117,9 @@ Astgen already uses a non-standard `astgen:` top-level key in `build.yaml` (NOT 
 After TODO 2 migration is complete:
 
 1. **Versioner**: Remove `loadFromBuildYaml()` call — stop reading `build.yaml`
-2. **Runner**: Remove `BuilderFilterConfig.loadFromBuildYaml()` — builder filter comes from `tom_build.yaml` only
+2. **Runner**: Remove `BuilderFilterConfig.loadFromBuildYaml()` — builder filter comes from `tom_build.yaml` only. Note: the runner tool executes `dart run build_runner` under the hood — `build.yaml` is still read by build_runner itself for builder definitions (reflection builder), but the runner tool no longer reads it for its own config.
 3. **Astgen**: Remove `build.yaml` astgen section reading
-4. **D4rtgen**: Remove `build.yaml` bridge builder options reading; remove `d4rt_bridging.json` fallback
+4. **D4rtgen**: Remove `build.yaml` bridge builder options reading; remove all `d4rt_bridging.json` code
 5. **ToolBase**: Remove `loadBuildYaml()` and `printBuildYamlSection()` helper methods
 
 The 4-level runner builder filter precedence becomes 3-level:
@@ -144,13 +145,23 @@ The question of **recursive** scanning (scanning inside found projects for neste
 | `tool --project tom_core` | Processes only the specified project — no scanning |
 | `tool -s /path/to/dir` | Scans the specified directory for projects |
 
+### Project Discovery Logic
+
+When scanning a directory:
+
+1. If `tom_build.yaml` (or `pubspec.yaml`) exists in the current folder → the **first (and only) project** is found at that location
+2. Subfolder scanning only happens if:
+   - `recursive: true` is set (workspace default), OR
+   - `scan-subfolders` is defined in the project's `tom_build.yaml`
+3. If neither `recursive` nor `scan-subfolders` is active → only the single project in the current folder is processed
+
 ### Recursive / Scan-Subfolders
 
 When the scanner is **inside a project** (detected by `pubspec.yaml`), the `recursive` setting controls whether it descends into subfolders to find nested projects.
 
 **Precedence** (highest to lowest):
 
-1. CLI `--recursive` / `-R` / `--no-recursive`
+1. CLI `--recursive` / `-r` / `--no-recursive`
 2. Project-level `tom_build.yaml` → `navigation.scan-subfolders` (overrides workspace `recursive` for this project)
 3. Workspace-level `tom_build_master.yaml` → `navigation.recursive` (default: `true`)
 
@@ -220,8 +231,9 @@ Astgen and d4rtgen are external tools but part of the same family. They must be 
 1. Fix `_toolKey` from `'dartgen'` to `'d4rtgen'`
 2. Migrate bridge config from `build.yaml` / `d4rt_bridging.json` to `tom_build.yaml` `d4rtgen:` section
 3. Remove `build.yaml` reading for bridge options
-4. Remove `d4rt_bridging.json` fallback loading
-5. Update `_isD4rtProject()` to check `tom_build.yaml` only
+4. Remove all `d4rt_bridging.json` loading code — d4rtgen will only read from `tom_build.yaml`
+5. Delete all `d4rt_bridging.json` files from projects after migration
+6. Update `_isD4rtProject()` to check `tom_build.yaml` only
 
 ### Config Migration
 
@@ -263,6 +275,20 @@ Currently:
 - **Cleanup** has its own `CleanupConfig.loadFromYaml()` ❌
 - **Compiler** has its own `CompilerConfig.loadFromYaml()` ❌
 - **Runner** has its own `BuildRunnerConfig.loadFromYaml()` ❌
+
+### Packages Using `tom_build_base`
+
+| Package | How it uses `tom_build_base` |
+|---------|----------------------------|
+| **tom_build_kit** | All built-in tools (versioner, compiler, cleanup, runner, etc.) |
+| **tom_build** (legacy `_build/`) | Original build tool — uses `TomBuildConfig` |
+| **tom_build_cli** | CLI frontend for buildkit |
+| **tom_d4rt_astgen** | Astgen tool — uses `TomBuildConfig` for config loading |
+| **tom_d4rt_generator** | D4rtgen tool — uses `TomBuildConfig` for config loading |
+| **tom_dartscript_bridges** | Bridge generation — uses `TomBuildConfig` |
+| **tom_d4rt_dcli** | DCli integration — uses `TomBuildConfig` |
+
+All 7 consumers must be updated when `TomBuildConfig` changes (e.g., `tom_build_master.yaml` rename, navigation changes).
 
 ### Change
 
@@ -518,13 +544,24 @@ class ConfigMerger {
 
 All tools can run without `tom_build_master.yaml`. Some require project-level `tom_build.yaml`.
 
+### Configuration-Free Tools
+
+These tools need **no configuration** in `tom_build.yaml` or `tom_build_master.yaml` — they are purely CLI-driven:
+
+- **dependencies** — reads `pubspec.yaml` directly, all options via CLI
+- **versionbump** — reads/writes `pubspec.yaml`, all options via CLI (`--minor`, `--major`, `--versioner`)
+
+They should never appear as tool sections in config files.
+
+### All Tools
+
 | Tool | Runs without any config? | Hard-coded defaults | Requires project `tom_build.yaml`? |
 |------|:------------------------:|--------------------|------------------------------------|
 | **versioner** | ✅ | `output: lib/src/version.g.dart`, `includeGitCommit: true` | No — but `isToolProject` checks for `versioner:` section |
 | **versionbump** | ✅ | Patch bump, reset counter to 0 | No — any project with `pubspec.yaml` + `version:` |
 | **compiler** | ❌ | None | Yes — needs `compiler:` with `compiles:` |
 | **runner** | ✅ | `command: build`, `deleteConflicting: true` | No — needs `build.yaml` to exist |
-| **cleanup** | ❌ | None (has default globs but needs section) | Yes — needs `cleanup:` section |
+| **cleanup** | ❌ | Default globs: `build/`, `.dart_tool/build/`, `**/*.g.dart`, `**/*.r.dart`, `**/*.b.dart`, `**/*.reflection.dart`, `**/*.reflectable.dart` | Yes — but just `cleanup:` (empty section) is enough to activate with defaults |
 | **dependencies** | ✅ | Shows all dep types | No — reads `pubspec.yaml` directly |
 | **buildkit** | ⚠️ Partial | Built-in commands work | No — but no pipelines without config |
 | **astgen** | ❌ | None | Yes — needs `astgen:` with `convert:` |
@@ -558,6 +595,10 @@ All tools work without it using their hard-coded defaults (see Tool Defaults tab
 ---
 
 ## Discovered Issues
+
+### Cleanup Activation Bug
+
+Currently, `cleanup:` (bare key with no value) parses as `null` in YAML, causing `hasTomBuildConfig('cleanup')` to return `false`. This means the project isn't discovered during scanning. Fix: treat a `null` value the same as an empty map — the presence of the key alone should be enough to activate the tool with workspace defaults or hard-coded defaults.
 
 ### D4rtgen Tool Key Bug
 
