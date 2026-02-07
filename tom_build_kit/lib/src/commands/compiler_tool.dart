@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:args/args.dart';
 import 'package:path/path.dart' as p;
-import 'package:tom_build_base/tom_build_base.dart';
 import 'package:yaml/yaml.dart';
 
 import '../builders/compiler_builder.dart';
@@ -55,8 +54,8 @@ class CompilerConfig {
         scan: compilerYaml['scan'] as String?,
         recursive: compilerYaml['recursive'] as bool? ?? false,
         exclude: ToolBase.toStringList(compilerYaml['exclude']),
-        recursionExclude:
-            ToolBase.toStringList(compilerYaml['recursion-exclude']),
+        recursionExclude: ToolBase.toStringList(
+            compilerYaml['recursion-exclude'] ?? compilerYaml['recursionExclude']),
       );
     } catch (_) {
       return null;
@@ -226,11 +225,13 @@ class CompilerTool extends ToolBase {
     ));
 
     // Validate paths
-    validatePathContainment(
+    if (!validateAndEnforcePaths(
       scan: config.scan,
       project: config.project,
       basePath: basePath,
-    );
+    )) {
+      return false;
+    }
 
     // Find projects
     final projects = await findProjects(
@@ -300,16 +301,14 @@ class CompilerTool extends ToolBase {
     Directory.current = projectPath;
 
     try {
-      // Run precompile commands
+      // Run precompile commands (continue on failure)
       for (final section in projectConfig.precompileSections) {
-        if (!await _runCommandSection(
+        await _runCommandSection(
           section: section,
           currentPlatform: currentPlatform,
           config: projectConfig,
           sectionName: 'precompile',
-        )) {
-          return false;
-        }
+        );
       }
 
       // Run compile sections
@@ -361,16 +360,14 @@ class CompilerTool extends ToolBase {
         }
       }
 
-      // Run postcompile commands
+      // Run postcompile commands (continue on failure)
       for (final section in projectConfig.postcompileSections) {
-        if (!await _runCommandSection(
+        await _runCommandSection(
           section: section,
           currentPlatform: currentPlatform,
           config: projectConfig,
           sectionName: 'postcompile',
-        )) {
-          return false;
-        }
+        );
       }
 
       return true;
@@ -553,7 +550,7 @@ class CompilerTool extends ToolBase {
         final varName = match.group(1)!;
         // Don't replace our own ${placeholder} patterns
         if (varName.startsWith('{')) return match.group(0)!;
-        return Platform.environment[varName] ?? match.group(0)!;
+        return Platform.environment[varName] ?? '';
       },
     );
 
@@ -562,7 +559,7 @@ class CompilerTool extends ToolBase {
       RegExp(r'\[(\w+)\]'),
       (match) {
         final varName = match.group(1)!;
-        return Platform.environment[varName] ?? match.group(0)!;
+        return Platform.environment[varName] ?? '';
       },
     );
 

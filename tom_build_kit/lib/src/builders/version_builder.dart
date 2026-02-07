@@ -3,15 +3,18 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:build/build.dart';
+import 'package:yaml/yaml.dart';
 
 /// Configuration for the version builder.
 class VersionBuilderConfig {
   final String output;
   final bool includeGitCommit;
+  final String? versionOverride;
 
   const VersionBuilderConfig({
     this.output = 'lib/src/version.g.dart',
     this.includeGitCommit = true,
+    this.versionOverride,
   });
 
   /// Load from build.yaml options.
@@ -19,6 +22,7 @@ class VersionBuilderConfig {
     return VersionBuilderConfig(
       output: options['output'] as String? ?? 'lib/src/version.g.dart',
       includeGitCommit: options['includeGitCommit'] as bool? ?? true,
+      versionOverride: options['version'] as String?,
     );
   }
 }
@@ -42,19 +46,20 @@ class VersionBuilder implements Builder {
     final packageName = buildStep.inputId.package;
 
     // Read pubspec.yaml for version
-    String version = '0.0.0';
-    try {
-      // Build step doesn't have direct file access, so we use the current dir
-      final pubspecFile = File('pubspec.yaml');
-      if (pubspecFile.existsSync()) {
-        final content = pubspecFile.readAsStringSync();
-        final match =
-            RegExp(r'^version:\s*(.+)$', multiLine: true).firstMatch(content);
-        if (match != null) {
-          version = match.group(1)!.trim();
+    String version = config.versionOverride ?? '0.0.0';
+    if (config.versionOverride == null) {
+      try {
+        // Build step doesn't have direct file access, so we use the current dir
+        final pubspecFile = File('pubspec.yaml');
+        if (pubspecFile.existsSync()) {
+          final content = pubspecFile.readAsStringSync();
+          final pubspec = loadYaml(content);
+          if (pubspec is Map) {
+            version = pubspec['version']?.toString() ?? '0.0.0';
+          }
         }
-      }
-    } catch (_) {}
+      } catch (_) {}
+    }
 
     // Get git commit
     String? gitCommit;

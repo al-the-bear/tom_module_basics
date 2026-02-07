@@ -182,11 +182,13 @@ class VersionerTool extends ToolBase {
     ));
 
     // Validate paths
-    validatePathContainment(
+    if (!validateAndEnforcePaths(
       scan: config.scan,
       project: config.project,
       basePath: basePath,
-    );
+    )) {
+      return false;
+    }
 
     // Find projects
     final projects = await findProjects(

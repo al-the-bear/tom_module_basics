@@ -129,6 +129,26 @@ abstract class ToolBase {
     }).toList();
   }
 
+  /// Validate path containment and print error if invalid.
+  ///
+  /// Returns true if paths are valid, false if validation fails.
+  bool validateAndEnforcePaths({
+    String? scan,
+    String? project,
+    required String basePath,
+  }) {
+    final error = validatePathContainment(
+      scan: scan,
+      project: project,
+      basePath: basePath,
+    );
+    if (error != null) {
+      print('Error: $error');
+      return false;
+    }
+    return true;
+  }
+
   /// Resolve a path relative to a base.
   String _resolvePath(String path, String basePath) {
     if (path.startsWith('/')) return path;

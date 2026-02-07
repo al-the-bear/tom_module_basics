@@ -109,7 +109,8 @@ class CleanupConfig {
         scan: cleanupYaml['scan'] as String?,
         recursive: cleanupYaml['recursive'] as bool? ?? false,
         exclude: ToolBase.toStringList(cleanupYaml['exclude']),
-        recursionExclude: ToolBase.toStringList(cleanupYaml['recursion-exclude']),
+        recursionExclude: ToolBase.toStringList(
+            cleanupYaml['recursion-exclude'] ?? cleanupYaml['recursionExclude']),
         cleanupSections: sections,
         globalExcludes: globalExcludes,
       );
@@ -266,11 +267,13 @@ class CleanupTool extends ToolBase {
     ));
 
     // Validate paths
-    validatePathContainment(
+    if (!validateAndEnforcePaths(
       scan: config.scan,
       project: config.project,
       basePath: basePath,
-    );
+    )) {
+      return false;
+    }
 
     // Find projects
     final projects = await findProjects(

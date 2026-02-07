@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:args/args.dart';
 import 'package:path/path.dart' as p;
-import 'package:tom_build_base/tom_build_base.dart';
 import 'package:yaml/yaml.dart';
 
 import 'tool_base.dart';
@@ -140,11 +139,13 @@ class DependenciesTool extends ToolBase {
     final basePath = Directory.current.path;
 
     // Validate paths
-    validatePathContainment(
+    if (!validateAndEnforcePaths(
       scan: config.scan,
       project: config.project,
       basePath: basePath,
-    );
+    )) {
+      return false;
+    }
 
     // Find projects
     final projects = await findProjects(
@@ -225,8 +226,8 @@ class DependenciesTool extends ToolBase {
     }
 
     if (config.deep) {
-      // Deep tree mode
-      final visited = <String>{};
+      // Deep tree mode - start visited set with project name to prevent self-references
+      final visited = <String>{deps.projectName};
       for (final dep in filteredDeps) {
         _printDependencyTree(dep, config, visited);
       }
@@ -262,13 +263,20 @@ class DependenciesTool extends ToolBase {
     if (depPath != null) {
       final subDeps = _parseDependencies(depPath);
       if (subDeps != null) {
-        for (final subDep in subDeps.dependencies) {
-          if (config.showAll ||
+        // Filter and sort sub-dependencies
+        final filteredSubDeps = subDeps.dependencies.where((subDep) {
+          return config.showAll ||
               (config.showDev && subDep.type == DependencyType.dev) ||
-              (!config.showDev && subDep.type == DependencyType.normal)) {
-            _printDependencyTree(subDep, config, visited,
-                indent: indent + 1);
-          }
+              (!config.showDev && subDep.type == DependencyType.normal);
+        }).toList();
+        filteredSubDeps.sort((a, b) {
+          final typeCompare = a.type.index.compareTo(b.type.index);
+          if (typeCompare != 0) return typeCompare;
+          return a.name.compareTo(b.name);
+        });
+        for (final subDep in filteredSubDeps) {
+          _printDependencyTree(subDep, config, visited,
+              indent: indent + 1);
         }
       }
     }
@@ -278,9 +286,13 @@ class DependenciesTool extends ToolBase {
 
   /// Resolve a path dependency to its absolute directory path.
   String? _resolveDependencyPath(Dependency dep) {
+    // Check override first, then source
+    final source = dep.override ?? dep.source;
     // Only path dependencies can be resolved
-    if (!dep.source.startsWith('path:')) return null;
-    final pathStr = dep.source.substring(5).trim();
+    if (!source.startsWith('path: ') && !source.startsWith('path:')) return null;
+    final pathStr = source.startsWith('path: ')
+        ? source.substring(6).trim()
+        : source.substring(5).trim();
     if (p.isAbsolute(pathStr)) return pathStr;
     // Resolve relative paths against current working directory
     final resolved = p.normalize(p.join(Directory.current.path, pathStr));
@@ -366,22 +378,27 @@ class DependenciesTool extends ToolBase {
     if (value == null) return 'any';
     if (value is String) return value;
     if (value is Map) {
-      if (value.containsKey('path')) return 'path:${value['path']}';
+      if (value.containsKey('path')) return 'path: ${value['path']}';
       if (value.containsKey('git')) {
         final git = value['git'];
-        if (git is String) return 'git:$git';
+        if (git is String) return 'git: $git';
         if (git is Map) {
           final url = git['url'] ?? '';
           final ref = git['ref'] ?? '';
           final path = git['path'] ?? '';
-          var result = 'git:$url';
-          if (ref.toString().isNotEmpty) result += '@$ref';
-          if (path.toString().isNotEmpty) result += ':$path';
+          var result = 'git: $url';
+          if (ref.toString().isNotEmpty) result += ' @$ref';
+          if (path.toString().isNotEmpty) result += ' ($path)';
           return result;
         }
       }
-      if (value.containsKey('hosted')) return 'hosted:${value['hosted']}';
-      if (value.containsKey('sdk')) return 'sdk:${value['sdk']}';
+      if (value.containsKey('version')) {
+        final ver = value['version'];
+        if (value.containsKey('hosted')) return '$ver (hosted: ${value['hosted']})';
+        return ver.toString();
+      }
+      if (value.containsKey('hosted')) return 'hosted: ${value['hosted']}';
+      if (value.containsKey('sdk')) return 'sdk: ${value['sdk']}';
     }
     return value.toString();
   }

@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:args/args.dart';
 import 'package:path/path.dart' as p;
-import 'package:tom_build_base/tom_build_base.dart';
 import 'package:yaml/yaml.dart';
 
 import 'tool_base.dart';
@@ -173,8 +172,10 @@ class BuildRunnerConfig {
         scan: runnerYaml['scan'] as String?,
         recursive: runnerYaml['recursive'] as bool? ?? false,
         exclude: ToolBase.toStringList(runnerYaml['exclude']),
-        recursionExclude:
-            ToolBase.toStringList(runnerYaml['recursion-exclude']),
+        recursionExclude: ToolBase.toStringList(
+            runnerYaml['recursion-exclude'] ?? runnerYaml['recursionExclude']),
+        verbose: runnerYaml['verbose'] as bool? ?? false,
+        dryRun: runnerYaml['dry-run'] as bool? ?? false,
         command: runnerYaml['command'] as String? ?? 'build',
         deleteConflicting:
             runnerYaml['delete-conflicting'] as bool? ?? true,
@@ -300,11 +301,13 @@ class RunnerTool extends ToolBase {
     ));
 
     // Validate paths
-    validatePathContainment(
+    if (!validateAndEnforcePaths(
       scan: config.scan,
       project: config.project,
       basePath: basePath,
-    );
+    )) {
+      return false;
+    }
 
     // Find projects
     final projects = await findProjects(
@@ -375,29 +378,33 @@ class RunnerTool extends ToolBase {
     List<String> buildersToRun;
     List<String> buildersToDisable;
 
+    // Start with all configured builders
+    buildersToRun = List.of(configuredBuilders);
+    buildersToDisable = <String>[];
+
+    // Apply include filter first (if set, only keep matching builders)
     if (filterConfig.includeBuilders.isNotEmpty) {
-      // Include mode: only run builders matching includes, disable rest
-      buildersToRun = configuredBuilders
+      buildersToRun = buildersToRun
           .where((b) => filterConfig.includeBuilders.any(
               (include) => b.contains(include) || include.contains(b)))
           .toList();
-      buildersToDisable = configuredBuilders
-          .where((b) => !buildersToRun.contains(b))
-          .toList();
-    } else if (filterConfig.excludeBuilders.isNotEmpty) {
-      // Exclude mode: run all except those matching excludes
-      buildersToDisable = configuredBuilders
+    }
+
+    // Apply exclude filter on top (remove matching builders)
+    if (filterConfig.excludeBuilders.isNotEmpty) {
+      final excluded = buildersToRun
           .where((b) => filterConfig.excludeBuilders.any(
               (exclude) => b.contains(exclude) || exclude.contains(b)))
           .toList();
-      buildersToRun = configuredBuilders
-          .where((b) => !buildersToDisable.contains(b))
+      buildersToRun = buildersToRun
+          .where((b) => !excluded.contains(b))
           .toList();
-    } else {
-      // No filtering - run all
-      buildersToRun = configuredBuilders;
-      buildersToDisable = [];
     }
+
+    // Anything not in buildersToRun should be disabled
+    buildersToDisable = configuredBuilders
+        .where((b) => !buildersToRun.contains(b))
+        .toList();
 
     if (verbose && filterConfig.isNotEmpty) {
       print('  Builders to run: ${buildersToRun.join(', ')}');
@@ -413,7 +420,9 @@ class RunnerTool extends ToolBase {
       projectConfig.command,
     ];
 
-    if (projectConfig.deleteConflicting) {
+    if (projectConfig.deleteConflicting &&
+        (projectConfig.command == 'build' ||
+         projectConfig.command == 'watch')) {
       dartArgs.add('--delete-conflicting-outputs');
     }
     if (projectConfig.configName != null) {
