@@ -222,7 +222,7 @@ Future<bool> _processProject(
   bool verbose,
   bool dryRun,
 ) async {
-  // Load conversion configurations from build.yaml
+  // Load conversion configurations from tom_build.yaml
   final configPath = p.join(projectPath, configFileName);
   final configs = _loadConfig(configPath, verbose);
   if (configs == null) {
@@ -385,7 +385,7 @@ void _printBuildYamlSection(String projectPath, String workspaceRoot) {
     print('    tom_build.yaml:');
     _printYamlNode(astgenSection, indent: 6);
   } catch (e) {
-    print('    (error reading build.yaml: $e)');
+    print('    (error reading tom_build.yaml: $e)');
   }
 }
 
@@ -450,7 +450,7 @@ void _printUsage(ArgParser parser) {
   print(parser.usage);
   print('');
   print('Configuration:');
-  print('  Reads from build.yaml file with the following structure:');
+  print('  Reads from tom_build.yaml file with the following structure:');
   print('');
   print('  astgen:');
   print('    convert:');
