@@ -41,8 +41,26 @@
 /// - `runner` - Run build_runner wrapper
 /// - `cleanup` - Clean build artifacts
 /// - `dependencies` - Show dependency tree
-/// - `shell <command>` - Run shell command
+/// - `<allowed-binary>` - Run an allowed binary (configured in tom_build.yaml)
+/// - `shell <command>` - Run shell command (pipeline config only)
 /// - Pipeline names - Call other pipelines
+///
+/// ## Command Security
+///
+/// Only built-in commands, configured pipelines, and explicitly allowed
+/// binaries can be executed. Arbitrary shell commands are NOT permitted
+/// via `:command` syntax or as pipeline step commands. To run arbitrary
+/// shell commands, use the `shell ` prefix in pipeline configuration.
+///
+/// Allowed binaries are configured in tom_build.yaml:
+///
+/// ```yaml
+/// buildkit:
+///   allowed-binaries:
+///     - astgen
+///     - d4rtgen
+///     - ws_prepper
+/// ```
 ///
 /// ## Per-Tool Option Override
 ///
@@ -331,6 +349,11 @@ void _printUsage(ArgParser parser) {
   print('  :pubget         Run dart pub get on projects');
   print('  :pubgetall      Shortcut for :pubget --scan . --recursive');
   print('');
+  print('Allowed binaries (configured in tom_build.yaml buildkit.allowed-binaries):');
+  print('  Additional binaries can be executed via :name syntax.');
+  print('  Unknown commands that are not built-in, not a pipeline, and not');
+  print('  in the allowed-binaries list will cause an error.');
+  print('');
   print('Per-tool option override:');
   print('  -s-   Suppress global --scan for this command');
   print('  -v-   Suppress global --verbose for this command');
@@ -341,6 +364,7 @@ void _printUsage(ArgParser parser) {
   print('');
   print('Configuration:');
   print('  Pipelines are defined in tom_build.yaml under the buildkit: key.');
+  print('  Allowed binaries are defined in buildkit.allowed-binaries.');
   print('  See the project documentation for the full pipeline YAML format.');
   print('');
   print('Examples:');

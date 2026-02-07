@@ -85,11 +85,20 @@ class PipelineConfig {
   /// All configured pipelines.
   final Map<String, Pipeline> pipelines;
 
+  /// Binaries allowed to be executed directly from the command line.
+  ///
+  /// These are additive to the built-in commands (versioner, compiler, etc.).
+  /// Binaries not in this list or the built-in list will cause an error
+  /// when invoked via `:command` syntax or as pipeline step commands.
+  /// Compile configuration `commandline:` entries are NOT restricted.
+  final Set<String> allowedBinaries;
+
   /// Source of the configuration (for debugging).
   final String source;
 
   PipelineConfig({
     required this.pipelines,
+    this.allowedBinaries = const {},
     required this.source,
   });
 
@@ -125,6 +134,15 @@ class PipelineConfig {
       }
     }
 
+    // Merge allowed binaries (additive from both levels)
+    final mergedAllowedBinaries = <String>{};
+    if (workspaceConfig != null) {
+      mergedAllowedBinaries.addAll(workspaceConfig.allowedBinaries);
+    }
+    if (projectConfig != null) {
+      mergedAllowedBinaries.addAll(projectConfig.allowedBinaries);
+    }
+
     final source = projectConfig != null
         ? 'project tom_build.yaml (with workspace fallback)'
         : workspaceConfig != null
@@ -133,6 +151,7 @@ class PipelineConfig {
 
     return PipelineConfig(
       pipelines: mergedPipelines,
+      allowedBinaries: mergedAllowedBinaries,
       source: source,
     );
   }
@@ -152,19 +171,34 @@ class PipelineConfig {
       if (buildkitYaml == null) return null;
 
       final pipelinesYaml = buildkitYaml['pipelines'] as YamlMap?;
-      if (pipelinesYaml == null) return null;
 
       final pipelines = <String, Pipeline>{};
-      for (final entry in pipelinesYaml.entries) {
-        final name = entry.key.toString();
-        final value = entry.value;
-        if (value is YamlMap) {
-          pipelines[name] = Pipeline.fromYaml(value);
+      if (pipelinesYaml != null) {
+        for (final entry in pipelinesYaml.entries) {
+          final name = entry.key.toString();
+          final value = entry.value;
+          if (value is YamlMap) {
+            pipelines[name] = Pipeline.fromYaml(value);
+          }
         }
+      }
+
+      // Parse allowed-binaries list
+      final allowedBinaries = <String>{};
+      final allowedBinariesYaml = buildkitYaml['allowed-binaries'];
+      if (allowedBinariesYaml is YamlList) {
+        allowedBinaries.addAll(
+          allowedBinariesYaml.map((e) => e.toString().toLowerCase()),
+        );
+      } else if (allowedBinariesYaml is String) {
+        allowedBinaries.addAll(
+          allowedBinariesYaml.split(',').map((s) => s.trim().toLowerCase()),
+        );
       }
 
       return PipelineConfig(
         pipelines: pipelines,
+        allowedBinaries: allowedBinaries,
         source: yamlPath,
       );
     } catch (e) {

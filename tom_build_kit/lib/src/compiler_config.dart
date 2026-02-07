@@ -8,30 +8,82 @@ library;
 /// Configuration for a command section (precompile, postcompile).
 class CommandSection {
   /// Command line templates with placeholders.
+  /// Used when `commandline:` is specified — runs as shell commands.
   final List<String> commandlines;
+
+  /// Built-in command references.
+  /// Used when `command:` is specified — dispatches to built-in tools.
+  final List<String> commands;
+
+  /// Whether this section uses built-in commands (true) or shell (false).
+  final bool isBuiltinCommand;
 
   /// Platforms where these commands RUN (current platform filter).
   final List<String> platforms;
 
   CommandSection({
     required this.commandlines,
+    this.commands = const [],
+    this.isBuiltinCommand = false,
     List<String>? platforms,
   }) : platforms = platforms ?? [];
 
   /// Parse from JSON/YAML structure.
+  ///
+  /// Supports two mutually exclusive keys:
+  /// - `commandline:` — shell command templates (existing behavior)
+  /// - `command:` — built-in tool references (e.g., "versioner --output ...")
   factory CommandSection.fromJson(dynamic json) {
     if (json is! Map) {
       throw ArgumentError('CommandSection must be a map');
     }
 
     final commandlineRaw = json['commandline'];
+    final commandRaw = json['command'];
+
+    if (commandlineRaw != null && commandRaw != null) {
+      throw ArgumentError(
+          'CommandSection cannot have both "commandline" and "command"');
+    }
+
+    if (commandRaw != null) {
+      // Built-in command mode
+      List<String> commands;
+      if (commandRaw is String) {
+        commands = [commandRaw];
+      } else if (commandRaw is List) {
+        commands = commandRaw.map((e) => e.toString()).toList();
+      } else {
+        throw ArgumentError('command must be a string or list');
+      }
+      if (commands.isEmpty) {
+        throw ArgumentError('command cannot be empty');
+      }
+
+      final platformsRaw = json['platforms'];
+      List<String>? platforms;
+      if (platformsRaw is String) {
+        platforms = [platformsRaw];
+      } else if (platformsRaw is List) {
+        platforms = platformsRaw.map((e) => e.toString()).toList();
+      }
+
+      return CommandSection(
+        commandlines: [],
+        commands: commands,
+        isBuiltinCommand: true,
+        platforms: platforms,
+      );
+    }
+
+    // Shell commandline mode (original behavior)
     List<String> commandlines;
     if (commandlineRaw is String) {
       commandlines = [commandlineRaw];
     } else if (commandlineRaw is List) {
       commandlines = commandlineRaw.map((e) => e.toString()).toList();
     } else {
-      throw ArgumentError('commandline must be a string or list');
+      throw ArgumentError('commandline or command must be specified');
     }
 
     if (commandlines.isEmpty) {
@@ -56,7 +108,15 @@ class CommandSection {
 /// Configuration for a single compilation section.
 class CompileSection {
   /// Command line templates with placeholders.
+  /// Used when `commandline:` is specified — runs as shell commands.
   final List<String> commandlines;
+
+  /// Built-in command references.
+  /// Used when `command:` is specified — dispatches to built-in tools.
+  final List<String> commands;
+
+  /// Whether this section uses built-in commands (true) or shell (false).
+  final bool isBuiltinCommand;
 
   /// List of source files to compile.
   final List<String> files;
@@ -69,6 +129,8 @@ class CompileSection {
 
   CompileSection({
     required this.commandlines,
+    this.commands = const [],
+    this.isBuiltinCommand = false,
     required this.files,
     List<String>? targets,
     List<String>? platforms,
@@ -76,25 +138,24 @@ class CompileSection {
         platforms = platforms ?? [];
 
   /// Parse from JSON/YAML structure.
+  ///
+  /// Supports two mutually exclusive keys:
+  /// - `commandline:` — shell command templates (existing behavior)
+  /// - `command:` — built-in tool references (e.g., "compiler --targets ...")
   factory CompileSection.fromJson(dynamic json) {
     if (json is! Map) {
       throw ArgumentError('CompileSection must be a map');
     }
 
     final commandlineRaw = json['commandline'];
-    List<String> commandlines;
-    if (commandlineRaw is String) {
-      commandlines = [commandlineRaw];
-    } else if (commandlineRaw is List) {
-      commandlines = commandlineRaw.map((e) => e.toString()).toList();
-    } else {
-      throw ArgumentError('commandline must be a string or list');
+    final commandRaw = json['command'];
+
+    if (commandlineRaw != null && commandRaw != null) {
+      throw ArgumentError(
+          'CompileSection cannot have both "commandline" and "command"');
     }
 
-    if (commandlines.isEmpty) {
-      throw ArgumentError('commandline cannot be empty');
-    }
-
+    // Parse files (required for both modes)
     final filesRaw = json['files'];
     List<String> files;
     if (filesRaw is String) {
@@ -123,6 +184,44 @@ class CompileSection {
       platforms = [platformsRaw];
     } else if (platformsRaw is List) {
       platforms = platformsRaw.map((e) => e.toString()).toList();
+    }
+
+    if (commandRaw != null) {
+      // Built-in command mode
+      List<String> commands;
+      if (commandRaw is String) {
+        commands = [commandRaw];
+      } else if (commandRaw is List) {
+        commands = commandRaw.map((e) => e.toString()).toList();
+      } else {
+        throw ArgumentError('command must be a string or list');
+      }
+      if (commands.isEmpty) {
+        throw ArgumentError('command cannot be empty');
+      }
+
+      return CompileSection(
+        commandlines: [],
+        commands: commands,
+        isBuiltinCommand: true,
+        files: files,
+        targets: targets,
+        platforms: platforms,
+      );
+    }
+
+    // Shell commandline mode (original behavior)
+    List<String> commandlines;
+    if (commandlineRaw is String) {
+      commandlines = [commandlineRaw];
+    } else if (commandlineRaw is List) {
+      commandlines = commandlineRaw.map((e) => e.toString()).toList();
+    } else {
+      throw ArgumentError('commandline or command must be specified');
+    }
+
+    if (commandlines.isEmpty) {
+      throw ArgumentError('commandline cannot be empty');
     }
 
     return CompileSection(

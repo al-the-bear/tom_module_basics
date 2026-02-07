@@ -4,6 +4,7 @@ import 'package:args/args.dart';
 import 'package:path/path.dart' as p;
 import 'package:yaml/yaml.dart';
 
+import '../builtin_commands.dart';
 import '../compiler_config.dart';
 import '../platform_utils.dart';
 import 'tool_base.dart';
@@ -344,15 +345,30 @@ class CompilerTool extends ToolBase {
         // Compile each file for each target (continue on failure)
         for (final file in section.files) {
           for (final target in targets) {
-            if (await _compileFile(
-              file: file,
-              targetPlatform: target,
-              currentPlatform: currentPlatform,
-              commandTemplates: section.commandlines,
-              projectPath: projectPath,
-              config: projectConfig,
-            )) {
-              compilationCount++;
+            if (section.isBuiltinCommand) {
+              // Built-in command mode — dispatch to built-in tools
+              if (await _compileFileBuiltin(
+                file: file,
+                targetPlatform: target,
+                currentPlatform: currentPlatform,
+                commandTemplates: section.commands,
+                projectPath: projectPath,
+                config: projectConfig,
+              )) {
+                compilationCount++;
+              }
+            } else {
+              // Shell commandline mode (original behavior)
+              if (await _compileFile(
+                file: file,
+                targetPlatform: target,
+                currentPlatform: currentPlatform,
+                commandTemplates: section.commandlines,
+                projectPath: projectPath,
+                config: projectConfig,
+              )) {
+                compilationCount++;
+              }
             }
           }
         }
@@ -398,6 +414,40 @@ class CompilerTool extends ToolBase {
       }
     }
 
+    // Handle built-in command mode
+    if (section.isBuiltinCommand) {
+      for (final commandRef in section.commands) {
+        if (dryRun) {
+          print('  [DRY RUN] $sectionName (builtin): $commandRef');
+          continue;
+        }
+
+        if (verbose) print('  $sectionName (builtin): $commandRef');
+
+        final builtinCommands = BuiltinCommands(
+          projectPath: Directory.current.path,
+          rootPath: _findWorkspaceRoot(Directory.current.path),
+          verbose: verbose,
+          dryRun: dryRun,
+        );
+
+        if (!builtinCommands.isBuiltin(commandRef)) {
+          print('  Error: "$commandRef" is not a recognized built-in command.');
+          print('  Available: versioner, compiler, runner, cleanup, '
+              'dependencies, pubget, pubgetall');
+          return false;
+        }
+
+        final result = await builtinCommands.execute(commandRef);
+        if (!result) {
+          print('  Error: $sectionName built-in command failed: $commandRef');
+          // Continue with remaining commands (matching original behavior)
+        }
+      }
+      return true;
+    }
+
+    // Shell commandline mode (original behavior)
     for (final commandTemplate in section.commandlines) {
       // Resolve current-platform placeholders
       var command = commandTemplate
@@ -531,6 +581,82 @@ class CompilerTool extends ToolBase {
     return true;
   }
 
+  /// Compile a file using built-in command mode.
+  ///
+  /// The `commandTemplates` here are built-in command references (e.g.,
+  /// "versioner --output ...") with placeholder resolution, dispatched
+  /// to [BuiltinCommands] instead of the shell.
+  Future<bool> _compileFileBuiltin({
+    required String file,
+    required String targetPlatform,
+    required String currentPlatform,
+    required List<String> commandTemplates,
+    required String projectPath,
+    required CompilerConfig config,
+  }) async {
+    final filePath = p.normalize(file);
+    final fileName = p.basenameWithoutExtension(filePath);
+    final fileBasename = p.basename(filePath);
+    final fileExtension = p.extension(filePath);
+    final fileDir = p.dirname(filePath);
+
+    final targetOS = PlatformUtils.getTargetOS(targetPlatform);
+    final targetArch = PlatformUtils.getTargetArch(targetPlatform);
+    final targetDart = PlatformUtils.vsCodeToDartTarget(targetPlatform);
+    final currentOS = PlatformUtils.getTargetOS(currentPlatform);
+    final currentArch = PlatformUtils.getTargetArch(currentPlatform);
+
+    for (final template in commandTemplates) {
+      var command = template
+          .replaceAll(r'${file}', filePath)
+          .replaceAll(r'${file.path}', filePath)
+          .replaceAll(r'${file.name}', fileName)
+          .replaceAll(r'${file.basename}', fileBasename)
+          .replaceAll(r'${file.extension}', fileExtension)
+          .replaceAll(r'${file.dir}', fileDir)
+          .replaceAll(r'${target-os}', targetOS)
+          .replaceAll(r'${target-arch}', targetArch)
+          .replaceAll(r'${target-platform}', targetDart)
+          .replaceAll(r'${target-platform-vs}', targetPlatform)
+          .replaceAll(r'${current-os}', currentOS)
+          .replaceAll(r'${current-arch}', currentArch)
+          .replaceAll(r'${current-platform}', currentPlatform)
+          .replaceAll(r'${current-platform-vs}', currentPlatform);
+
+      if (dryRun) {
+        print('  [DRY RUN] compile builtin ($targetPlatform): $command');
+        continue;
+      }
+
+      if (verbose) {
+        print('  Compiling $fileName for $targetPlatform (builtin)...');
+        print('    Command: $command');
+      } else {
+        print('  Compiling $fileName for $targetPlatform (builtin)');
+      }
+
+      final builtinCommands = BuiltinCommands(
+        projectPath: projectPath,
+        rootPath: _findWorkspaceRoot(projectPath),
+        verbose: verbose,
+        dryRun: dryRun,
+      );
+
+      if (!builtinCommands.isBuiltin(command)) {
+        print('  Error: "$command" is not a recognized built-in command.');
+        return false;
+      }
+
+      final result = await builtinCommands.execute(command);
+      if (!result) {
+        print('  Error: Compilation failed for $fileName ($targetPlatform)');
+        return false;
+      }
+    }
+
+    return true;
+  }
+
   /// Expand target platform specifications (handles generic names like "linux").
   List<String> _expandTargets(List<String> targets) {
     final expanded = <String>[];
@@ -602,9 +728,29 @@ class CompilerTool extends ToolBase {
     print('    compiles:    [{commandline: [...], files: [...], targets: [...], platforms: [...]}]');
     print('    postcompile: [{commandline: [...], platforms: [...]}]');
     print('');
+    print('  Use "command:" instead of "commandline:" to trigger a built-in');
+    print('  tool (versioner, compiler, runner, cleanup, etc.).');
+    print('');
     print('Examples:');
     print('  compiler                          # Compile in current project');
     print('  compiler -t linux-x64             # Compile for Linux x64 only');
     print('  compiler -s . -R                  # All projects recursively');
+  }
+
+  /// Find workspace root by looking for tom_workspace.yaml or
+  /// tom.code-workspace.
+  String _findWorkspaceRoot(String startPath) {
+    var current = p.normalize(p.absolute(startPath));
+    final root = p.rootPrefix(current);
+
+    while (current != root) {
+      if (File('$current/tom_workspace.yaml').existsSync() ||
+          File('$current/tom.code-workspace').existsSync()) {
+        return current;
+      }
+      current = p.dirname(current);
+    }
+
+    return startPath;
   }
 }

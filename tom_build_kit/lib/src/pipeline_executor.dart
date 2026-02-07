@@ -163,7 +163,7 @@ class PipelineExecutor {
 
     if (verbose) print('  Command: $trimmed');
 
-    // Check if it's a shell command
+    // Check if it's an explicit shell command (trusted - from pipeline config)
     if (trimmed.startsWith('shell ')) {
       return _executeShellCommand(trimmed.substring(6).trim());
     }
@@ -178,9 +178,25 @@ class PipelineExecutor {
       return execute(trimmed);
     }
 
-    // Unknown command - treat as shell command
-    print('  Warning: Unknown command "$trimmed", treating as shell command.');
-    return _executeShellCommand(trimmed);
+    // Check if it's an allowed binary
+    final binaryName = trimmed.split(RegExp(r'\s+')).first.toLowerCase();
+    if (config.allowedBinaries.contains(binaryName)) {
+      if (verbose) {
+        print('  [allowed binary] Executing: $trimmed');
+      }
+      return _executeShellCommand(trimmed);
+    }
+
+    // Unknown command - NOT allowed
+    print('  Error: Unknown command "$trimmed".');
+    print('  Only built-in commands, configured pipelines, and allowed '
+        'binaries can be executed.');
+    print('  To run arbitrary shell commands, use the "shell " prefix in '
+        'pipeline configuration.');
+    if (config.allowedBinaries.isNotEmpty) {
+      print('  Allowed binaries: ${config.allowedBinaries.join(', ')}');
+    }
+    return false;
   }
 
   /// Execute a shell command.
