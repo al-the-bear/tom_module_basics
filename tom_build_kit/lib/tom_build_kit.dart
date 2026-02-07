@@ -9,3 +9,4 @@ export 'src/pipeline_config.dart';
 export 'src/pipeline_executor.dart';
 export 'src/pipeline_step.dart';
 export 'src/builtin_commands.dart';
+export 'src/pubget_command.dart';

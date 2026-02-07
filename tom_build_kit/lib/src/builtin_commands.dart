@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'pubget_command.dart';
+
 /// Registry of built-in commands that can be executed within pipelines.
 /// 
 /// These commands run the respective tools directly without spawning
@@ -32,6 +34,8 @@ class BuiltinCommands {
     'astgen',
     'd4rtgen',
     'cleanup',
+    'pubget',
+    'pubgetall',
   };
 
   /// Execute a built-in command.
@@ -55,6 +59,10 @@ class BuiltinCommands {
         return _runD4rtgen(args);
       case 'cleanup':
         return _runCleanup(args);
+      case 'pubget':
+        return _runPubGet(args);
+      case 'pubgetall':
+        return _runPubGetAll(args);
       default:
         print('  Unknown built-in command: $cmd');
         return false;
@@ -154,6 +162,37 @@ class BuiltinCommands {
     }
 
     return true;
+  }
+
+  Future<bool> _runPubGet(List<String> args) async {
+    if (verbose) print('  [builtin] Running pubget...');
+    if (dryRun) {
+      print('  [DRY RUN] Would run pubget with args: $args');
+      return true;
+    }
+
+    final pubGetCommand = PubGetCommand(
+      rootPath: rootPath,
+      verbose: verbose,
+    );
+    return pubGetCommand.execute(args);
+  }
+
+  Future<bool> _runPubGetAll(List<String> args) async {
+    if (verbose) print('  [builtin] Running pubgetall (scan . --recursive)...');
+    if (dryRun) {
+      print('  [DRY RUN] Would run pubgetall with args: $args');
+      return true;
+    }
+
+    // pubgetall is a shortcut for pubget --scan . --recursive
+    final pubGetCommand = PubGetCommand(
+      rootPath: rootPath,
+      verbose: verbose,
+    );
+    // Prepend --scan . --recursive to the args
+    final fullArgs = ['--scan', '.', '--recursive', ...args];
+    return pubGetCommand.execute(fullArgs);
   }
 
   /// Run a command as an external process (fallback).

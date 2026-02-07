@@ -277,6 +277,16 @@ void _printUsage(ArgParser parser) {
   print('  <pipeline>        Run a pipeline defined in tom_build.yaml');
   print('  :<command> [args] Run a tool command directly (versioner, compiler, etc.)');
   print('');
+  print('Built-in commands:');
+  print('  :versioner    Generate version files');
+  print('  :compiler     Compile executables');
+  print('  :runner       Run build_runner');
+  print('  :astgen       Generate AST code');
+  print('  :d4rtgen      Generate D4rt bridges');
+  print('  :cleanup      Clean build artifacts');
+  print('  :pubget       Run dart pub get on projects');
+  print('  :pubgetall    Shortcut for :pubget --scan . --recursive');
+  print('');
   print('Options:');
   print(parser.usage);
   print('');
@@ -285,6 +295,8 @@ void _printUsage(ArgParser parser) {
   print('  buildkit clean build                # Run clean then build');
   print('  buildkit :versioner :compiler       # Run versioner then compiler');
   print('  buildkit build :cleanup --all       # Run build, then cleanup with --all');
+  print('  buildkit :pubgetall                 # Run pub get on all projects');
+  print('  buildkit :pubgetall --errors        # Show only projects with errors');
   print('  buildkit --list                     # List available pipelines');
   print('  buildkit -v build                   # Run build with verbose output');
   print('  buildkit -n deploy                  # Dry-run deploy pipeline');
@@ -421,6 +433,8 @@ const _builtinCommandNames = {
   'astgen',
   'd4rtgen',
   'cleanup',
+  'pubget',
+  'pubgetall',
 };
 
 /// Print separator before a step.
