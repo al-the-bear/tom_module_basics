@@ -24,6 +24,7 @@ executables:
   buildkit:
   cleanup:
   versioner:
+  versionbump:
   compiler:
   runner:
   dependencies:

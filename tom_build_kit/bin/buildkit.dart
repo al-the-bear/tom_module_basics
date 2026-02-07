@@ -342,6 +342,7 @@ void _printUsage(ArgParser parser) {
   print('');
   print('Built-in commands:');
   print('  :versioner      Generate version.g.dart files with build metadata');
+  print('  :versionbump    Bump pubspec.yaml versions across projects');
   print('  :compiler       Cross-platform Dart compilation with pre/post-compile commands');
   print('  :runner         Build_runner wrapper with builder filtering');
   print('  :cleanup        Clean generated and temporary files');
@@ -521,6 +522,7 @@ List<_ExecutionStep> _parseExecutionSteps(
 /// Names of built-in commands (without : prefix).
 const _builtinCommandNames = {
   'versioner',
+  'versionbump',
   'compiler',
   'runner',
   'cleanup',
@@ -541,6 +543,8 @@ Future<bool> _runCommandHelp(String commandName) async {
   switch (commandName.toLowerCase()) {
     case 'versioner':
       return VersionerTool().run(['--help']);
+    case 'versionbump':
+      return VersionBumpTool().run(['--help']);
     case 'compiler':
       return CompilerTool().run(['--help']);
     case 'runner':
@@ -555,7 +559,7 @@ Future<bool> _runCommandHelp(String commandName) async {
     default:
       print('Unknown command: $commandName');
       print('');
-      print('Available commands: versioner, compiler, runner, cleanup, dependencies, pubget');
+      print('Available commands: versioner, versionbump, compiler, runner, cleanup, dependencies, pubget');
       return false;
   }
 }

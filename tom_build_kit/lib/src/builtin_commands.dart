@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'commands/cleanup_tool.dart';
 import 'commands/versioner_tool.dart';
+import 'commands/versionbump_tool.dart';
 import 'commands/compiler_tool.dart';
 import 'commands/runner_tool.dart';
 import 'commands/dependencies_tool.dart';
@@ -33,6 +34,7 @@ class BuiltinCommands {
 
   static const _builtinNames = {
     'versioner',
+    'versionbump',
     'compiler',
     'runner',
     'cleanup',
@@ -52,6 +54,8 @@ class BuiltinCommands {
     switch (cmd) {
       case 'versioner':
         return _runVersioner(args);
+      case 'versionbump':
+        return _runVersionBump(args);
       case 'compiler':
         return _runCompiler(args);
       case 'runner':
@@ -77,6 +81,14 @@ class BuiltinCommands {
       return true;
     }
     final tool = VersionerTool()..verbose = verbose;
+    return tool.run(args);
+  }
+
+  Future<bool> _runVersionBump(List<String> args) async {
+    if (verbose) print('  [builtin] Running versionbump...');
+    final tool = VersionBumpTool()
+      ..verbose = verbose
+      ..dryRun = dryRun;
     return tool.run(args);
   }
 
