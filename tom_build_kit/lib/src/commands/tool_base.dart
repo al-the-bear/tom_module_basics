@@ -245,4 +245,26 @@ abstract class ToolBase {
     print('  build.yaml ($builderKey):');
     printYamlNode(builder, indent: 2);
   }
+
+  /// Print a tom_build.yaml section for a specific key (for --show).
+  void printTomBuildYamlSection(String projectPath, String sectionKey) {
+    final file = File('$projectPath/tom_build.yaml');
+    if (!file.existsSync()) {
+      print('  No tom_build.yaml found');
+      return;
+    }
+    try {
+      final content = file.readAsStringSync();
+      final yaml = loadYaml(content) as YamlMap?;
+      final section = yaml?[sectionKey];
+      if (section == null) {
+        print('  No $sectionKey section in tom_build.yaml');
+        return;
+      }
+      print('  tom_build.yaml ($sectionKey):');
+      printYamlNode(section, indent: 2);
+    } catch (e) {
+      print('  Error reading tom_build.yaml: $e');
+    }
+  }
 }

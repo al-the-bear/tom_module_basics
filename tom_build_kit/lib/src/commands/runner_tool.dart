@@ -572,7 +572,7 @@ class RunnerTool extends ToolBase {
     print('  build_runner:');
     print('    command: build          # build, watch, or clean');
     print('    exclude-builders:');
-    print('      - tom_build_kit:compiler_builder');
+    print('      - <package>:<builder_name>');
     print('');
     print('Examples:');
     print('  runner                            # Build in current project');

@@ -1,8 +1,12 @@
 # Build configuration for tom_build_kit
 #
 # This package provides both:
-# - A CLI orchestration tool (buildkit)
-# - build_runner builders (version, cleanup, compiler)
+# - A CLI orchestration tool (buildkit) with integrated tools
+# - A build_runner builder (version_builder) for version file generation
+#
+# Note: Compilation and cleanup are handled by their respective CLI tools
+# (compiler, cleanup) rather than build_runner builders, because builder
+# execution order is not predictable in general.
 
 # Builder definitions
 builders:
@@ -10,20 +14,6 @@ builders:
     import: "package:tom_build_kit/builder.dart"
     builder_factories: ["versionBuilder"]
     build_extensions: {".dart": [".version.g.dart"]}
-    auto_apply: none
-    build_to: source
-
-  cleanup_builder:
-    import: "package:tom_build_kit/builder.dart"
-    builder_factories: ["cleanupBuilder"]
-    build_extensions: {".yaml": [".cleanup.stamp"]}
-    auto_apply: none
-    build_to: source
-
-  compiler_builder:
-    import: "package:tom_build_kit/builder.dart"
-    builder_factories: ["compilerBuilder"]
-    build_extensions: {".dart": [".compile.stamp"]}
     auto_apply: none
     build_to: source
 
@@ -37,40 +27,3 @@ targets:
           output: lib/src/version.g.dart
           includeGitCommit: true
           variablePrefix: buildkit
-
-      tom_build_kit:compiler_builder:
-        enabled: true
-        options:
-          compiles:
-            # macOS ARM64 - compile for self + all Linux targets
-            - commandline:
-                - mkdir -p $HOME/.tom/bin/${target-platform-vs}
-                - dart compile exe ${file} --target-os=${target-os} -o $HOME/.tom/bin/${target-platform-vs}/${file.name}
-              files:
-                - bin/buildkit.dart
-                - bin/cleanup.dart
-                - bin/compiler.dart
-                - bin/dependencies.dart
-                - bin/runner.dart
-                - bin/versioner.dart
-              targets: [darwin-arm64, linux-x64, linux-arm64, linux-armhf]
-              platforms: [darwin-arm64]
-            
-            # Other platforms - compile for self only
-            - commandline:
-                - mkdir -p $HOME/.tom/bin/${target-platform-vs}
-                - dart compile exe ${file} -o $HOME/.tom/bin/${target-platform-vs}/${file.name}
-              files:
-                - bin/buildkit.dart
-                - bin/cleanup.dart
-                - bin/compiler.dart
-                - bin/dependencies.dart
-                - bin/runner.dart
-                - bin/versioner.dart
-              platforms: [darwin-x64, linux-*, win32-*]
-
-          postcompile:
-            # Make binaries executable on Unix-like systems
-            - commandline:
-                - chmod -R +x $HOME/.tom/bin/${current-platform-vs}/
-              platforms: [macos, linux]

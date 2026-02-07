@@ -21,6 +21,7 @@ export 'src/commands/versioner_tool.dart';
 export 'src/commands/compiler_tool.dart';
 export 'src/commands/runner_tool.dart';
 export 'src/commands/dependencies_tool.dart';
+export 'src/compiler_config.dart';
 
 // Utilities
 export 'src/platform_utils.dart';

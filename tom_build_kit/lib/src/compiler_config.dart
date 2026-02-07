@@ -1,7 +1,9 @@
-import 'dart:async';
-import 'dart:io';
-
-import 'package:build/build.dart';
+/// Configuration types for the compiler tool.
+///
+/// These are pure data classes used by both the CLI tool (CompilerTool)
+/// and the build.yaml configuration parser. They have no dependency on
+/// `package:build` or build_runner.
+library;
 
 /// Configuration for a command section (precompile, postcompile).
 class CommandSection {
@@ -129,92 +131,5 @@ class CompileSection {
       targets: targets,
       platforms: platforms,
     );
-  }
-}
-
-/// Configuration for the compiler builder.
-class CompilerBuilderConfig {
-  final List<CommandSection> precompile;
-  final List<CompileSection> compiles;
-  final List<CommandSection> postcompile;
-
-  const CompilerBuilderConfig({
-    this.precompile = const [],
-    required this.compiles,
-    this.postcompile = const [],
-  });
-
-  /// Load from build.yaml options.
-  factory CompilerBuilderConfig.fromOptions(Map<String, dynamic> options) {
-    final precompileSections = <CommandSection>[];
-    final precompileRaw = options['precompile'];
-    if (precompileRaw is List) {
-      for (final item in precompileRaw) {
-        precompileSections.add(CommandSection.fromJson(item));
-      }
-    }
-
-    final compileSections = <CompileSection>[];
-    final compilesRaw = options['compiles'];
-    if (compilesRaw is List) {
-      for (final item in compilesRaw) {
-        compileSections.add(CompileSection.fromJson(item));
-      }
-    }
-
-    final postcompileSections = <CommandSection>[];
-    final postcompileRaw = options['postcompile'];
-    if (postcompileRaw is List) {
-      for (final item in postcompileRaw) {
-        postcompileSections.add(CommandSection.fromJson(item));
-      }
-    }
-
-    return CompilerBuilderConfig(
-      precompile: precompileSections,
-      compiles: compileSections,
-      postcompile: postcompileSections,
-    );
-  }
-}
-
-/// Build_runner builder for compilation.
-///
-/// Note: This builder validates configuration during build_runner runs.
-/// The actual compilation is done by the CLI tool (CompilerTool).
-class CompilerBuilder implements Builder {
-  final CompilerBuilderConfig config;
-
-  CompilerBuilder(this.config);
-
-  @override
-  Map<String, List<String>> get buildExtensions => {
-        r'$lib$': ['.compiler.done'],
-      };
-
-  @override
-  Future<void> build(BuildStep buildStep) async {
-    log.info('Compiler builder configured with '
-        '${config.compiles.length} compile sections');
-
-    for (final section in config.compiles) {
-      _validateSection(section);
-    }
-  }
-
-  void _validateSection(CompileSection section) {
-    for (final commandline in section.commandlines) {
-      if (!commandline.contains(r'${file}') &&
-          !commandline.contains('[file]')) {
-        log.warning(
-            'Command line should contain \${file} or [file] placeholder');
-      }
-    }
-
-    for (final file in section.files) {
-      if (!file.contains('*') && !File(file).existsSync()) {
-        log.warning('Source file not found: $file');
-      }
-    }
   }
 }

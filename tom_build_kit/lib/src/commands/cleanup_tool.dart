@@ -119,44 +119,6 @@ class CleanupConfig {
     }
   }
 
-  /// Load config from build.yaml (tom_cleanup_builder:cleanup_builder options).
-  static CleanupConfig? loadFromBuildYaml(String dir,
-      {String builderKey = 'tom_build_kit:cleanup_builder'}) {
-    final file = File('$dir/build.yaml');
-    if (!file.existsSync()) return null;
-
-    try {
-      final content = file.readAsStringSync();
-      final yaml = loadYaml(content) as YamlMap?;
-      if (yaml == null) return null;
-
-      final targets = yaml['targets'] as YamlMap?;
-      final defaultTarget = targets?[r'$default'] as YamlMap?;
-      final builders = defaultTarget?['builders'] as YamlMap?;
-      final builder = builders?[builderKey] as YamlMap?;
-      final options = builder?['options'] as YamlMap?;
-      if (options == null) return null;
-
-      final sections = <CleanupSection>[];
-      final cleanupList = options['cleanup'];
-      if (cleanupList is YamlList) {
-        for (final item in cleanupList) {
-          sections.add(CleanupSection.fromJson(item));
-        }
-      }
-
-      final globalExcludes =
-          ToolBase.toStringList(options['excludes'] ?? options['exclude']);
-
-      return CleanupConfig(
-        cleanupSections: sections,
-        globalExcludes: globalExcludes,
-      );
-    } catch (_) {
-      return null;
-    }
-  }
-
   /// Merge with another config (other takes precedence for non-null values).
   CleanupConfig merge(CleanupConfig other) {
     return CleanupConfig(
@@ -206,19 +168,7 @@ class CleanupTool extends ToolBase {
   bool isToolProject(String dirPath) {
     final pubspec = File('$dirPath/pubspec.yaml');
     if (!pubspec.existsSync()) return false;
-    return hasTomBuildConfig(dirPath, toolKey) ||
-        _hasBuildYamlCleanupConfig(dirPath);
-  }
-
-  bool _hasBuildYamlCleanupConfig(String dirPath) {
-    final file = File('$dirPath/build.yaml');
-    if (!file.existsSync()) return false;
-    try {
-      final content = file.readAsStringSync();
-      return content.contains('tom_build_kit:cleanup_builder');
-    } catch (_) {
-      return false;
-    }
+    return hasTomBuildConfig(dirPath, toolKey);
   }
 
   @override
@@ -298,7 +248,7 @@ class CleanupTool extends ToolBase {
     if (showMode) {
       for (final project in projects) {
         print('Project: ${p.relative(project, from: basePath)}');
-        printBuildYamlSection(project, 'tom_build_kit:cleanup_builder');
+        printTomBuildYamlSection(project, 'cleanup');
       }
       return true;
     }
@@ -347,10 +297,6 @@ class CleanupTool extends ToolBase {
     final yamlConfig = CleanupConfig.loadFromYaml(projectPath);
     if (yamlConfig != null) {
       projectConfig = projectConfig.merge(yamlConfig);
-    }
-    final buildYamlConfig = CleanupConfig.loadFromBuildYaml(projectPath);
-    if (buildYamlConfig != null) {
-      projectConfig = projectConfig.merge(buildYamlConfig);
     }
 
     // Default cleanup targets if none configured
@@ -526,17 +472,6 @@ class CleanupTool extends ToolBase {
     print('    - globs: ["**/*.g.dart", "**/*.r.dart"]');
     print('      excludes: ["**/version.g.dart"]');
     print('');
-    print('Configuration (build.yaml):');
-    print('  targets:');
-    print('    \$default:');
-    print('      builders:');
-    print('        tom_build_kit:cleanup_builder:');
-    print('          enabled: true');
-    print('          options:');
-    print('            cleanup:');
-    print('              - build');
-    print('              - globs: ["**/*.g.dart"]');
-    print('            excludes: ["**/version.g.dart"]');
     print('');
     print('Safety: Aborts if file count exceeds --max-files (default 10).');
     print('  Use --force to skip the safety check.');

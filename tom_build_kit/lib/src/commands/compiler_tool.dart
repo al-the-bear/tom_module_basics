@@ -4,7 +4,7 @@ import 'package:args/args.dart';
 import 'package:path/path.dart' as p;
 import 'package:yaml/yaml.dart';
 
-import '../builders/compiler_builder.dart';
+import '../compiler_config.dart';
 import '../platform_utils.dart';
 import 'tool_base.dart';
 
@@ -62,10 +62,9 @@ class CompilerConfig {
     }
   }
 
-  /// Load compilation config from build.yaml.
-  static CompilerConfig? loadFromBuildYaml(String dir,
-      {String builderKey = 'tom_build_kit:compiler_builder'}) {
-    final file = File('$dir/build.yaml');
+  /// Load compilation config from tom_build.yaml compiler section.
+  static CompilerConfig? loadCompileSections(String dir) {
+    final file = File('$dir/tom_build.yaml');
     if (!file.existsSync()) return null;
 
     try {
@@ -73,16 +72,12 @@ class CompilerConfig {
       final yaml = loadYaml(content) as YamlMap?;
       if (yaml == null) return null;
 
-      final targets = yaml['targets'] as YamlMap?;
-      final defaultTarget = targets?[r'$default'] as YamlMap?;
-      final builders = defaultTarget?['builders'] as YamlMap?;
-      final builder = builders?[builderKey] as YamlMap?;
-      final options = builder?['options'] as YamlMap?;
-      if (options == null) return null;
+      final compilerYaml = yaml['compiler'] as YamlMap?;
+      if (compilerYaml == null) return null;
 
       // Parse precompile sections
       final precompile = <CommandSection>[];
-      final precompileRaw = options['precompile'];
+      final precompileRaw = compilerYaml['precompile'];
       if (precompileRaw is List) {
         for (final item in precompileRaw) {
           precompile.add(CommandSection.fromJson(item));
@@ -91,7 +86,7 @@ class CompilerConfig {
 
       // Parse compile sections
       final compiles = <CompileSection>[];
-      final compilesRaw = options['compiles'];
+      final compilesRaw = compilerYaml['compiles'];
       if (compilesRaw is List) {
         for (final item in compilesRaw) {
           compiles.add(CompileSection.fromJson(item));
@@ -100,7 +95,7 @@ class CompilerConfig {
 
       // Parse postcompile sections
       final postcompile = <CommandSection>[];
-      final postcompileRaw = options['postcompile'];
+      final postcompileRaw = compilerYaml['postcompile'];
       if (postcompileRaw is List) {
         for (final item in postcompileRaw) {
           postcompile.add(CommandSection.fromJson(item));
@@ -166,11 +161,12 @@ class CompilerTool extends ToolBase {
   bool isToolProject(String dirPath) {
     final pubspec = File('$dirPath/pubspec.yaml');
     if (!pubspec.existsSync()) return false;
-    final buildYaml = File('$dirPath/build.yaml');
-    if (!buildYaml.existsSync()) return false;
+    final tomBuildYaml = File('$dirPath/tom_build.yaml');
+    if (!tomBuildYaml.existsSync()) return false;
     try {
-      final content = buildYaml.readAsStringSync();
-      return content.contains('tom_build_kit:compiler_builder');
+      final content = tomBuildYaml.readAsStringSync();
+      final yaml = loadYaml(content) as YamlMap?;
+      return yaml != null && yaml['compiler'] is YamlMap;
     } catch (_) {
       return false;
     }
@@ -256,7 +252,7 @@ class CompilerTool extends ToolBase {
     if (showMode) {
       for (final project in projects) {
         print('Project: ${p.relative(project, from: basePath)}');
-        printBuildYamlSection(project, 'tom_build_kit:compiler_builder');
+        printTomBuildYamlSection(project, 'compiler');
       }
       return true;
     }
@@ -277,15 +273,15 @@ class CompilerTool extends ToolBase {
       String projectPath, CompilerConfig config) async {
     if (verbose) print('Processing: ${p.basename(projectPath)}');
 
-    // Load project-level config (tom_build.yaml then build.yaml)
+    // Load project-level config (tom_build.yaml)
     var projectConfig = config;
     final yamlConfig = CompilerConfig.loadFromYaml(projectPath);
     if (yamlConfig != null) {
       projectConfig = projectConfig.merge(yamlConfig);
     }
-    final buildYamlConfig = CompilerConfig.loadFromBuildYaml(projectPath);
-    if (buildYamlConfig != null) {
-      projectConfig = projectConfig.merge(buildYamlConfig);
+    final compileSectionsConfig = CompilerConfig.loadCompileSections(projectPath);
+    if (compileSectionsConfig != null) {
+      projectConfig = projectConfig.merge(compileSectionsConfig);
     }
 
     if (projectConfig.compileSections.isEmpty) {
@@ -600,16 +596,11 @@ class CompilerTool extends ToolBase {
     print('  \${current-platform-vs} - Current platform (VS Code format)');
     print('  \$HOME, \$USER, etc.   - Environment variables');
     print('');
-    print('Configuration (build.yaml):');
-    print('  targets:');
-    print('    \$default:');
-    print('      builders:');
-    print('        tom_build_kit:compiler_builder:');
-    print('          enabled: true');
-    print('          options:');
-    print('            precompile:  [{commandline: [...], platforms: [...]}]');
-    print('            compiles:    [{commandline: [...], files: [...], targets: [...], platforms: [...]}]');
-    print('            postcompile: [{commandline: [...], platforms: [...]}]');
+    print('Configuration (tom_build.yaml):');
+    print('  compiler:');
+    print('    precompile:  [{commandline: [...], platforms: [...]}]');
+    print('    compiles:    [{commandline: [...], files: [...], targets: [...], platforms: [...]}]');
+    print('    postcompile: [{commandline: [...], platforms: [...]}]');
     print('');
     print('Examples:');
     print('  compiler                          # Compile in current project');
