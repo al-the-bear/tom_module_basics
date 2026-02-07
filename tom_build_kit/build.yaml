@@ -1,19 +1,44 @@
 # Build configuration for tom_build_kit
 #
-# This is NOT a build_runner builder - it's a CLI orchestration tool.
+# This package provides both:
+# - A CLI orchestration tool (buildkit)
+# - build_runner builders (version, cleanup, compiler)
+
+# Builder definitions
+builders:
+  version_builder:
+    import: "package:tom_build_kit/builder.dart"
+    builder_factories: ["versionBuilder"]
+    build_extensions: {".dart": [".version.g.dart"]}
+    auto_apply: none
+    build_to: source
+
+  cleanup_builder:
+    import: "package:tom_build_kit/builder.dart"
+    builder_factories: ["cleanupBuilder"]
+    build_extensions: {".yaml": [".cleanup.stamp"]}
+    auto_apply: none
+    build_to: source
+
+  compiler_builder:
+    import: "package:tom_build_kit/builder.dart"
+    builder_factories: ["compilerBuilder"]
+    build_extensions: {".dart": [".compile.stamp"]}
+    auto_apply: none
+    build_to: source
 
 targets:
   $default:
     builders:
       # Version builder - generates version.g.dart with build info
-      tom_version_builder:version_builder:
+      tom_build_kit|version_builder:
         enabled: true
         options:
           output: lib/src/version.g.dart
           includeGitCommit: true
           variablePrefix: buildkit
 
-      tom_compiler_builder:compiler_builder:
+      tom_build_kit|compiler_builder:
         enabled: true
         options:
           compiles:
@@ -42,4 +67,4 @@ targets:
 tom_build_runner:
   build_runner:
     exclude-builders:
-      - tom_compiler_builder:compiler_builder
+      - tom_build_kit|compiler_builder

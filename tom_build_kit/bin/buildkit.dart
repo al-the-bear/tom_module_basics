@@ -1,8 +1,8 @@
 /// Tom Build Kit - Pipeline-based build orchestration tool.
 ///
 /// This tool orchestrates build pipelines that can call other Tom build tools
-/// (versioner, compiler, runner, astgen, d4rtgen) directly without spawning
-/// new processes.
+/// (versioner, compiler, runner, cleanup, dependencies) directly without
+/// spawning new processes.
 ///
 /// ## Configuration
 ///
@@ -39,10 +39,20 @@
 /// - `versioner` - Run version builder
 /// - `compiler` - Run compiler builder
 /// - `runner` - Run build_runner wrapper
-/// - `astgen` - Run AST generator
-/// - `d4rtgen` - Run D4rt generator
+/// - `cleanup` - Clean build artifacts
+/// - `dependencies` - Show dependency tree
 /// - `shell <command>` - Run shell command
 /// - Pipeline names - Call other pipelines
+///
+/// ## Per-Tool Option Override
+///
+/// When running multiple commands, each command inherits global options
+/// (like --scan). Use `-s-` to suppress the global --scan for a command:
+///
+///   buildkit -s . :cleanup -s- --project tom_* :compiler
+///
+/// This scans with cleanup but NOT with compiler. The `-s-` syntax works
+/// for any single-letter option flag: `-v-` suppresses verbose, etc.
 ///
 /// ## Scanning Projects
 ///
@@ -80,10 +90,15 @@ class _ExecutionStep {
   /// Arguments to pass to the pipeline or command.
   final List<String> args;
 
+  /// Option suppressions using `-X-` syntax.
+  /// Keys are the short flag letter (e.g. 's', 'v', 'n').
+  final Set<String> suppressedOptions;
+
   _ExecutionStep({
     required this.isCommand,
     required this.name,
     this.args = const [],
+    this.suppressedOptions = const {},
   });
 
   /// Display string for separators and logging.
@@ -223,26 +238,39 @@ Future<void> main(List<String> args) async {
       rootPath: rootPath,
     );
 
-    final executor = PipelineExecutor(
-      config: projectConfig,
-      projectPath: projectPath,
-      rootPath: rootPath,
-      verbose: _verbose,
-      dryRun: dryRun,
-    );
-
     for (final step in steps) {
       // Print separator before each step
       _printStepSeparator(step);
+
+      // Apply per-step option suppressions (-X- syntax)
+      final stepVerbose =
+          step.suppressedOptions.contains('v') ? false : _verbose;
+      final stepDryRun =
+          step.suppressedOptions.contains('n') ? false : dryRun;
+
+      // If -s- is set and we were scanning, skip this project unless it's
+      // the current directory (i.e., suppress scan = run only in cwd)
+      if (step.suppressedOptions.contains('s') && scanPath != null) {
+        if (projectPath != currentDir) continue;
+      }
+
+      // Create executor with per-step overrides
+      final stepExecutor = PipelineExecutor(
+        config: projectConfig,
+        projectPath: projectPath,
+        rootPath: rootPath,
+        verbose: stepVerbose,
+        dryRun: stepDryRun,
+      );
 
       bool result;
       if (step.isCommand) {
         // Execute command directly via BuiltinCommands
         final commandStr = [step.name, ...step.args].join(' ');
-        result = await executor.executeCommand(commandStr);
+        result = await stepExecutor.executeCommand(commandStr);
       } else {
         // Execute pipeline (pass step.args if we support pipeline args later)
-        result = await executor.execute(step.name);
+        result = await stepExecutor.execute(step.name);
       }
 
       if (!result) {
@@ -278,14 +306,18 @@ void _printUsage(ArgParser parser) {
   print('  :<command> [args] Run a tool command directly (versioner, compiler, etc.)');
   print('');
   print('Built-in commands:');
-  print('  :versioner    Generate version files');
-  print('  :compiler     Compile executables');
-  print('  :runner       Run build_runner');
-  print('  :astgen       Generate AST code');
-  print('  :d4rtgen      Generate D4rt bridges');
-  print('  :cleanup      Clean build artifacts');
-  print('  :pubget       Run dart pub get on projects');
-  print('  :pubgetall    Shortcut for :pubget --scan . --recursive');
+  print('  :versioner      Generate version files');
+  print('  :compiler       Compile executables');
+  print('  :runner         Run build_runner');
+  print('  :cleanup        Clean build artifacts');
+  print('  :dependencies   Show dependency tree');
+  print('  :pubget         Run dart pub get on projects');
+  print('  :pubgetall      Shortcut for :pubget --scan . --recursive');
+  print('');
+  print('Per-tool option override:');
+  print('  -s-   Suppress global --scan for this command');
+  print('  -v-   Suppress global --verbose for this command');
+  print('  -n-   Suppress global --dry-run for this command');
   print('');
   print('Options:');
   print(parser.usage);
@@ -365,6 +397,9 @@ String _findWorkspaceRoot(String startPath) {
 /// - Commands prefixed with `:` (e.g., `:versioner`, `:compiler`)
 ///
 /// Each step collects all following arguments until the next step begins.
+///
+/// Per-tool option suppressions use `-X-` syntax (e.g., `-s-` suppresses
+/// the global `--scan` option for that command only).
 List<_ExecutionStep> _parseExecutionSteps(
   List<String> args,
   PipelineConfig config,
@@ -375,6 +410,10 @@ List<_ExecutionStep> _parseExecutionSteps(
   String? currentName;
   bool currentIsCommand = false;
   final currentArgs = <String>[];
+  final currentSuppressed = <String>{};
+
+  /// Regex for `-X-` style suppression flags.
+  final suppressionPattern = RegExp(r'^-([a-zA-Z])-$');
 
   void flushStep() {
     if (currentName != null) {
@@ -382,12 +421,21 @@ List<_ExecutionStep> _parseExecutionSteps(
         isCommand: currentIsCommand,
         name: currentName,
         args: List.from(currentArgs),
+        suppressedOptions: Set.from(currentSuppressed),
       ));
       currentArgs.clear();
+      currentSuppressed.clear();
     }
   }
 
   for (final arg in args) {
+    // Check for suppression flag (e.g., -s-, -v-, -n-)
+    final suppressMatch = suppressionPattern.firstMatch(arg);
+    if (suppressMatch != null) {
+      currentSuppressed.add(suppressMatch.group(1)!);
+      continue;
+    }
+
     if (arg.startsWith(':')) {
       // Start of a command step
       flushStep();
@@ -430,9 +478,8 @@ const _builtinCommandNames = {
   'versioner',
   'compiler',
   'runner',
-  'astgen',
-  'd4rtgen',
   'cleanup',
+  'dependencies',
   'pubget',
   'pubgetall',
 };
