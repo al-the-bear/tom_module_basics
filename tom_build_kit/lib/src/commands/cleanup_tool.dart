@@ -62,7 +62,7 @@ class CleanupConfig {
     this.dryRun = false,
     this.cleanupSections = const [],
     this.globalExcludes = const [],
-    this.maxFiles = 10,
+    this.maxFiles = 100,
     this.force = false,
   });
 
@@ -133,7 +133,7 @@ class CleanupConfig {
           ? other.cleanupSections
           : cleanupSections,
       globalExcludes: [...globalExcludes, ...other.globalExcludes],
-      maxFiles: other.maxFiles != 10 ? other.maxFiles : maxFiles,
+      maxFiles: other.maxFiles != 100 ? other.maxFiles : maxFiles,
       force: other.force || force,
     );
   }
@@ -160,7 +160,7 @@ class CleanupTool extends ToolBase {
           help: 'Skip safety check on file count')
       ..addOption('max-files',
           abbr: 'm',
-          defaultsTo: '10',
+          defaultsTo: '100',
           help: 'Maximum files to delete without --force');
   }
 
@@ -195,7 +195,7 @@ class CleanupTool extends ToolBase {
     dryRun = results['dry-run'] as bool;
 
     final force = results['force'] as bool;
-    final maxFiles = int.tryParse(results['max-files'] as String) ?? 10;
+    final maxFiles = int.tryParse(results['max-files'] as String) ?? 100;
     final listMode = results['list'] as bool;
     final showMode = results['show'] as bool;
 
@@ -285,7 +285,7 @@ class CleanupTool extends ToolBase {
   Future<bool> processProject(
     String projectPath,
     CleanupConfig config, {
-    int maxFiles = 10,
+    int maxFiles = 100,
     bool force = false,
   }) async {
     if (verbose) {
@@ -368,6 +368,14 @@ class CleanupTool extends ToolBase {
 
     var deleted = 0;
     for (final filePath in filesToDelete) {
+      // Final safety guard: never delete protected folders/files
+      if (_isInProtectedFolder(filePath)) {
+        if (verbose) {
+          print('  Skipping protected: '
+              '${p.relative(filePath, from: projectPath)}');
+        }
+        continue;
+      }
       try {
         if (verbose) {
           print('  Removing: ${p.relative(filePath, from: projectPath)}');
@@ -386,6 +394,16 @@ class CleanupTool extends ToolBase {
     return true;
   }
 
+  /// Folders that must never be deleted or have their contents removed.
+  /// This is a hard safety guard — cleanup will always skip these.
+  static const _protectedFolders = {'.git', '.github', '.vscode', '.idea'};
+
+  /// Returns true if [path] is inside a protected folder.
+  static bool _isInProtectedFolder(String path) {
+    final parts = p.split(path);
+    return parts.any((part) => _protectedFolders.contains(part));
+  }
+
   /// Collect files matching a glob pattern, excluding specified patterns.
   void _collectMatchingFiles(
     String projectPath,
@@ -400,6 +418,12 @@ class CleanupTool extends ToolBase {
     if (!pattern.contains('*') &&
         !pattern.contains('?') &&
         !pattern.contains('[')) {
+      if (_isInProtectedFolder(fullPath)) {
+        if (verbose) {
+          print('  Skipping protected path: $pattern');
+        }
+        return;
+      }
       if (FileSystemEntity.isDirectorySync(fullPath)) {
         _collectFilesInDirectory(Directory(fullPath), results);
       } else if (File(fullPath).existsSync()) {
@@ -414,6 +438,7 @@ class CleanupTool extends ToolBase {
     try {
       final glob = Glob(pattern);
       for (final entity in glob.listSync(root: projectPath)) {
+        if (_isInProtectedFolder(entity.path)) continue;
         if (_isExcluded(entity.path, sectionExcludes, globalExcludes)) {
           continue;
         }
@@ -429,10 +454,13 @@ class CleanupTool extends ToolBase {
   }
 
   /// Recursively collect all files in a directory.
+  ///
+  /// Skips files inside protected folders (.git, .github, .vscode, .idea).
   void _collectFilesInDirectory(Directory dir, List<String> files) {
+    if (_isInProtectedFolder(dir.path)) return;
     try {
       for (final entity in dir.listSync(recursive: true)) {
-        if (entity is File) {
+        if (entity is File && !_isInProtectedFolder(entity.path)) {
           files.add(entity.path);
         }
       }
@@ -476,7 +504,10 @@ class CleanupTool extends ToolBase {
     print('      excludes: ["**/version.g.dart"]');
     print('');
     print('');
-    print('Safety: Aborts if file count exceeds --max-files (default 10).');
+    print('Safety: Aborts if file count exceeds --max-files (default 100).');
     print('  Use --force to skip the safety check.');
+    print('');
+    print('Protected folders (never deleted):');
+    print('  .git, .github, .vscode, .idea');
   }
 }
