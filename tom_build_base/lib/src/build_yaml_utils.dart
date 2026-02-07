@@ -75,7 +75,7 @@ bool hasBuildYamlConsumerConfig(String dirPath, String builderName) {
 /// Extracts `targets.$default.builders.{builderName}.options` as a Map.
 ///
 /// [dirPath] - Directory containing build.yaml
-/// [builderName] - Full builder name (e.g., 'tom_version_builder:version_builder')
+/// [builderName] - Full builder name (e.g., 'tom_build_kit:version_builder')
 ///
 /// Returns the options map, or null if not found or build.yaml doesn't exist.
 Map<String, dynamic>? getBuildYamlBuilderOptions(

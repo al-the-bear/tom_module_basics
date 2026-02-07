@@ -15,34 +15,9 @@ targets:
   $default:
     builders:
       # Version builder - generates version.g.dart with build info
-      tom_version_builder:version_builder:
+      tom_build_kit:version_builder:
         enabled: true
         options:
           output: lib/src/version.g.dart
           includeGitCommit: true
           variablePrefix: astgenTool
-      
-      tom_compiler_builder:compiler_builder:
-        enabled: true
-        options:
-          compiles:
-            # macOS ARM64 - compile for self + all Linux targets
-            - commandline:
-                - mkdir -p $HOME/.tom/bin/${target-platform-vs}
-                - dart compile exe ${file} --target-os=${target-os} -o $HOME/.tom/bin/${target-platform-vs}/${file.name}
-              files: bin/astgen.dart
-              targets: [darwin-arm64, linux-x64, linux-arm64, linux-armhf]
-              platforms: [darwin-arm64]
-            
-            # Other platforms - compile for self only
-            - commandline:
-                - mkdir -p $HOME/.tom/bin/${target-platform-vs}
-                - dart compile exe ${file} -o $HOME/.tom/bin/${target-platform-vs}/${file.name}
-              files: bin/astgen.dart
-              platforms: [darwin-x64, linux-*, win32-*]
-
-          postcompile:
-            # Make binaries executable on Unix-like systems
-            - commandline:
-                - chmod -R +x $HOME/.tom/bin/${current-platform-vs}/
-              platforms: [macos, linux]

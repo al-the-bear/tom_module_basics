@@ -31,7 +31,7 @@ class BuilderFilterConfig {
     return parts.isEmpty ? 'BuilderFilterConfig(none)' : 'BuilderFilterConfig(${parts.join('; ')})';
   }
 
-  /// Load from build.yaml (tom_build_runner.build_runner section).
+  /// Load from build.yaml (tom_build_kit.build_runner section).
   static BuilderFilterConfig? loadFromBuildYaml(String projectPath) {
     final file = File('$projectPath/build.yaml');
     if (!file.existsSync()) return null;
