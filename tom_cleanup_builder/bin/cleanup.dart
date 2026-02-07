@@ -283,6 +283,16 @@ Future<void> main(List<String> arguments) async {
     ..addFlag('show',
         help: 'With --list, show build.yaml configuration for each project',
         negatable: false)
+    ..addFlag('force',
+        abbr: 'f',
+        negatable: false,
+        help:
+            'Force deletion without confirmation even if file count exceeds limit')
+    ..addOption('max-files',
+        abbr: 'm',
+        defaultsTo: '10',
+        help:
+            'Maximum number of files to delete without confirmation (default: 10)')
     ..addFlag('help',
         abbr: 'h', negatable: false, help: 'Show usage help');
 
@@ -295,6 +305,23 @@ Future<void> main(List<String> arguments) async {
 
   final listOnly = args['list'] as bool;
   final showConfig = args['show'] as bool;
+  final force = args['force'] as bool;
+  final maxFilesStr = args['max-files'] as String?;
+
+  // Parse max-files option
+  int maxFiles = 10;
+  if (maxFilesStr != null && maxFilesStr.isNotEmpty) {
+    try {
+      maxFiles = int.parse(maxFilesStr);
+      if (maxFiles < 1) {
+        stderr.writeln('Error: --max-files must be >= 1');
+        exit(1);
+      }
+    } catch (e) {
+      stderr.writeln('Error: --max-files must be a number, got: $maxFilesStr');
+      exit(1);
+    }
+  }
 
   // Build config from CLI args
   final cliConfig = CleanupConfig(
@@ -396,8 +423,12 @@ Future<void> main(List<String> arguments) async {
         p.relative(projectPath, from: Directory.current.path);
     print('Project: $displayPath');
 
-    final success =
-        await _processProject(projectPath, config);
+    final success = await _processProject(
+      projectPath,
+      config,
+      maxFiles: maxFiles,
+      force: force,
+    );
 
     if (success) {
       result.addSuccess();
@@ -490,7 +521,11 @@ bool _isCleanupProject(String dirPath) {
 
 /// Process a single project.
 Future<bool> _processProject(
-    String projectPath, CleanupConfig config) async {
+  String projectPath,
+  CleanupConfig config, {
+  required int maxFiles,
+  required bool force,
+}) async {
   // Load cleanup configuration for this project
   var projectConfig = CleanupConfig.loadFromYaml(projectPath) ??
       CleanupConfig.loadFromBuildYaml(projectPath);
@@ -517,7 +552,8 @@ Future<bool> _processProject(
   Directory.current = projectPath;
 
   try {
-    // Process each cleanup section
+    // First pass: collect all files that will be deleted
+    final filesToDelete = <String>[];
     for (final section in projectConfig.cleanupSections) {
       // Determine which excludes to use
       final effectiveExcludes = section.excludes.isEmpty
@@ -528,16 +564,11 @@ Future<bool> _processProject(
 
       // Process each glob pattern
       for (final pattern in section.globs) {
-        var found = 0;
-        var excluded = 0;
-        var deleted = 0;
-        
         try {
           final glob = Glob(pattern);
 
           for (final entity in glob.listSync()) {
             if (entity is! File) continue;
-            found++;
 
             final filePath = entity.path;
             final relativePath = p.relative(filePath, from: projectPath);
@@ -547,7 +578,6 @@ Future<bool> _processProject(
             for (final excludeGlob in excludeGlobs) {
               if (excludeGlob.matches(relativePath)) {
                 isExcluded = true;
-                excluded++;
                 if (config.verbose) {
                   print('  Excluding: $relativePath');
                 }
@@ -555,26 +585,8 @@ Future<bool> _processProject(
               }
             }
 
-            if (isExcluded) continue;
-
-            // Delete the file
-            if (config.dryRun) {
-              if (config.verbose) {
-                print('  [DRY RUN] Would delete: $relativePath');
-              }
-              deleted++;
-            } else {
-              try {
-                entity.deleteSync();
-                deleted++;
-                if (config.verbose) {
-                  print('  Deleted: $relativePath');
-                }
-              } catch (e) {
-                if (config.verbose) {
-                  print('  Warning: Failed to delete $relativePath: $e');
-                }
-              }
+            if (!isExcluded) {
+              filesToDelete.add(relativePath);
             }
           }
         } catch (e) {
@@ -582,10 +594,59 @@ Future<bool> _processProject(
             print('  Error processing pattern "$pattern": $e');
           }
         }
-        
-        // Print summary for this pattern
-        print('Processing: $pattern - Found $found, excluded $excluded, deleted $deleted');
       }
+    }
+
+    // Safety check: if more than maxFiles will be deleted, warn user
+    if (filesToDelete.length > maxFiles && !force && !projectConfig.dryRun) {
+      print('');
+      print('WARNING: Cleanup would delete ${filesToDelete.length} files '
+          '(limit: $maxFiles)');
+      print('');
+      print('Files to be deleted:');
+      for (var i = 0; i < filesToDelete.length; i++) {
+        if (i < 20) {
+          print('  - ${filesToDelete[i]}');
+        }
+      }
+      if (filesToDelete.length > 20) {
+        print('  ... and ${filesToDelete.length - 20} more');
+      }
+      print('');
+      print('To proceed, use one of these options:');
+      print('  1. Use --force flag to skip confirmation');
+      print('  2. Use --max-files=${filesToDelete.length} to allow this many files');
+      print('');
+      print('Cleanup aborted.');
+      return false;
+    }
+
+    // Second pass: delete files
+    var deleted = 0;
+    for (final filePath in filesToDelete) {
+      final fullPath = p.join(projectPath, filePath);
+      try {
+        if (projectConfig.dryRun) {
+          if (config.verbose) {
+            print('  [DRY RUN] Would delete: $filePath');
+          }
+          deleted++;
+        } else {
+          File(fullPath).deleteSync();
+          deleted++;
+          if (config.verbose) {
+            print('  Deleted: $filePath');
+          }
+        }
+      } catch (e) {
+        if (config.verbose) {
+          print('  Warning: Failed to delete $filePath: $e');
+        }
+      }
+    }
+
+    if (filesToDelete.isNotEmpty) {
+      print('Cleanup completed - deleted $deleted file(s)');
     }
 
     return true;

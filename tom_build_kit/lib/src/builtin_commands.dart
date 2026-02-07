@@ -136,32 +136,111 @@ class BuiltinCommands {
       return true;
     }
 
-    // Built-in cleanup: remove generated files, build directories, etc.
-    final targets = args.isEmpty
-        ? ['build', '.dart_tool/build', '**/*.g.dart']
-        : args;
+    // Parse cleanup-specific arguments
+    int maxFiles = 10;
+    bool force = false;
+    final cleanupTargets = <String>[];
 
-    for (final target in targets) {
-      if (target.contains('*')) {
-        // Glob pattern - would need glob package
-        if (verbose) print('    Cleanup glob: $target');
-      } else {
-        final path = '$projectPath/$target';
-        final entity = FileSystemEntity.isDirectorySync(path)
-            ? Directory(path)
-            : File(path);
-        if (entity.existsSync()) {
-          if (verbose) print('    Removing: $target');
+    var i = 0;
+    while (i < args.length) {
+      final arg = args[i];
+      if (arg == '--force' || arg == '-f') {
+        force = true;
+      } else if (arg == '--max-files' || arg == '-m') {
+        if (i + 1 < args.length) {
           try {
-            entity.deleteSync(recursive: true);
-          } catch (e) {
-            print('    Warning: Failed to remove $target: $e');
+            maxFiles = int.parse(args[i + 1]);
+            i++; // Skip the value
+          } catch (_) {
+            print('  Warning: Invalid --max-files value: ${args[i + 1]}');
           }
+        }
+      } else if (!arg.startsWith('-')) {
+        cleanupTargets.add(arg);
+      }
+      i++;
+    }
+
+    // Default targets if none specified
+    final targets =
+        cleanupTargets.isEmpty ? ['build', '.dart_tool/build'] : cleanupTargets;
+
+    // First pass: collect files that will be deleted
+    final filesToDelete = <String>[];
+    for (final target in targets) {
+      final path = '$projectPath/$target';
+      if (target.contains('*')) {
+        // Skip glob patterns for safety in builtin (requires glob package)
+        if (verbose) print('  Cleanup glob (skipped in builtin): $target');
+        continue;
+      }
+
+      final entity = FileSystemEntity.isDirectorySync(path)
+          ? Directory(path)
+          : File(path);
+      if (entity.existsSync()) {
+        if (entity is Directory) {
+          _collectFilesInDirectory(entity, filesToDelete);
+        } else if (entity is File) {
+          filesToDelete.add(path);
         }
       }
     }
 
+    // Safety check
+    if (filesToDelete.length > maxFiles && !force) {
+      print('');
+      print('WARNING: Cleanup would delete ${filesToDelete.length} files '
+          '(limit: $maxFiles)');
+      print('');
+      print('Files to be deleted:');
+      for (var i = 0; i < filesToDelete.length; i++) {
+        if (i < 20) {
+          print('  - ${filesToDelete[i]}');
+        }
+      }
+      if (filesToDelete.length > 20) {
+        print('  ... and ${filesToDelete.length - 20} more');
+      }
+      print('');
+      print('To proceed, use one of these options:');
+      print('  1. Use --force flag to skip confirmation');
+      print('  2. Use --max-files=${filesToDelete.length} to allow this many files');
+      print('');
+      print('Cleanup aborted.');
+      return false;
+    }
+
+    // Second pass: delete files
+    var deleted = 0;
+    for (final filePath in filesToDelete) {
+      try {
+        if (verbose) print('  Removing: $filePath');
+        File(filePath).deleteSync(recursive: false);
+        deleted++;
+      } catch (e) {
+        if (verbose) print('  Warning: Failed to remove $filePath: $e');
+      }
+    }
+
+    if (filesToDelete.isNotEmpty) {
+      print('  Cleanup: deleted $deleted file(s)');
+    }
+
     return true;
+  }
+
+  /// Recursively collect all files in a directory
+  void _collectFilesInDirectory(Directory dir, List<String> files) {
+    try {
+      for (final entity in dir.listSync(recursive: true)) {
+        if (entity is File) {
+          files.add(entity.path);
+        }
+      }
+    } catch (e) {
+      if (verbose) print('  Warning: Error scanning $dir: $e');
+    }
   }
 
   Future<bool> _runPubGet(List<String> args) async {
