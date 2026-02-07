@@ -52,6 +52,9 @@ class CleanupConfig {
   final int maxFiles;
   final bool force;
 
+  /// Additional folders to protect from deletion (additive to built-in list).
+  final List<String> protectedFolders;
+
   CleanupConfig({
     this.project,
     this.scan,
@@ -64,6 +67,7 @@ class CleanupConfig {
     this.globalExcludes = const [],
     this.maxFiles = 100,
     this.force = false,
+    this.protectedFolders = const [],
   });
 
   /// Load config from tom_build.yaml in the given directory.
@@ -89,7 +93,8 @@ class CleanupConfig {
       }
 
       // Handle map format: cleanup: { cleanup: [...], excludes: [...], ... }
-      final cleanupYaml = cleanupValue as YamlMap;
+      if (cleanupValue is! YamlMap) return null;
+      final cleanupYaml = cleanupValue;
 
       // Parse cleanup sections
       final sections = <CleanupSection>[];
@@ -104,6 +109,10 @@ class CleanupConfig {
       final globalExcludes =
           ToolBase.toStringList(cleanupYaml['excludes'] ?? cleanupYaml['exclude']);
 
+      // Parse additional protected folders (additive to built-in list)
+      final protectedFolders = ToolBase.toStringList(
+          cleanupYaml['protected-folders'] ?? cleanupYaml['protectedFolders']);
+
       return CleanupConfig(
         project: cleanupYaml['project'] as String?,
         scan: cleanupYaml['scan'] as String?,
@@ -113,6 +122,7 @@ class CleanupConfig {
             cleanupYaml['recursion-exclude'] ?? cleanupYaml['recursionExclude']),
         cleanupSections: sections,
         globalExcludes: globalExcludes,
+        protectedFolders: protectedFolders,
       );
     } catch (_) {
       return null;
@@ -135,6 +145,7 @@ class CleanupConfig {
       globalExcludes: [...globalExcludes, ...other.globalExcludes],
       maxFiles: other.maxFiles != 100 ? other.maxFiles : maxFiles,
       force: other.force || force,
+      protectedFolders: [...protectedFolders, ...other.protectedFolders],
     );
   }
 }
@@ -299,6 +310,16 @@ class CleanupTool extends ToolBase {
       projectConfig = projectConfig.merge(yamlConfig);
     }
 
+    // Build effective protected folder set (built-in + workspace + project)
+    _effectiveProtectedFolders = {
+      ...builtinProtectedFolders,
+      ...projectConfig.protectedFolders,
+    };
+    if (verbose && projectConfig.protectedFolders.isNotEmpty) {
+      print('  Additional protected folders: '
+          '${projectConfig.protectedFolders.join(', ')}');
+    }
+
     // Default cleanup targets if none configured
     var sections = projectConfig.cleanupSections;
     if (sections.isEmpty) {
@@ -394,14 +415,20 @@ class CleanupTool extends ToolBase {
     return true;
   }
 
-  /// Folders that must never be deleted or have their contents removed.
-  /// This is a hard safety guard — cleanup will always skip these.
-  static const _protectedFolders = {'.git', '.github', '.vscode', '.idea'};
+  /// Built-in folders that must never be deleted or have their contents
+  /// removed. This is a hard safety guard — cleanup will always skip these.
+  /// Additional folders can be added via `protected-folders` in
+  /// tom_build.yaml, but the built-in set can never be reduced.
+  static const builtinProtectedFolders = {'.git', '.github', '.vscode', '.idea'};
+
+  /// The effective set of protected folders for the current project.
+  /// Built from [builtinProtectedFolders] + config `protected-folders`.
+  Set<String> _effectiveProtectedFolders = builtinProtectedFolders;
 
   /// Returns true if [path] is inside a protected folder.
-  static bool _isInProtectedFolder(String path) {
+  bool _isInProtectedFolder(String path) {
     final parts = p.split(path);
-    return parts.any((part) => _protectedFolders.contains(part));
+    return parts.any((part) => _effectiveProtectedFolders.contains(part));
   }
 
   /// Collect files matching a glob pattern, excluding specified patterns.
@@ -502,12 +529,14 @@ class CleanupTool extends ToolBase {
     print('    - build');
     print('    - globs: ["**/*.g.dart", "**/*.r.dart"]');
     print('      excludes: ["**/version.g.dart"]');
-    print('');
+    print('    protected-folders: [".secrets", ".env"]');
     print('');
     print('Safety: Aborts if file count exceeds --max-files (default 100).');
     print('  Use --force to skip the safety check.');
     print('');
     print('Protected folders (never deleted):');
-    print('  .git, .github, .vscode, .idea');
+    print('  Built-in: .git, .github, .vscode, .idea');
+    print('  Additional folders can be configured via protected-folders');
+    print('  in tom_build.yaml (additive only — cannot reduce built-in list).');
   }
 }
