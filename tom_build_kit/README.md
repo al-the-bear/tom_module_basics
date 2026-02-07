@@ -1,39 +1,82 @@
-<!-- 
-This README describes the package. If you publish this package to pub.dev,
-this README's contents appear on the landing page for your package.
+# Tom Build Kit
 
-For information about how to write a good package README, see the guide for
-[writing package pages](https://dart.dev/tools/pub/writing-package-pages). 
-
-For general information about developing packages, see the Dart guide for
-[creating packages](https://dart.dev/guides/libraries/create-packages)
-and the Flutter guide for
-[developing packages and plugins](https://flutter.dev/to/develop-packages). 
--->
-
-TODO: Put a short description of the package here that helps potential users
-know whether this package might be useful for them.
+Pipeline-based build orchestration for the Tom workspace. Run build pipelines and tool commands in sequence with a unified CLI.
 
 ## Features
 
-TODO: List what your package can do. Maybe include images, gifs, or videos.
+- **Pipeline execution** - Define and run named build pipelines from `tom_build.yaml`
+- **Direct commands** - Run build tools directly with `:command` syntax
+- **Sequential execution** - Mix pipelines and commands in a single invocation
+- **Project scanning** - Run pipelines across multiple projects
+- **Platform filtering** - Run steps only on specific platforms
+- **Dry-run mode** - Preview what would be executed
 
-## Getting started
+## Quick Start
 
-TODO: List prerequisites and provide or point to information on how to
-start using the package.
+```bash
+# Run a pipeline
+buildkit build
+
+# Run multiple pipelines
+buildkit clean build
+
+# Run tool commands directly
+buildkit :versioner :compiler
+
+# Mix pipelines and commands
+buildkit build :cleanup --all
+
+# Scan all projects
+buildkit build --scan . --recursive
+```
 
 ## Usage
 
-TODO: Include short and useful examples for package users. Add longer examples
-to `/example` folder. 
+```
+buildkit [options] <pipeline|:command> [args...] [<pipeline|:command> [args...]]...
 
-```dart
-const like = 'sample';
+Options:
+  -h, --help         Show help
+  -v, --verbose      Verbose output
+  -n, --dry-run      Show what would be executed
+  -l, --list         List available pipelines
+  -s, --scan         Scan directory for projects
+  -R, --recursive    Scan recursively into projects
 ```
 
-## Additional information
+## Built-in Commands
 
-TODO: Tell users more about the package: where to find more information, how to 
-contribute to the package, how to file issues, what response they can expect 
-from the package authors, and more.
+| Command | Description |
+|---------|-------------|
+| `:versioner` | Generate version.g.dart from pubspec.yaml |
+| `:compiler` | Compile Dart to native executables |
+| `:runner` | Run build_runner for code generation |
+| `:astgen` | Generate AST files for D4rt |
+| `:d4rtgen` | Generate D4rt bridge code |
+| `:cleanup` | Clean build artifacts |
+
+## Pipeline Configuration
+
+Define pipelines in `tom_build.yaml`:
+
+```yaml
+buildkit:
+  pipelines:
+    build:
+      core:
+        - commands:
+            - versioner
+            - runner
+            - compiler
+```
+
+## Documentation
+
+See [doc/user_guide.md](doc/user_guide.md) for complete documentation including:
+
+- Pipeline configuration reference
+- Shell command variable expansion
+- Platform filtering
+- Project scanning behavior
+- Configuration hierarchy
+

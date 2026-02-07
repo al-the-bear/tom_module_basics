@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:glob/glob.dart';
+import 'package:glob/list_local_fs.dart';
 import 'package:path/path.dart' as p;
 import 'package:yaml/yaml.dart';
 
@@ -24,6 +26,148 @@ class ProjectDiscovery {
 
   void _log(String message) {
     if (verbose) log(message);
+  }
+
+  /// Resolve project patterns to a list of project paths.
+  ///
+  /// [patterns] - Comma-separated list of project patterns. Supports:
+  ///   - Single path: `my_project`
+  ///   - Multiple paths: `project1,project2,project3`
+  ///   - Glob patterns: `tom_*_builder`, `xternal/tom_module_*/*`
+  ///   - Dot prefix for current directory: `./*` (direct children), `./**/*` (recursive)
+  /// [basePath] - Base path for relative patterns
+  /// [projectFilter] - Optional filter function to validate projects (e.g., check for build.yaml)
+  ///
+  /// Returns a list of absolute project paths.
+  Future<List<String>> resolveProjectPatterns(
+    String patterns, {
+    required String basePath,
+    bool Function(String)? projectFilter,
+  }) async {
+    final results = <String>[];
+    final seen = <String>{};
+
+    // Split by comma (but not inside braces for glob patterns like {a,b})
+    final patternList = _splitPatterns(patterns);
+
+    for (final pattern in patternList) {
+      final trimmed = pattern.trim();
+      if (trimmed.isEmpty) continue;
+
+      final resolved = await _resolvePattern(trimmed, basePath, projectFilter);
+      for (final path in resolved) {
+        if (!seen.contains(path)) {
+          seen.add(path);
+          results.add(path);
+        }
+      }
+    }
+
+    return results;
+  }
+
+  /// Split patterns by comma, respecting brace groups.
+  List<String> _splitPatterns(String patterns) {
+    final result = <String>[];
+    var current = StringBuffer();
+    var braceDepth = 0;
+
+    for (var i = 0; i < patterns.length; i++) {
+      final char = patterns[i];
+      if (char == '{') {
+        braceDepth++;
+        current.write(char);
+      } else if (char == '}') {
+        braceDepth--;
+        current.write(char);
+      } else if (char == ',' && braceDepth == 0) {
+        result.add(current.toString());
+        current = StringBuffer();
+      } else {
+        current.write(char);
+      }
+    }
+
+    if (current.isNotEmpty) {
+      result.add(current.toString());
+    }
+
+    return result;
+  }
+
+  Future<List<String>> _resolvePattern(
+    String pattern,
+    String basePath,
+    bool Function(String)? projectFilter,
+  ) async {
+    // Handle dot prefix: ./* means current directory children
+    var resolvedPattern = pattern;
+    if (pattern.startsWith('./')) {
+      resolvedPattern = pattern.substring(2);
+    } else if (pattern == '.') {
+      // Single dot means current directory
+      if (_isProject(basePath) && 
+          (projectFilter == null || projectFilter(basePath))) {
+        return [basePath];
+      }
+      return [];
+    }
+
+    // Check if pattern contains glob characters
+    if (_isGlobPattern(resolvedPattern)) {
+      return _resolveGlobPattern(resolvedPattern, basePath, projectFilter);
+    }
+
+    // Simple path - check if it's a valid project
+    final fullPath = p.normalize(p.isAbsolute(resolvedPattern)
+        ? resolvedPattern
+        : p.join(basePath, resolvedPattern));
+
+    if (_isProject(fullPath) &&
+        (projectFilter == null || projectFilter(fullPath))) {
+      return [fullPath];
+    }
+
+    _log('Warning: Not a valid project: $pattern');
+    return [];
+  }
+
+  bool _isGlobPattern(String pattern) {
+    return pattern.contains('*') ||
+        pattern.contains('?') ||
+        pattern.contains('[') ||
+        pattern.contains('{');
+  }
+
+  Future<List<String>> _resolveGlobPattern(
+    String pattern,
+    String basePath,
+    bool Function(String)? projectFilter,
+  ) async {
+    final results = <String>[];
+
+    try {
+      final glob = Glob(pattern);
+      
+      await for (final entity in glob.list(root: basePath)) {
+        if (entity is Directory) {
+          final path = p.normalize(entity.path);
+          if (_isProject(path) &&
+              (projectFilter == null || projectFilter(path))) {
+            results.add(path);
+          }
+        }
+      }
+    } catch (e) {
+      _log('Warning: Error resolving glob pattern "$pattern": $e');
+    }
+
+    return results;
+  }
+
+  /// Check if a directory is a Dart project (has pubspec.yaml).
+  bool _isProject(String dirPath) {
+    return File(p.join(dirPath, 'pubspec.yaml')).existsSync();
   }
 
   /// Scan for projects in a directory.

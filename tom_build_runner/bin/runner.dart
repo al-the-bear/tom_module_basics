@@ -381,7 +381,8 @@ void main(List<String> arguments) async {
 
   final parser = ArgParser()
     ..addOption('project',
-        abbr: 'p', help: 'Path to specific project to process')
+        abbr: 'p',
+        help: 'Project(s) to process (comma-separated, globs: tom_*_builder, ./*)')
     ..addOption('scan',
         abbr: 's', help: 'Directory to scan for projects with build.yaml')
     ..addFlag('recursive',
@@ -605,16 +606,15 @@ void _printUsage(ArgParser parser) {
 /// Find projects to process based on configuration.
 Future<List<String>> _findProjects(
     BuildRunnerConfig config, String basePath) async {
-  // Single project specified
+  final discovery = ProjectDiscovery(verbose: config.verbose);
+
+  // Project pattern(s) specified (supports comma-separated, globs, ./* etc.)
   if (config.project != null) {
-    final projectPath = p.normalize(p.join(basePath, config.project!));
-    if (_isBuildRunnerProject(projectPath)) {
-      return [projectPath];
-    } else {
-      print(
-          'Warning: Specified project does not have build.yaml: ${config.project}');
-      return [];
-    }
+    return discovery.resolveProjectPatterns(
+      config.project!,
+      basePath: basePath,
+      projectFilter: _isBuildRunnerProject,
+    );
   }
 
   // Scan directory for projects
@@ -622,10 +622,6 @@ Future<List<String>> _findProjects(
     final scanPath = p.isAbsolute(config.scan!)
         ? config.scan!
         : p.join(basePath, config.scan!);
-
-    final discovery = ProjectDiscovery(
-      verbose: config.verbose,
-    );
 
     final allProjects = await discovery.scanForProjects(
       scanPath,

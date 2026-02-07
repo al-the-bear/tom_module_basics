@@ -168,10 +168,7 @@ Future<void> main(List<String> arguments) async {
   final parser = ArgParser()
     ..addOption('project',
         abbr: 'p',
-        help: 'Path to a single project directory')
-    ..addMultiOption('projects',
-        abbr: 'P',
-        help: 'Glob patterns for projects to process')
+        help: 'Project(s) to version (comma-separated, globs: tom_*_builder, ./*)')
     ..addOption('scan',
         abbr: 's',
         help: 'Scan directory for all projects with version config')
@@ -315,14 +312,27 @@ Future<void> main(List<String> arguments) async {
 /// Collect all projects that would be processed (for --list mode).
 Future<List<String>> _collectProjects(VersionerConfig config) async {
   final verbose = config.verbose;
+  final discovery = ProjectDiscovery(verbose: verbose);
 
+  // Handle --project with patterns (comma-separated, globs, etc.)
+  if (config.project != null) {
+    return discovery.resolveProjectPatterns(
+      config.project!,
+      basePath: Directory.current.path,
+      projectFilter: _isVersionProject,
+    );
+  }
+  
+  // Legacy --projects support (for backward compatibility)
   if (config.projects.isNotEmpty) {
     return await _findProjectsByGlob(
       config.projects,
       exclude: config.exclude,
       verbose: verbose,
     );
-  } else if (config.scan != null) {
+  } 
+  
+  if (config.scan != null) {
     return await _scanForProjects(
       config.scan!,
       recursive: config.recursive,
@@ -330,13 +340,6 @@ Future<List<String>> _collectProjects(VersionerConfig config) async {
       recursionExclude: config.recursionExclude,
       verbose: verbose,
     );
-  } else if (config.project != null) {
-    final projectPath = p.isAbsolute(config.project!)
-        ? config.project!
-        : p.join(Directory.current.path, config.project!);
-    if (_isVersionProject(projectPath)) {
-      return [projectPath];
-    }
   }
   
   return [];

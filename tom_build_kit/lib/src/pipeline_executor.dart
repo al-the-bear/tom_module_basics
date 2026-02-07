@@ -69,10 +69,12 @@ class PipelineExecutor {
     _executionStack.add(pipelineName);
 
     try {
-      print('');
-      print('=' * 60);
-      print('Pipeline: $pipelineName');
-      print('=' * 60);
+      if (verbose) {
+        print('');
+        print('=' * 60);
+        print('Pipeline: $pipelineName');
+        print('=' * 60);
+      }
 
       // Execute runBefore pipelines
       for (final beforeName in pipeline.runBefore) {
@@ -118,11 +120,19 @@ class PipelineExecutor {
       }
 
       _executedPipelines.add(pipelineName);
-      print('\nPipeline "$pipelineName" completed successfully.');
+      if (verbose) print('\nPipeline "$pipelineName" completed successfully.');
       return true;
     } finally {
       _executionStack.removeLast();
     }
+  }
+
+  /// Execute a single command directly (for :command syntax).
+  ///
+  /// This is used when running commands directly from the command line
+  /// without going through a pipeline definition.
+  Future<bool> executeCommand(String command) async {
+    return _executeCommand(command);
   }
 
   /// Execute a list of pipeline steps.

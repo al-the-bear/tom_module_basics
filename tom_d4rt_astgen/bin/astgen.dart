@@ -42,7 +42,9 @@ void main(List<String> args) async {
   }
 
   final parser = ArgParser()
-    ..addOption('project', abbr: 'p', help: 'Process a specific project directory')
+    ..addOption('project',
+        abbr: 'p',
+        help: 'Project(s) to process (comma-separated, globs: tom_*_builder, ./*)')
     ..addOption('scan', abbr: 's', help: 'Scan directory for projects to process')
     ..addFlag('recursive', abbr: 'r', help: 'Process subprojects recursively')
     ..addOption('config', abbr: 'c', defaultsTo: 'build.yaml', help: 'Path to build.yaml')
@@ -161,15 +163,15 @@ void main(List<String> args) async {
 
 /// Find projects to process based on configuration
 Future<List<String>> _findProjects(TomBuildConfig config, String basePath) async {
-  // Single project specified
+  final discovery = ProjectDiscovery(verbose: config.verbose);
+
+  // Project pattern(s) specified (supports comma-separated, globs, ./* etc.)
   if (config.project != null) {
-    final projectPath = p.normalize(p.join(basePath, config.project!));
-    if (_isAstgenProject(projectPath)) {
-      return [projectPath];
-    } else {
-      print('Warning: Specified project does not have astgen configuration: ${config.project}');
-      return [];
-    }
+    return discovery.resolveProjectPatterns(
+      config.project!,
+      basePath: basePath,
+      projectFilter: _isAstgenProject,
+    );
   }
 
   // Scan directory for projects
@@ -177,10 +179,6 @@ Future<List<String>> _findProjects(TomBuildConfig config, String basePath) async
     final scanPath = p.isAbsolute(config.scan!)
         ? config.scan!
         : p.join(basePath, config.scan!);
-
-    final discovery = ProjectDiscovery(
-      verbose: config.verbose,
-    );
 
     final allProjects = await discovery.scanForProjects(
       scanPath,
