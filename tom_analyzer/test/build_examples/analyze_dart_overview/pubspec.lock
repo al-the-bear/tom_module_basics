@@ -361,7 +361,7 @@ packages:
     source: hosted
     version: "0.7.9"
   tom_analyzer:
-    dependency: "direct dev"
+    dependency: "direct main"
     description:
       path: "../../.."
       relative: true
@@ -370,9 +370,10 @@ packages:
   tom_d4rt:
     dependency: transitive
     description:
-      path: "../../../../../tom_module_d4rt/tom_d4rt"
-      relative: true
-    source: path
+      name: tom_d4rt
+      sha256: "162b992b1454a9a361d0317ffd45c81a690531a467aaee3b33ca5456422ffbe7"
+      url: "https://pub.dev"
+    source: hosted
     version: "1.6.1"
   tom_d4rt_ast:
     dependency: transitive

@@ -32,6 +32,7 @@ import 'dart:io';
 import 'package:args/args.dart';
 import 'package:path/path.dart' as p;
 import 'package:tom_build_base/tom_build_base.dart';
+import 'package:tom_compiler_builder/src/version.g.dart';
 import 'package:yaml/yaml.dart';
 
 import 'package:tom_compiler_builder/src/compiler_builder.dart';
@@ -246,6 +247,9 @@ void main(List<String> arguments) async {
         abbr: 'l',
         help: 'List projects that would be processed (no action)',
         negatable: false)
+    ..addFlag('show',
+        help: 'With --list, show build.yaml configuration for each project',
+        negatable: false)
     ..addFlag('help', abbr: 'h', help: 'Show this help message', negatable: false);
 
   final ArgResults args;
@@ -272,6 +276,7 @@ void main(List<String> arguments) async {
   }
 
   final listOnly = args['list'] as bool;
+  final showConfig = args['show'] as bool;
   
   // Parse targets option (comma-separated)
   final targetsArg = args['targets'] as String?;
@@ -351,6 +356,10 @@ void main(List<String> arguments) async {
     for (final project in projects) {
       final relativePath = p.relative(project, from: workspaceRoot);
       print('  $relativePath');
+      
+      if (showConfig) {
+        _printBuildYamlSection(project, workspaceRoot);
+      }
     }
     exit(0);
   }
@@ -768,6 +777,109 @@ Future<bool> _compileFile({
   }
 }
 
+/// Print the build.yaml section for a project (--show option).
+void _printBuildYamlSection(String projectPath, String workspaceRoot) {
+  final buildYamlPath = p.join(projectPath, 'build.yaml');
+  final buildYamlFile = File(buildYamlPath);
+  
+  if (!buildYamlFile.existsSync()) {
+    print('    (no build.yaml)');
+    return;
+  }
+  
+  try {
+    final content = buildYamlFile.readAsStringSync();
+    final rootYaml = loadYaml(content) as YamlMap?;
+    if (rootYaml == null) {
+      print('    (empty build.yaml)');
+      return;
+    }
+    
+    // Navigate to tom_compiler_builder:compiler_builder section
+    final targets = rootYaml['targets'] as YamlMap?;
+    if (targets == null) {
+      print('    (no targets section in build.yaml)');
+      return;
+    }
+    
+    final defaultTarget = targets[r'$default'] as YamlMap?;
+    if (defaultTarget == null) {
+      print('    (no \$default target in build.yaml)');
+      return;
+    }
+    
+    final builders = defaultTarget['builders'] as YamlMap?;
+    if (builders == null) {
+      print('    (no builders in build.yaml)');
+      return;
+    }
+    
+    final compilerBuilder = builders['tom_compiler_builder:compiler_builder'] as YamlMap?;
+    if (compilerBuilder == null) {
+      print('    (no tom_compiler_builder:compiler_builder section)');
+      return;
+    }
+    
+    // Print the compiler section as YAML
+    print('    build.yaml:');
+    _printYamlNode(compilerBuilder, indent: 6);
+  } catch (e) {
+    print('    (error reading build.yaml: $e)');
+  }
+}
+
+/// Print a YAML node with proper indentation.
+void _printYamlNode(dynamic node, {int indent = 0}) {
+  final prefix = ' ' * indent;
+  
+  if (node is YamlMap) {
+    for (final entry in node.entries) {
+      final key = entry.key;
+      final value = entry.value;
+      
+      if (value is YamlMap || value is YamlList) {
+        print('$prefix$key:');
+        _printYamlNode(value, indent: indent + 2);
+      } else {
+        print('$prefix$key: $value');
+      }
+    }
+  } else if (node is YamlList) {
+    for (final item in node) {
+      if (item is YamlMap) {
+        // Print first key on same line as dash
+        final entries = item.entries.toList();
+        if (entries.isNotEmpty) {
+          final first = entries.first;
+          if (first.value is YamlMap || first.value is YamlList) {
+            print('$prefix- ${first.key}:');
+            _printYamlNode(first.value, indent: indent + 4);
+          } else {
+            print('$prefix- ${first.key}: ${first.value}');
+          }
+          // Print remaining keys indented
+          for (var i = 1; i < entries.length; i++) {
+            final entry = entries[i];
+            if (entry.value is YamlMap || entry.value is YamlList) {
+              print('$prefix  ${entry.key}:');
+              _printYamlNode(entry.value, indent: indent + 4);
+            } else {
+              print('$prefix  ${entry.key}: ${entry.value}');
+            }
+          }
+        }
+      } else if (item is YamlList) {
+        print('$prefix-');
+        _printYamlNode(item, indent: indent + 2);
+      } else {
+        print('$prefix- $item');
+      }
+    }
+  } else {
+    print('$prefix$node');
+  }
+}
+
 /// Replace environment variable placeholders in command string.
 /// Handles both $VAR and [VAR] formats
 String _replaceEnvVars(String command) {
@@ -787,25 +899,7 @@ String _replaceEnvVars(String command) {
 }
 
 void _printVersion() {
-  try {
-    // Try to load generated version
-    // ignore: unused_local_variable
-    const version = String.fromEnvironment('version', defaultValue: '1.0.0');
-    const buildNumber = String.fromEnvironment('buildNumber', defaultValue: '0');
-    const gitCommit = String.fromEnvironment('gitCommit', defaultValue: 'unknown');
-    const buildTimestamp = String.fromEnvironment('buildTimestamp', defaultValue: '');
-    
-    print('Compiler Tool $version+$buildNumber');
-    if (gitCommit != 'unknown') {
-      print('Git: $gitCommit');
-    }
-    if (buildTimestamp.isNotEmpty) {
-      print('Built: $buildTimestamp');
-    }
-  } catch (e) {
-    // Fallback if version.g.dart doesn't exist
-    print('Compiler Tool 1.0.0 (version info unavailable)');
-  }
+  print('Compiler Tool ${TomVersionInfo.versionLong}');
 }
 
 void _printUsage(ArgParser parser) {

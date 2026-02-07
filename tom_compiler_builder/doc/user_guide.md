@@ -341,6 +341,7 @@ compiler --help
 -v, --verbose          Show detailed output
 -d, --dry-run          Show what would be compiled without executing
 -l, --list             List projects that would be processed (no action)
+    --show             With --list, show build.yaml configuration for each project
 -h, --help             Show help message
 
 Commands:
@@ -383,6 +384,23 @@ compiler --targets='linux-*'
 # Compile for macOS only (both arm64 and x64)
 compiler --targets=macos
 ```
+
+#### Listing and Showing Configuration (`--list`, `--show`)
+
+Use `--list` to preview which projects would be processed without compiling:
+
+```bash
+# List all matching projects
+compiler --project='tom_*' --list
+
+# List projects and show their build.yaml configuration
+compiler --project='tom_*' --list --show
+```
+
+The `--show` option displays the `tom_compiler_builder:compiler_builder` section from each project's `build.yaml` file. This is useful for:
+- Reviewing configuration before compiling
+- Debugging configuration issues
+- Understanding how projects are set up
 
 **Note:** Unknown options will display usage information with an error message.
 

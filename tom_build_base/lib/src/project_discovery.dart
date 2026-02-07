@@ -128,8 +128,54 @@ class ProjectDiscovery {
       return [fullPath];
     }
 
+    // If pattern is a simple name (no path separators), search the workspace
+    if (!resolvedPattern.contains('/') && !resolvedPattern.contains(p.separator)) {
+      final workspaceRoot = findWorkspaceRoot(basePath);
+      _log('Searching workspace for project: $resolvedPattern');
+      
+      // Search workspace recursively for a project with matching name
+      final found = await _findProjectByName(workspaceRoot, resolvedPattern, projectFilter);
+      if (found != null) {
+        _log('Found project at: $found');
+        return [found];
+      }
+    }
+
     _log('Warning: Not a valid project: $pattern');
     return [];
+  }
+
+  /// Search for a project by name in the workspace.
+  Future<String?> _findProjectByName(
+    String rootDir,
+    String projectName,
+    bool Function(String)? projectFilter,
+  ) async {
+    final dir = Directory(rootDir);
+    if (!dir.existsSync()) return null;
+
+    try {
+      await for (final entity in dir.list(recursive: true, followLinks: false)) {
+        if (entity is Directory) {
+          final dirName = p.basename(entity.path);
+          
+          // Skip hidden directories and known non-project directories
+          if (dirName.startsWith('.') || alwaysSkipDirectories.contains(dirName)) {
+            continue;
+          }
+          
+          // Check if this directory matches the project name and is a valid project
+          if (dirName == projectName && _isProject(entity.path)) {
+            if (projectFilter == null || projectFilter(entity.path)) {
+              return p.normalize(entity.path);
+            }
+          }
+        }
+      }
+    } catch (e) {
+      _log('Warning: Error searching workspace: $e');
+    }
+    return null;
   }
 
   bool _isGlobPattern(String pattern) {

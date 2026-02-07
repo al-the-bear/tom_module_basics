@@ -280,6 +280,9 @@ Future<void> main(List<String> arguments) async {
         abbr: 'l',
         negatable: false,
         help: 'List projects that would be processed (no action)')
+    ..addFlag('show',
+        help: 'With --list, show build.yaml configuration for each project',
+        negatable: false)
     ..addFlag('help',
         abbr: 'h', negatable: false, help: 'Show usage help');
 
@@ -291,6 +294,7 @@ Future<void> main(List<String> arguments) async {
   }
 
   final listOnly = args['list'] as bool;
+  final showConfig = args['show'] as bool;
 
   // Build config from CLI args
   final cliConfig = CleanupConfig(
@@ -371,6 +375,10 @@ Future<void> main(List<String> arguments) async {
     for (final project in projects) {
       final relativePath = p.relative(project, from: workspaceRoot);
       print('  $relativePath');
+      
+      if (showConfig) {
+        _printBuildYamlSection(project, workspaceRoot);
+      }
     }
     exit(0);
   }
@@ -602,6 +610,109 @@ void _printVersion() {
     }
   } catch (e) {
     print('Cleanup Tool 1.0.0 (version info unavailable)');
+  }
+}
+
+/// Print the build.yaml section for a project (--show option).
+void _printBuildYamlSection(String projectPath, String workspaceRoot) {
+  final buildYamlPath = p.join(projectPath, 'build.yaml');
+  final buildYamlFile = File(buildYamlPath);
+  
+  if (!buildYamlFile.existsSync()) {
+    print('    (no build.yaml)');
+    return;
+  }
+  
+  try {
+    final content = buildYamlFile.readAsStringSync();
+    final rootYaml = loadYaml(content) as YamlMap?;
+    if (rootYaml == null) {
+      print('    (empty build.yaml)');
+      return;
+    }
+    
+    // Navigate to tom_cleanup_builder:cleanup_builder section
+    final targets = rootYaml['targets'] as YamlMap?;
+    if (targets == null) {
+      print('    (no targets section in build.yaml)');
+      return;
+    }
+    
+    final defaultTarget = targets[r'$default'] as YamlMap?;
+    if (defaultTarget == null) {
+      print('    (no \$default target in build.yaml)');
+      return;
+    }
+    
+    final builders = defaultTarget['builders'] as YamlMap?;
+    if (builders == null) {
+      print('    (no builders in build.yaml)');
+      return;
+    }
+    
+    final cleanupBuilder = builders['tom_cleanup_builder:cleanup_builder'] as YamlMap?;
+    if (cleanupBuilder == null) {
+      print('    (no tom_cleanup_builder:cleanup_builder section)');
+      return;
+    }
+    
+    // Print the cleanup_builder section as YAML
+    print('    build.yaml:');
+    _printYamlNode(cleanupBuilder, indent: 6);
+  } catch (e) {
+    print('    (error reading build.yaml: $e)');
+  }
+}
+
+/// Print a YAML node with proper indentation.
+void _printYamlNode(dynamic node, {int indent = 0}) {
+  final prefix = ' ' * indent;
+  
+  if (node is YamlMap) {
+    for (final entry in node.entries) {
+      final key = entry.key;
+      final value = entry.value;
+      
+      if (value is YamlMap || value is YamlList) {
+        print('$prefix$key:');
+        _printYamlNode(value, indent: indent + 2);
+      } else {
+        print('$prefix$key: $value');
+      }
+    }
+  } else if (node is YamlList) {
+    for (final item in node) {
+      if (item is YamlMap) {
+        // Print first key on same line as dash
+        final entries = item.entries.toList();
+        if (entries.isNotEmpty) {
+          final first = entries.first;
+          if (first.value is YamlMap || first.value is YamlList) {
+            print('$prefix- ${first.key}:');
+            _printYamlNode(first.value, indent: indent + 4);
+          } else {
+            print('$prefix- ${first.key}: ${first.value}');
+          }
+          // Print remaining keys indented
+          for (var i = 1; i < entries.length; i++) {
+            final entry = entries[i];
+            if (entry.value is YamlMap || entry.value is YamlList) {
+              print('$prefix  ${entry.key}:');
+              _printYamlNode(entry.value, indent: indent + 4);
+            } else {
+              print('$prefix  ${entry.key}: ${entry.value}');
+            }
+          }
+        }
+      } else if (item is YamlList) {
+        print('$prefix-');
+        _printYamlNode(item, indent: indent + 2);
+      } else {
+        print('$prefix- $item');
+      }
+    }
+  } else {
+    print('$prefix$node');
   }
 }
 

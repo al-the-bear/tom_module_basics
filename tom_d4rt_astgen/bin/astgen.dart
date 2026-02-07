@@ -51,6 +51,9 @@ void main(List<String> args) async {
     ..addFlag('verbose', abbr: 'v', help: 'Enable verbose output')
     ..addFlag('dry-run', abbr: 'n', help: 'Show what would be done without doing it')
     ..addFlag('list', abbr: 'l', help: 'List projects that would be processed (no action)')
+    ..addFlag('show',
+        help: 'With --list, show build.yaml configuration for each project',
+        negatable: false)
     ..addFlag('help', abbr: 'h', negatable: false, help: 'Show this help message');
 
   final ArgResults results;
@@ -113,12 +116,17 @@ void main(List<String> args) async {
 
   // Handle --list mode: just list projects without processing
   final listOnly = results['list'] as bool;
+  final showConfig = results['show'] as bool;
   if (listOnly) {
     final workspaceRoot = ProjectDiscovery.findWorkspaceRoot(basePath);
     print('Astgen projects (${projects.length}):');
     for (final project in projects) {
       final relativePath = p.relative(project, from: workspaceRoot);
       print('  $relativePath');
+      
+      if (showConfig) {
+        _printBuildYamlSection(project, workspaceRoot);
+      }
     }
     exit(0);
   }
@@ -362,6 +370,91 @@ void _printVersion() {
     }
   } catch (e) {
     print('AST Generator Tool 1.0.0 (version info unavailable)');
+  }
+}
+
+/// Print the build.yaml section for a project (--show option).
+void _printBuildYamlSection(String projectPath, String workspaceRoot) {
+  final buildYamlPath = p.join(projectPath, 'build.yaml');
+  final buildYamlFile = File(buildYamlPath);
+  
+  if (!buildYamlFile.existsSync()) {
+    print('    (no build.yaml)');
+    return;
+  }
+  
+  try {
+    final content = buildYamlFile.readAsStringSync();
+    final rootYaml = loadYaml(content) as YamlMap?;
+    if (rootYaml == null) {
+      print('    (empty build.yaml)');
+      return;
+    }
+    
+    // Navigate to astgen section
+    final astgenSection = rootYaml['astgen'] as YamlMap?;
+    if (astgenSection == null) {
+      print('    (no astgen section in build.yaml)');
+      return;
+    }
+    
+    // Print the astgen section as YAML
+    print('    build.yaml:');
+    _printYamlNode(astgenSection, indent: 6);
+  } catch (e) {
+    print('    (error reading build.yaml: $e)');
+  }
+}
+
+/// Print a YAML node with proper indentation.
+void _printYamlNode(dynamic node, {int indent = 0}) {
+  final prefix = ' ' * indent;
+  
+  if (node is YamlMap) {
+    for (final entry in node.entries) {
+      final key = entry.key;
+      final value = entry.value;
+      
+      if (value is YamlMap || value is YamlList) {
+        print('$prefix$key:');
+        _printYamlNode(value, indent: indent + 2);
+      } else {
+        print('$prefix$key: $value');
+      }
+    }
+  } else if (node is YamlList) {
+    for (final item in node) {
+      if (item is YamlMap) {
+        // Print first key on same line as dash
+        final entries = item.entries.toList();
+        if (entries.isNotEmpty) {
+          final first = entries.first;
+          if (first.value is YamlMap || first.value is YamlList) {
+            print('$prefix- ${first.key}:');
+            _printYamlNode(first.value, indent: indent + 4);
+          } else {
+            print('$prefix- ${first.key}: ${first.value}');
+          }
+          // Print remaining keys indented
+          for (var i = 1; i < entries.length; i++) {
+            final entry = entries[i];
+            if (entry.value is YamlMap || entry.value is YamlList) {
+              print('$prefix  ${entry.key}:');
+              _printYamlNode(entry.value, indent: indent + 4);
+            } else {
+              print('$prefix  ${entry.key}: ${entry.value}');
+            }
+          }
+        }
+      } else if (item is YamlList) {
+        print('$prefix-');
+        _printYamlNode(item, indent: indent + 2);
+      } else {
+        print('$prefix- $item');
+      }
+    }
+  } else {
+    print('$prefix$node');
   }
 }
 

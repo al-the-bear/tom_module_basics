@@ -354,7 +354,7 @@ packages:
     source: hosted
     version: "0.7.9"
   tom_analyzer:
-    dependency: "direct dev"
+    dependency: "direct main"
     description:
       path: "../../.."
       relative: true

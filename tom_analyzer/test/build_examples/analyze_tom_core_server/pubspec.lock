@@ -490,7 +490,7 @@ packages:
     source: hosted
     version: "0.11.0"
   tom_analyzer:
-    dependency: "direct dev"
+    dependency: "direct main"
     description:
       path: "../../.."
       relative: true
