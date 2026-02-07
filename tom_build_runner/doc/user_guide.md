@@ -85,9 +85,18 @@ A project is considered a build_runner project if it contains both:
 
 ## Builder Filtering
 
+The tool supports include/exclude filtering of builders. Configuration is loaded from multiple sources with no merging - the first source with configuration wins.
+
+### Configuration Priority (no merging)
+
+1. **Command-line arguments** (highest priority)
+2. **build.yaml** (`tom_build_runner:build_runner` section) in project
+3. **tom_build.yaml** in project directory
+4. **tom_build.yaml** in root directory (fallback for all projects)
+
 ### Excluding Builders
 
-You can exclude specific builders from running:
+Exclude specific builders from running:
 
 ```bash
 # Exclude a specific builder
@@ -97,32 +106,56 @@ build_runner --exclude-builders=json_serializable:json_serializable
 build_runner -x some_package:builder1 -x other_package:builder2
 ```
 
-### Including Builders (Filter Mode)
+### Including Builders
 
-The include option filters projects to only process those using specified builders:
+Only run specified builders (all others are disabled):
 
 ```bash
-# Only process projects that use the version builder
-build_runner --include=tom_version_builder:version_builder
+# Only run the version builder
+build_runner --include-builders=tom_version_builder:version_builder
 
-# Multiple include filters (project must use any of them)
+# Multiple include filters
 build_runner -i tom_version_builder:version_builder -i json_serializable:json_serializable
 ```
 
 ## Configuration Files
 
-### Using Alternative build.yaml
+### Per-Project Configuration (build.yaml)
 
-Build runner supports named configuration files (build.<name>.yaml):
+Add a `tom_build_runner` section to your project's `build.yaml`:
 
-```bash
-# Use build.prod.yaml instead of build.yaml
-build_runner --config=prod
+```yaml
+targets:
+  $default:
+    builders:
+      tom_version_builder:version_builder:
+        enabled: true
+        # ... builder config
+
+# Builder filtering for this project
+tom_build_runner:
+  build_runner:
+    include-builders:
+      - tom_version_builder:version_builder
+    exclude-builders:
+      - json_serializable:json_serializable
 ```
 
-### Local Configuration (tom_build.yaml)
+### Per-Project Configuration (tom_build.yaml)
 
-You can store default options in a `tom_build.yaml` file in your project root:
+Add a `build_runner` section to your project's `tom_build.yaml`:
+
+```yaml
+build_runner:
+  include-builders:
+    - tom_version_builder:version_builder
+  exclude-builders:
+    - some_package:unwanted_builder
+```
+
+### Root Configuration (tom_build.yaml)
+
+Set default builder filtering for all projects in your workspace root:
 
 ```yaml
 build_runner:
@@ -139,16 +172,21 @@ build_runner:
   release: false
   delete-conflicting: true
   
-  # Builder filtering
-  include:
+  # Builder filtering (fallback for projects without their own config)
+  include-builders:
     - tom_version_builder:version_builder
   exclude-builders:
     - some_package:unwanted_builder
 ```
 
-Configuration precedence (highest to lowest):
-1. Command-line arguments
-2. `tom_build.yaml` (build_runner: section)
+### Using Alternative build.yaml
+
+Build runner supports named configuration files (build.<name>.yaml):
+
+```bash
+# Use build.prod.yaml instead of build.yaml
+build_runner --config=prod
+```
 
 ## Command Options
 
@@ -175,7 +213,7 @@ Configuration precedence (highest to lowest):
 
 | Option | Short | Description |
 |--------|-------|-------------|
-| `--include` | `-i` | Builder patterns to include (filter) |
+| `--include-builders` | `-i` | Builder patterns to include (only these run) |
 | `--exclude-builders` | `-x` | Builder patterns to exclude |
 
 ### Output Options

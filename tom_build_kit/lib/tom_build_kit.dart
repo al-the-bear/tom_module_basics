@@ -1,8 +1,11 @@
-/// Support for doing something awesome.
+/// Tom Build Kit - Pipeline-based build orchestration.
 ///
-/// More dartdocs go here.
+/// This library provides the configuration and execution infrastructure
+/// for build pipelines that integrate Tom build tools.
 library;
 
-export 'src/tom_build_kit_base.dart';
-
-// TODO: Export any libraries intended for clients of this package.
+export 'src/version.g.dart';
+export 'src/pipeline_config.dart';
+export 'src/pipeline_executor.dart';
+export 'src/pipeline_step.dart';
+export 'src/builtin_commands.dart';

@@ -722,67 +722,24 @@ Future<List<String>> _scanForProjects(
   List<String> recursionExclude = const [],
   required bool verbose,
 }) async {
-  final projects = <String>[];
-  final scanDir = Directory(scanPath);
+  final scanDir = p.isAbsolute(scanPath)
+      ? scanPath
+      : p.join(Directory.current.path, scanPath);
 
-  if (!scanDir.existsSync()) {
-    throw Exception('Scan directory not found: $scanPath');
-  }
+  final discovery = ProjectDiscovery(
+    verbose: verbose,
+  );
 
-  if (_isVersionProject(scanPath)) {
-    projects.add(p.normalize(scanPath));
-  }
+  final allProjects = await discovery.scanForProjects(
+    scanDir,
+    recursive: recursive,
+    toolKey: 'versioner',
+  );
 
-  if (recursive) {
-    await _findProjectsInDirRecursive(scanDir, projects, recursionExclude: recursionExclude);
-  } else {
-    for (final entity in scanDir.listSync()) {
-      if (entity is Directory && _isVersionProject(entity.path)) {
-        projects.add(p.normalize(entity.path));
-      }
-    }
-  }
+  // Filter to only version projects
+  final versionProjects = allProjects.where((path) => _isVersionProject(path)).toList();
 
-  return _applyExclusions(projects, exclude);
-}
-
-Future<void> _findProjectsInDirRecursive(
-  Directory dir,
-  List<String> projects, {
-  required List<String> recursionExclude,
-}) async {
-  final recursionGlobs = recursionExclude.map((p) => Glob(p)).toList();
-
-  try {
-    for (final entity in dir.listSync()) {
-      if (entity is! Directory) continue;
-
-      final dirPath = entity.path;
-      final dirName = p.basename(dirPath);
-
-      if (dirName.startsWith('.') ||
-          dirName == 'build' ||
-          dirName == '.dart_tool' ||
-          dirName == 'node_modules') {
-        continue;
-      }
-
-      bool excluded = false;
-      for (final glob in recursionGlobs) {
-        if (glob.matches(dirPath)) {
-          excluded = true;
-          break;
-        }
-      }
-      if (excluded) continue;
-
-      if (_isVersionProject(dirPath)) {
-        projects.add(p.normalize(dirPath));
-      }
-
-      await _findProjectsInDirRecursive(entity, projects, recursionExclude: recursionExclude);
-    }
-  } catch (_) {}
+  return _applyExclusions(versionProjects, exclude);
 }
 
 List<String> _applyExclusions(List<String> projects, List<String> exclude) {

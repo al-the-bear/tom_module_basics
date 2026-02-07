@@ -405,17 +405,22 @@ Future<List<String>> _findProjects(
 
   // Scan directory for projects
   if (config.scan != null) {
-    final scanner = ProjectScanner(
-      toolKey: _toolKey,
-      basePath: basePath,
+    final scanPath = p.isAbsolute(config.scan!)
+        ? config.scan!
+        : p.join(basePath, config.scan!);
+
+    final discovery = ProjectDiscovery(
       verbose: config.verbose,
-      projectValidator: _isCleanupProject,
     );
 
-    return scanner.scanForProjects(
-      config.scan!,
-      config.exclude,
+    final allProjects = await discovery.scanForProjects(
+      scanPath,
+      recursive: config.recursive,
+      toolKey: _toolKey,
     );
+
+    // Filter to only cleanup projects
+    return allProjects.where((path) => _isCleanupProject(path)).toList();
   }
 
   // Default: process current directory if it has config

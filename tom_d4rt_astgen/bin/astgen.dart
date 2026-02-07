@@ -161,17 +161,22 @@ Future<List<String>> _findProjects(TomBuildConfig config, String basePath) async
 
   // Scan directory for projects
   if (config.scan != null) {
-    final scanner = ProjectScanner(
-      toolKey: toolKey,
-      basePath: basePath,
+    final scanPath = p.isAbsolute(config.scan!)
+        ? config.scan!
+        : p.join(basePath, config.scan!);
+
+    final discovery = ProjectDiscovery(
       verbose: config.verbose,
-      projectValidator: _isAstgenProject,
     );
 
-    return scanner.scanForProjects(
-      config.scan!,
-      config.exclude,
+    final allProjects = await discovery.scanForProjects(
+      scanPath,
+      recursive: config.recursive,
+      toolKey: toolKey,
     );
+
+    // Filter to only astgen projects
+    return allProjects.where((path) => _isAstgenProject(path)).toList();
   }
 
   // Default: process current directory if it has config
