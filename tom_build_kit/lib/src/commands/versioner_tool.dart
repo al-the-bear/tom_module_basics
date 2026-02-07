@@ -88,7 +88,7 @@ class VersionerConfig {
       recursionExclude: [...recursionExclude, ...other.recursionExclude],
       verbose: other.verbose || verbose,
       output: other.output != 'lib/src/version.g.dart' ? other.output : output,
-      includeGitCommit: other.includeGitCommit && includeGitCommit,
+      includeGitCommit: other.includeGitCommit,
       versionOverride: other.versionOverride ?? versionOverride,
     );
   }

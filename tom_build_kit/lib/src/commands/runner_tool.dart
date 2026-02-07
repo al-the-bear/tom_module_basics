@@ -559,7 +559,7 @@ class RunnerTool extends ToolBase {
     print('');
     print('Builder filter precedence:');
     print('  1. CLI --include-builders / --exclude-builders');
-    print('  2. build.yaml (tom_build_runner.build_runner section)');
+    print('  2. build.yaml (tom_build_kit.build_runner section)');
     print('  3. Project tom_build.yaml (build_runner section)');
     print('  4. Root tom_build.yaml (build_runner section)');
     print('');

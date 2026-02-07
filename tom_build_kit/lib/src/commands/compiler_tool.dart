@@ -301,6 +301,8 @@ class CompilerTool extends ToolBase {
     Directory.current = projectPath;
 
     try {
+      var compilationCount = 0;
+
       // Run precompile commands (continue on failure)
       for (final section in projectConfig.precompileSections) {
         await _runCommandSection(
@@ -343,10 +345,10 @@ class CompilerTool extends ToolBase {
           }
         }
 
-        // Compile each file for each target
+        // Compile each file for each target (continue on failure)
         for (final file in section.files) {
           for (final target in targets) {
-            if (!await _compileFile(
+            if (await _compileFile(
               file: file,
               targetPlatform: target,
               currentPlatform: currentPlatform,
@@ -354,7 +356,7 @@ class CompilerTool extends ToolBase {
               projectPath: projectPath,
               config: projectConfig,
             )) {
-              return false;
+              compilationCount++;
             }
           }
         }
@@ -368,6 +370,10 @@ class CompilerTool extends ToolBase {
           config: projectConfig,
           sectionName: 'postcompile',
         );
+      }
+
+      if (compilationCount > 0) {
+        print('  Completed $compilationCount compilation(s)');
       }
 
       return true;
@@ -432,7 +438,7 @@ class CompilerTool extends ToolBase {
 
       if (result.exitCode != 0) {
         print('  Error: $sectionName command failed (exit ${result.exitCode})');
-        return false;
+        // Continue with remaining commands (matching original behavior)
       }
     }
 
