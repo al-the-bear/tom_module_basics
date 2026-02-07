@@ -24,6 +24,15 @@ compiler
 # Compile specific project
 compiler --project=my_app
 
+# Compile multiple projects (comma-separated, globs)
+compiler --project='tom_*_builder,my_app'
+
+# Compile only for current platform (faster dev builds)
+compiler --targets=darwin-arm64
+
+# Compile for specific platforms
+compiler --targets=darwin-arm64,linux-x64
+
 # Scan and compile all projects
 compiler --scan=. --recursive
 
@@ -323,24 +332,75 @@ compiler --help
 ### Options
 
 ```
--p, --project           Path to specific project to compile
+-p, --project           Project(s) to compile (comma-separated, globs: tom_*_builder, ./*)
 -s, --scan             Directory to scan for projects
 -r, --recursive        Process subprojects recursively
 -e, --exclude          Glob patterns for projects to exclude
     --recursion-exclude Glob patterns to exclude from recursive traversal
+-t, --targets          Target platform(s) to compile for (comma-separated, globs: darwin-*, linux-x64)
 -v, --verbose          Show detailed output
 -d, --dry-run          Show what would be compiled without executing
+-l, --list             List projects that would be processed (no action)
 -h, --help             Show help message
 
 Commands:
     version            Show version information
 ```
 
+#### Project Selection (`--project`)
+
+The `--project` option supports multiple ways to specify projects:
+
+- **Single project**: `--project=my_app`
+- **Comma-separated**: `--project='project1,project2,project3'`
+- **Glob patterns**: `--project='tom_*_builder'` (matches any project starting with `tom_` and ending with `_builder`)
+- **Path globs**: `--project='xternal/tom_module_d4rt/*'`
+- **Current directory children**: `--project='./*'`
+- **Recursive from current directory**: `--project='./**/*'`
+
+Multiple patterns can be combined: `--project='tom_*_builder,tom_build_*,./*'`
+
+#### Target Filtering (`--targets`)
+
+The `--targets` option filters which target platforms to compile for. This is useful during development to reduce compile times:
+
+- **Single target**: `--targets=darwin-arm64`
+- **Comma-separated**: `--targets='darwin-arm64,linux-x64'`
+- **Glob patterns**: `--targets='linux-*'` (matches all Linux architectures)
+- **Platform aliases**: `--targets=macos` or `--targets=linux`
+
+**Examples:**
+```bash
+# Compile only for current Mac (fast dev build)
+compiler --targets=darwin-arm64
+
+# Compile for Mac and Linux x64 only
+compiler --targets='darwin-arm64,linux-x64'
+
+# Compile for all Linux platforms
+compiler --targets='linux-*'
+
+# Compile for macOS only (both arm64 and x64)
+compiler --targets=macos
+```
+
 **Note:** Unknown options will display usage information with an error message.
 
 ## Examples
 
-### Example 1: Single Platform
+### Example 1: Fast Development Build
+
+Use `--targets` to compile only for your current platform during development:
+
+```bash
+# Quick build for Mac ARM64 only (skip other platforms)
+compiler --targets=darwin-arm64
+
+# Build for Mac + Linux x64 (common deployment)
+compiler --targets='darwin-arm64,linux-x64'
+```
+
+### Example 2: Single Platform Config
 
 Compile for current platform only:
 
@@ -358,7 +418,7 @@ targets:
               # No targets = current platform only
 ```
 
-### Example 2: Cross-Platform Compilation
+### Example 3: Cross-Platform Compilation
 
 Compile for multiple platforms with cross-compilation:
 
@@ -384,7 +444,7 @@ targets:
               platforms: [macos, linux]
 ```
 
-### Example 3: Platform-Specific Commands
+### Example 4: Platform-Specific Commands
 
 Different commands for different host platforms:
 
@@ -417,7 +477,7 @@ targets:
               platforms: [macos, linux]
 ```
 
-### Example 4: Using Environment Variables
+### Example 5: Using Environment Variables
 
 ```yaml
 # build.yaml
@@ -442,7 +502,7 @@ export BUILD_DIR=/path/to/output
 compiler --project=.
 ```
 
-### Example 5: Multiple Files and Targets
+### Example 6: Multiple Files and Targets
 
 ```yaml
 # build.yaml
@@ -470,7 +530,7 @@ targets:
 
 This will compile 3 files × 3 targets = 9 executables.
 
-### Example 6: Full Cross-Compilation Setup
+### Example 7: Full Cross-Compilation Setup
 
 Compile from macOS ARM64 to multiple platforms:
 

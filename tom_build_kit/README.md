@@ -42,6 +42,25 @@ Options:
   -l, --list         List available pipelines
   -s, --scan         Scan directory for projects
   -R, --recursive    Scan recursively into projects
+  -p, --project      Project(s) to process (comma-separated, globs: tom_*_builder, ./*)
+```
+
+### Project Selection
+
+Specify projects using `--project` with comma-separated values and glob patterns:
+
+```bash
+# Single project
+buildkit build --project=my_app
+
+# Multiple projects (comma-separated)
+buildkit build --project='project1,project2'
+
+# Glob patterns
+buildkit build --project='tom_*_builder'
+
+# Current directory children
+buildkit build --project='./*'
 ```
 
 ## Built-in Commands

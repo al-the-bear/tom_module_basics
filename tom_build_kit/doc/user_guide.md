@@ -65,8 +65,21 @@ Options:
   -R, --recursive    Scan directories recursively
   -s, --scan         Scan directory for projects to run pipeline in
   -r, --root         Root directory for configuration lookup
-  -p, --project      Project directory (defaults to current directory)
+  -p, --project      Project(s) to process (comma-separated, globs: tom_*_builder, ./*)
 ```
+
+### Project Selection (`--project`)
+
+The `--project` option supports multiple ways to specify projects:
+
+- **Single project**: `--project=my_app`
+- **Comma-separated**: `--project='project1,project2,project3'`
+- **Glob patterns**: `--project='tom_*_builder'`
+- **Path globs**: `--project='xternal/tom_module_d4rt/*'`
+- **Current directory children**: `--project='./*'`
+- **Recursive from current directory**: `--project='./**/*'`
+
+Multiple patterns can be combined: `--project='tom_*_builder,tom_build_*'`
 
 ## Execution Steps
 

@@ -52,6 +52,9 @@ class CompilerConfig {
   final List<String> recursionExclude;
   final bool verbose;
   final bool dryRun;
+  
+  /// Target filter - only compile for matching targets (comma-separated, globs)
+  final List<String> targetFilter;
 
   // Compiler-specific options
   final List<CommandSection> precompileSections;
@@ -66,6 +69,7 @@ class CompilerConfig {
     this.recursionExclude = const [],
     this.verbose = false,
     this.dryRun = false,
+    this.targetFilter = const [],
     this.precompileSections = const [],
     this.compileSections = const [],
     this.postcompileSections = const [],
@@ -190,6 +194,9 @@ class CompilerConfig {
       recursionExclude: [...recursionExclude, ...other.recursionExclude],
       verbose: other.verbose || verbose,
       dryRun: other.dryRun || dryRun,
+      targetFilter: other.targetFilter.isNotEmpty
+          ? other.targetFilter
+          : targetFilter,
       precompileSections: other.precompileSections.isNotEmpty
           ? other.precompileSections
           : precompileSections,
@@ -226,6 +233,9 @@ void main(List<String> arguments) async {
         abbr: 'e', help: 'Glob patterns for projects to exclude')
     ..addMultiOption('recursion-exclude',
         help: 'Glob patterns to exclude from recursive traversal')
+    ..addOption('targets',
+        abbr: 't',
+        help: 'Target platform(s) to compile for (comma-separated, globs: darwin-*, linux-x64)')
     ..addFlag('verbose',
         abbr: 'v', help: 'Show detailed output', negatable: false)
     ..addFlag('dry-run',
@@ -262,6 +272,12 @@ void main(List<String> arguments) async {
   }
 
   final listOnly = args['list'] as bool;
+  
+  // Parse targets option (comma-separated)
+  final targetsArg = args['targets'] as String?;
+  final targetFilter = targetsArg != null
+      ? targetsArg.split(',').map((t) => t.trim()).where((t) => t.isNotEmpty).toList()
+      : <String>[];
 
   // Build config from CLI args
   final cliConfig = CompilerConfig(
@@ -272,6 +288,7 @@ void main(List<String> arguments) async {
     recursionExclude: args['recursion-exclude'] as List<String>,
     verbose: args['verbose'] as bool,
     dryRun: args['dry-run'] as bool,
+    targetFilter: targetFilter,
   );
 
   _verbose = cliConfig.verbose;
@@ -297,6 +314,7 @@ void main(List<String> arguments) async {
         recursionExclude: cliConfig.recursionExclude,
         verbose: cliConfig.verbose,
         dryRun: cliConfig.dryRun,
+        targetFilter: cliConfig.targetFilter,
       );
     }
   } else {
@@ -504,6 +522,31 @@ Future<bool> _processProject(String projectPath, CompilerConfig config) async {
         targetPlatforms = [];
         for (final target in section.targets) {
           targetPlatforms.addAll(PlatformUtils.normalizePlatform(target));
+        }
+      }
+      
+      // Apply target filter if specified
+      if (projectConfig.targetFilter.isNotEmpty) {
+        final filteredTargets = <String>[];
+        for (final target in targetPlatforms) {
+          for (final filter in projectConfig.targetFilter) {
+            if (PlatformUtils.matchesPlatform(filter, target)) {
+              filteredTargets.add(target);
+              break;
+            }
+          }
+        }
+        
+        if (filteredTargets.isEmpty) {
+          if (projectConfig.verbose) {
+            print('Skipping section - no targets match filter: ${projectConfig.targetFilter}');
+          }
+          continue;
+        }
+        
+        targetPlatforms = filteredTargets;
+        if (projectConfig.verbose) {
+          print('Filtered targets: ${targetPlatforms.join(', ')}');
         }
       }
 
@@ -783,6 +826,18 @@ void _printUsage(ArgParser parser) {
   print('');
   print('  # Compile specific project');
   print('  compiler --project=my_app');
+  print('');
+  print('  # Compile multiple projects (comma-separated, globs)');
+  print('  compiler --project=\'tom_*_builder,my_app\'');
+  print('');
+  print('  # Compile only for current platform (faster dev builds)');
+  print('  compiler --targets=darwin-arm64');
+  print('');
+  print('  # Compile for specific platforms');
+  print('  compiler --targets=darwin-arm64,linux-x64');
+  print('');
+  print('  # Compile for all Linux platforms (using glob)');
+  print('  compiler --targets=\'linux-*\'');
   print('');
   print('  # Scan and compile all projects');
   print('  compiler --scan=. --recursive');

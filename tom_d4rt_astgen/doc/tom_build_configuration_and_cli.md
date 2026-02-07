@@ -195,15 +195,25 @@ dart run tom_d4rt_astgen:astgen --scan=. --recursive
 
 ### CLI Options
 
-#### `-p, --project <path>`
+#### `-p, --project <pattern>`
 
-Path to a specific project to generate AST file for.
+Project(s) to generate AST files for. Supports comma-separated values and glob patterns.
+
+**Patterns:**
+- **Single project**: `--project=my_app`
+- **Comma-separated**: `--project='project1,project2,project3'`
+- **Glob patterns**: `--project='tom_*'` (matches projects starting with `tom_`)
+- **Path globs**: `--project='xternal/tom_module_d4rt/*'`
+- **Current directory children**: `--project='./*'`
+- **Recursive from current directory**: `--project='./**/*'`
 
 **Examples:**
 ```bash
 dart run tom_d4rt_astgen:astgen --project=.
 dart run tom_d4rt_astgen:astgen -p ../my_app
 dart run tom_d4rt_astgen:astgen --project=packages/core
+dart run tom_d4rt_astgen:astgen --project='tom_*_builder,my_app'
+dart run tom_d4rt_astgen:astgen --project='./*'
 ```
 
 **Overrides:** `astgen.project` in tom_build.yaml

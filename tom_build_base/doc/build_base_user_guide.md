@@ -18,8 +18,7 @@ Add `tom_build_base` as a dependency:
 
 ```yaml
 dependencies:
-  tom_build_base:
-    path: ../tom_build_base  # Adjust path as needed
+  tom_build_base: ^1.0.0
 ```
 
 Import the library:
