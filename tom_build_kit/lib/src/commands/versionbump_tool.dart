@@ -186,7 +186,7 @@ class VersionBumpTool extends ToolBase {
         versionerArgs.addAll(['-p', project]);
       }
       if (recursive) {
-        versionerArgs.add('-R');
+        versionerArgs.add('-r');
       }
       if (verbose) {
         versionerArgs.add('-v');

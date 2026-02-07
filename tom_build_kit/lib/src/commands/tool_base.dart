@@ -2,10 +2,17 @@ import 'dart:io';
 
 import 'package:args/args.dart';
 import 'package:glob/glob.dart';
+import 'package:path/path.dart' as p;
 import 'package:tom_build_base/tom_build_base.dart';
 import 'package:yaml/yaml.dart';
 
 import '../version.g.dart';
+
+/// Filename for the workspace-level build configuration.
+const kTomBuildMasterYaml = 'tom_build_master.yaml';
+
+/// Filename for the project-level build configuration.
+const kTomBuildYaml = 'tom_build.yaml';
 
 /// Base class for all integrated build tools.
 ///
@@ -57,7 +64,7 @@ abstract class ToolBase {
       ..addOption('scan',
           abbr: 's', help: 'Scan directory for projects')
       ..addFlag('recursive',
-          abbr: 'R', negatable: false, help: 'Scan recursively')
+          abbr: 'r', negatable: false, help: 'Scan recursively')
       ..addMultiOption('exclude',
           abbr: 'x', help: 'Exclude patterns')
       ..addMultiOption('recursion-exclude',
@@ -156,12 +163,38 @@ abstract class ToolBase {
   }
 
   // ---------------------------------------------------------------------------
-  // Shared YAML utilities
+  // Workspace root discovery
   // ---------------------------------------------------------------------------
 
-  /// Load tom_build.yaml from a directory, returning the parsed YAML map.
-  YamlMap? loadTomBuildYaml(String dir) {
-    final file = File('$dir/tom_build.yaml');
+  /// Find the workspace root by traversing upwards looking for
+  /// `tom_build_master.yaml` or `tom_workspace.yaml`.
+  ///
+  /// Returns the directory containing the workspace config, or [startPath]
+  /// if none is found.
+  static String findWorkspaceRoot(String startPath) {
+    var current = p.normalize(p.absolute(startPath));
+    final root = p.rootPrefix(current);
+
+    while (current != root) {
+      if (File(p.join(current, kTomBuildMasterYaml)).existsSync() ||
+          File(p.join(current, 'tom_workspace.yaml')).existsSync() ||
+          File(p.join(current, 'tom.code-workspace')).existsSync()) {
+        return current;
+      }
+      current = p.dirname(current);
+    }
+
+    return startPath;
+  }
+
+  /// Load the workspace-level master config ([kTomBuildMasterYaml]).
+  ///
+  /// Traverses up from [startDir] to find the workspace root,
+  /// then loads `tom_build_master.yaml` from there.
+  /// Returns null if not found.
+  static YamlMap? loadMasterConfig(String startDir) {
+    final wsRoot = findWorkspaceRoot(startDir);
+    final file = File(p.join(wsRoot, kTomBuildMasterYaml));
     if (!file.existsSync()) return null;
     try {
       final content = file.readAsStringSync();
@@ -171,9 +204,13 @@ abstract class ToolBase {
     }
   }
 
-  /// Load build.yaml from a directory, returning the parsed YAML map.
-  YamlMap? loadBuildYaml(String dir) {
-    final file = File('$dir/build.yaml');
+  // ---------------------------------------------------------------------------
+  // Shared YAML utilities
+  // ---------------------------------------------------------------------------
+
+  /// Load tom_build.yaml from a directory, returning the parsed YAML map.
+  YamlMap? loadTomBuildYaml(String dir) {
+    final file = File('$dir/tom_build.yaml');
     if (!file.existsSync()) return null;
     try {
       final content = file.readAsStringSync();
@@ -215,35 +252,6 @@ abstract class ToolBase {
     } else {
       print('$prefix$node');
     }
-  }
-
-  /// Print the build.yaml section for a specific builder key (for --show).
-  void printBuildYamlSection(String projectPath, String builderKey,
-      {String? workspaceRoot}) {
-    final buildYaml = loadBuildYaml(projectPath);
-    if (buildYaml == null) {
-      print('  No build.yaml found in $projectPath');
-      return;
-    }
-
-    // Navigate to targets.$default.builders.<builderKey>.options
-    final targets = buildYaml['targets'] as YamlMap?;
-    if (targets == null) return;
-
-    final defaultTarget = targets[r'$default'] as YamlMap?;
-    if (defaultTarget == null) return;
-
-    final builders = defaultTarget['builders'] as YamlMap?;
-    if (builders == null) return;
-
-    final builder = builders[builderKey] as YamlMap?;
-    if (builder == null) {
-      print('  No $builderKey configuration in build.yaml');
-      return;
-    }
-
-    print('  build.yaml ($builderKey):');
-    printYamlNode(builder, indent: 2);
   }
 
   /// Print a tom_build.yaml section for a specific key (for --show).

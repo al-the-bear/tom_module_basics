@@ -137,11 +137,11 @@ Future<void> main(List<String> args) async {
     ..addFlag('list',
         abbr: 'l', negatable: false, help: 'List available pipelines')
     ..addFlag('recursive',
-        abbr: 'R', negatable: false, help: 'Scan directories recursively')
+        abbr: 'r', negatable: false, help: 'Scan directories recursively')
     ..addOption('scan',
         abbr: 's', help: 'Scan directory for projects to run pipeline in')
     ..addOption('root',
-        abbr: 'r', help: 'Root directory for configuration lookup')
+        abbr: 'R', help: 'Root directory for configuration lookup')
     ..addOption('project',
         abbr: 'p',
         help: 'Project(s) to run (comma-separated, globs: tom_*_builder, ./*)');
@@ -364,7 +364,8 @@ void _printUsage(ArgParser parser) {
   print(parser.usage);
   print('');
   print('Configuration:');
-  print('  Pipelines are defined in tom_build.yaml under the buildkit: key.');
+  print('  Pipelines are defined in tom_build_master.yaml (workspace) or');
+  print('  tom_build.yaml (project) under the buildkit: key.');
   print('  Allowed binaries are defined in buildkit.allowed-binaries.');
   print('  See the project documentation for the full pipeline YAML format.');
   print('');
@@ -380,7 +381,7 @@ void _printUsage(ArgParser parser) {
   print('  buildkit -v build                   # Run build with verbose output');
   print('  buildkit -n deploy                  # Dry-run deploy pipeline');
   print('  buildkit build --scan .             # Run build in projects under current dir');
-  print('  buildkit build -s . -R              # Run build recursively in all projects');
+  print('  buildkit build -s . -r              # Run build recursively in all projects');
 }
 
 void _listPipelines(PipelineConfig config) {
@@ -421,13 +422,14 @@ void _listPipelines(PipelineConfig config) {
   }
 }
 
-/// Find workspace root by looking for tom_build.yaml or tom_workspace.yaml.
+/// Find workspace root by looking for tom_build_master.yaml or tom_workspace.yaml.
 String _findWorkspaceRoot(String startPath) {
   var current = p.normalize(p.absolute(startPath));
   final root = p.rootPrefix(current);
 
   while (current != root) {
-    if (File(p.join(current, 'tom_workspace.yaml')).existsSync() ||
+    if (File(p.join(current, 'tom_build_master.yaml')).existsSync() ||
+        File(p.join(current, 'tom_workspace.yaml')).existsSync() ||
         File(p.join(current, 'tom.code-workspace')).existsSync()) {
       return current;
     }

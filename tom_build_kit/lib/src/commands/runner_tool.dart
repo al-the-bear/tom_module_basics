@@ -31,33 +31,6 @@ class BuilderFilterConfig {
     return parts.isEmpty ? 'BuilderFilterConfig(none)' : 'BuilderFilterConfig(${parts.join('; ')})';
   }
 
-  /// Load from build.yaml (tom_build_kit.build_runner section).
-  static BuilderFilterConfig? loadFromBuildYaml(String projectPath) {
-    final file = File('$projectPath/build.yaml');
-    if (!file.existsSync()) return null;
-
-    try {
-      final content = file.readAsStringSync();
-      final yaml = loadYaml(content) as YamlMap?;
-      if (yaml == null) return null;
-
-      final kitSection = yaml['tom_build_kit'] as YamlMap?;
-      if (kitSection == null) return null;
-
-      final buildRunner = kitSection['build_runner'] as YamlMap?;
-      if (buildRunner == null) return null;
-
-      return BuilderFilterConfig(
-        includeBuilders: ToolBase.toStringList(
-            buildRunner['include-builders'] ?? buildRunner['include_builders']),
-        excludeBuilders: ToolBase.toStringList(
-            buildRunner['exclude-builders'] ?? buildRunner['exclude_builders']),
-      );
-    } catch (_) {
-      return null;
-    }
-  }
-
   /// Load from tom_build.yaml (build_runner section).
   static BuilderFilterConfig? loadFromTomBuildYaml(String dir) {
     final file = File('$dir/tom_build.yaml');
@@ -82,8 +55,8 @@ class BuilderFilterConfig {
     }
   }
 
-  /// Get effective filter config with 4-level precedence:
-  /// 1. CLI args, 2. build.yaml, 3. project tom_build.yaml, 4. root tom_build.yaml
+  /// Get effective filter config with 3-level precedence:
+  /// 1. CLI args, 2. project tom_build.yaml, 3. workspace tom_build_master.yaml
   static BuilderFilterConfig getEffective({
     required String projectPath,
     String? rootPath,
@@ -98,23 +71,32 @@ class BuilderFilterConfig {
       );
     }
 
-    // Level 2: build.yaml
-    final buildYamlConfig = loadFromBuildYaml(projectPath);
-    if (buildYamlConfig != null && buildYamlConfig.isNotEmpty) {
-      return buildYamlConfig;
-    }
-
-    // Level 3: project tom_build.yaml
+    // Level 2: project tom_build.yaml
     final projectConfig = loadFromTomBuildYaml(projectPath);
     if (projectConfig != null && projectConfig.isNotEmpty) {
       return projectConfig;
     }
 
-    // Level 4: root tom_build.yaml
+    // Level 3: workspace tom_build_master.yaml
     if (rootPath != null && rootPath != projectPath) {
-      final rootConfig = loadFromTomBuildYaml(rootPath);
-      if (rootConfig != null && rootConfig.isNotEmpty) {
-        return rootConfig;
+      final masterFile = File('$rootPath/tom_build_master.yaml');
+      if (masterFile.existsSync()) {
+        try {
+          final content = masterFile.readAsStringSync();
+          final yaml = loadYaml(content) as YamlMap?;
+          if (yaml != null) {
+            final buildRunner = yaml['build_runner'] as YamlMap?;
+            if (buildRunner != null) {
+              final rootConfig = BuilderFilterConfig(
+                includeBuilders: ToolBase.toStringList(
+                    buildRunner['include-builders'] ?? buildRunner['include_builders']),
+                excludeBuilders: ToolBase.toStringList(
+                    buildRunner['exclude-builders'] ?? buildRunner['exclude_builders']),
+              );
+              if (rootConfig.isNotEmpty) return rootConfig;
+            }
+          }
+        } catch (_) {}
       }
     }
 
@@ -280,7 +262,7 @@ class RunnerTool extends ToolBase {
 
     // Load workspace-level config
     final basePath = Directory.current.path;
-    final rootPath = _findWorkspaceRoot(basePath);
+    final rootPath = ToolBase.findWorkspaceRoot(basePath);
     var config = BuildRunnerConfig.loadFromYaml(basePath) ?? BuildRunnerConfig();
 
     // Override with CLI options
@@ -535,22 +517,6 @@ class RunnerTool extends ToolBase {
     }
   }
 
-  /// Find workspace root by traversing up.
-  String _findWorkspaceRoot(String startPath) {
-    var current = p.normalize(p.absolute(startPath));
-    final root = p.rootPrefix(current);
-
-    while (current != root) {
-      if (File('$current/tom_workspace.yaml').existsSync() ||
-          File('$current/tom.code-workspace').existsSync()) {
-        return current;
-      }
-      current = p.dirname(current);
-    }
-
-    return startPath;
-  }
-
   void _printUsage(ArgParser parser) {
     print('Runner Tool - $toolDescription');
     print('');
@@ -564,9 +530,8 @@ class RunnerTool extends ToolBase {
     print('');
     print('Builder filter precedence:');
     print('  1. CLI --include-builders / --exclude-builders');
-    print('  2. build.yaml (tom_build_kit section)');
-    print('  3. Project tom_build.yaml (build_runner section)');
-    print('  4. Root tom_build.yaml (build_runner section)');
+    print('  2. Project tom_build.yaml (build_runner section)');
+    print('  3. Workspace tom_build_master.yaml (build_runner section)');
     print('');
     print('Configuration (tom_build.yaml):');
     print('  build_runner:');
@@ -579,6 +544,6 @@ class RunnerTool extends ToolBase {
     print('  runner -c watch                   # Watch mode');
     print('  runner -c clean                   # Clean build outputs');
     print('  runner -i tom_build_kit:version_builder  # Only run versioner');
-    print('  runner -s . -R                    # All projects recursively');
+    print('  runner -s . -r                    # All projects recursively');
   }
 }

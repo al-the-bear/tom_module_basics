@@ -1,5 +1,8 @@
 # Tom Build Kit configuration
 
+versioner:
+  variable-prefix: buildkit
+
 # Compiler tool configuration
 compiler:
   compiles:

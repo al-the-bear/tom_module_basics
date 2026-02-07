@@ -426,7 +426,7 @@ class CompilerTool extends ToolBase {
 
         final builtinCommands = BuiltinCommands(
           projectPath: Directory.current.path,
-          rootPath: _findWorkspaceRoot(Directory.current.path),
+          rootPath: ToolBase.findWorkspaceRoot(Directory.current.path),
           verbose: verbose,
           dryRun: dryRun,
         );
@@ -637,7 +637,7 @@ class CompilerTool extends ToolBase {
 
       final builtinCommands = BuiltinCommands(
         projectPath: projectPath,
-        rootPath: _findWorkspaceRoot(projectPath),
+        rootPath: ToolBase.findWorkspaceRoot(projectPath),
         verbose: verbose,
         dryRun: dryRun,
       );
@@ -734,23 +734,7 @@ class CompilerTool extends ToolBase {
     print('Examples:');
     print('  compiler                          # Compile in current project');
     print('  compiler -t linux-x64             # Compile for Linux x64 only');
-    print('  compiler -s . -R                  # All projects recursively');
+    print('  compiler -s . -r                  # All projects recursively');
   }
 
-  /// Find workspace root by looking for tom_workspace.yaml or
-  /// tom.code-workspace.
-  String _findWorkspaceRoot(String startPath) {
-    var current = p.normalize(p.absolute(startPath));
-    final root = p.rootPrefix(current);
-
-    while (current != root) {
-      if (File('$current/tom_workspace.yaml').existsSync() ||
-          File('$current/tom.code-workspace').existsSync()) {
-        return current;
-      }
-      current = p.dirname(current);
-    }
-
-    return startPath;
-  }
 }

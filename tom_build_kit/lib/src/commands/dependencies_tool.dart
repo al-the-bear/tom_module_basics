@@ -448,6 +448,6 @@ class DependenciesTool extends ToolBase {
     print('  dependencies                      # Show normal deps in current project');
     print('  dependencies --all                # Show all deps (normal + dev)');
     print('  dependencies --deep               # Recursive dependency tree');
-    print('  dependencies -s . -R              # All projects recursively');
+    print('  dependencies -s . -r              # All projects recursively');
   }
 }

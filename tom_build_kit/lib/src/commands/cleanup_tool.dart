@@ -81,7 +81,9 @@ class CleanupConfig {
       if (yaml == null) return null;
 
       final cleanupValue = yaml['cleanup'];
-      if (cleanupValue == null) return null;
+      // Support bare key `cleanup:` (null value) — activates tool with defaults
+      if (!yaml.containsKey('cleanup')) return null;
+      if (cleanupValue == null) return CleanupConfig();
 
       // Handle direct list format: cleanup: [...]
       if (cleanupValue is YamlList) {

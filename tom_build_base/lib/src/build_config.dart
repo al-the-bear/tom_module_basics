@@ -9,6 +9,11 @@ import 'package:yaml/yaml.dart';
 /// across Tom build tools. Tool-specific options are accessible via
 /// [toolOptions].
 class TomBuildConfig {
+  /// Filename for the workspace-level build configuration.
+  static const masterFilename = 'tom_build_master.yaml';
+
+  /// Filename for the project-level build configuration.
+  static const projectFilename = 'tom_build.yaml';
   /// Path to a single project directory.
   final String? project;
   
@@ -52,7 +57,7 @@ class TomBuildConfig {
   /// Load configuration from tom_build.yaml file for a specific tool.
   /// 
   /// [dir] - Directory containing tom_build.yaml
-  /// [toolKey] - The tool's section key in the YAML (e.g., 'dartgen', 'versioner')
+  /// [toolKey] - The tool's section key in the YAML (e.g., 'versioner')
   /// 
   /// Returns null if:
   /// - tom_build.yaml doesn't exist
@@ -62,8 +67,34 @@ class TomBuildConfig {
     required String dir,
     required String toolKey,
   }) {
-    final yamlPath = p.join(dir, 'tom_build.yaml');
-    final yamlFile = File(yamlPath);
+    return _loadFromFile(
+      filePath: p.join(dir, projectFilename),
+      toolKey: toolKey,
+    );
+  }
+
+  /// Load configuration from tom_build_master.yaml for a specific tool.
+  /// 
+  /// [dir] - Directory containing tom_build_master.yaml
+  /// [toolKey] - The tool's section key in the YAML
+  /// 
+  /// Returns null if not found or invalid.
+  static TomBuildConfig? loadMaster({
+    required String dir,
+    required String toolKey,
+  }) {
+    return _loadFromFile(
+      filePath: p.join(dir, masterFilename),
+      toolKey: toolKey,
+    );
+  }
+
+  /// Internal: load config from a specific YAML file path.
+  static TomBuildConfig? _loadFromFile({
+    required String filePath,
+    required String toolKey,
+  }) {
+    final yamlFile = File(filePath);
 
     if (!yamlFile.existsSync()) return null;
 
@@ -183,6 +214,10 @@ class TomBuildConfig {
 }
 
 /// Check if a directory has tom_build.yaml with a specific tool section.
+///
+/// Returns true if the tool key is present in the YAML, even if the value
+/// is null (bare key like `cleanup:` with no sub-keys). This allows tools
+/// to be activated with just the key present, using workspace or default config.
 bool hasTomBuildConfig(String dirPath, String toolKey) {
   final yamlPath = p.join(dirPath, 'tom_build.yaml');
   final yamlFile = File(yamlPath);
@@ -191,7 +226,8 @@ bool hasTomBuildConfig(String dirPath, String toolKey) {
   try {
     final content = yamlFile.readAsStringSync();
     final yaml = loadYaml(content) as YamlMap?;
-    return yaml != null && yaml[toolKey] != null;
+    // Check containsKey instead of != null to support bare keys (cleanup:)
+    return yaml != null && yaml.containsKey(toolKey);
   } catch (_) {
     return false;
   }

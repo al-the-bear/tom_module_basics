@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:yaml/yaml.dart';
 
+import 'commands/tool_base.dart';
 import 'pipeline_step.dart';
 
 /// Configuration for a single pipeline.
@@ -120,21 +121,23 @@ class PipelineConfig {
     required this.source,
   });
 
-  /// Load pipeline configuration from tom_build.yaml files.
+  /// Load pipeline configuration.
   /// 
   /// Priority (project replaces workspace, no merging):
   /// 1. tom_build.yaml in project directory
-  /// 2. tom_build.yaml in root directory
+  /// 2. tom_build_master.yaml in root directory
   factory PipelineConfig.load({
     required String projectPath,
     required String rootPath,
   }) {
-    // First, load workspace-level config
-    final workspaceConfig = _loadFromTomBuildYaml(rootPath);
+    // First, load workspace-level config from tom_build_master.yaml
+    final workspaceConfig = _loadFromYaml(
+      p.join(rootPath, kTomBuildMasterYaml),
+    );
     
-    // Then, load project-level config
+    // Then, load project-level config from tom_build.yaml
     final projectConfig = projectPath != rootPath
-        ? _loadFromTomBuildYaml(projectPath)
+        ? _loadFromYaml(p.join(projectPath, kTomBuildYaml))
         : null;
 
     // Merge: project replaces workspace for matching pipeline names
@@ -174,8 +177,7 @@ class PipelineConfig {
     );
   }
 
-  static PipelineConfig? _loadFromTomBuildYaml(String dir) {
-    final yamlPath = p.join(dir, 'tom_build.yaml');
+  static PipelineConfig? _loadFromYaml(String yamlPath) {
     final yamlFile = File(yamlPath);
 
     if (!yamlFile.existsSync()) return null;

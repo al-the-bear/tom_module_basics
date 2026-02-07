@@ -19,6 +19,7 @@ class VersionerConfig {
   final String output;
   final bool includeGitCommit;
   final String? versionOverride;
+  final String? variablePrefix;
 
   VersionerConfig({
     this.project,
@@ -30,6 +31,7 @@ class VersionerConfig {
     this.output = 'lib/src/version.g.dart',
     this.includeGitCommit = true,
     this.versionOverride,
+    this.variablePrefix,
   });
 
   /// Load config from tom_build.yaml.
@@ -47,35 +49,24 @@ class VersionerConfig {
       output: options['output'] as String? ?? 'lib/src/version.g.dart',
       includeGitCommit: options['includeGitCommit'] as bool? ?? true,
       versionOverride: options['version'] as String?,
+      variablePrefix: options['variable-prefix'] as String? ??
+          options['variablePrefix'] as String?,
     );
   }
 
-  /// Load config from build.yaml.
-  static VersionerConfig? loadFromBuildYaml(String dir,
-      {String builderKey = 'tom_build_kit:version_builder'}) {
-    final file = File('$dir/build.yaml');
-    if (!file.existsSync()) return null;
+  /// Load config from tom_build_master.yaml (workspace level).
+  static VersionerConfig? loadFromMasterYaml(String dir) {
+    final config = TomBuildConfig.loadMaster(dir: dir, toolKey: 'versioner');
+    if (config == null) return null;
 
-    try {
-      final content = file.readAsStringSync();
-      final yaml = loadYaml(content) as YamlMap?;
-      if (yaml == null) return null;
-
-      final targets = yaml['targets'] as YamlMap?;
-      final defaultTarget = targets?[r'$default'] as YamlMap?;
-      final builders = defaultTarget?['builders'] as YamlMap?;
-      final builder = builders?[builderKey] as YamlMap?;
-      final options = builder?['options'] as YamlMap?;
-      if (options == null) return null;
-
-      return VersionerConfig(
-        output: options['output'] as String? ?? 'lib/src/version.g.dart',
-        includeGitCommit: options['includeGitCommit'] as bool? ?? true,
-        versionOverride: options['version'] as String?,
-      );
-    } catch (_) {
-      return null;
-    }
+    final options = config.toolOptions;
+    return VersionerConfig(
+      output: options['output'] as String? ?? 'lib/src/version.g.dart',
+      includeGitCommit: options['includeGitCommit'] as bool? ?? true,
+      versionOverride: options['version'] as String?,
+      variablePrefix: options['variable-prefix'] as String? ??
+          options['variablePrefix'] as String?,
+    );
   }
 
   /// Merge with another config (other takes precedence).
@@ -90,7 +81,21 @@ class VersionerConfig {
       output: other.output != 'lib/src/version.g.dart' ? other.output : output,
       includeGitCommit: other.includeGitCommit,
       versionOverride: other.versionOverride ?? versionOverride,
+      variablePrefix: other.variablePrefix ?? variablePrefix,
     );
+  }
+
+  /// Get the generated class name based on variablePrefix.
+  ///
+  /// If [variablePrefix] is set, generates `{Prefix}VersionInfo`.
+  /// Otherwise generates `TomVersionInfo`.
+  String get className {
+    if (variablePrefix == null || variablePrefix!.isEmpty) {
+      return 'TomVersionInfo';
+    }
+    final prefix = variablePrefix!;
+    final capitalized = prefix[0].toUpperCase() + prefix.substring(1);
+    return '${capitalized}VersionInfo';
   }
 }
 
@@ -117,26 +122,16 @@ class VersionerTool extends ToolBase {
           negatable: false,
           help: 'Skip git commit hash')
       ..addOption('version',
-          help: 'Override version string');
+          help: 'Override version string')
+      ..addOption('variable-prefix',
+          help: 'Prefix for generated class name (e.g., "myApp" → MyAppVersionInfo)');
   }
 
   @override
   bool isToolProject(String dirPath) {
     final pubspec = File('$dirPath/pubspec.yaml');
     if (!pubspec.existsSync()) return false;
-    return hasTomBuildConfig(dirPath, toolKey) ||
-        _hasBuildYamlVersionConfig(dirPath);
-  }
-
-  bool _hasBuildYamlVersionConfig(String dirPath) {
-    final file = File('$dirPath/build.yaml');
-    if (!file.existsSync()) return false;
-    try {
-      final content = file.readAsStringSync();
-      return content.contains('tom_build_kit:version_builder');
-    } catch (_) {
-      return false;
-    }
+    return hasTomBuildConfig(dirPath, toolKey);
   }
 
   @override
@@ -166,7 +161,8 @@ class VersionerTool extends ToolBase {
 
     // Load workspace-level config
     final basePath = Directory.current.path;
-    var config = VersionerConfig.loadFromYaml(basePath) ?? VersionerConfig();
+    final wsRoot = ToolBase.findWorkspaceRoot(basePath);
+    var config = VersionerConfig.loadFromMasterYaml(wsRoot) ?? VersionerConfig();
 
     // Override with CLI options
     config = config.merge(VersionerConfig(
@@ -179,6 +175,7 @@ class VersionerTool extends ToolBase {
       output: results['output'] as String,
       includeGitCommit: !(results['no-git'] as bool),
       versionOverride: results['version'] as String?,
+      variablePrefix: results['variable-prefix'] as String?,
     ));
 
     // Validate paths
@@ -213,7 +210,7 @@ class VersionerTool extends ToolBase {
     if (showMode) {
       for (final project in projects) {
         print('Project: ${p.relative(project, from: basePath)}');
-        printBuildYamlSection(project, 'tom_build_kit:version_builder');
+        printTomBuildYamlSection(project, 'versioner');
       }
       return true;
     }
@@ -234,15 +231,11 @@ class VersionerTool extends ToolBase {
       String projectPath, VersionerConfig config) async {
     if (verbose) print('Processing: ${p.basename(projectPath)}');
 
-    // Merge with project-level configs
+    // Merge with project-level config (tom_build.yaml only, no build.yaml)
     var projectConfig = config;
     final yamlConfig = VersionerConfig.loadFromYaml(projectPath);
     if (yamlConfig != null) {
       projectConfig = projectConfig.merge(yamlConfig);
-    }
-    final buildYamlConfig = VersionerConfig.loadFromBuildYaml(projectPath);
-    if (buildYamlConfig != null) {
-      projectConfig = projectConfig.merge(buildYamlConfig);
     }
 
     // Read pubspec.yaml for package name and version
@@ -282,6 +275,7 @@ class VersionerTool extends ToolBase {
         gitCommit: gitCommit,
         buildNumber: buildNumber,
         dartSdkVersion: dartSdkVersion,
+        className: projectConfig.className,
       );
 
       // Write file
@@ -374,6 +368,7 @@ class VersionerTool extends ToolBase {
     String? gitCommit,
     int? buildNumber,
     String? dartSdkVersion,
+    String className = 'TomVersionInfo',
   }) {
     final gitLine = gitCommit != null
         ? "  static const String gitCommit = '$gitCommit';"
@@ -392,8 +387,8 @@ class VersionerTool extends ToolBase {
 ///
 /// This class contains static fields and methods for accessing
 /// version information embedded during the build process.
-class TomVersionInfo {
-  TomVersionInfo._();
+class $className {
+  $className._();
 
   /// Package version from pubspec.yaml
   static const String version = '$version';
@@ -440,20 +435,10 @@ $sdkLine
     print('  versioner:');
     print('    output: lib/src/version.g.dart');
     print('    includeGitCommit: true');
+    print('    variablePrefix: myapp  # generates MyappVersionInfo');
     print('    version: "1.0.0"  # optional override');
     print('');
-    print('Configuration (build.yaml):');
-    print('  targets:');
-    print('    \$default:');
-    print('      builders:');
-    print('        tom_build_kit:version_builder:');
-    print('          enabled: true');
-    print('          options:');
-    print('            output: lib/src/version.g.dart');
-    print('            includeGitCommit: true');
-    print('            variablePrefix: myapp');
-    print('');
-    print('Generated file: TomVersionInfo class with version, buildTime,');
+    print('Generated file: {Prefix}VersionInfo class with version, buildTime,');
     print('  gitCommit, buildNumber, dartSdkVersion, and convenience getters');
     print('  (versionShort, versionMedium, versionLong).');
   }
