@@ -309,6 +309,8 @@ class CleanupTool extends ToolBase {
           '**/*.g.dart',
           '**/*.r.dart',
           '**/*.b.dart',
+          '**/*.reflection.dart',
+          '**/*.reflectable.dart',
         ]),
       ];
     }
@@ -464,7 +466,8 @@ class CleanupTool extends ToolBase {
     print(parser.usage);
     print('');
     print('Default targets (when no config is provided):');
-    print('  build, .dart_tool/build, **/*.g.dart, **/*.r.dart, **/*.b.dart');
+    print('  build, .dart_tool/build, **/*.g.dart, **/*.r.dart, **/*.b.dart,');
+    print('  **/*.reflection.dart, **/*.reflectable.dart');
     print('');
     print('Configuration (tom_build.yaml):');
     print('  cleanup:');
