@@ -108,6 +108,7 @@ abstract class ToolBase {
         scanDir,
         recursive: recursive,
         toolKey: toolKey,
+        recursionExclude: recursionExclude,
       );
       return _filterProjects(paths, exclude);
     }

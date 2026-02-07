@@ -90,6 +90,10 @@ class TomBuildConfig {
   }
 
   /// Internal: load config from a specific YAML file path.
+  ///
+  /// For workspace-level (master) files, navigation fields (scan, recursive,
+  /// exclude, recursion-exclude) are read from the shared `navigation:` section
+  /// and used as defaults if the tool section doesn't define them.
   static TomBuildConfig? _loadFromFile({
     required String filePath,
     required String toolKey,
@@ -107,7 +111,17 @@ class TomBuildConfig {
       final yaml = rootYaml[toolKey] as YamlMap?;
       if (yaml == null) return null;
 
-      return TomBuildConfig.fromYamlMap(yaml);
+      final toolConfig = TomBuildConfig.fromYamlMap(yaml);
+
+      // Check for shared navigation: section (workspace-level config)
+      final navYaml = rootYaml['navigation'] as YamlMap?;
+      if (navYaml != null) {
+        final navConfig = TomBuildConfig.fromYamlMap(navYaml);
+        // Navigation section provides defaults; tool section overrides
+        return navConfig.merge(toolConfig);
+      }
+
+      return toolConfig;
     } catch (_) {
       return null;
     }

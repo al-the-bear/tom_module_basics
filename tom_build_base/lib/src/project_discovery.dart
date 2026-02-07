@@ -227,6 +227,7 @@ class ProjectDiscovery {
     String scanDir, {
     bool recursive = false,
     String? toolKey,
+    List<String> recursionExclude = const [],
   }) async {
     final projects = <String>[];
     final dir = Directory(scanDir);
@@ -236,12 +237,26 @@ class ProjectDiscovery {
       return projects;
     }
 
+    // Pre-compile recursion exclusion globs
+    final recursionGlobs = recursionExclude
+        .map((pattern) {
+          try {
+            return Glob(pattern);
+          } catch (_) {
+            return null;
+          }
+        })
+        .whereType<Glob>()
+        .toList();
+
     await _scanDirectory(
       dir,
       projects,
       recursive: recursive,
       insideProject: false,
       toolKey: toolKey,
+      recursionGlobs: recursionGlobs,
+      scanRoot: scanDir,
     );
     return projects;
   }
@@ -252,6 +267,8 @@ class ProjectDiscovery {
     required bool recursive,
     required bool insideProject,
     String? toolKey,
+    List<Glob> recursionGlobs = const [],
+    String? scanRoot,
   }) async {
     final dirName = p.basename(dir.path);
 
@@ -267,6 +284,19 @@ class ProjectDiscovery {
     // If inside a project, skip source/build directories
     if (insideProject && skipInsideProjectDirectories.contains(dirName)) {
       return;
+    }
+
+    // Check recursion exclusions (relative path from scan root)
+    if (recursionGlobs.isNotEmpty && scanRoot != null) {
+      final relativePath = p.relative(dir.path, from: scanRoot);
+      for (final glob in recursionGlobs) {
+        if (glob.matches(relativePath) || glob.matches(dirName)) {
+          if (verbose) {
+            _log('  Skipping (recursion-exclude): $relativePath');
+          }
+          return;
+        }
+      }
     }
 
     // Check if this directory is a project
@@ -300,6 +330,8 @@ class ProjectDiscovery {
         recursive: recursive,
         insideProject: true,
         toolKey: toolKey,
+        recursionGlobs: recursionGlobs,
+        scanRoot: scanRoot,
       );
     } else {
       // Not a project - continue scanning subfolders
@@ -309,6 +341,8 @@ class ProjectDiscovery {
         recursive: recursive,
         insideProject: insideProject,
         toolKey: toolKey,
+        recursionGlobs: recursionGlobs,
+        scanRoot: scanRoot,
       );
     }
   }
@@ -319,6 +353,8 @@ class ProjectDiscovery {
     required bool recursive,
     required bool insideProject,
     String? toolKey,
+    List<Glob> recursionGlobs = const [],
+    String? scanRoot,
   }) async {
     try {
       await for (final entity in dir.list()) {
@@ -329,6 +365,8 @@ class ProjectDiscovery {
             recursive: recursive,
             insideProject: insideProject,
             toolKey: toolKey,
+            recursionGlobs: recursionGlobs,
+            scanRoot: scanRoot,
           );
         }
       }
