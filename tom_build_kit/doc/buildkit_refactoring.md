@@ -1,6 +1,31 @@
 # Build Kit Configuration Refactoring
 
-## Status: Draft — v2
+## Status: In Progress — v3
+
+### Execution Summary
+
+**Completed:**
+- ✅ TODO 1: Rename workspace config to `tom_build_master.yaml`, add `findWorkspaceRoot()` to ToolBase, update all tools
+- ✅ TODO 2 (partial): Migrated versioner `variablePrefix` from `build.yaml` to project `tom_build.yaml` (7 projects)
+- ✅ TODO 3 (partial): Removed `build.yaml` reading from versioner and runner tools
+- ✅ TODO 6 (partial): Added `TomBuildConfig.loadMaster()`, unified config loading for versioner/runner
+- ✅ TODO 7: Added standard pipelines (generate, clean, test, analyze, format, deps, ast, bridges) to `tom_build_master.yaml`
+- ✅ Bug fixes: Cleanup activation bug (bare key), d4rtgen toolKey `'dartgen'` → `'d4rtgen'`, `-R`/`-r` flag swap
+- ✅ Compiler: Removed local `_findWorkspaceRoot()`, uses `ToolBase.findWorkspaceRoot()`
+
+**Deferred:**
+- ❌ TODO 2 (remaining): Migrate astgen conversion config from `build.yaml` to `tom_build.yaml`
+- ❌ TODO 2 (remaining): Migrate d4rtgen bridge config from `build.yaml`/`d4rt_bridging.json` to `tom_build.yaml`
+- ❌ TODO 3 (remaining): Remove `build.yaml` reading from astgen/d4rtgen
+- ❌ TODO 4: Navigation/scanning redesign (scanning always active, `--project` disables scanning)
+- ❌ TODO 5: Full astgen/d4rtgen tool adaptation (config format migration)
+- ❌ TODO 8: Unified merge rules across all tools
+- ❌ d4rt_bridging.json removal (7 files — requires d4rtgen config migration first)
+
+**Commits:**
+- `6b8f512` (tom_module_basics): buildkit config refactoring — all tool updates
+- `942b257` (tom_module_d4rt): fix d4rtgen toolKey, add versioner variable-prefix
+- `f339623` (tom2): rename tom_build_master.yaml, project config migrations, standard pipelines
 
 ## Overview
 
