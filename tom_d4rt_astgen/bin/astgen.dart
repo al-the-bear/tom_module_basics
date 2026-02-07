@@ -48,6 +48,7 @@ void main(List<String> args) async {
     ..addOption('config', abbr: 'c', defaultsTo: 'build.yaml', help: 'Path to build.yaml')
     ..addFlag('verbose', abbr: 'v', help: 'Enable verbose output')
     ..addFlag('dry-run', abbr: 'n', help: 'Show what would be done without doing it')
+    ..addFlag('list', abbr: 'l', help: 'List projects that would be processed (no action)')
     ..addFlag('help', abbr: 'h', negatable: false, help: 'Show this help message');
 
   final ArgResults results;
@@ -104,6 +105,18 @@ void main(List<String> args) async {
     print('No projects found to process.');
     if (config.verbose) {
       print('Tip: Create a tom_build.yaml with an "astgen:" section or use --project option');
+    }
+    exit(0);
+  }
+
+  // Handle --list mode: just list projects without processing
+  final listOnly = results['list'] as bool;
+  if (listOnly) {
+    final workspaceRoot = ProjectDiscovery.findWorkspaceRoot(basePath);
+    print('Astgen projects (${projects.length}):');
+    for (final project in projects) {
+      final relativePath = p.relative(project, from: workspaceRoot);
+      print('  $relativePath');
     }
     exit(0);
   }
@@ -188,7 +201,7 @@ Future<List<String>> _findProjects(TomBuildConfig config, String basePath) async
 }
 
 /// Check if a directory is an astgen project
-bool _isAstgenProject(String dirPath, [String? _]) {
+bool _isAstgenProject(String dirPath) {
   // Must have pubspec.yaml
   if (!File('$dirPath/pubspec.yaml').existsSync()) {
     return false;

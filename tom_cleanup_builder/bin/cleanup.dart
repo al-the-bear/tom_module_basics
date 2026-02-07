@@ -275,6 +275,10 @@ Future<void> main(List<String> arguments) async {
         help: 'Show what would be deleted without actually deleting')
     ..addFlag('verbose',
         abbr: 'v', negatable: false, help: 'Show detailed output')
+    ..addFlag('list',
+        abbr: 'l',
+        negatable: false,
+        help: 'List projects that would be processed (no action)')
     ..addFlag('help',
         abbr: 'h', negatable: false, help: 'Show usage help');
 
@@ -284,6 +288,8 @@ Future<void> main(List<String> arguments) async {
     _printUsage(parser);
     exit(0);
   }
+
+  final listOnly = args['list'] as bool;
 
   // Build config from CLI args
   final cliConfig = CleanupConfig(
@@ -353,6 +359,17 @@ Future<void> main(List<String> arguments) async {
     print('No projects found to process.');
     if (config.verbose) {
       print('Tip: Create a tom_build.yaml with a "cleanup:" section');
+    }
+    exit(0);
+  }
+
+  // Handle --list mode: just list projects without processing
+  if (listOnly) {
+    final workspaceRoot = ProjectDiscovery.findWorkspaceRoot(Directory.current.path);
+    print('Cleanup projects (${projects.length}):');
+    for (final project in projects) {
+      final relativePath = p.relative(project, from: workspaceRoot);
+      print('  $relativePath');
     }
     exit(0);
   }
@@ -432,7 +449,7 @@ Future<List<String>> _findProjects(
 }
 
 /// Check if a directory is a cleanup project.
-bool _isCleanupProject(String dirPath, [String? _]) {
+bool _isCleanupProject(String dirPath) {
   // Must have pubspec.yaml
   if (!File('$dirPath/pubspec.yaml').existsSync()) {
     return false;

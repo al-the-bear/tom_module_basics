@@ -232,4 +232,23 @@ class ProjectDiscovery {
     'generated',
     '.dart_tool',
   };
+
+  /// Find the workspace root by looking for tom_workspace.yaml or tom.code-workspace.
+  /// 
+  /// Starts from [startPath] and traverses up the directory tree.
+  /// Returns [startPath] if no workspace root is found.
+  static String findWorkspaceRoot(String startPath) {
+    var current = p.normalize(p.absolute(startPath));
+    final root = p.rootPrefix(current);
+
+    while (current != root) {
+      if (File(p.join(current, 'tom_workspace.yaml')).existsSync() ||
+          File(p.join(current, 'tom.code-workspace')).existsSync()) {
+        return current;
+      }
+      current = p.dirname(current);
+    }
+
+    return startPath;
+  }
 }

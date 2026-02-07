@@ -231,6 +231,10 @@ void main(List<String> arguments) async {
         abbr: 'd',
         help: 'Show what would be compiled without executing',
         negatable: false)
+    ..addFlag('list',
+        abbr: 'l',
+        help: 'List projects that would be processed (no action)',
+        negatable: false)
     ..addFlag('help', abbr: 'h', help: 'Show this help message', negatable: false);
 
   final ArgResults args;
@@ -255,6 +259,8 @@ void main(List<String> arguments) async {
     _printUsage(parser);
     exit(0);
   }
+
+  final listOnly = args['list'] as bool;
 
   // Build config from CLI args
   final cliConfig = CompilerConfig(
@@ -315,6 +321,17 @@ void main(List<String> arguments) async {
     print('No projects found to process.');
     if (config.verbose) {
       print('Tip: Create a build.yaml with tom_compiler_builder:compiler_builder section');
+    }
+    exit(0);
+  }
+
+  // Handle --list mode: just list projects without processing
+  if (listOnly) {
+    final workspaceRoot = ProjectDiscovery.findWorkspaceRoot(Directory.current.path);
+    print('Compiler projects (${projects.length}):');
+    for (final project in projects) {
+      final relativePath = p.relative(project, from: workspaceRoot);
+      print('  $relativePath');
     }
     exit(0);
   }
@@ -393,7 +410,7 @@ Future<List<String>> _findProjects(
 }
 
 /// Check if a directory is a compiler project.
-bool _isCompilerProject(String dirPath, [String? _]) {
+bool _isCompilerProject(String dirPath) {
   // Must have pubspec.yaml
   if (!File('$dirPath/pubspec.yaml').existsSync()) {
     return false;

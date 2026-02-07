@@ -197,6 +197,10 @@ Future<void> main(List<String> arguments) async {
         abbr: 'v',
         negatable: false,
         help: 'Show detailed output')
+    ..addFlag('list',
+        abbr: 'l',
+        negatable: false,
+        help: 'List projects that would be processed (no action)')
     ..addFlag('help',
         abbr: 'h',
         negatable: false,
@@ -216,6 +220,8 @@ Future<void> main(List<String> arguments) async {
     _printUsage(parser);
     exit(1);
   }
+
+  final listOnly = args['list'] as bool;
 
   // Build config from CLI args
   final cliConfig = VersionerConfig(
@@ -268,6 +274,23 @@ Future<void> main(List<String> arguments) async {
     exit(1);
   }
 
+  // Handle --list mode: just list projects without processing
+  if (listOnly) {
+    final projects = await _collectProjects(config);
+    final workspaceRoot = ProjectDiscovery.findWorkspaceRoot(Directory.current.path);
+    
+    if (projects.isEmpty) {
+      print('No versioner projects found.');
+    } else {
+      print('Versioner projects (${projects.length}):');
+      for (final project in projects) {
+        final relativePath = p.relative(project, from: workspaceRoot);
+        print('  $relativePath');
+      }
+    }
+    exit(0);
+  }
+
   try {
     print('=' * 60);
     print('Versioner running');
@@ -287,6 +310,36 @@ Future<void> main(List<String> arguments) async {
     stderr.writeln('Fatal error: $e');
     exit(1);
   }
+}
+
+/// Collect all projects that would be processed (for --list mode).
+Future<List<String>> _collectProjects(VersionerConfig config) async {
+  final verbose = config.verbose;
+
+  if (config.projects.isNotEmpty) {
+    return await _findProjectsByGlob(
+      config.projects,
+      exclude: config.exclude,
+      verbose: verbose,
+    );
+  } else if (config.scan != null) {
+    return await _scanForProjects(
+      config.scan!,
+      recursive: config.recursive,
+      exclude: config.exclude,
+      recursionExclude: config.recursionExclude,
+      verbose: verbose,
+    );
+  } else if (config.project != null) {
+    final projectPath = p.isAbsolute(config.project!)
+        ? config.project!
+        : p.join(Directory.current.path, config.project!);
+    if (_isVersionProject(projectPath)) {
+      return [projectPath];
+    }
+  }
+  
+  return [];
 }
 
 /// Run the generator with the given configuration.

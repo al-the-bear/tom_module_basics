@@ -414,6 +414,10 @@ void main(List<String> arguments) async {
         abbr: 'd',
         negatable: false,
         help: 'Show what would be run without executing')
+    ..addFlag('list',
+        abbr: 'l',
+        negatable: false,
+        help: 'List projects that would be processed (no action)')
     ..addFlag('help', abbr: 'h', negatable: false, help: 'Show this help');
 
   ArgResults args;
@@ -438,6 +442,8 @@ void main(List<String> arguments) async {
     _printUsage(parser);
     exit(1);
   }
+
+  final listOnly = args['list'] as bool;
 
   // Build config from CLI args
   final cliConfig = BuildRunnerConfig(
@@ -510,6 +516,17 @@ void main(List<String> arguments) async {
     print('No projects found to process.');
     if (config.verbose) {
       print('Tip: Projects need a build.yaml file to be processed');
+    }
+    exit(0);
+  }
+
+  // Handle --list mode: just list projects without processing
+  if (listOnly) {
+    final workspaceRoot = ProjectDiscovery.findWorkspaceRoot(Directory.current.path);
+    print('Runner projects (${projects.length}):');
+    for (final project in projects) {
+      final relativePath = p.relative(project, from: workspaceRoot);
+      print('  $relativePath');
     }
     exit(0);
   }
@@ -629,7 +646,7 @@ Future<List<String>> _findProjects(
 }
 
 /// Check if a directory is a build_runner project.
-bool _isBuildRunnerProject(String dirPath, [String? _]) {
+bool _isBuildRunnerProject(String dirPath) {
   // Must have pubspec.yaml
   if (!File('$dirPath/pubspec.yaml').existsSync()) {
     return false;
