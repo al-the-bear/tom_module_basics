@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:args/args.dart';
 import 'package:path/path.dart' as p;
+import 'package:tom_build_base/tom_build_base.dart';
 import 'package:yaml/yaml.dart';
 
 import 'tool_base.dart';
@@ -101,6 +102,8 @@ class DependenciesTool extends ToolBase {
 
   @override
   Future<bool> run(List<String> args) async {
+    if (checkVersionArg(args)) return true;
+
     final parser = createParser();
     ArgResults results;
 
@@ -118,7 +121,9 @@ class DependenciesTool extends ToolBase {
     }
 
     verbose = results['verbose'] as bool;
+    dryRun = results['dry-run'] as bool;
     final listMode = results['list'] as bool;
+    final showMode = results['show'] as bool;
 
     final config = DependenciesConfig(
       project: results['project'] as String?,
@@ -133,6 +138,13 @@ class DependenciesTool extends ToolBase {
     );
 
     final basePath = Directory.current.path;
+
+    // Validate paths
+    validatePathContainment(
+      scan: config.scan,
+      project: config.project,
+      basePath: basePath,
+    );
 
     // Find projects
     final projects = await findProjects(
@@ -150,6 +162,16 @@ class DependenciesTool extends ToolBase {
         if (isToolProject(project)) {
           print('  ${p.relative(project, from: basePath)}');
         }
+      }
+      return true;
+    }
+
+    if (showMode) {
+      for (final projectPath in projects) {
+        print('Project: ${p.relative(projectPath, from: basePath)}');
+        print('  Tool: $toolKey');
+        print('  Has pubspec.yaml: ${File('$projectPath/pubspec.yaml').existsSync()}');
+        print('  Has pubspec_overrides.yaml: ${File('$projectPath/pubspec_overrides.yaml').existsSync()}');
       }
       return true;
     }
@@ -260,6 +282,9 @@ class DependenciesTool extends ToolBase {
     if (!dep.source.startsWith('path:')) return null;
     final pathStr = dep.source.substring(5).trim();
     if (p.isAbsolute(pathStr)) return pathStr;
+    // Resolve relative paths against current working directory
+    final resolved = p.normalize(p.join(Directory.current.path, pathStr));
+    if (Directory(resolved).existsSync()) return resolved;
     return null;
   }
 

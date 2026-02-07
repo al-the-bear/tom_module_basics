@@ -456,8 +456,7 @@ List<_ExecutionStep> _parseExecutionSteps(
         currentName = arg;
         currentIsCommand = false;
       } else if (_builtinCommandNames.contains(arg) && !currentIsCommand) {
-        // Could be a bare command without : prefix (backward compatibility)
-        // But only if current step is also not a command
+        // Bare command name without : prefix treated as argument
         currentArgs.add(arg);
       } else {
         // It's an argument for the current step

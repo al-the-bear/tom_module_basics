@@ -20,6 +20,18 @@ class BuilderFilterConfig {
   bool get isEmpty => includeBuilders.isEmpty && excludeBuilders.isEmpty;
   bool get isNotEmpty => !isEmpty;
 
+  @override
+  String toString() {
+    final parts = <String>[];
+    if (includeBuilders.isNotEmpty) {
+      parts.add('include: ${includeBuilders.join(', ')}');
+    }
+    if (excludeBuilders.isNotEmpty) {
+      parts.add('exclude: ${excludeBuilders.join(', ')}');
+    }
+    return parts.isEmpty ? 'BuilderFilterConfig(none)' : 'BuilderFilterConfig(${parts.join('; ')})';
+  }
+
   /// Load from build.yaml (tom_build_runner.build_runner section).
   static BuilderFilterConfig? loadFromBuildYaml(String projectPath) {
     final file = File('$projectPath/build.yaml');
@@ -30,10 +42,10 @@ class BuilderFilterConfig {
       final yaml = loadYaml(content) as YamlMap?;
       if (yaml == null) return null;
 
-      final runnerSection = yaml['tom_build_runner'] as YamlMap?;
-      if (runnerSection == null) return null;
+      final kitSection = yaml['tom_build_kit'] as YamlMap?;
+      if (kitSection == null) return null;
 
-      final buildRunner = runnerSection['build_runner'] as YamlMap?;
+      final buildRunner = kitSection['build_runner'] as YamlMap?;
       if (buildRunner == null) return null;
 
       return BuilderFilterConfig(
@@ -153,7 +165,7 @@ class BuildRunnerConfig {
       final yaml = loadYaml(content) as YamlMap?;
       if (yaml == null) return null;
 
-      final runnerYaml = yaml['runner'] as YamlMap?;
+      final runnerYaml = yaml['build_runner'] as YamlMap?;
       if (runnerYaml == null) return null;
 
       return BuildRunnerConfig(
@@ -215,8 +227,6 @@ class RunnerTool extends ToolBase {
   @override
   void addToolOptions(ArgParser parser) {
     parser
-      ..addFlag('dry-run',
-          abbr: 'n', negatable: false, help: 'Show what would be executed')
       ..addOption('command',
           abbr: 'c',
           defaultsTo: 'build',
@@ -243,6 +253,8 @@ class RunnerTool extends ToolBase {
 
   @override
   Future<bool> run(List<String> args) async {
+    if (checkVersionArg(args)) return true;
+
     final parser = createParser();
     ArgResults results;
 
@@ -341,12 +353,19 @@ class RunnerTool extends ToolBase {
   ) async {
     if (verbose) print('Processing: ${p.basename(projectPath)}');
 
+    // Load project-level BuildRunnerConfig from tom_build.yaml
+    var projectConfig = config;
+    final yamlConfig = BuildRunnerConfig.loadFromYaml(projectPath);
+    if (yamlConfig != null) {
+      projectConfig = projectConfig.merge(yamlConfig);
+    }
+
     // Get effective builder filter (4-level precedence)
     final filterConfig = BuilderFilterConfig.getEffective(
       projectPath: projectPath,
       rootPath: rootPath,
-      cliInclude: config.cliIncludeBuilders,
-      cliExclude: config.cliExcludeBuilders,
+      cliInclude: projectConfig.cliIncludeBuilders,
+      cliExclude: projectConfig.cliExcludeBuilders,
     );
 
     // Extract configured builders from build.yaml
@@ -357,14 +376,20 @@ class RunnerTool extends ToolBase {
     List<String> buildersToDisable;
 
     if (filterConfig.includeBuilders.isNotEmpty) {
-      // Include mode: only run specified builders, disable rest
-      buildersToRun = filterConfig.includeBuilders;
+      // Include mode: only run builders matching includes, disable rest
+      buildersToRun = configuredBuilders
+          .where((b) => filterConfig.includeBuilders.any(
+              (include) => b.contains(include) || include.contains(b)))
+          .toList();
       buildersToDisable = configuredBuilders
           .where((b) => !buildersToRun.contains(b))
           .toList();
     } else if (filterConfig.excludeBuilders.isNotEmpty) {
-      // Exclude mode: run all except specified
-      buildersToDisable = filterConfig.excludeBuilders;
+      // Exclude mode: run all except those matching excludes
+      buildersToDisable = configuredBuilders
+          .where((b) => filterConfig.excludeBuilders.any(
+              (exclude) => b.contains(exclude) || exclude.contains(b)))
+          .toList();
       buildersToRun = configuredBuilders
           .where((b) => !buildersToDisable.contains(b))
           .toList();
@@ -385,16 +410,16 @@ class RunnerTool extends ToolBase {
     final dartArgs = [
       'run',
       'build_runner',
-      config.command,
+      projectConfig.command,
     ];
 
-    if (config.deleteConflicting) {
+    if (projectConfig.deleteConflicting) {
       dartArgs.add('--delete-conflicting-outputs');
     }
-    if (config.configName != null) {
-      dartArgs.add('--config=${config.configName}');
+    if (projectConfig.configName != null) {
+      dartArgs.add('--config=${projectConfig.configName}');
     }
-    if (config.release) {
+    if (projectConfig.release) {
       dartArgs.add('--release');
     }
     if (verbose) {
@@ -428,7 +453,7 @@ class RunnerTool extends ToolBase {
     }
 
     if (result.exitCode != 0) {
-      print('  Error: build_runner ${config.command} failed '
+      print('  Error: build_runner ${projectConfig.command} failed '
           '(exit ${result.exitCode})');
       return false;
     }

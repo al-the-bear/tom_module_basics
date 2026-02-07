@@ -1,8 +1,11 @@
 import 'dart:io';
 
 import 'package:args/args.dart';
+import 'package:glob/glob.dart';
 import 'package:tom_build_base/tom_build_base.dart';
 import 'package:yaml/yaml.dart';
+
+import '../version.g.dart';
 
 /// Base class for all integrated build tools.
 ///
@@ -26,6 +29,21 @@ abstract class ToolBase {
   /// Returns true if successful, false otherwise.
   Future<bool> run(List<String> args);
 
+  /// Check if the first argument is a version request.
+  ///
+  /// Supports `version`, `--version`, and `-version` as first argument.
+  /// Returns true if version was printed (caller should return).
+  bool checkVersionArg(List<String> args) {
+    if (args.isNotEmpty) {
+      final first = args.first.toLowerCase();
+      if (first == 'version' || first == '--version' || first == '-version') {
+        print('$toolKey ${TomVersionInfo.versionLong}');
+        return true;
+      }
+    }
+    return false;
+  }
+
   /// Create the argument parser with common options.
   ///
   /// Subclasses override [addToolOptions] to add tool-specific options.
@@ -47,7 +65,9 @@ abstract class ToolBase {
       ..addFlag('list',
           abbr: 'l', negatable: false, help: 'List matching projects')
       ..addFlag('show',
-          negatable: false, help: 'Show configuration for project');
+          negatable: false, help: 'Show configuration for project')
+      ..addFlag('dry-run',
+          abbr: 'n', negatable: false, help: 'Show what would be done');
 
     addToolOptions(parser);
     return parser;
@@ -91,14 +111,19 @@ abstract class ToolBase {
   /// Check if a directory is a project this tool should process.
   bool isToolProject(String dirPath);
 
-  /// Filter projects by exclusion patterns.
+  /// Filter projects by exclusion patterns using glob matching.
   List<String> _filterProjects(
       List<String> projects, List<String> exclude) {
     if (exclude.isEmpty) return projects;
 
     return projects.where((path) {
       for (final pattern in exclude) {
-        if (path.contains(pattern)) return false;
+        try {
+          if (Glob(pattern).matches(path)) return false;
+        } catch (_) {
+          // Fallback to substring match for non-glob patterns
+          if (path.contains(pattern)) return false;
+        }
       }
       return true;
     }).toList();

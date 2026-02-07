@@ -76,8 +76,20 @@ class CleanupConfig {
       final yaml = loadYaml(content) as YamlMap?;
       if (yaml == null) return null;
 
-      final cleanupYaml = yaml['cleanup'] as YamlMap?;
-      if (cleanupYaml == null) return null;
+      final cleanupValue = yaml['cleanup'];
+      if (cleanupValue == null) return null;
+
+      // Handle direct list format: cleanup: [...]
+      if (cleanupValue is YamlList) {
+        final sections = <CleanupSection>[];
+        for (final item in cleanupValue) {
+          sections.add(CleanupSection.fromJson(item));
+        }
+        return CleanupConfig(cleanupSections: sections);
+      }
+
+      // Handle map format: cleanup: { cleanup: [...], excludes: [...], ... }
+      final cleanupYaml = cleanupValue as YamlMap;
 
       // Parse cleanup sections
       final sections = <CleanupSection>[];
@@ -117,16 +129,11 @@ class CleanupConfig {
       final yaml = loadYaml(content) as YamlMap?;
       if (yaml == null) return null;
 
-      // Try both old and new builder keys
-      YamlMap? options;
-      for (final key in [builderKey, 'tom_cleanup_builder:cleanup_builder']) {
-        final targets = yaml['targets'] as YamlMap?;
-        final defaultTarget = targets?[r'$default'] as YamlMap?;
-        final builders = defaultTarget?['builders'] as YamlMap?;
-        final builder = builders?[key] as YamlMap?;
-        options = builder?['options'] as YamlMap?;
-        if (options != null) break;
-      }
+      final targets = yaml['targets'] as YamlMap?;
+      final defaultTarget = targets?[r'$default'] as YamlMap?;
+      final builders = defaultTarget?['builders'] as YamlMap?;
+      final builder = builders?[builderKey] as YamlMap?;
+      final options = builder?['options'] as YamlMap?;
       if (options == null) return null;
 
       final sections = <CleanupSection>[];
@@ -184,8 +191,6 @@ class CleanupTool extends ToolBase {
   @override
   void addToolOptions(ArgParser parser) {
     parser
-      ..addFlag('dry-run',
-          abbr: 'n', negatable: false, help: 'Show what would be deleted')
       ..addFlag('force',
           abbr: 'f',
           negatable: false,
@@ -209,8 +214,7 @@ class CleanupTool extends ToolBase {
     if (!file.existsSync()) return false;
     try {
       final content = file.readAsStringSync();
-      return content.contains('tom_cleanup_builder:cleanup_builder') ||
-          content.contains('tom_build_kit:cleanup_builder');
+      return content.contains('tom_build_kit:cleanup_builder');
     } catch (_) {
       return false;
     }
@@ -218,6 +222,8 @@ class CleanupTool extends ToolBase {
 
   @override
   Future<bool> run(List<String> args) async {
+    if (checkVersionArg(args)) return true;
+
     final parser = createParser();
     ArgResults results;
 

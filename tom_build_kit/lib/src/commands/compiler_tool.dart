@@ -74,16 +74,11 @@ class CompilerConfig {
       final yaml = loadYaml(content) as YamlMap?;
       if (yaml == null) return null;
 
-      // Try both old and new builder keys
-      YamlMap? options;
-      for (final key in [builderKey, 'tom_compiler_builder:compiler_builder']) {
-        final targets = yaml['targets'] as YamlMap?;
-        final defaultTarget = targets?[r'$default'] as YamlMap?;
-        final builders = defaultTarget?['builders'] as YamlMap?;
-        final builder = builders?[key] as YamlMap?;
-        options = builder?['options'] as YamlMap?;
-        if (options != null) break;
-      }
+      final targets = yaml['targets'] as YamlMap?;
+      final defaultTarget = targets?[r'$default'] as YamlMap?;
+      final builders = defaultTarget?['builders'] as YamlMap?;
+      final builder = builders?[builderKey] as YamlMap?;
+      final options = builder?['options'] as YamlMap?;
       if (options == null) return null;
 
       // Parse precompile sections
@@ -163,12 +158,9 @@ class CompilerTool extends ToolBase {
 
   @override
   void addToolOptions(ArgParser parser) {
-    parser
-      ..addFlag('dry-run',
-          abbr: 'n', negatable: false, help: 'Show what would be compiled')
-      ..addOption('targets',
-          abbr: 't',
-          help: 'Target platforms (comma-separated, e.g., linux-x64,darwin-arm64)');
+    parser.addOption('targets',
+        abbr: 't',
+        help: 'Target platforms (comma-separated, e.g., linux-x64,darwin-arm64)');
   }
 
   @override
@@ -179,8 +171,7 @@ class CompilerTool extends ToolBase {
     if (!buildYaml.existsSync()) return false;
     try {
       final content = buildYaml.readAsStringSync();
-      return content.contains('tom_compiler_builder:compiler_builder') ||
-          content.contains('tom_build_kit:compiler_builder');
+      return content.contains('tom_build_kit:compiler_builder');
     } catch (_) {
       return false;
     }
@@ -188,6 +179,8 @@ class CompilerTool extends ToolBase {
 
   @override
   Future<bool> run(List<String> args) async {
+    if (checkVersionArg(args)) return true;
+
     final parser = createParser();
     ArgResults results;
 
@@ -283,8 +276,12 @@ class CompilerTool extends ToolBase {
       String projectPath, CompilerConfig config) async {
     if (verbose) print('Processing: ${p.basename(projectPath)}');
 
-    // Load project-level config
+    // Load project-level config (tom_build.yaml then build.yaml)
     var projectConfig = config;
+    final yamlConfig = CompilerConfig.loadFromYaml(projectPath);
+    if (yamlConfig != null) {
+      projectConfig = projectConfig.merge(yamlConfig);
+    }
     final buildYamlConfig = CompilerConfig.loadFromBuildYaml(projectPath);
     if (buildYamlConfig != null) {
       projectConfig = projectConfig.merge(buildYamlConfig);
@@ -409,7 +406,8 @@ class CompilerTool extends ToolBase {
               PlatformUtils.getTargetOS(currentPlatform))
           .replaceAll(r'${current-arch}',
               PlatformUtils.getTargetArch(currentPlatform))
-          .replaceAll(r'${current-platform}', currentPlatform)
+          .replaceAll(r'${current-platform}',
+              PlatformUtils.vsCodeToDartTarget(currentPlatform))
           .replaceAll(r'${current-platform-vs}', currentPlatform);
 
       // Replace environment variables
@@ -550,10 +548,10 @@ class CompilerTool extends ToolBase {
 
     // Replace $HOME, $USER, etc.
     result = result.replaceAllMapped(
-      RegExp(r'\$([A-Z_][A-Z0-9_]*)'),
+      RegExp(r'\$(\w+)'),
       (match) {
         final varName = match.group(1)!;
-        // Don't replace our own placeholders
+        // Don't replace our own ${placeholder} patterns
         if (varName.startsWith('{')) return match.group(0)!;
         return Platform.environment[varName] ?? match.group(0)!;
       },
@@ -561,7 +559,7 @@ class CompilerTool extends ToolBase {
 
     // Replace [VAR] format
     result = result.replaceAllMapped(
-      RegExp(r'\[([A-Z_][A-Z0-9_]*)\]'),
+      RegExp(r'\[(\w+)\]'),
       (match) {
         final varName = match.group(1)!;
         return Platform.environment[varName] ?? match.group(0)!;
