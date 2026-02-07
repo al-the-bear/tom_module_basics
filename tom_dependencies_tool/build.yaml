@@ -1,8 +1,0 @@
-targets:
-  $default:
-    builders:
-      tom_build_kit:version_builder:
-        enabled: true
-        options:
-          output: lib/src/version.g.dart
-          includeGitCommit: true
