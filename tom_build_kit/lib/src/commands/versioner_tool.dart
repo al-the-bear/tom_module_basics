@@ -430,8 +430,31 @@ $sdkLine
     print('');
     print('Usage: versioner [options]');
     print('       buildkit :versioner [options]');
+    print('       dart run tom_build_kit:versioner [options]');
+    print('       versioner version');
     print('');
     print('Options:');
     print(parser.usage);
+    print('');
+    print('Configuration (tom_build.yaml):');
+    print('  versioner:');
+    print('    output: lib/src/version.g.dart');
+    print('    includeGitCommit: true');
+    print('    version: "1.0.0"  # optional override');
+    print('');
+    print('Configuration (build.yaml):');
+    print('  targets:');
+    print('    \$default:');
+    print('      builders:');
+    print('        tom_build_kit:version_builder:');
+    print('          enabled: true');
+    print('          options:');
+    print('            output: lib/src/version.g.dart');
+    print('            includeGitCommit: true');
+    print('            variablePrefix: myapp');
+    print('');
+    print('Generated file: TomVersionInfo class with version, buildTime,');
+    print('  gitCommit, buildNumber, dartSdkVersion, and convenience getters');
+    print('  (versionShort, versionMedium, versionLong).');
   }
 }

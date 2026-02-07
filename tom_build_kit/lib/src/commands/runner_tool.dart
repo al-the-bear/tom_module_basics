@@ -556,14 +556,29 @@ class RunnerTool extends ToolBase {
     print('');
     print('Usage: runner [options]');
     print('       buildkit :runner [options]');
-    print('');
-    print('Builder filter precedence:');
-    print('  1. CLI --include-builders / --exclude-builders');
-    print('  2. build.yaml (tom_build_kit.build_runner section)');
-    print('  3. Project tom_build.yaml (build_runner section)');
-    print('  4. Root tom_build.yaml (build_runner section)');
+    print('       dart run tom_build_kit:runner [options]');
+    print('       runner version');
     print('');
     print('Options:');
     print(parser.usage);
+    print('');
+    print('Builder filter precedence:');
+    print('  1. CLI --include-builders / --exclude-builders');
+    print('  2. build.yaml (tom_build_kit section)');
+    print('  3. Project tom_build.yaml (build_runner section)');
+    print('  4. Root tom_build.yaml (build_runner section)');
+    print('');
+    print('Configuration (tom_build.yaml):');
+    print('  build_runner:');
+    print('    command: build          # build, watch, or clean');
+    print('    exclude-builders:');
+    print('      - tom_build_kit:compiler_builder');
+    print('');
+    print('Examples:');
+    print('  runner                            # Build in current project');
+    print('  runner -c watch                   # Watch mode');
+    print('  runner -c clean                   # Clean build outputs');
+    print('  runner -i tom_build_kit:version_builder  # Only run versioner');
+    print('  runner -s . -R                    # All projects recursively');
   }
 }

@@ -425,12 +425,29 @@ class DependenciesTool extends ToolBase {
     print('');
     print('Usage: dependencies [options]');
     print('       buildkit :dependencies [options]');
-    print('');
-    print('Legend:');
-    print('  -> normal dependency');
-    print('  +> dev dependency');
+    print('       dart run tom_build_kit:dependencies [options]');
+    print('       dependencies version');
     print('');
     print('Options:');
     print(parser.usage);
+    print('');
+    print('Legend:');
+    print('  ->  normal dependency');
+    print('  +>  dev dependency');
+    print('  [override: ...]  dependency_overrides from pubspec or pubspec_overrides.yaml');
+    print('  (circular)       circular dependency detected in --deep mode');
+    print('');
+    print('Source formats:');
+    print('  ^1.0.0           version constraint');
+    print('  any              no version constraint');
+    print('  path: ../pkg     path dependency');
+    print('  git: url @ref    git dependency with optional ref and path');
+    print('  sdk: flutter     SDK dependency');
+    print('');
+    print('Examples:');
+    print('  dependencies                      # Show normal deps in current project');
+    print('  dependencies --all                # Show all deps (normal + dev)');
+    print('  dependencies --deep               # Recursive dependency tree');
+    print('  dependencies -s . -R              # All projects recursively');
   }
 }

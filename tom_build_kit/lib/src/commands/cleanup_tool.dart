@@ -511,8 +511,34 @@ class CleanupTool extends ToolBase {
     print('');
     print('Usage: cleanup [options]');
     print('       buildkit :cleanup [options]');
+    print('       dart run tom_build_kit:cleanup [options]');
+    print('       cleanup version');
     print('');
     print('Options:');
     print(parser.usage);
+    print('');
+    print('Default targets (when no config is provided):');
+    print('  build, .dart_tool/build, **/*.g.dart, **/*.r.dart, **/*.b.dart');
+    print('');
+    print('Configuration (tom_build.yaml):');
+    print('  cleanup:');
+    print('    - build');
+    print('    - globs: ["**/*.g.dart", "**/*.r.dart"]');
+    print('      excludes: ["**/version.g.dart"]');
+    print('');
+    print('Configuration (build.yaml):');
+    print('  targets:');
+    print('    \$default:');
+    print('      builders:');
+    print('        tom_build_kit:cleanup_builder:');
+    print('          enabled: true');
+    print('          options:');
+    print('            cleanup:');
+    print('              - build');
+    print('              - globs: ["**/*.g.dart"]');
+    print('            excludes: ["**/version.g.dart"]');
+    print('');
+    print('Safety: Aborts if file count exceeds --max-files (default 10).');
+    print('  Use --force to skip the safety check.');
   }
 }

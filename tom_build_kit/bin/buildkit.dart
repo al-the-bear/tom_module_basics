@@ -169,6 +169,21 @@ Future<void> main(List<String> args) async {
     return;
   }
 
+  // Handle: buildkit help :<command>
+  if (results.rest.isNotEmpty && results.rest.first == 'help') {
+    if (results.rest.length >= 2) {
+      final target = results.rest[1];
+      if (target.startsWith(':')) {
+        final cmdName = target.substring(1);
+        final helpResult = await _runCommandHelp(cmdName);
+        exit(helpResult ? 0 : 1);
+      }
+    }
+    // Plain 'buildkit help' → show main usage
+    _printUsage(parser);
+    return;
+  }
+
   // Parse execution steps from remaining args
   final steps = _parseExecutionSteps(results.rest, pipelineConfig);
   if (steps.isEmpty) {
@@ -300,17 +315,19 @@ void _printUsage(ArgParser parser) {
   print('Build Kit - Pipeline-based build orchestration');
   print('');
   print('Usage: buildkit [options] <pipeline|:command> [args...] [<pipeline|:command> [args...]]...');
+  print('       buildkit help :<command>      Show help for a built-in command');
+  print('       buildkit --version            Show version information');
   print('');
   print('Steps can be:');
   print('  <pipeline>        Run a pipeline defined in tom_build.yaml');
-  print('  :<command> [args] Run a tool command directly (versioner, compiler, etc.)');
+  print('  :<command> [args] Run a tool command directly');
   print('');
   print('Built-in commands:');
-  print('  :versioner      Generate version files');
-  print('  :compiler       Compile executables');
-  print('  :runner         Run build_runner');
-  print('  :cleanup        Clean build artifacts');
-  print('  :dependencies   Show dependency tree');
+  print('  :versioner      Generate version.g.dart files with build metadata');
+  print('  :compiler       Cross-platform Dart compilation with pre/post-compile commands');
+  print('  :runner         Build_runner wrapper with builder filtering');
+  print('  :cleanup        Clean generated and temporary files');
+  print('  :dependencies   Dependency tree visualization');
   print('  :pubget         Run dart pub get on projects');
   print('  :pubgetall      Shortcut for :pubget --scan . --recursive');
   print('');
@@ -322,13 +339,18 @@ void _printUsage(ArgParser parser) {
   print('Options:');
   print(parser.usage);
   print('');
+  print('Configuration:');
+  print('  Pipelines are defined in tom_build.yaml under the buildkit: key.');
+  print('  See the project documentation for the full pipeline YAML format.');
+  print('');
   print('Examples:');
   print('  buildkit build                      # Run build pipeline');
   print('  buildkit clean build                # Run clean then build');
   print('  buildkit :versioner :compiler       # Run versioner then compiler');
-  print('  buildkit build :cleanup --all       # Run build, then cleanup with --all');
+  print('  buildkit build :cleanup --force     # Run build, then cleanup with --force');
   print('  buildkit :pubgetall                 # Run pub get on all projects');
   print('  buildkit :pubgetall --errors        # Show only projects with errors');
+  print('  buildkit help :compiler             # Show compiler help');
   print('  buildkit --list                     # List available pipelines');
   print('  buildkit -v build                   # Run build with verbose output');
   print('  buildkit -n deploy                  # Dry-run deploy pipeline');
@@ -488,4 +510,28 @@ void _printStepSeparator(_ExecutionStep step) {
   print('');
   print('________ Running ${step.displayName}');
   print('');
+}
+
+/// Run --help for a built-in command by name.
+Future<bool> _runCommandHelp(String commandName) async {
+  switch (commandName.toLowerCase()) {
+    case 'versioner':
+      return VersionerTool().run(['--help']);
+    case 'compiler':
+      return CompilerTool().run(['--help']);
+    case 'runner':
+      return RunnerTool().run(['--help']);
+    case 'cleanup':
+      return CleanupTool().run(['--help']);
+    case 'dependencies':
+      return DependenciesTool().run(['--help']);
+    case 'pubget' || 'pubgetall':
+      PubGetCommand.printUsage();
+      return true;
+    default:
+      print('Unknown command: $commandName');
+      print('');
+      print('Available commands: versioner, compiler, runner, cleanup, dependencies, pubget');
+      return false;
+  }
 }
