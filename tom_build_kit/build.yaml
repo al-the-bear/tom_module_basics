@@ -74,9 +74,3 @@ targets:
             - commandline:
                 - chmod -R +x $HOME/.tom/bin/${current-platform-vs}/
               platforms: [macos, linux]
-
-# Configuration for the runner tool
-tom_build_kit:
-  build_runner:
-    exclude-builders:
-      - tom_build_kit:compiler_builder

@@ -1,0 +1,5 @@
+# Tom Build Kit configuration
+# Runner tool builder filter configuration
+build_runner:
+  exclude-builders:
+    - tom_build_kit:compiler_builder
