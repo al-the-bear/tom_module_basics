@@ -82,15 +82,33 @@ class Pipeline {
 
 /// Configuration for all pipelines.
 class PipelineConfig {
+  /// Internal (hardcoded) list of allowed binaries.
+  ///
+  /// These are always allowed without any tom_build.yaml configuration.
+  /// The `allowed-binaries` list in tom_build.yaml is additive on top
+  /// of this internal list.
+  static const internalAllowedBinaries = <String>{
+    'astgen',
+    'd4rtgen',
+    'reflector',
+    'reflectiongenerator',
+    'ws_prepper',
+    'ws_analyzer',
+  };
+
   /// All configured pipelines.
   final Map<String, Pipeline> pipelines;
 
   /// Binaries allowed to be executed directly from the command line.
   ///
-  /// These are additive to the built-in commands (versioner, compiler, etc.).
+  /// This is the merged set of [internalAllowedBinaries] plus any
+  /// additional entries from tom_build.yaml `buildkit.allowed-binaries`.
+  /// Additive to the built-in commands (versioner, compiler, etc.).
   /// Binaries not in this list or the built-in list will cause an error
   /// when invoked via `:command` syntax or as pipeline step commands.
   /// Compile configuration `commandline:` entries are NOT restricted.
+  /// The `shell ` prefix in pipeline step configuration also bypasses
+  /// this restriction (any shell command is valid there).
   final Set<String> allowedBinaries;
 
   /// Source of the configuration (for debugging).
@@ -134,8 +152,8 @@ class PipelineConfig {
       }
     }
 
-    // Merge allowed binaries (additive from both levels)
-    final mergedAllowedBinaries = <String>{};
+    // Merge allowed binaries: internal + workspace + project (all additive)
+    final mergedAllowedBinaries = <String>{...internalAllowedBinaries};
     if (workspaceConfig != null) {
       mergedAllowedBinaries.addAll(workspaceConfig.allowedBinaries);
     }
