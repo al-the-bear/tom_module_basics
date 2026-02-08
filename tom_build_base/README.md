@@ -12,13 +12,14 @@ This package provides the common foundation that Tom CLI build tools (like `tom_
 - **Project discovery** — `ProjectDiscovery` for workspace-wide scanning with proper scan-vs-recursive semantics
 - **build.yaml utilities** — Detect builder definitions vs consumers, read options and enabled flags
 - **Path validation** — `isPathContained` and `validatePathContainment` for directory-traversal protection
+- **YAML utilities** — `yamlToMap()` and `yamlListToList()` for converting YAML nodes to plain Dart maps/lists
 - **Result tracking** — `ProcessingResult` for batch success/failure/file counting
 
 ## Installation
 
 ```yaml
 dependencies:
-  tom_build_base: ^1.2.0
+  tom_build_base: ^1.3.0
 ```
 
 ## Included CLI Tool — `show_versions`

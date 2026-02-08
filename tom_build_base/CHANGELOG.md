@@ -1,3 +1,14 @@
+## 1.3.0
+
+### Features
+
+- **`yamlToMap()` utility** — Public function to recursively convert `YamlMap` to plain `Map<String, dynamic>`. Eliminates private YAML-to-Map conversion duplicated across build tools.
+- **`yamlListToList()` utility** — Companion function to recursively convert `YamlList` to plain `List<dynamic>`.
+
+### Internal
+
+- Replaced private `_convertYamlToMap` in `build_config.dart` and `_yamlToMap`/`_yamlListToList` in `build_yaml_utils.dart` with the shared public utilities.
+
 ## 1.2.0
 
 ### Features
