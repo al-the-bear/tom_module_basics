@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:yaml/yaml.dart';
 
+import 'yaml_utils.dart';
+
 /// Configuration loaded from tom_build.yaml for a specific tool.
 /// 
 /// This class provides shared CLI configuration options that are common
@@ -141,9 +143,9 @@ class TomBuildConfig {
     for (final key in yaml.keys) {
       final value = yaml[key];
       if (value is YamlMap) {
-        toolOptions[key.toString()] = _convertYamlToMap(value);
+        toolOptions[key.toString()] = yamlToMap(value);
       } else if (value is YamlList) {
-        toolOptions[key.toString()] = value.toList();
+        toolOptions[key.toString()] = yamlListToList(value);
       } else {
         toolOptions[key.toString()] = value;
       }
@@ -165,21 +167,6 @@ class TomBuildConfig {
       verbose: yaml['verbose'] as bool? ?? false,
       toolOptions: toolOptions,
     );
-  }
-
-  static Map<String, dynamic> _convertYamlToMap(YamlMap yaml) {
-    final result = <String, dynamic>{};
-    for (final key in yaml.keys) {
-      final value = yaml[key];
-      if (value is YamlMap) {
-        result[key.toString()] = _convertYamlToMap(value);
-      } else if (value is YamlList) {
-        result[key.toString()] = value.toList();
-      } else {
-        result[key.toString()] = value;
-      }
-    }
-    return result;
   }
 
   static List<String> _toStringList(dynamic value) {

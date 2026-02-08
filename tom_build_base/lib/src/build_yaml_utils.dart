@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:yaml/yaml.dart';
 
+import 'yaml_utils.dart';
+
 /// Utilities for working with build.yaml files.
 ///
 /// Provides common functionality for detecting builder definitions vs
@@ -108,7 +110,7 @@ Map<String, dynamic>? getBuildYamlBuilderOptions(
     final options = builderConfig['options'] as YamlMap?;
     if (options == null) return null;
 
-    return _yamlToMap(options);
+    return yamlToMap(options);
   } catch (_) {
     return null;
   }
@@ -152,34 +154,4 @@ bool isBuildYamlBuilderEnabled(String dirPath, String builderName) {
   } catch (_) {
     return false;
   }
-}
-
-/// Convert YamlMap to regular Dart Map recursively.
-Map<String, dynamic> _yamlToMap(YamlMap yaml) {
-  final result = <String, dynamic>{};
-  for (final entry in yaml.entries) {
-    final key = entry.key.toString();
-    final value = entry.value;
-    if (value is YamlMap) {
-      result[key] = _yamlToMap(value);
-    } else if (value is YamlList) {
-      result[key] = _yamlListToList(value);
-    } else {
-      result[key] = value;
-    }
-  }
-  return result;
-}
-
-/// Convert YamlList to regular Dart List recursively.
-List<dynamic> _yamlListToList(YamlList yaml) {
-  return yaml.map((item) {
-    if (item is YamlMap) {
-      return _yamlToMap(item);
-    } else if (item is YamlList) {
-      return _yamlListToList(item);
-    } else {
-      return item;
-    }
-  }).toList();
 }
