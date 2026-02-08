@@ -21,12 +21,17 @@ import 'helpers/test_workspace.dart';
 /// then verify that exclusion filters remove expected entries from stdout.
 void main() {
   late TestWorkspace ws;
+  late TestLogger log;
 
   /// Temporary skip files placed during tests (cleaned up in tearDown).
   final tempSkipFiles = <String>[];
 
   setUpAll(() async {
     ws = TestWorkspace();
+    print('');
+    print('╔══════════════════════════════════════════════════════╗');
+    print('║          Exclusion Integration Tests                 ║');
+    print('╚══════════════════════════════════════════════════════╝');
     print('Workspace root:  ${ws.workspaceRoot}');
     print('Buildkit root:   ${ws.buildkitRoot}');
 
@@ -36,11 +41,14 @@ void main() {
   });
 
   setUp(() async {
+    log = TestLogger(ws);
     // Install the exclusion test fixture
     await ws.installFixture('exclusion');
   });
 
   tearDown(() async {
+    log.finish();
+
     // Remove any temporary skip files placed during this test
     for (final skipFilePath in tempSkipFiles) {
       final file = File(skipFilePath);
@@ -65,6 +73,7 @@ void main() {
 
   /// Runs a standalone tool with `--scan . --recursive --list` plus any
   /// additional args. Returns stdout as a String.
+  /// Also captures the output into the test logger.
   Future<String> runToolList(
     String tool, {
     List<String> extraArgs = const [],
@@ -73,6 +82,7 @@ void main() {
       tool,
       ['--scan', '.', '--recursive', '--list', ...extraArgs],
     );
+    log.capture('$tool --list ${extraArgs.join(' ')}'.trim(), result);
     if (result.exitCode != 0) {
       print('STDERR ($tool):\n${result.stderr}');
     }
@@ -97,74 +107,106 @@ void main() {
 
   group('--exclude-projects basename patterns', () {
     test('versioner excludes _build by basename', () async {
+      log.start('EXCL_BN01', 'versioner excludes _build by basename');
       final stdout = await runToolList('versioner',
           extraArgs: ['--exclude-projects', '_build']);
       final projects = parseListOutput(stdout);
+      final excluded = !projects.contains('_build');
+      log.expectation('_build absent from list', excluded);
       expect(projects, isNot(contains('_build')),
           reason: '_build should be excluded by --exclude-projects');
       // Should still have other versioner projects
+      final hasOthers = projects.isNotEmpty;
+      log.expectation('other projects remain (found ${projects.length})', hasOthers);
       expect(projects.isNotEmpty, isTrue,
           reason: 'Other versioner projects should remain');
     });
 
     test('cleanup excludes _build by basename', () async {
+      log.start('EXCL_BN02', 'cleanup excludes _build by basename');
       final stdout = await runToolList('cleanup',
           extraArgs: ['--exclude-projects', '_build']);
       final projects = parseListOutput(stdout);
+      final excluded = !projects.contains('_build');
+      log.expectation('_build absent from list', excluded);
       expect(projects, isNot(contains('_build')));
+      log.expectation('other projects remain (found ${projects.length})', projects.isNotEmpty);
       expect(projects.isNotEmpty, isTrue);
     });
 
     test('compiler excludes _build by basename', () async {
+      log.start('EXCL_BN03', 'compiler excludes _build by basename');
       final stdout = await runToolList('compiler',
           extraArgs: ['--exclude-projects', '_build']);
       final projects = parseListOutput(stdout);
+      final excluded = !projects.contains('_build');
+      log.expectation('_build absent from list', excluded);
       expect(projects, isNot(contains('_build')));
+      log.expectation('other projects remain (found ${projects.length})', projects.isNotEmpty);
       expect(projects.isNotEmpty, isTrue);
     });
 
     test('dependencies excludes _build by basename', () async {
+      log.start('EXCL_BN04', 'dependencies excludes _build by basename');
       final stdout = await runToolList('dependencies',
           extraArgs: ['--exclude-projects', '_build']);
       final projects = parseListOutput(stdout);
+      final excluded = !projects.contains('_build');
+      log.expectation('_build absent from list', excluded);
       expect(projects, isNot(contains('_build')));
+      log.expectation('other projects remain (found ${projects.length})', projects.isNotEmpty);
       expect(projects.isNotEmpty, isTrue);
     });
 
     test('runner excludes devops/tom_build_cli by basename', () async {
+      log.start('EXCL_BN05', 'runner excludes tom_build_cli by basename');
       final stdout = await runToolList('runner',
           extraArgs: ['--exclude-projects', 'tom_build_cli']);
       final projects = parseListOutput(stdout);
       // No project should match basename tom_build_cli
+      bool allExcluded = true;
       for (final proj in projects) {
+        if (p.basename(proj) == 'tom_build_cli') allExcluded = false;
         expect(p.basename(proj), isNot(equals('tom_build_cli')),
             reason: 'tom_build_cli should be excluded');
       }
+      log.expectation('no tom_build_cli basename in list', allExcluded);
+      log.expectation('other projects remain (found ${projects.length})', projects.isNotEmpty);
       expect(projects.isNotEmpty, isTrue);
     });
 
     // BUG: VersionBump has a -v abbreviation conflict (issues.md #13)
     // that prevents the tool from starting. Test documents the crash.
     test('versionbump crashes due to -v conflict (known bug #13)', () async {
+      log.start('EXCL_BN06', 'versionbump crashes due to -v conflict (bug #13)');
       final result = await ws.runTool(
         'versionbump',
         ['--scan', '.', '--recursive', '--list',
          '--exclude-projects', '_build'],
       );
+      log.capture('versionbump --list --exclude-projects _build', result);
       // BUG: Tool crashes before processing any args
+      final crashed = result.exitCode == 255;
+      log.expectation('exit code 255 (crash)', crashed);
       expect(result.exitCode, 255,
           reason: 'BUG #13: versionbump crashes due to -v abbreviation conflict');
+      final hasMsg = (result.stderr as String).contains('Abbreviation "v" is already used');
+      log.expectation('stderr contains abbreviation error', hasMsg);
       expect(result.stderr as String, contains('Abbreviation "v" is already used'));
     });
 
     test('glob pattern excludes multiple projects', () async {
+      log.start('EXCL_BN07', 'glob pattern excludes multiple tom_core_* projects');
       final stdout = await runToolList('dependencies',
           extraArgs: ['--exclude-projects', 'tom_core_*']);
       final projects = parseListOutput(stdout);
+      bool allExcluded = true;
       for (final proj in projects) {
+        if (p.basename(proj).startsWith('tom_core_')) allExcluded = false;
         expect(p.basename(proj), isNot(startsWith('tom_core_')),
             reason: 'All tom_core_* projects should be excluded');
       }
+      log.expectation('no tom_core_* basenames in list', allExcluded);
     });
   });
 
@@ -174,37 +216,51 @@ void main() {
 
   group('--exclude-projects path patterns', () {
     test('path pattern excludes core/* projects', () async {
+      log.start('EXCL_PP01', 'path pattern excludes core/* projects');
       final stdout = await runToolList('dependencies',
           extraArgs: ['--exclude-projects', 'core/*']);
       final projects = parseListOutput(stdout);
+      bool allExcluded = true;
       for (final proj in projects) {
+        if (proj.startsWith('core/')) allExcluded = false;
         expect(proj, isNot(startsWith('core/')),
             reason: 'All core/ projects should be excluded by path pattern');
       }
+      log.expectation('no core/ projects in list', allExcluded);
+      log.expectation('other projects remain (found ${projects.length})', projects.isNotEmpty);
       expect(projects.isNotEmpty, isTrue);
     });
 
     test('path pattern excludes devops/** from runner', () async {
+      log.start('EXCL_PP02', 'path pattern excludes devops/** from runner');
       final stdout = await runToolList('runner',
           extraArgs: ['--exclude-projects', 'devops/**']);
       final projects = parseListOutput(stdout);
+      bool allExcluded = true;
       for (final proj in projects) {
+        if (proj.startsWith('devops/')) allExcluded = false;
         expect(proj, isNot(startsWith('devops/')),
             reason: 'devops/ projects should be excluded');
       }
+      log.expectation('no devops/ projects in list', allExcluded);
     });
 
     test('** glob matches nested paths in dependencies', () async {
+      log.start('EXCL_PP03', '** glob matches nested paths');
       final stdout = await runToolList('dependencies',
           extraArgs: ['--exclude-projects', '**/tom_core_*']);
       final projects = parseListOutput(stdout);
+      bool allExcluded = true;
       for (final proj in projects) {
+        if (p.basename(proj).startsWith('tom_core_')) allExcluded = false;
         expect(p.basename(proj), isNot(startsWith('tom_core_')),
             reason: '** pattern should match tom_core_* at any depth');
       }
+      log.expectation('no tom_core_* at any depth', allExcluded);
     });
 
     test('combined basename + path patterns', () async {
+      log.start('EXCL_PP04', 'combined basename + path patterns');
       final stdout = await runToolList(
         'dependencies',
         extraArgs: [
@@ -213,12 +269,18 @@ void main() {
         ],
       );
       final projects = parseListOutput(stdout);
+      final buildExcluded = !projects.contains('_build');
+      log.expectation('_build excluded by basename', buildExcluded);
       expect(projects, isNot(contains('_build')),
           reason: '_build excluded by basename');
+      bool coreExcluded = true;
       for (final proj in projects) {
+        if (proj.startsWith('core/')) coreExcluded = false;
         expect(proj, isNot(startsWith('core/')),
             reason: 'core/* excluded by path');
       }
+      log.expectation('no core/ projects (path pattern)', coreExcluded);
+      log.expectation('other projects remain (found ${projects.length})', projects.isNotEmpty);
       expect(projects.isNotEmpty, isTrue);
     });
   });
@@ -229,81 +291,108 @@ void main() {
 
   group('tom_build_skip.yaml marker file', () {
     test('skip file excludes project from versioner', () async {
+      log.start('EXCL_SF01', 'skip file excludes project from versioner');
       // Place a temporary skip file in _build
       tempSkipFiles.add(ws.placeSkipFile('_build'));
 
       final stdout = await runToolList('versioner');
       final projects = parseListOutput(stdout);
+      final excluded = !projects.contains('_build');
+      log.expectation('_build with skip file absent from list', excluded);
       expect(projects, isNot(contains('_build')),
           reason: '_build with skip file should be excluded');
     });
 
     test('skip file excludes project from cleanup', () async {
+      log.start('EXCL_SF02', 'skip file excludes project from cleanup');
       tempSkipFiles.add(ws.placeSkipFile('_build'));
 
       final stdout = await runToolList('cleanup');
       final projects = parseListOutput(stdout);
+      final excluded = !projects.contains('_build');
+      log.expectation('_build with skip file absent from list', excluded);
       expect(projects, isNot(contains('_build')));
     });
 
     test('skip file excludes project from compiler', () async {
+      log.start('EXCL_SF03', 'skip file excludes project from compiler');
       tempSkipFiles.add(ws.placeSkipFile('_build'));
 
       final stdout = await runToolList('compiler');
       final projects = parseListOutput(stdout);
+      final excluded = !projects.contains('_build');
+      log.expectation('_build with skip file absent from list', excluded);
       expect(projects, isNot(contains('_build')));
     });
 
     test('skip file excludes project from dependencies', () async {
+      log.start('EXCL_SF04', 'skip file excludes project from dependencies');
       tempSkipFiles.add(ws.placeSkipFile('_build'));
 
       final stdout = await runToolList('dependencies');
       final projects = parseListOutput(stdout);
+      final excluded = !projects.contains('_build');
+      log.expectation('_build with skip file absent from list', excluded);
       expect(projects, isNot(contains('_build')));
     });
 
     test('skip file excludes project from runner', () async {
+      log.start('EXCL_SF05', 'skip file excludes project from runner');
       // Place skip file in a project that has build.yaml
       tempSkipFiles.add(ws.placeSkipFile('devops/tom_build_cli'));
 
       final stdout = await runToolList('runner');
       final projects = parseListOutput(stdout);
+      bool allExcluded = true;
       for (final proj in projects) {
+        if (proj == 'devops/tom_build_cli') allExcluded = false;
         expect(proj, isNot(equals('devops/tom_build_cli')),
             reason: 'tom_build_cli with skip file should be excluded');
       }
+      log.expectation('devops/tom_build_cli absent from list', allExcluded);
     });
 
     // BUG: VersionBump -v abbreviation conflict (issues.md #13)
     test('versionbump skip file crashes due to -v conflict (known bug #13)',
         () async {
+      log.start('EXCL_SF06', 'versionbump skip file crashes (bug #13)');
       tempSkipFiles.add(ws.placeSkipFile('_build'));
 
       final result = await ws.runTool(
         'versionbump',
         ['--scan', '.', '--recursive', '--list'],
       );
+      log.capture('versionbump --list (skip file in _build)', result);
+      final crashed = result.exitCode == 255;
+      log.expectation('exit code 255 (crash)', crashed);
       expect(result.exitCode, 255,
           reason: 'BUG #13: versionbump crashes due to -v abbreviation conflict');
     });
 
     test('skip file in parent excludes all children', () async {
+      log.start('EXCL_SF07', 'skip file in parent excludes all children');
       // Place skip file in core/ — should exclude core/tom_core_kernel, etc.
       tempSkipFiles.add(ws.placeSkipFile('core'));
 
       final stdout = await runToolList('dependencies');
       final projects = parseListOutput(stdout);
+      bool allExcluded = true;
       for (final proj in projects) {
+        if (proj.startsWith('core/')) allExcluded = false;
         expect(proj, isNot(startsWith('core/')),
             reason: 'All core/ children should be excluded by parent skip file');
       }
+      log.expectation('no core/ children in list', allExcluded);
     });
 
     test('skip file is cleaned up in tearDown', () async {
+      log.start('EXCL_SF08', 'skip file cleanup in tearDown');
       // This test verifies our own cleanup mechanism
       final skipPath = ws.placeSkipFile('_build');
       tempSkipFiles.add(skipPath);
 
+      final exists = File(skipPath).existsSync();
+      log.expectation('skip file exists after placement', exists);
       expect(File(skipPath).existsSync(), isTrue,
           reason: 'Skip file should exist after placement');
 
@@ -317,6 +406,7 @@ void main() {
 
   group('buildkit --exclude-projects', () {
     test('buildkit excludes _build by basename', () async {
+      log.start('EXCL_BK01', 'buildkit excludes _build by basename');
       // buildkit runs per-project, so we verify _build never appears
       // in the output when excluded. Use --scan with a small scope.
       final result = await ws.runTool(
@@ -327,14 +417,18 @@ void main() {
           ':versioner', '--list',
         ],
       );
+      log.capture('buildkit --verbose --exclude-projects _build :versioner --list', result);
       final stdout = result.stdout as String;
       // In verbose mode, buildkit lists discovered projects with "  - "
       // The excluded project should never appear
+      final excluded = !stdout.contains('/_build');
+      log.expectation('/_build not in verbose output', excluded);
       expect(stdout, isNot(contains('/_build')),
           reason: '_build should not appear when excluded by basename');
     });
 
     test('buildkit excludes by path pattern', () async {
+      log.start('EXCL_BK02', 'buildkit excludes by path pattern');
       final result = await ws.runTool(
         'buildkit',
         [
@@ -343,13 +437,17 @@ void main() {
           ':versioner', '--list',
         ],
       );
+      log.capture('buildkit --verbose --exclude-projects core/* :versioner --list', result);
       final stdout = result.stdout as String;
       // core/ projects should not appear
+      final excluded = !stdout.contains('/core/tom_core_');
+      log.expectation('/core/tom_core_ not in verbose output', excluded);
       expect(stdout, isNot(contains('/core/tom_core_')),
           reason: 'core/ projects should not appear when excluded by path');
     });
 
     test('buildkit respects tom_build_skip.yaml', () async {
+      log.start('EXCL_BK03', 'buildkit respects tom_build_skip.yaml');
       tempSkipFiles.add(ws.placeSkipFile('_build'));
 
       final result = await ws.runTool(
@@ -359,6 +457,7 @@ void main() {
           ':versioner', '--list',
         ],
       );
+      log.capture('buildkit --verbose :versioner --list (skip file in _build)', result);
       final stdout = result.stdout as String;
       // Verbose mode lists discovered projects with "  - <relative-path>"
       // The skip message itself will contain the project name, so we check
@@ -369,13 +468,20 @@ void main() {
           .map((line) => line.substring(4)) // strip "  - " prefix
           .toList();
       // Check that no project IS _build or ENDS with /_build
+      bool allExcluded = true;
       for (final projPath in projectLines) {
+        if (projPath == '_build' || projPath.endsWith('/_build')) {
+          allExcluded = false;
+        }
         expect(projPath == '_build' || projPath.endsWith('/_build'), isFalse,
             reason:
                 '_build with skip file should not appear in project listing '
                 '(found: $projPath)');
       }
+      log.expectation('_build not in project listing lines', allExcluded);
       // Verify the skip message IS present (proves the feature is active)
+      final hasSkipMsg = stdout.contains('Skipping (tom_build_skip.yaml)');
+      log.expectation('skip message present in output', hasSkipMsg);
       expect(stdout, contains('Skipping (tom_build_skip.yaml)'),
           reason: 'Should log skip message for _build in verbose mode');
     });
@@ -387,6 +493,7 @@ void main() {
 
   group('master YAML exclude-projects', () {
     test('master YAML exclude-projects filters projects', () async {
+      log.start('EXCL_MY01', 'master YAML basename exclude-projects');
       // Write a custom fixture with exclude-projects in navigation
       final masterPath =
           p.join(ws.workspaceRoot, 'tom_build_master.yaml');
@@ -408,12 +515,16 @@ versioner:
 
       final stdout = await runToolList('dependencies');
       final projects = parseListOutput(stdout);
+      final excluded = !projects.contains('_build');
+      log.expectation('_build excluded by master YAML', excluded);
       expect(projects, isNot(contains('_build')),
           reason: '_build should be excluded by master YAML exclude-projects');
+      log.expectation('other projects remain (found ${projects.length})', projects.isNotEmpty);
       expect(projects.isNotEmpty, isTrue);
     });
 
     test('master YAML path pattern exclude-projects', () async {
+      log.start('EXCL_MY02', 'master YAML path pattern exclude-projects');
       final masterPath =
           p.join(ws.workspaceRoot, 'tom_build_master.yaml');
       File(masterPath).writeAsStringSync('''
@@ -434,10 +545,13 @@ versioner:
 
       final stdout = await runToolList('dependencies');
       final projects = parseListOutput(stdout);
+      bool allExcluded = true;
       for (final proj in projects) {
+        if (proj.startsWith('core/')) allExcluded = false;
         expect(proj, isNot(startsWith('core/')),
             reason: 'core/ excluded by master YAML path pattern');
       }
+      log.expectation('no core/ projects (master YAML path pattern)', allExcluded);
     });
   });
 
@@ -447,24 +561,33 @@ versioner:
 
   group('baseline (no exclusion)', () {
     test('versioner finds _build without exclusions', () async {
+      log.start('EXCL_BL01', 'versioner finds _build without exclusions');
       final stdout = await runToolList('versioner');
       final projects = parseListOutput(stdout);
+      final found = projects.contains('_build');
+      log.expectation('_build present in list', found);
       expect(projects, contains('_build'),
           reason: '_build should be found when no exclusions applied');
     });
 
     test('dependencies finds core projects without exclusions', () async {
+      log.start('EXCL_BL02', 'dependencies finds core projects without exclusions');
       final stdout = await runToolList('dependencies');
       final projects = parseListOutput(stdout);
       final coreProjects =
           projects.where((p) => p.startsWith('core/')).toList();
+      final found = coreProjects.isNotEmpty;
+      log.expectation('core/ projects found (${coreProjects.length})', found);
       expect(coreProjects, isNotEmpty,
           reason: 'core/ projects should be found when no exclusions applied');
     });
 
     test('runner finds projects without exclusions', () async {
+      log.start('EXCL_BL03', 'runner finds projects without exclusions');
       final stdout = await runToolList('runner');
       final projects = parseListOutput(stdout);
+      final found = projects.isNotEmpty;
+      log.expectation('projects found (${projects.length})', found);
       expect(projects.isNotEmpty, isTrue,
           reason: 'Runner should find projects with build.yaml');
     });

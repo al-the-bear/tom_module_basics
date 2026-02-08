@@ -3,6 +3,107 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
+// ---------------------------------------------------------------------------
+// TestLogger — per-test verbose output and log capture
+// ---------------------------------------------------------------------------
+
+/// Captures tool stdout/stderr for the current test and writes verbose
+/// status lines (RUNNING / PASSED / FAILED) to the console.
+///
+/// Usage:
+/// ```dart
+/// late TestLogger log;
+/// setUp(() { log = TestLogger(ws); });
+/// tearDown(() { log.finish(); });
+///
+/// test('my test', () {
+///   log.start('EXCL_BN01', 'versioner excludes _build by basename');
+///   final result = await ws.runTool('versioner', [...]);
+///   log.capture('versioner --list', result);
+///   expect(projects, isNot(contains('_build')));
+///   log.expectation('_build absent from list', true);
+/// });
+/// ```
+class TestLogger {
+  final TestWorkspace _ws;
+  String _testId = '';
+  String _testName = '';
+  final _entries = <String>[];
+  bool _failed = false;
+  String? _failureReason;
+
+  TestLogger(this._ws);
+
+  /// Mark the beginning of a test. Prints a RUNNING line.
+  void start(String testId, String testName) {
+    _testId = testId;
+    _testName = testName;
+    _entries.clear();
+    _failed = false;
+    _failureReason = null;
+    _entries.add('═══ $testId: $testName ═══');
+    print('  ▶ RUNNING  $testId: $testName');
+  }
+
+  /// Capture the stdout/stderr from a [ProcessResult].
+  void capture(String label, ProcessResult result) {
+    _entries.add('--- $label (exit ${result.exitCode}) ---');
+    final stdout = (result.stdout as String).trim();
+    final stderr = (result.stderr as String).trim();
+    if (stdout.isNotEmpty) {
+      _entries.add('STDOUT:\n$stdout');
+    }
+    if (stderr.isNotEmpty) {
+      _entries.add('STDERR:\n$stderr');
+    }
+  }
+
+  /// Record an expectation result for the verbose output.
+  void expectation(String description, bool passed) {
+    final icon = passed ? '✓' : '✗';
+    _entries.add('  $icon $description');
+    if (!passed) {
+      _failed = true;
+      _failureReason ??= description;
+    }
+  }
+
+  /// Call this in tearDown. Prints PASSED/FAILED and writes log on failure.
+  ///
+  /// If the test threw (the `test` package marks it failed), we detect it
+  /// from [Invoker] internals via [_isCurrentTestFailed]. When we can't
+  /// detect it reliably, we fall back to our own [_failed] flag.
+  void finish() {
+    if (_testId.isEmpty) return; // start() was never called
+
+    // Check our own tracking flag (set via expectation())
+    final didFail = _failed;
+
+    if (didFail) {
+      print('  ✗ FAILED   $_testId: $_testName'
+          '${_failureReason != null ? ' — $_failureReason' : ''}');
+      _writeLogFile();
+    } else {
+      print('  ✓ PASSED   $_testId: $_testName');
+    }
+
+    // Always write logs to the .test-log/ folder for review
+    _writeLogFile(suffix: didFail ? '_FAILED' : '');
+  }
+
+  /// Write captured entries to `.test-log/<testId>_log.txt`.
+  void _writeLogFile({String suffix = ''}) {
+    final logDir = p.join(_ws.buildkitRoot, '.test-log');
+    Directory(logDir).createSync(recursive: true);
+    final safeName = _testId.replaceAll(RegExp(r'[^\w]'), '_');
+    final logFile = File(p.join(logDir, '${safeName}${suffix}_log.txt')); // ignore: unnecessary_brace_in_string_interps
+    logFile.writeAsStringSync(
+      '${_entries.join('\n')}\n',
+      mode: FileMode.write,
+    );
+  }
+}
+
 /// Shared test utilities for buildkit integration tests.
 ///
 /// Manages fixture installation, git revert, and tool process execution

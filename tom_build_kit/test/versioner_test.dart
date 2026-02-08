@@ -18,6 +18,7 @@ import 'helpers/test_workspace.dart';
 ///   it won't break the tool under test
 void main() {
   late TestWorkspace ws;
+  late TestLogger log;
 
   /// Absolute path to the _build project (target for versioner tests).
   late String targetProject;
@@ -29,6 +30,10 @@ void main() {
     ws = TestWorkspace();
     targetProject = p.join(ws.workspaceRoot, '_build');
     versionFileRelative = '_build/lib/src/version.g.dart';
+    print('');
+    print('╔══════════════════════════════════════════════════════╗');
+    print('║          Versioner Integration Tests                 ║');
+    print('╚══════════════════════════════════════════════════════╝');
     print('Workspace root:  ${ws.workspaceRoot}');
     print('Buildkit root:   ${ws.buildkitRoot}');
     print('Target project:  $targetProject');
@@ -38,7 +43,12 @@ void main() {
     await ws.saveHeadRefs();
   });
 
+  setUp(() {
+    log = TestLogger(ws);
+  });
+
   tearDown(() async {
+    log.finish();
     // Revert all changes in the main repo (tom_build_master.yaml,
     // _build/lib/src/version.g.dart, _build/tom_build_state.json)
     await ws.revertAll();
@@ -51,19 +61,21 @@ void main() {
 
   group('versioner', () {
     test('--project generates version.g.dart with correct prefix', () async {
+      log.start('VER_GEN01', '--project generates version.g.dart with correct prefix');
       await ws.installFixture('versioner');
 
       final result = await ws.runTool(
         'versioner',
         ['--project', targetProject],
       );
+      log.capture('versioner --project _build', result);
 
-      print('STDOUT:\n${result.stdout}');
-      if ((result.stderr as String).isNotEmpty) {
-        print('STDERR:\n${result.stderr}');
-      }
-
+      final exitOk = result.exitCode == 0;
+      log.expectation('exit code 0', exitOk);
       expect(result.exitCode, 0, reason: 'versioner should exit with 0');
+
+      final hasMsg = (result.stdout as String).contains('Version file generated');
+      log.expectation('stdout contains "Version file generated"', hasMsg);
       expect(
         result.stdout as String,
         contains('Version file generated'),
@@ -72,12 +84,16 @@ void main() {
 
       // The generated file should exist
       final versionFile = File(p.join(ws.workspaceRoot, versionFileRelative));
+      final fileExists = versionFile.existsSync();
+      log.expectation('version.g.dart exists', fileExists);
       expect(versionFile.existsSync(), isTrue);
 
       final content = versionFile.readAsStringSync();
 
       // _build/tom_build.yaml has variable-prefix: tomTools
       // → class name should be TomToolsVersionInfo
+      final hasClass = content.contains('class TomToolsVersionInfo');
+      log.expectation('class name TomToolsVersionInfo', hasClass);
       expect(
         content,
         contains('class TomToolsVersionInfo'),
@@ -86,18 +102,24 @@ void main() {
       );
 
       // Should contain version from pubspec.yaml
+      final hasVersion = content.contains("static const String version = '1.0.0'");
+      log.expectation("version = '1.0.0'", hasVersion);
       expect(content, contains("static const String version = '1.0.0'"));
 
       // Should contain GENERATED header
+      log.expectation('GENERATED header', content.contains('GENERATED FILE - DO NOT EDIT'));
       expect(content, contains('GENERATED FILE - DO NOT EDIT'));
 
       // Should contain git commit
+      log.expectation('gitCommit field', content.contains('static const String gitCommit'));
       expect(content, contains('static const String gitCommit'));
 
       // Should contain build number
+      log.expectation('buildNumber field', content.contains('static const int buildNumber'));
       expect(content, contains('static const int buildNumber'));
 
       // Should contain Dart SDK version
+      log.expectation('dartSdkVersion field', content.contains('static const String dartSdkVersion'));
       expect(content, contains('static const String dartSdkVersion'));
     });
 
@@ -108,18 +130,16 @@ void main() {
     // TODO: Fix merge order in versioner_tool.dart generateVersionFile()
     test('--project --no-git currently does NOT omit git commit (merge bug)',
         () async {
+      log.start('VER_GIT01', '--no-git override by project config (bug #12)');
       await ws.installFixture('versioner');
 
       final result = await ws.runTool(
         'versioner',
         ['--project', targetProject, '--no-git'],
       );
+      log.capture('versioner --project _build --no-git', result);
 
-      print('STDOUT:\n${result.stdout}');
-      if ((result.stderr as String).isNotEmpty) {
-        print('STDERR:\n${result.stderr}');
-      }
-
+      log.expectation('exit code 0', result.exitCode == 0);
       expect(result.exitCode, 0);
 
       final content =
@@ -127,6 +147,8 @@ void main() {
 
       // BUG: project YAML includeGitCommit:true overrides CLI --no-git
       // When fixed, this should use isNot(contains(...)).
+      final hasBug = content.contains('static const String gitCommit');
+      log.expectation('BUG: gitCommit still present (project overrides CLI)', hasBug);
       expect(
         content,
         contains('static const String gitCommit'),
@@ -134,52 +156,67 @@ void main() {
       );
 
       // Version and build number should always be present
+      log.expectation('version field present', content.contains('static const String version'));
       expect(content, contains('static const String version'));
+      log.expectation('buildNumber field present', content.contains('static const int buildNumber'));
       expect(content, contains('static const int buildNumber'));
     });
 
     test('--list shows _build as a versioner project', () async {
+      log.start('VER_LST01', '--list shows _build as a versioner project');
       await ws.installFixture('versioner');
 
       final result = await ws.runTool(
         'versioner',
         ['--project', targetProject, '--list'],
       );
+      log.capture('versioner --project _build --list', result);
 
-      print('STDOUT:\n${result.stdout}');
+      log.expectation('exit code 0', result.exitCode == 0);
       expect(result.exitCode, 0);
+      final hasBuild = (result.stdout as String).contains('_build');
+      log.expectation('_build in output', hasBuild);
       expect(result.stdout as String, contains('_build'));
     });
 
     test('--show displays versioner config from tom_build.yaml', () async {
+      log.start('VER_SHW01', '--show displays versioner config');
       await ws.installFixture('versioner');
 
       final result = await ws.runTool(
         'versioner',
         ['--project', targetProject, '--show'],
       );
+      log.capture('versioner --project _build --show', result);
 
-      print('STDOUT:\n${result.stdout}');
+      log.expectation('exit code 0', result.exitCode == 0);
       expect(result.exitCode, 0);
 
       final stdout = result.stdout as String;
+      log.expectation('contains variable-prefix', stdout.contains('variable-prefix'));
       expect(stdout, contains('variable-prefix'));
+      log.expectation('contains tomTools', stdout.contains('tomTools'));
       expect(stdout, contains('tomTools'));
     });
 
     test('--version overrides pubspec version', () async {
+      log.start('VER_OVR01', '--version overrides pubspec version');
       await ws.installFixture('versioner');
 
       final result = await ws.runTool(
         'versioner',
         ['--project', targetProject, '--version', '9.9.9'],
       );
+      log.capture('versioner --project _build --version 9.9.9', result);
 
+      log.expectation('exit code 0', result.exitCode == 0);
       expect(result.exitCode, 0);
 
       final content =
           File(p.join(ws.workspaceRoot, versionFileRelative)).readAsStringSync();
 
+      final hasOverride = content.contains("static const String version = '9.9.9'");
+      log.expectation("version = '9.9.9'", hasOverride);
       expect(
         content,
         contains("static const String version = '9.9.9'"),
@@ -192,13 +229,16 @@ void main() {
     // TODO: Fix merge order in versioner_tool.dart generateVersionFile()
     test('--variable-prefix currently does NOT override project config (merge bug)',
         () async {
+      log.start('VER_PFX01', '--variable-prefix override by project config (bug #12)');
       await ws.installFixture('versioner');
 
       final result = await ws.runTool(
         'versioner',
         ['--project', targetProject, '--variable-prefix', 'myCustom'],
       );
+      log.capture('versioner --project _build --variable-prefix myCustom', result);
 
+      log.expectation('exit code 0', result.exitCode == 0);
       expect(result.exitCode, 0);
 
       final content =
@@ -206,6 +246,8 @@ void main() {
 
       // BUG: project config prefix "tomTools" overrides CLI "myCustom"
       // When fixed, this should expect 'class MyCustomVersionInfo'.
+      final hasBug = content.contains('class TomToolsVersionInfo');
+      log.expectation('BUG: class still TomToolsVersionInfo (project overrides CLI)', hasBug);
       expect(
         content,
         contains('class TomToolsVersionInfo'),
@@ -214,20 +256,24 @@ void main() {
     });
 
     test('build number increments on each run', () async {
+      log.start('VER_BLD01', 'build number increments on each run');
       await ws.installFixture('versioner');
 
       // First run
-      await ws.runTool('versioner', ['--project', targetProject]);
+      final result1 = await ws.runTool('versioner', ['--project', targetProject]);
+      log.capture('versioner --project _build (run 1)', result1);
       final content1 =
           File(p.join(ws.workspaceRoot, versionFileRelative)).readAsStringSync();
       final buildNum1 = _extractBuildNumber(content1);
 
       // Second run
-      await ws.runTool('versioner', ['--project', targetProject]);
+      final result2 = await ws.runTool('versioner', ['--project', targetProject]);
+      log.capture('versioner --project _build (run 2)', result2);
       final content2 =
           File(p.join(ws.workspaceRoot, versionFileRelative)).readAsStringSync();
       final buildNum2 = _extractBuildNumber(content2);
 
+      log.expectation('build# run1=$buildNum1, run2=$buildNum2, diff=${buildNum2 - buildNum1}', buildNum2 == buildNum1 + 1);
       expect(buildNum2, buildNum1 + 1,
           reason: 'Build number should increment on each run');
     });
