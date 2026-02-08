@@ -191,21 +191,44 @@ class TestWorkspace {
   ///
   /// Call this in `setUpAll` before running any integration tests.
   /// Excludes submodule pointer changes in the main repo.
+  ///
+  /// All diagnostic info is embedded in the `fail()` message so it is
+  /// visible regardless of which test reporter is active (expanded, compact,
+  /// JSON, VS Code Test Explorer, etc.).
   Future<void> requireCleanWorkspace() async {
     print('    🔍 Checking workspace cleanliness...');
     final dirty = await hasUncommittedChanges();
     if (dirty.isNotEmpty) {
-      print('    ⚠️  Workspace has uncommitted changes:');
-      for (final f in dirty) {
-        print('       $f');
-      }
-      fail(
-        'Workspace must be clean before running integration tests. '
-        'Commit or stash all changes first. '
-        'See _copilot_guidelines/testing.md for the pre-test safety protocol.',
-      );
+      final fileList = dirty.map((f) => '  $f').join('\n');
+      final message = '\n'
+          '╔══════════════════════════════════════════════════════╗\n'
+          '║  WORKSPACE IS DIRTY — TESTS CANNOT RUN              ║\n'
+          '╠══════════════════════════════════════════════════════╣\n'
+          '║  Uncommitted changes detected:                      ║\n'
+          '╚══════════════════════════════════════════════════════╝\n'
+          '$fileList\n'
+          '\n'
+          'Integration tests require a clean workspace to guarantee\n'
+          'safe revert after each test. Commit or stash all changes\n'
+          'before running tests.\n';
+
+      // Also write to log file for persistent debugging
+      _writeInfraLog('workspace_dirty', message);
+
+      fail(message);
     }
     print('    ✓ Workspace is clean');
+  }
+
+  /// Write an infrastructure diagnostic message to `.test-log/`.
+  void _writeInfraLog(String name, String content) {
+    final logDir = p.join(buildkitRoot, '.test-log');
+    Directory(logDir).createSync(recursive: true);
+    final logFile = File(p.join(logDir, '${name}_log.txt'));
+    logFile.writeAsStringSync(
+      '${DateTime.now().toIso8601String()}\n$content\n',
+      mode: FileMode.write,
+    );
   }
 
   /// Save HEAD SHA for the main repo and all submodules.
@@ -264,10 +287,21 @@ class TestWorkspace {
     }
 
     if (mismatches.isNotEmpty) {
-      fail(
-        'HEAD refs changed during test run (possible leaked commits):\n'
-        '  ${mismatches.join('\n  ')}',
-      );
+      final mismatchList = mismatches.map((m) => '  $m').join('\n');
+      final message = '\n'
+          '╔══════════════════════════════════════════════════════╗\n'
+          '║  HEAD REFS CHANGED — POSSIBLE LEAKED COMMITS        ║\n'
+          '╠══════════════════════════════════════════════════════╣\n'
+          '║  The following repos have different HEADs than       ║\n'
+          '║  before the test run started:                        ║\n'
+          '╚══════════════════════════════════════════════════════╝\n'
+          '$mismatchList\n'
+          '\n'
+          'This means a test accidentally created a commit that\n'
+          'was not reverted. Investigate and fix manually.\n';
+
+      _writeInfraLog('head_ref_leak', message);
+      fail(message);
     }
     print('    ✓ All HEAD refs intact — no leaked commits');
   }
