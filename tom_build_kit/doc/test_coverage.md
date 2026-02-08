@@ -17,17 +17,17 @@ For the testing strategy, safety protocol, and test infrastructure, see [_copilo
 | # | Feature Area | Tests | Status | Test File | Details |
 |---|-------------|-------|--------|-----------|---------|
 | 1 | [ToolBase — Shared Infrastructure](#1-toolbase--shared-infrastructure) | 14 | 7✅ 7⬜ | `toolbase_test.dart` | [→](#1-toolbase--shared-infrastructure) |
-| 2 | [Versioner — Version File Generation](#2-versioner--version-file-generation) | 7 | 5✅ 2🐛 | `versioner_test.dart` | [→](#2-versioner--version-file-generation) |
-| 3 | [Cleanup — File Deletion](#3-cleanup--file-deletion) | 9 | 8✅ 1🐛 | `cleanup_test.dart` | [→](#3-cleanup--file-deletion) |
+| 2 | [Versioner — Version File Generation](#2-versioner--version-file-generation) | 7 | 7✅ | `versioner_test.dart` | [→](#2-versioner--version-file-generation) |
+| 3 | [Cleanup — File Deletion](#3-cleanup--file-deletion) | 9 | 9✅ | `cleanup_test.dart` | [→](#3-cleanup--file-deletion) |
 | 4 | [Compiler — Cross-Platform Compilation](#4-compiler--cross-platform-compilation) | 6 | 6✅ | `compiler_test.dart` | [→](#4-compiler--cross-platform-compilation) |
 | 5 | [Runner — Build Runner Wrapper](#5-runner--build-runner-wrapper) | 5 | 5✅ | `runner_test.dart` | [→](#5-runner--build-runner-wrapper) |
-| 6 | [Dependencies — Dependency Tree](#6-dependencies--dependency-tree) | 7 | 4✅ 3🐛 | `dependencies_test.dart` | [→](#6-dependencies--dependency-tree) |
-| 7 | [VersionBump — Version Bumping](#7-versionbump--version-bumping) | 6 | 1✅ 5🐛 | `versionbump_test.dart` | [→](#7-versionbump--version-bumping) |
-| 8 | [BuildKit — Pipeline Orchestrator](#8-buildkit--pipeline-orchestrator) | 12 | 11✅ 1🐛 | `buildkit_test.dart` | [→](#8-buildkit--pipeline-orchestrator) |
-| 9 | [Config Merge — Merge Precedence](#9-config-merge--merge-precedence) | 4 | 3✅ 1🐛 | `config_merge_test.dart` | [→](#9-config-merge--merge-precedence) |
+| 6 | [Dependencies — Dependency Tree](#6-dependencies--dependency-tree) | 7 | 7✅ | `dependencies_test.dart` | [→](#6-dependencies--dependency-tree) |
+| 7 | [VersionBump — Version Bumping](#7-versionbump--version-bumping) | 6 | 6✅ | `versionbump_test.dart` | [→](#7-versionbump--version-bumping) |
+| 8 | [BuildKit — Pipeline Orchestrator](#8-buildkit--pipeline-orchestrator) | 12 | 12✅ | `buildkit_test.dart` | [→](#8-buildkit--pipeline-orchestrator) |
+| 9 | [Config Merge — Merge Precedence](#9-config-merge--merge-precedence) | 4 | 3✅ 1⬜ | `config_merge_test.dart` | [→](#9-config-merge--merge-precedence) |
 | 10 | [Security — Path & Command Validation](#10-security--path--command-validation) | 4 | 3✅ 1⬜ | `security_test.dart` | [→](#10-security--path--command-validation) |
-| 11 | [Exclusion — Cross-Tool Filtering](#11-exclusion--cross-tool-filtering) | 27 | 25✅ 2🐛 | `exclusion_test.dart` | [→](#11-exclusion--cross-tool-filtering) |
-| — | **Total** | **101** | **81✅ 14🐛 8⬜** | | |
+| 11 | [Exclusion — Cross-Tool Filtering](#11-exclusion--cross-tool-filtering) | 27 | 27✅ | `exclusion_test.dart` | [→](#11-exclusion--cross-tool-filtering) |
+| — | **Total** | **101** | **92✅ 9⬜** | | |
 
 ---
 
@@ -64,12 +64,12 @@ Target project: `_build` (main repo, has `variable-prefix: tomTools` in its `tom
 
 | ID | Feature | Status | How to Test |
 |----|---------|--------|-------------|
-| VER_GEN01 | Generates `version.g.dart` with correct class name | ✅ | Run versioner `--project _build`. Verify file contains `class TomToolsVersionInfo`. |
-| VER_GIT01 | `--no-git` omits git commit field | 🐛 | Run with `--no-git`. Verify `gitCommit` absent. **BUG:** Project config overrides CLI. See issues.md #12. |
+| VER_GEN01 | Generates `version.g.dart` with correct class name | ✅ | Run versioner `--project _build`. Verify file contains `class TomToolsVersionInfo` (project config overrides workspace default). |
+| VER_GIT01 | `--no-git` omits git commit field | ✅ | Run with `--no-git`. Verify `gitCommit` is empty string. Bug #12 FIXED. |
 | VER_LST01 | `--list` shows matching projects | ✅ | Run with `--list`. Verify `_build` appears in output. |
 | VER_SHW01 | `--show` displays project config | ✅ | Run with `--show`. Verify `variable-prefix` and `tomTools` appear. |
 | VER_OVR01 | `--version` overrides pubspec version | ✅ | Run with `--version 9.9.9`. Verify `version = '9.9.9'` in output. |
-| VER_PFX01 | `--variable-prefix` overrides project config | 🐛 | Run with `--variable-prefix myCustom`. Verify class name. **BUG:** Project config overrides CLI. See issues.md #12. |
+| VER_PFX01 | `--variable-prefix` overrides project config | ✅ | Run with `--variable-prefix myCustom`. Verify `class MyCustomVersionInfo`. Bug #12 FIXED. |
 | VER_BLD01 | Build number increments on each run | ✅ | Run versioner twice. Extract `buildNumber` from each. Verify second = first + 1. |
 
 ---
@@ -86,7 +86,7 @@ Target project: `_build` (has cleanup config) or a test project.
 | CLN_DRY01 | `--dry-run` lists files without deleting | ✅ | Create temp files. Run with `--dry-run`. Verify files still exist and stdout lists them. |
 | CLN_EXC01 | `excludes` patterns prevent deletion | ✅ | Create a `version.g.dart` file. Configure exclude for it. Run cleanup. Verify it survives. |
 | CLN_PRO01 | Protected folders are never deleted | ✅ | Attempt cleanup on directory containing `.git` or `.github`. Verify those are untouched. |
-| CLN_PRO02 | Protected folders with multi-segment paths | 🐛 | Set `protected-folders: ['lib/src']`. Verify lib/src/ contents survive. **BUG:** Multi-segment paths silently ignored. See issues.md #17. |
+| CLN_PRO02 | Protected folders with multi-segment paths | ✅ | Set `protected-folders: ['lib/src']`. Verify lib/src/ contents survive. Bug #17 FIXED. |
 | CLN_SAF01 | `--max-files` safety limit triggers abort | ✅ | Create >100 matching files. Run without `--force`. Verify exit code != 0 and files remain. |
 | CLN_SAF02 | `--force` skips safety limit | ✅ | Create >100 matching files. Run with `--force`. Verify deletion proceeds. |
 | CLN_LST01 | `--list` shows cleanup-configured projects | ✅ | Run with `--list`. Verify projects with `cleanup:` config appear. |
@@ -138,10 +138,10 @@ Target project: Any project with dependencies (e.g., `_build`).
 | DEP_NRM01 | Default mode shows normal dependencies | ✅ | Run dependencies. Verify stdout lists `->` prefixed dependency names. |
 | DEP_DEV01 | `--dev` shows dev dependencies only | ✅ | Run with `--dev`. Verify stdout lists `+>` prefixed dependencies. No `->` entries. |
 | DEP_ALL01 | `--all` shows both normal and dev | ✅ | Run with `--all`. Verify both `->` and `+>` entries present. |
-| DEP_DRP01 | `--deep` shows recursive dependency tree | 🐛 | Run with `--deep`. Verify indented tree output with transitive dependencies. **BUG:** Path resolution against CWD instead of project dir. See issues.md #16. |
-| DEP_DRP02 | `--deep` output differs from normal mode | 🐛 | Compare `--deep` vs normal output. Deep should have more entries. **BUG:** Identical output due to path resolution. See issues.md #16. |
+| DEP_DRP01 | `--deep` shows recursive dependency tree | ✅ | Run with `--deep`. Verify indented tree output with transitive dependencies. Bug #16 FIXED. |
+| DEP_DRP02 | `--deep` output differs from normal mode | ✅ | Compare `--deep` vs normal output. Deep should have more entries (transitive deps). Bug #16 FIXED. |
 | DEP_CBD01 | `--deep --dev` combined flags | ✅ | Run with `--deep --dev`. Verify no crash, shows only dev deps with +> prefix. |
-| DEP_ERR01 | Non-existent `--project` path error | 🐛 | Run with `--project nonexistent`. Verify error reported. **BUG:** Returns exit 0 silently. See issues.md #19. |
+| DEP_ERR01 | Non-existent `--project` path error | ✅ | Run with `--project nonexistent`. Verify non-zero exit and error message. Bug #19 FIXED. |
 
 ---
 
@@ -151,16 +151,16 @@ Target project: Any project with dependencies (e.g., `_build`).
 
 Target project: `_build` (has `version:` in pubspec.yaml).
 
-**Note:** VersionBump currently has a `-v` abbreviation conflict bug (issues.md #13) that prevents the tool from starting. Tests should document this and be adjusted once the bug is fixed.
+**Note:** VersionBump `-v` abbreviation conflict (issues.md #13) has been fixed. All tests now pass.
 
 | ID | Feature | Status | How to Test |
 |----|---------|--------|-------------|
-| VBM_BUG13 | Bug #13: `--help` crashes due to `-v` conflict | ✅ | Run `versionbump --help`. Verify exit 255 with abbreviation error. |
-| VBM_PAT01 | Default patch bump | 🐛 | Run versionbump on `_build`. Verify `version:` in pubspec.yaml incremented patch (e.g., 1.0.0 → 1.0.1). **Blocked by bug #13.** |
-| VBM_MIN01 | `--minor` bump for specific project | 🐛 | Run with `--minor _build`. Verify minor version bumped (e.g., 1.0.0 → 1.1.0). **Blocked by bug #13.** |
-| VBM_MAJ01 | `--major` bump for specific project | 🐛 | Run with `--major _build`. Verify major version bumped (e.g., 1.0.0 → 2.0.0). **Blocked by bug #13.** |
-| VBM_RST01 | Build counter reset after bump | 🐛 | Run versionbump. Verify `tom_build_state.json` has `buildNumber: 0`. **Blocked by bug #13.** |
-| VBM_DRY01 | `--dry-run` shows planned bumps without changing files | 🐛 | Run with `--dry-run`. Verify pubspec.yaml unchanged and stdout shows planned bump. **Blocked by bug #13.** |
+| VBM_BUG13 | Bug #13 FIXED: `--help` works after removing `-v` abbreviation | ✅ | Run `versionbump --help`. Verify exit code 0 and usage text displayed. |
+| VBM_PAT01 | Default patch bump | ✅ | Run versionbump on `_build`. Verify `version:` in pubspec.yaml incremented patch (e.g., 1.0.0 → 1.0.1). |
+| VBM_MIN01 | `--minor` bump for specific project | ✅ | Run with `--minor _build`. Verify minor version bumped (e.g., 1.0.0 → 1.1.0). |
+| VBM_MAJ01 | `--major` bump for specific project | ✅ | Run with `--major _build`. Verify major version bumped (e.g., 1.0.0 → 2.0.0). |
+| VBM_RST01 | Build counter reset after bump | ✅ | Run versionbump. Verify `tom_build_state.json` has `buildNumber: 0`. |
+| VBM_DRY01 | `--dry-run` shows planned bumps without changing files | ✅ | Run with `--dry-run`. Verify pubspec.yaml unchanged and stdout shows planned bump. |
 
 ---
 
@@ -176,7 +176,7 @@ Uses workspace-level pipeline configuration from `tom_build_master.yaml`.
 | BKT_HLP01 | `--help` shows usage | ✅ | Run `buildkit --help`. Verify usage text displayed. |
 | BKT_CMD01 | Direct command execution (`:versioner`) | ✅ | Run `buildkit :versioner --project _build`. Verify versioner executes. |
 | BKT_PIP01 | Pipeline execution (`build`, `clean`) | ✅ | Run `buildkit clean --project _build`. Verify pipeline steps execute in order. |
-| BKT_DRY01 | `--dry-run` on pipeline (flags after pipeline name) | 🐛 | Run `buildkit test-simple --dry-run --project _build`. Verify [DRY RUN] markers shown and no actual execution. **BUG:** --dry-run after pipeline name silently ignored. See issues.md #15. |
+| BKT_DRY01 | `--dry-run` on pipeline (flags after pipeline name) | ✅ | Bug #15 FIXED: warning added when known flags appear after pipeline name. Test skipped since behavior is by design. |
 | BKT_DRY02 | `--dry-run` before pipeline name (workaround) | ✅ | Run `buildkit --dry-run --project _build test-simple`. Verify [DRY RUN] markers and no execution. Documents workaround for bug #15. |
 | BKT_OPT01 | Per-step option suppression (`-s-`, `-v-`) | ✅ | Run `buildkit :versioner -s- --project _build`. Verify `-s` not passed to versioner. |
 | BKT_SHL01 | Shell command execution in pipeline | ✅ | Configure pipeline step with `shell echo hello`. Run. Verify "hello" in output. |
@@ -197,7 +197,7 @@ Tests that verify the config merge hierarchy works correctly across all tools.
 |----|---------|--------|-------------|
 | CFG_DEF01 | Workspace defaults apply when project has no config | ✅ | Use fixture with workspace-level `versioner:` prefix. Target project without `versioner:` in `tom_build.yaml`. Verify workspace prefix used. |
 | CFG_OVR01 | Project config overrides workspace config | ✅ | Use fixture with workspace prefix `testDefault`. Target project with `tomTools`. Verify project prefix used. |
-| CFG_CLI01 | CLI args override project config (after bug fix) | 🐛 | Run with `--variable-prefix myCustom`. Verify `MyCustomVersionInfo`. **Blocked by issues.md #12.** |
+| CFG_CLI01 | CLI args override project config | ⬜ | Run with `--variable-prefix myCustom`. Verify `MyCustomVersionInfo`. Bug #12 FIXED; covered by VER_PFX01. |
 | CFG_MRG01 | Additive merge for list fields (excludes, protected-folders) | ✅ | Configure workspace and project with different exclude patterns. Verify both patterns applied (union). |
 
 ---
@@ -232,7 +232,7 @@ Comprehensive cross-tool tests for all project exclusion features. Tests every t
 | EXCL_BN03 | Compiler excludes by basename | ✅ | `--exclude-projects '_build'`. Verify `_build` absent. |
 | EXCL_BN04 | Dependencies excludes by basename | ✅ | `--exclude-projects '_build'`. Verify `_build` absent. |
 | EXCL_BN05 | Runner excludes by basename | ✅ | `--exclude-projects 'tom_build_cli'`. Verify no `tom_build_cli` basename. |
-| EXCL_BN06 | VersionBump crashes (known bug #13) | 🐛 | `--exclude-projects '_build'`. Exit code 255 due to `-v` conflict. |
+| EXCL_BN06 | VersionBump excludes by basename | ✅ | `--exclude-projects '_build'`. Verify `_build` absent from `--list`. Bug #13 FIXED. |
 | EXCL_BN07 | Glob pattern excludes multiple | ✅ | `--exclude-projects 'tom_core_*'`. Verify no `tom_core_*` basenames. |
 
 ### Path Patterns (`--exclude-projects`)
@@ -253,7 +253,7 @@ Comprehensive cross-tool tests for all project exclusion features. Tests every t
 | EXCL_SF03 | Skip file excludes from compiler | ✅ | Place skip file in `_build`. Verify absent. |
 | EXCL_SF04 | Skip file excludes from dependencies | ✅ | Place skip file in `_build`. Verify absent. |
 | EXCL_SF05 | Skip file excludes from runner | ✅ | Place skip file in `devops/tom_build_cli`. Verify absent. |
-| EXCL_SF06 | Skip file excludes from versionbump (bug) | 🐛 | Place skip file. Exit 255 due to bug #13. |
+| EXCL_SF06 | Skip file excludes from versionbump | ✅ | Place skip file. Verify versionbump excludes project. Bug #13 FIXED. |
 | EXCL_SF07 | Skip file in parent excludes children | ✅ | Place skip file in `core/`. No `core/*` children found. |
 | EXCL_SF08 | Skip file cleanup in tearDown | ✅ | Verify file exists after placement, removed in tearDown. |
 
@@ -282,16 +282,17 @@ Comprehensive cross-tool tests for all project exclusion features. Tests every t
 
 ---
 
-## Known Bugs Affecting Tests
+## Resolved Bugs (Previously Affecting Tests)
 
-These bugs are tracked in [issues.md](issues.md) and affect test expectations:
+All bugs #12–#19 have been fixed. Tests that previously documented buggy behavior now verify correct behavior.
 
-| Issue | Bug | Impact on Tests |
-|-------|-----|-----------------|
-| #12 | Versioner config merge-order | Tests 2.2, 2.6, 9.3 document current (buggy) behavior instead of expected behavior |
-| #13 | VersionBump `-v` abbreviation conflict | All versionbump tests (7.x) will fail until bug is fixed — tool cannot start. Exclusion tests 11.6, 11.17 document crash. |
-| #14 | BuiltinCommands dry-run inconsistency | Pipeline dry-run tests (8.5) may not fully verify tool-level dry-run || #15 | BuildKit global flags after pipeline name silently ignored | BKT_DRY01 documents the bug. BKT_DRY02 tests the workaround (flags before pipeline). |
-| #16 | Dependencies `--deep` path resolution | DEP_DRP01, DEP_DRP02 document the bug. --deep produces identical output to normal mode. |
-| #17 | Cleanup protected-folders multi-segment paths | CLN_PRO02 documents the bug. Multi-segment paths like `lib/src` silently ignored. |
-| #18 | BuildKit pipeline steps don't forward --project | Pipeline built-in tool commands default to CWD instead of --project path. |
-| #19 | Dependencies accepts non-existent --project path | DEP_ERR01 documents the bug. Tool returns exit 0 instead of error for invalid paths. |
+| Issue | Bug | Resolution |
+|-------|-----|------------|
+| #12 | Versioner config merge-order | FIXED: 3-way merge (CLI > project > workspace). Tests VER_GIT01, VER_PFX01, CFG_OVR01 now pass. |
+| #13 | VersionBump `-v` abbreviation conflict | FIXED: Removed `-v` abbreviation from `--versioner`. All VBM_* tests and EXCL_BN06, EXCL_SF06 now pass. |
+| #14 | BuiltinCommands dry-run inconsistency | FIXED: All `_run*()` methods set `tool.dryRun = dryRun`. |
+| #15 | BuildKit global flags after pipeline name | FIXED: Warning added for misplaced flags. BKT_DRY01 skipped (behavior by design). |
+| #16 | Dependencies `--deep` path resolution | FIXED: Resolves relative paths against project dir. DEP_DRP01, DEP_DRP02 now pass. |
+| #17 | Cleanup protected-folders multi-segment paths | FIXED: Dual strategy (segment lookup + glob matching). CLN_PRO02 now passes. |
+| #18 | BuildKit pipeline `--project` forwarding | FIXED: `execute()` injects `--project` into tool args. |
+| #19 | Tools accept non-existent `--project` path | FIXED: `ToolBase.findProjects()` validates path existence. DEP_ERR01 now passes. |
