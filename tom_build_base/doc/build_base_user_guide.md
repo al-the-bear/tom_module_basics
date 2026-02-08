@@ -1,402 +1,400 @@
 # Tom Build Base User Guide
 
-This guide explains how to use `tom_build_base` to create CLI tools that integrate with the `tom_build.yaml` and `build.yaml` configuration patterns used in the Tom workspace.
+This guide explains how to use `tom_build_base` to create CLI tools that integrate with the `tom_build.yaml` and `build.yaml` configuration patterns used in Tom workspaces.
 
 ## Overview
 
 `tom_build_base` provides shared infrastructure for Tom build tools:
 
-- **Configuration loading** from `tom_build.yaml` files
-- **Build.yaml utilities** for detecting builder definitions vs consumer configurations
-- **Project scanning** for finding and validating projects in a directory structure
-- **Path validation** for security (ensuring paths stay within the workspace)
-- **Result tracking** for reporting success/failure counts
+- **Configuration loading** — `TomBuildConfig` for reading `tom_build.yaml` and `tom_build_master.yaml`
+- **Configuration merging** — `ConfigMerger` for combining workspace and project settings
+- **Build.yaml utilities** — detect builder definitions vs consumers, read options
+- **Project scanning** — `ProjectScanner` for directory traversal with custom validators
+- **Project discovery** — `ProjectDiscovery` for glob-based resolution and workspace search
+- **Path validation** — `isPathContained`, `validatePathContainment` for security
+- **Result tracking** — `ProcessingResult` for batch success/failure/file counting
 
 ## Installation
 
-Add `tom_build_base` as a dependency:
-
 ```yaml
 dependencies:
-  tom_build_base: ^1.0.0
+  tom_build_base: ^1.1.0
 ```
-
-Import the library:
 
 ```dart
 import 'package:tom_build_base/tom_build_base.dart';
 ```
 
-## Configuration Pattern
+---
 
-Tom build tools follow a two-tier configuration pattern:
+## Configuration
 
-### 1. tom_build.yaml (Primary - Tool-Specific)
+### Two-Tier Configuration Pattern
 
-A `tom_build.yaml` file in a project root provides tool-specific configuration:
+Tom tools use a **workspace-level** master config (`tom_build_master.yaml`) and **project-level** configs (`tom_build.yaml`). Each file contains sections keyed by tool name.
 
 ```yaml
-# tom_build.yaml
-dartgen:
-  project: .
+# tom_build_master.yaml (workspace root)
+navigation:                     # shared defaults for all tools
+  scan: .
   recursive: true
+  exclude: [.git, build, node_modules]
+
+show_versions:                  # tool-specific section
   verbose: false
-  # Tool-specific options
-  modules:
-    - name: core
-      barrelFiles:
-        - lib/core.dart
-
-versioner:
-  output: lib/src/version.g.dart
-  includeGitCommit: true
 ```
-
-Each top-level key is a tool name, containing that tool's configuration.
-
-### 2. build.yaml (Secondary - build_runner Format)
-
-A `build.yaml` file uses the standard build_runner format:
 
 ```yaml
-# build.yaml
-targets:
-  $default:
-    builders:
-      tom_version_builder:version_builder:
-        enabled: true
-        options:
-          output: lib/src/version.g.dart
-          includeGitCommit: true
+# tom_build.yaml (inside a project)
+show_versions:
+  verbose: true                 # overrides workspace default
 ```
 
-## Loading Configuration
-
-Use `TomBuildConfig` to load tool-specific configuration:
+### Loading Configuration
 
 ```dart
-import 'package:tom_build_base/tom_build_base.dart';
+const toolKey = 'show_versions';
+final basePath = Directory.current.path;
 
-const toolKey = 'mytool';
-
-// Load from tom_build.yaml
-final config = TomBuildConfig.load(
-  dir: '/path/to/project',
+// Load workspace-level config
+final masterConfig = TomBuildConfig.loadMaster(
+  dir: basePath,
   toolKey: toolKey,
 );
 
-if (config != null) {
-  print('Project: ${config.project}');
-  print('Recursive: ${config.recursive}');
-  print('Verbose: ${config.verbose}');
-  
-  // Access tool-specific options
-  final customOption = config.toolOptions['myCustomOption'];
-}
+// Load project-level config
+final projectConfig = TomBuildConfig.load(
+  dir: basePath,
+  toolKey: toolKey,
+);
 ```
+
+The `navigation:` section in the master file provides shared defaults (scan, recursive, exclude, recursion-exclude) that are automatically merged as fallbacks for every tool section.
 
 ### TomBuildConfig Properties
 
 | Property | Type | Description |
 |----------|------|-------------|
-| `project` | `String?` | Path to a single project directory |
-| `projects` | `List<String>` | Glob patterns for projects to process |
-| `scan` | `String?` | Directory to scan for projects |
-| `config` | `String?` | Path to a specific config file |
-| `recursive` | `bool` | Whether to process subprojects recursively |
-| `exclude` | `List<String>` | Glob patterns for projects to exclude |
-| `recursionExclude` | `List<String>` | Glob patterns to exclude from recursion |
-| `verbose` | `bool` | Whether to show detailed output |
-| `toolOptions` | `Map<String, dynamic>` | All options from the tool section (for custom options) |
+| `project` | `String?` | Single project directory path |
+| `projects` | `List<String>` | Glob patterns for project discovery |
+| `scan` | `String?` | Root directory to scan |
+| `config` | `String?` | Explicit config file path |
+| `recursive` | `bool` | Recurse into found projects |
+| `exclude` | `List<String>` | Glob patterns to exclude projects |
+| `excludeProjects` | `List<String>` | Exclusions matched against directory basename only |
+| `recursionExclude` | `List<String>` | Directories to skip during recursive traversal |
+| `verbose` | `bool` | Enable detailed output |
+| `toolOptions` | `Map<String, dynamic>` | All raw options from the tool section |
+
+### Merging Configurations
+
+Use `TomBuildConfig.merge()` to combine master and project configs:
+
+```dart
+final config = (masterConfig != null && projectConfig != null)
+    ? masterConfig.merge(projectConfig)     // project overrides master
+    : projectConfig ?? masterConfig ?? const TomBuildConfig();
+```
 
 ### Checking for Configuration
 
 ```dart
-// Check if tom_build.yaml exists with a specific tool section
-if (hasTomBuildConfig(projectPath, 'mytool')) {
-  print('Project has mytool configuration');
+// Does this project have a show_versions: section in tom_build.yaml?
+if (hasTomBuildConfig(projectPath, 'show_versions')) {
+  print('Has tool config');
+}
+
+// Does the config specify any project navigation options?
+if (config.hasProjectOptions) {
+  print('Has project/scan/config options');
 }
 ```
 
-## Detecting Builder Definitions vs Consumers
+---
 
-When scanning for projects, CLI tools should distinguish between:
+## ConfigMerger
 
-- **Builder definition packages**: Contain `builders:` section (e.g., `tom_d4rt_generator`)
-- **Consumer packages**: Contain `targets:` with builder configuration
+`ConfigMerger` provides three strategies for combining workspace and project values. Use it when your tool has its own config structure beyond `TomBuildConfig`.
 
-### Skip Builder Definitions
+### Section Lists — Project Replaces Workspace
 
-Builder packages define builders for build_runner but shouldn't be processed as consumers:
-
-```dart
-// In your project detection logic
-bool isMyToolProject(String dirPath) {
-  // Skip packages that DEFINE builders
-  if (isBuildYamlBuilderDefinition(dirPath)) {
-    return false;
-  }
-  
-  // Check for consumer configuration
-  if (hasBuildYamlConsumerConfig(dirPath, 'my_package:my_builder')) {
-    return true;
-  }
-  
-  // Check for tom_build.yaml configuration
-  if (hasTomBuildConfig(dirPath, 'mytool')) {
-    return true;
-  }
-  
-  return false;
-}
-```
-
-### Build.yaml Utility Functions
-
-| Function | Purpose |
-|----------|---------|
-| `isBuildYamlBuilderDefinition(dirPath)` | Returns `true` if build.yaml has `builders:` section |
-| `hasBuildYamlConsumerConfig(dirPath, builderName)` | Returns `true` if build.yaml has consumer config for the builder |
-| `getBuildYamlBuilderOptions(dirPath, builderName)` | Extracts the `options` map for a builder |
-| `isBuildYamlBuilderEnabled(dirPath, builderName)` | Checks if builder is enabled (default: `true`) |
-
-### Example: Loading Builder Options
+For "what to do" definitions where the project provides a complete replacement.
 
 ```dart
-final options = getBuildYamlBuilderOptions(
-  projectPath,
-  'tom_version_builder:version_builder',
+final modules = ConfigMerger.mergeSections(
+  workspaceModules,   // ['core']
+  projectModules,     // ['core', 'extra']
 );
+// → ['core', 'extra']  (project wins because it's non-empty)
+```
 
-if (options != null) {
-  final output = options['output'] as String? ?? 'lib/src/version.g.dart';
-  final includeGit = options['includeGitCommit'] as bool? ?? true;
+### Additive Lists — Union of Both
+
+For guard/filter lists where both levels contribute (deduplication preserved).
+
+```dart
+final excludes = ConfigMerger.mergeAdditive(
+  ['build', 'node_modules'],  // workspace
+  ['coverage', 'build'],      // project
+);
+// → ['build', 'node_modules', 'coverage']  (union, no duplicates)
+```
+
+### Scalar Values — Project Overrides Workspace
+
+```dart
+// Simple override
+final verbose = ConfigMerger.mergeScalar(false, true);
+// → true  (project wins)
+
+// With explicit-check callback
+final output = ConfigMerger.mergeScalar<String?>(
+  'lib/src/version.g.dart',
+  null,
+  isExplicit: (v) => v != null,
+);
+// → 'lib/src/version.g.dart'  (project is null, so workspace wins)
+
+// Nullable convenience
+final prefix = ConfigMerger.mergeNullable('v', null);
+// → 'v'
+
+// Map merge (project keys override workspace keys)
+final opts = ConfigMerger.mergeMaps(
+  {'a': 1, 'b': 2},
+  {'b': 99, 'c': 3},
+);
+// → {'a': 1, 'b': 99, 'c': 3}
+```
+
+---
+
+## Build.yaml Utilities
+
+These helpers inspect `build.yaml` files (the standard `build_runner` format) and let you distinguish builder-*definition* packages from builder-*consumer* packages.
+
+| Function | Returns | Purpose |
+|----------|---------|---------|
+| `isBuildYamlBuilderDefinition(dirPath)` | `bool` | Has `builders:` section (skip these) |
+| `hasBuildYamlConsumerConfig(dirPath, builderName)` | `bool` | Has `targets.$default.builders.{name}` |
+| `isBuildYamlBuilderEnabled(dirPath, builderName)` | `bool` | Is the builder enabled (default `true`)? |
+| `getBuildYamlBuilderOptions(dirPath, builderName)` | `Map?` | Extract `options` map for a builder |
+
+### Example
+
+```dart
+// Skip builder definition packages
+if (isBuildYamlBuilderDefinition(projectPath)) return;
+
+// Check consumer configuration
+const builder = 'tom_version_builder:version_builder';
+
+if (hasBuildYamlConsumerConfig(projectPath, builder)) {
+  final enabled = isBuildYamlBuilderEnabled(projectPath, builder);
+  final options = getBuildYamlBuilderOptions(projectPath, builder);
+  final output = options?['output'] ?? 'lib/src/version.g.dart';
 }
 ```
+
+---
 
 ## Path Validation
 
-For security, validate that user-provided paths stay within the workspace:
+Prevent directory-traversal attacks by ensuring user-supplied paths stay inside the workspace.
 
 ```dart
+// Single path check
+if (isPathContained(targetPath, workspaceRoot)) {
+  // safe
+}
+
+// Validate all configured paths at once
 final error = validatePathContainment(
   project: config.project,
   projects: config.projects,
   scan: config.scan,
-  basePath: Directory.current.path,
+  config: config.config,
+  basePath: workspaceRoot,
 );
-
 if (error != null) {
-  print('Error: $error');
+  stderr.writeln('Path error: $error');
   exit(1);
 }
 ```
 
-### Path Utility Functions
+---
 
-| Function | Purpose |
-|----------|---------|
-| `isPathContained(targetPath, basePath)` | Returns `true` if target is within base |
-| `validatePathContainment(...)` | Validates multiple paths, returns error message or `null` |
+## Project Scanning — ProjectScanner
 
-## Project Scanning
+`ProjectScanner` walks directories to find projects that match a `ProjectValidator`.
 
-Use `ProjectScanner` for directory traversal:
+### Creating a Scanner
 
 ```dart
 final scanner = ProjectScanner(
   toolKey: 'mytool',
-  basePath: Directory.current.path,
+  basePath: workspaceRoot,
   verbose: true,
+  log: (msg) => print('[scan] $msg'),
+  // Optional: custom validator (default checks pubspec.yaml + build config)
+  projectValidator: (dirPath, toolKey) =>
+      File('$dirPath/pubspec.yaml').existsSync(),
 );
+```
 
-// Find immediate subprojects
-final subprojects = scanner.findSubprojects(
-  '/path/to/project',
-  ['**/node_modules/**'],  // exclusions
-);
+### Finding Projects
 
-// Find all projects recursively
-final allProjects = await scanner.findProjectsRecursive(
-  '/path/to/workspace',
-  exclude: ['**/test/**'],
-  recursionExclude: ['**/build/**'],
-);
+```dart
+// Recursive directory scan
+final projects = scanner.scanForProjects(workspaceRoot, excludePatterns);
+
+// Immediate subprojects only
+final subs = scanner.findSubprojects(projectDir, excludePatterns);
+
+// Glob-based matching
+final matched = scanner.findProjectsByGlob(['tom_*', 'xternal/**'], []);
+
+// Apply exclusions to an existing list
+final filtered = scanner.applyExclusions(paths, ['zom_*', 'build']);
 ```
 
 ### Custom Project Validation
 
-Provide a custom validator for project detection:
-
 ```dart
 bool myValidator(String dirPath, String toolKey) {
-  // Must have pubspec.yaml
-  if (!File('$dirPath/pubspec.yaml').existsSync()) {
-    return false;
-  }
-  
-  // Skip builder definitions
-  if (isBuildYamlBuilderDefinition(dirPath)) {
-    return false;
-  }
-  
-  // Must have my tool's config file
-  return File('$dirPath/mytool.json').existsSync();
+  if (!File('$dirPath/pubspec.yaml').existsSync()) return false;
+  if (isBuildYamlBuilderDefinition(dirPath)) return false;
+  return hasTomBuildConfig(dirPath, toolKey);
 }
 
 final scanner = ProjectScanner(
   toolKey: 'mytool',
-  basePath: Directory.current.path,
+  basePath: workspaceRoot,
   projectValidator: myValidator,
 );
 ```
 
-## Result Tracking
+---
 
-Use `ProcessingResult` to track operation outcomes:
+## Project Discovery — ProjectDiscovery
+
+`ProjectDiscovery` offers advanced glob-based resolution with workspace-wide searching.
+
+### Scan vs Recursive Behaviour
+
+- **Scan**: walks subfolders until a project is found, then stops (project is a boundary).
+- **Recursive**: also looks *inside* found projects for nested projects (e.g., test projects).
+
+### Resolving Patterns
+
+```dart
+final discovery = ProjectDiscovery(verbose: true);
+
+// Comma-separated patterns, brace-group aware
+final projects = await discovery.resolveProjectPatterns(
+  'tom_*,xternal/tom_module_*/*',
+  basePath: workspaceRoot,
+  projectFilter: (path) => !isBuildYamlBuilderDefinition(path),
+);
+```
+
+### Scanning a Directory
+
+```dart
+final found = await discovery.scanForProjects(
+  workspaceRoot,
+  recursive: true,
+  toolKey: 'mytool',
+  recursionExclude: ['**/build/**', 'node_modules'],
+);
+```
+
+### Skip Files and Workspace Root
+
+```dart
+// Check for tom_build_skip.yaml marker (stops traversal)
+if (ProjectDiscovery.hasSkipFile(dirPath)) {
+  print('Skipping: $dirPath');
+}
+
+// Find the workspace root by walking up to tom_workspace.yaml
+final root = ProjectDiscovery.findWorkspaceRoot(Directory.current.path);
+```
+
+---
+
+## Result Tracking — ProcessingResult
+
+Track success/failure counts across batch operations.
 
 ```dart
 final result = ProcessingResult();
 
 for (final project in projects) {
   try {
-    final fileCount = await processProject(project);
-    result.addSuccess(fileCount);
-  } catch (e) {
-    print('Error processing $project: $e');
+    final files = processProject(project);
+    result.addSuccess(files);   // count processed files
+  } catch (_) {
     result.addFailure();
   }
 }
 
-// Print summary
-print('Success: ${result.successCount}');
-print('Failed: ${result.failureCount}');
-print('Files: ${result.fileCount}');
+// Merge results from a parallel workstream
+result.merge(otherResult);
 
-// Exit with appropriate code
+// Inspect
+print('Total    : ${result.totalCount}');
+print('Succeeded: ${result.successCount}');
+print('Failed   : ${result.failureCount}');
+print('Files    : ${result.fileCount}');
+print('OK?      : ${result.isSuccess}');
+
 exit(result.hasFailures ? 1 : 0);
 ```
 
-## Complete CLI Example
+---
 
-Here's a minimal CLI tool using `tom_build_base`:
+## Complete CLI Tool Example
 
-```dart
-#!/usr/bin/env dart
-import 'dart:io';
+See [example/tom_build_base_example.dart](../example/tom_build_base_example.dart) for a full working tool that:
 
-import 'package:args/args.dart';
-import 'package:tom_build_base/tom_build_base.dart';
+1. Loads and merges master + project configuration
+2. Uses `ConfigMerger` for additive exclude-list merging
+3. Validates paths with `validatePathContainment`
+4. Discovers projects via `ProjectScanner` or `ProjectDiscovery`
+5. Skips builder-definition packages
+6. Reads `pubspec.yaml` version from every discovered project
+7. Tracks and reports results with `ProcessingResult`
 
-const toolKey = 'mytool';
-const builderName = 'my_package:my_builder';
-
-void main(List<String> arguments) async {
-  final parser = ArgParser()
-    ..addOption('project', abbr: 'p')
-    ..addOption('scan', abbr: 's')
-    ..addFlag('recursive', abbr: 'r', defaultsTo: false)
-    ..addFlag('verbose', abbr: 'v', defaultsTo: false);
-
-  final args = parser.parse(arguments);
-  final basePath = Directory.current.path;
-
-  // Load config from tom_build.yaml
-  var config = TomBuildConfig.load(dir: basePath, toolKey: toolKey);
-  
-  // Override with command-line args
-  config = (config ?? const TomBuildConfig()).copyWith(
-    project: args['project'] as String?,
-    scan: args['scan'] as String?,
-    recursive: args['recursive'] as bool,
-    verbose: args['verbose'] as bool,
-  );
-
-  // Validate paths
-  final error = validatePathContainment(
-    project: config.project,
-    scan: config.scan,
-    basePath: basePath,
-  );
-  if (error != null) {
-    print('Error: $error');
-    exit(1);
-  }
-
-  // Find projects
-  final projects = await findProjects(config, basePath);
-  
-  // Process projects
-  final result = ProcessingResult();
-  for (final project in projects) {
-    if (await processProject(project, config.verbose)) {
-      result.addSuccess();
-    } else {
-      result.addFailure();
-    }
-  }
-
-  // Report results
-  print('Success: ${result.successCount}');
-  if (result.hasFailures) {
-    print('Failed: ${result.failureCount}');
-    exit(1);
-  }
-}
-
-Future<List<String>> findProjects(TomBuildConfig config, String basePath) async {
-  if (config.project != null) {
-    return [config.project!];
-  }
-  
-  if (config.scan != null) {
-    final scanner = ProjectScanner(
-      toolKey: toolKey,
-      basePath: basePath,
-      projectValidator: isMyToolProject,
-    );
-    return scanner.findProjectsRecursive(
-      config.scan!,
-      exclude: config.exclude,
-      recursionExclude: config.recursionExclude,
-    );
-  }
-  
-  return [basePath];
-}
-
-bool isMyToolProject(String dirPath, String toolKey) {
-  if (!File('$dirPath/pubspec.yaml').existsSync()) return false;
-  if (isBuildYamlBuilderDefinition(dirPath)) return false;
-  
-  return hasBuildYamlConsumerConfig(dirPath, builderName) ||
-         hasTomBuildConfig(dirPath, toolKey);
-}
-
-Future<bool> processProject(String projectPath, bool verbose) async {
-  if (verbose) print('Processing: $projectPath');
-  
-  // Your tool logic here
-  
-  return true;
-}
-```
+---
 
 ## Best Practices
 
-1. **Always skip builder definitions** - Use `isBuildYamlBuilderDefinition()` to avoid processing packages that define builders
+1. **Skip builder definitions** — always call `isBuildYamlBuilderDefinition()` before processing.
+2. **Support both config formats** — check `tom_build.yaml` first, fall back to `build.yaml`.
+3. **Merge configs** — load master, load project, `master.merge(project)`.
+4. **Validate paths** — call `validatePathContainment()` before any file I/O.
+5. **Track results** — use `ProcessingResult` for consistent CI-friendly exit codes.
+6. **Respect verbose** — honour `config.verbose` for debugging output.
+7. **Use exit codes** — return `0` on success, `1` on failures.
 
-2. **Support both config formats** - Check `tom_build.yaml` first, fall back to `build.yaml`
+---
 
-3. **Validate paths** - Use `validatePathContainment()` to prevent directory traversal attacks
+## API Quick Reference
 
-4. **Use verbose mode** - Honor the `verbose` flag for debugging output
-
-5. **Track results** - Use `ProcessingResult` for consistent reporting
-
-6. **Exit codes** - Return non-zero exit code on failures for CI/CD integration
-
-## See Also
-
-- [tom_version_builder](../../tom_version_builder/) - Version file generator using this pattern
-- [tom_d4rt_generator](../../../tom_module_d4rt/tom_d4rt_generator/) - Bridge generator using this pattern
+| Class / Function | Module | Purpose |
+|------------------|--------|---------|
+| `TomBuildConfig` | build_config | Load, merge, copy-with config |
+| `TomBuildConfig.load()` | build_config | Read `tom_build.yaml` |
+| `TomBuildConfig.loadMaster()` | build_config | Read `tom_build_master.yaml` |
+| `hasTomBuildConfig()` | build_config | Check for tool section |
+| `ConfigMerger` | config_merger | Static merge helpers |
+| `ProjectScanner` | project_scanner | Directory-walk project finder |
+| `ProjectDiscovery` | project_discovery | Glob / workspace-wide finder |
+| `ProcessingResult` | processing_result | Batch result tracker |
+| `isPathContained()` | path_utils | Single path containment |
+| `validatePathContainment()` | path_utils | Multi-path validation |
+| `isBuildYamlBuilderDefinition()` | build_yaml_utils | Detect builder packages |
+| `hasBuildYamlConsumerConfig()` | build_yaml_utils | Detect consumer config |
+| `getBuildYamlBuilderOptions()` | build_yaml_utils | Read builder options |
+| `isBuildYamlBuilderEnabled()` | build_yaml_utils | Check builder enabled flag |
