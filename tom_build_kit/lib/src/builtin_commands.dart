@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'commands/buildsorter_tool.dart';
 import 'commands/cleanup_tool.dart';
 import 'commands/versioner_tool.dart';
 import 'commands/versionbumper_tool.dart';
@@ -33,6 +34,7 @@ class BuiltinCommands {
   }
 
   static const _builtinNames = {
+    'buildsorter',
     'versioner',
     'versionbumper',
     'compiler',
@@ -61,6 +63,8 @@ class BuiltinCommands {
     }
 
     switch (cmd) {
+      case 'buildsorter':
+        return _runBuildSorter(args);
       case 'versioner':
         return _runVersioner(args);
       case 'versionbumper':
@@ -138,6 +142,14 @@ class BuiltinCommands {
   Future<bool> _runDependencies(List<String> args) async {
     if (verbose) print('  [builtin] Running dependencies...');
     final tool = DependenciesTool()
+      ..verbose = verbose
+      ..dryRun = dryRun;
+    return tool.run(args);
+  }
+
+  Future<bool> _runBuildSorter(List<String> args) async {
+    if (verbose) print('  [builtin] Running buildsorter...');
+    final tool = BuildSorterTool()
       ..verbose = verbose
       ..dryRun = dryRun;
     return tool.run(args);

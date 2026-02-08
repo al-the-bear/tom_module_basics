@@ -803,6 +803,8 @@ Future<bool> _runCommandHelp(String commandName) async {
       return CleanupTool().run(['--help']);
     case 'dependencies':
       return DependenciesTool().run(['--help']);
+    case 'buildsorter':
+      return BuildSorterTool().run(['--help']);
     case 'pubget' || 'pubgetall':
       PubGetCommand.printUsage();
       return true;
@@ -825,7 +827,7 @@ Future<bool> _runCommandHelp(String commandName) async {
     default:
       print('Unknown command: $commandName');
       print('');
-      print('Available commands: versioner, versionbumper, compiler, runner, cleanup, dependencies, pubget, git');
+      print('Available commands: buildsorter, versioner, versionbumper, compiler, runner, cleanup, dependencies, pubget, git');
       return false;
   }
 }
