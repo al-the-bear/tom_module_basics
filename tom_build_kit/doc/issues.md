@@ -78,7 +78,7 @@ Tracked issues from the tool consolidation (5 standalone tools → tom_build_kit
 - Files: `cleanup_tool.dart`, `builders/cleanup_builder.dart`
 
 ### 10. Dependencies — path resolution
-- [x] `_resolveDependencyPath()` now resolves relative paths against `Directory.current.path`; supports `--deep` mode with path dependencies
+- [x] `_resolveDependencyPath()` now resolves relative paths against the project directory; supports `--deep` mode with path dependencies
 - Files: `dependencies_tool.dart`
 
 ---

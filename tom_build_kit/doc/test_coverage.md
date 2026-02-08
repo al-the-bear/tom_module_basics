@@ -7,7 +7,6 @@ For the testing strategy, safety protocol, and test infrastructure, see [_copilo
 ## Status Legend
 
 - ✅ Test implemented and passing
-- 🐛 Test implemented, documents a known bug
 - ⬜ Test not yet implemented
 
 ---
@@ -16,7 +15,7 @@ For the testing strategy, safety protocol, and test infrastructure, see [_copilo
 
 | # | Feature Area | Tests | Status | Test File | Details |
 |---|-------------|-------|--------|-----------|---------|
-| 1 | [ToolBase — Shared Infrastructure](#1-toolbase--shared-infrastructure) | 14 | 7✅ 7⬜ | `toolbase_test.dart` | [→](#1-toolbase--shared-infrastructure) |
+| 1 | [ToolBase — Shared Infrastructure](#1-toolbase--shared-infrastructure) | 14 | 14✅ | `toolbase_test.dart` | [→](#1-toolbase--shared-infrastructure) |
 | 2 | [Versioner — Version File Generation](#2-versioner--version-file-generation) | 7 | 7✅ | `versioner_test.dart` | [→](#2-versioner--version-file-generation) |
 | 3 | [Cleanup — File Deletion](#3-cleanup--file-deletion) | 9 | 9✅ | `cleanup_test.dart` | [→](#3-cleanup--file-deletion) |
 | 4 | [Compiler — Cross-Platform Compilation](#4-compiler--cross-platform-compilation) | 6 | 6✅ | `compiler_test.dart` | [→](#4-compiler--cross-platform-compilation) |
@@ -24,10 +23,10 @@ For the testing strategy, safety protocol, and test infrastructure, see [_copilo
 | 6 | [Dependencies — Dependency Tree](#6-dependencies--dependency-tree) | 7 | 7✅ | `dependencies_test.dart` | [→](#6-dependencies--dependency-tree) |
 | 7 | [VersionBump — Version Bumping](#7-versionbump--version-bumping) | 6 | 6✅ | `versionbump_test.dart` | [→](#7-versionbump--version-bumping) |
 | 8 | [BuildKit — Pipeline Orchestrator](#8-buildkit--pipeline-orchestrator) | 12 | 12✅ | `buildkit_test.dart` | [→](#8-buildkit--pipeline-orchestrator) |
-| 9 | [Config Merge — Merge Precedence](#9-config-merge--merge-precedence) | 4 | 3✅ 1⬜ | `config_merge_test.dart` | [→](#9-config-merge--merge-precedence) |
-| 10 | [Security — Path & Command Validation](#10-security--path--command-validation) | 4 | 3✅ 1⬜ | `security_test.dart` | [→](#10-security--path--command-validation) |
+| 9 | [Config Merge — Merge Precedence](#9-config-merge--merge-precedence) | 4 | 4✅ | `config_merge_test.dart` | [→](#9-config-merge--merge-precedence) |
+| 10 | [Security — Path & Command Validation](#10-security--path--command-validation) | 4 | 4✅ | `security_test.dart` | [→](#10-security--path--command-validation) |
 | 11 | [Exclusion — Cross-Tool Filtering](#11-exclusion--cross-tool-filtering) | 27 | 27✅ | `exclusion_test.dart` | [→](#11-exclusion--cross-tool-filtering) |
-| — | **Total** | **101** | **92✅ 9⬜** | | |
+| — | **Total** | **101** | **101✅** | | |
 
 ---
 
@@ -43,7 +42,7 @@ These features are shared by all tools. Test via any tool (e.g., versioner or de
 | TB_HLP01 | `--help` flag | ✅ | Run tool with `--help`. Verify exit code 0 and stdout contains usage text. |
 | TB_LST01 | `--list` with `--scan` and `--recursive` | ✅ | Run versioner `--scan . --recursive --list`. Verify output lists discovered projects. |
 | TB_EXC01 | `--exclude` glob filtering | ✅ | Run versioner `--scan . -r --list --exclude 'zom_*'`. Verify no `zom_` projects in output. |
-| TB_EXC02 | `--recursion-exclude` during scanning | ⬜ | Run with `--recursion-exclude node_modules`. Verify node_modules subdirs not scanned. |
+| TB_EXC02 | `--recursion-exclude` during scanning | ✅ | Run with `--recursion-exclude node_modules`. Verify node_modules subdirs not scanned. |
 | TB_DSC01 | Workspace root discovery | ✅ | Run tool from workspace root vs from a subdirectory. Both should find `tom_build_master.yaml`. |
 | TB_XPJ01 | `--exclude-projects` folder name filtering | ✅ | Run versioner `--scan . -r --list --exclude-projects 'tom_d4rt*'`. Verify no `tom_d4rt*` folders in output. |
 | TB_XPJ02 | `--exclude-projects` from master YAML | ✅ | Set `exclude-projects: ['tom_test_*']` in master YAML navigation. Run `--list`. Verify excluded. |
@@ -197,7 +196,7 @@ Tests that verify the config merge hierarchy works correctly across all tools.
 |----|---------|--------|-------------|
 | CFG_DEF01 | Workspace defaults apply when project has no config | ✅ | Use fixture with workspace-level `versioner:` prefix. Target project without `versioner:` in `tom_build.yaml`. Verify workspace prefix used. |
 | CFG_OVR01 | Project config overrides workspace config | ✅ | Use fixture with workspace prefix `testDefault`. Target project with `tomTools`. Verify project prefix used. |
-| CFG_CLI01 | CLI args override project config | ⬜ | Run with `--variable-prefix myCustom`. Verify `MyCustomVersionInfo`. Bug #12 FIXED; covered by VER_PFX01. |
+| CFG_CLI01 | CLI args override both project and workspace config | ✅ | Run with `--variable-prefix myCustom`. Verify `MyCustomVersionInfo`. Bug #12 FIXED. |
 | CFG_MRG01 | Additive merge for list fields (excludes, protected-folders) | ✅ | Configure workspace and project with different exclude patterns. Verify both patterns applied (union). |
 
 ---
@@ -213,7 +212,7 @@ Tests that verify security boundaries are enforced.
 | SEC_PRJ01 | `--project` rejects paths outside workspace | ✅ | Run versioner `--project /tmp/evil`. Verify non-zero exit code and error message about path containment. |
 | SEC_SCN01 | `--scan` rejects paths outside workspace | ✅ | Run versioner `--scan /tmp`. Verify rejection. |
 | SEC_PRO01 | Protected folders survive cleanup | ✅ | Configure cleanup that would match `.git/` contents. Run. Verify `.git/` untouched. |
-| SEC_CMD01 | Pipeline rejects unknown commands | ⬜ | Configure pipeline with `rm -rf /`. Run. Verify command rejected (not an allowed binary or `shell ` prefix). |
+| SEC_CMD01 | Pipeline rejects unknown commands | ✅ | Configure pipeline with `rm -rf /`. Run. Verify command rejected (not an allowed binary or `shell ` prefix). |
 
 ---
 
@@ -279,20 +278,3 @@ Comprehensive cross-tool tests for all project exclusion features. Tests every t
 | EXCL_BL01 | Versioner finds _build without filters | ✅ | No exclusions. `_build` in output. |
 | EXCL_BL02 | Dependencies finds core projects | ✅ | No exclusions. `core/` projects in output. |
 | EXCL_BL03 | Runner finds projects | ✅ | No exclusions. Projects with `build.yaml` in output. |
-
----
-
-## Resolved Bugs (Previously Affecting Tests)
-
-All bugs #12–#19 have been fixed. Tests that previously documented buggy behavior now verify correct behavior.
-
-| Issue | Bug | Resolution |
-|-------|-----|------------|
-| #12 | Versioner config merge-order | FIXED: 3-way merge (CLI > project > workspace). Tests VER_GIT01, VER_PFX01, CFG_OVR01 now pass. |
-| #13 | VersionBump `-v` abbreviation conflict | FIXED: Removed `-v` abbreviation from `--versioner`. All VBM_* tests and EXCL_BN06, EXCL_SF06 now pass. |
-| #14 | BuiltinCommands dry-run inconsistency | FIXED: All `_run*()` methods set `tool.dryRun = dryRun`. |
-| #15 | BuildKit global flags after pipeline name | FIXED: Warning added for misplaced flags. BKT_DRY01 skipped (behavior by design). |
-| #16 | Dependencies `--deep` path resolution | FIXED: Resolves relative paths against project dir. DEP_DRP01, DEP_DRP02 now pass. |
-| #17 | Cleanup protected-folders multi-segment paths | FIXED: Dual strategy (segment lookup + glob matching). CLN_PRO02 now passes. |
-| #18 | BuildKit pipeline `--project` forwarding | FIXED: `execute()` injects `--project` into tool args. |
-| #19 | Tools accept non-existent `--project` path | FIXED: `ToolBase.findProjects()` validates path existence. DEP_ERR01 now passes. |

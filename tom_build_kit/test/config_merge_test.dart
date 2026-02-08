@@ -190,5 +190,29 @@ void main() {
         githubDir.deleteSync();
       }
     });
+
+    test('CLI args override both project and workspace config', () async {
+      log.start('CFG_CLI01', 'CLI args override project config');
+
+      // Exclusion fixture: workspace prefix 'testDefault'.
+      // _build project: prefix 'tomTools'.
+      // CLI: --variable-prefix myCustom → should WIN over both.
+      final result = await ws.runTool('versioner', [
+        '--project', '_build',
+        '--variable-prefix', 'myCustom',
+      ]);
+      log.capture('versioner with --variable-prefix myCustom', result);
+
+      expect(result.exitCode, equals(0));
+
+      final versionContent = readVersionFile();
+      // CLI prefix 'myCustom' should produce MyCustomVersionInfo
+      expect(versionContent, contains('MyCustomVersionInfo'),
+          reason: 'CLI --variable-prefix "myCustom" should override '
+              'project "tomTools" and workspace "testDefault". '
+              'Got: ${versionContent.substring(0, versionContent.length.clamp(0, 200))}');
+      log.expectation('CLI prefix used',
+          versionContent.contains('MyCustomVersionInfo'));
+    });
   });
 }

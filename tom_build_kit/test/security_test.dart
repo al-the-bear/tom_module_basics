@@ -3,11 +3,14 @@
 /// Tests that tools reject paths outside the workspace, that protected
 /// folders survive cleanup, and that the security model is enforced.
 ///
-/// Test IDs: SEC_PRJ01, SEC_SCN01, SEC_PRO01
+/// Test IDs: SEC_PRJ01, SEC_SCN01, SEC_PRO01, SEC_CMD01
 @TestOn('!browser')
 @Timeout(Duration(seconds: 120))
 library;
 
+import 'dart:io';
+
+import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 import 'helpers/test_workspace.dart';
@@ -123,6 +126,61 @@ void main() {
               'output, found: ${gitInternalRefs.join(', ')}');
 
       log.expectation('no .git/ internal refs', gitInternalRefs.isEmpty);
+    });
+  });
+
+  group('pipeline command validation', () {
+    test('pipeline rejects unknown commands (not built-in, not shell-prefixed)',
+        () async {
+      log.start('SEC_CMD01', 'pipeline rejects unknown commands');
+
+      // Write a minimal tom_build_master.yaml with a pipeline containing
+      // an unknown/dangerous command (no 'shell ' prefix).
+      final masterYaml =
+          p.join(ws.workspaceRoot, 'tom_build_master.yaml');
+      final yamlContent = '''
+navigation:
+  exclude:
+    - 'xternal_apps/**'
+    - 'cloud/**'
+    - 'sqm/**'
+    - 'uam/**'
+    - 'ai_build/**'
+    - 'zom_workspaces/**'
+  exclude-projects: []
+
+buildkit:
+  pipelines:
+    test-malicious:
+      executable: true
+      core:
+        - commands:
+            - "rm -rf /"
+''';
+      File(masterYaml).writeAsStringSync(yamlContent);
+      print('    📝 Wrote tom_build_master.yaml with test-malicious pipeline');
+
+      // --project BEFORE pipeline name (bug #15: flags after pipeline ignored)
+      final result = await ws.runPipeline(
+          '--project', ['_build', 'test-malicious']);
+      log.capture('buildkit --project _build test-malicious', result);
+
+      // Pipeline should fail — 'rm' is not a built-in, not a pipeline ref,
+      // and not in the allowed-binaries list.
+      expect(result.exitCode, isNot(equals(0)),
+          reason: 'Unknown command "rm -rf /" should be rejected by pipeline');
+
+      final stdout = (result.stdout as String);
+      final hasUnknownError = stdout.contains('Unknown command') ||
+          stdout.contains('unknown command') ||
+          stdout.contains('not recognized') ||
+          stdout.contains('Only built-in');
+      expect(hasUnknownError, isTrue,
+          reason: 'Output should explain the command was rejected. '
+              'Got: $stdout');
+
+      log.expectation('rejected with non-zero exit', result.exitCode != 0);
+      log.expectation('error mentions unknown command', hasUnknownError);
     });
   });
 }
