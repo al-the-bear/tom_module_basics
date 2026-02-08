@@ -91,11 +91,6 @@ buildkit:
 
 ## Documentation
 
-See [doc/user_guide.md](doc/user_guide.md) for complete documentation including:
-
-- Pipeline configuration reference
-- Shell command variable expansion
-- Platform filtering
-- Project scanning behavior
-- Configuration hierarchy
+- [doc/buildkit_user_guide.md](doc/buildkit_user_guide.md) — BuildKit orchestrator: pipelines, commands, scanning, security
+- [doc/tools_user_guide.md](doc/tools_user_guide.md) — Individual tool reference: versioner, cleanup, compiler, runner, dependencies, versionbump, pubget
 

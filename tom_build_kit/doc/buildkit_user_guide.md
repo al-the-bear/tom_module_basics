@@ -1,32 +1,42 @@
-# Tom Build Kit User Guide
+# Tom Build Kit — BuildKit Orchestrator User Guide
 
-Tom Build Kit is a pipeline-based build orchestration tool for the Tom workspace. It provides a unified interface to run build pipelines and individual build tools in sequence.
+BuildKit is the pipeline-based build orchestration tool for the Tom workspace. It provides a unified interface to run named build pipelines, invoke individual tools directly, and process multiple projects in sequence.
+
+For the individual tool reference, see [tools_user_guide.md](tools_user_guide.md).
+
+---
 
 ## Table of Contents
 
-- [Installation](#installation)
 - [Quick Start](#quick-start)
+- [Installation](#installation)
 - [Command Line Usage](#command-line-usage)
+  - [Options](#options)
+  - [Project Selection](#project-selection)
 - [Execution Steps](#execution-steps)
+  - [Pipelines](#pipelines)
+  - [Direct Commands](#direct-commands)
+  - [Mixed Execution](#mixed-execution)
 - [Pipeline Configuration](#pipeline-configuration)
+  - [Pipeline Properties](#pipeline-properties)
+  - [Step Structure](#step-structure)
+  - [Pipeline Phases](#pipeline-phases)
 - [Built-in Commands](#built-in-commands)
+- [Allowed Binaries](#allowed-binaries)
 - [Shell Commands](#shell-commands)
+  - [Variable Expansion](#variable-expansion)
+  - [Environment Variables](#environment-variables)
 - [Platform Filtering](#platform-filtering)
+  - [Platform Aliases](#platform-aliases)
+- [Per-Tool Option Override](#per-tool-option-override)
 - [Project Scanning](#project-scanning)
+  - [Scan Behavior](#scan-behavior)
+  - [Exclusion Filters](#exclusion-filters)
 - [Configuration Hierarchy](#configuration-hierarchy)
+- [Command Security](#command-security)
 - [Examples](#examples)
 
-## Installation
-
-Build Kit is part of the Tom workspace build tools. To use it:
-
-```bash
-# Run directly with dart
-dart run tom_build_kit:buildkit [options] <steps>
-
-# Or compile to executable
-dart compile exe bin/buildkit.dart -o buildkit
-```
+---
 
 ## Quick Start
 
@@ -41,100 +51,122 @@ buildkit clean build
 buildkit :versioner :compiler
 
 # Mix pipelines and commands
-buildkit build :cleanup --all
+buildkit build :cleanup --force
 
-# Dry-run to see what would be executed
-buildkit -n build :versioner
+# Dry-run to preview what would be executed
+buildkit -n build
+
+# List available pipelines
+buildkit --list
+
+# Show help for a built-in command
+buildkit help :compiler
 ```
+
+---
+
+## Installation
+
+```bash
+# Run directly with dart
+dart run tom_build_kit:buildkit [options] <steps>
+
+# Or compile to executable
+dart compile exe bin/buildkit.dart -o buildkit
+```
+
+---
 
 ## Command Line Usage
 
-```
+```text
 Usage: buildkit [options] <pipeline|:command> [args...] [<pipeline|:command> [args...]]...
-
-Steps can be:
-  <pipeline>        Run a pipeline defined in tom_build.yaml
-  :<command> [args] Run a tool command directly (versioner, compiler, etc.)
-
-Options:
-  -h, --help         Show help
-  -V, --version      Show version
-  -v, --verbose      Verbose output
-  -n, --dry-run      Show what would be executed
-  -l, --list         List available pipelines
-  -R, --recursive    Scan directories recursively
-  -s, --scan         Scan directory for projects to run pipeline in
-  -r, --root         Root directory for configuration lookup
-  -p, --project      Project(s) to process (comma-separated, globs: tom_*_builder, ./*)
+       buildkit help :<command>      Show help for a built-in command
+       buildkit --version            Show version information
 ```
 
-### Project Selection (`--project`)
+### Options
 
-The `--project` option supports multiple ways to specify projects:
+| Flag | Short | Description |
+|------|-------|-------------|
+| `--help` | `-h` | Show help |
+| `--version` | `-V` | Show version |
+| `--verbose` | `-v` | Verbose output |
+| `--dry-run` | `-n` | Show what would be executed without running |
+| `--list` | `-l` | List available pipelines |
+| `--scan <dir>` | `-s` | Scan directory for projects |
+| `--recursive` | `-r` | Scan directories recursively |
+| `--project <path>` | `-p` | Project(s) to run on |
+| `--root <dir>` | `-R` | Root directory for configuration lookup |
+| `--exclude <pattern>` | `-x` | Exclude patterns — path-based globs (multi-option) |
+| `--exclude-projects <pattern>` | — | Exclude projects by name or path (multi-option) |
 
-- **Single project**: `--project=my_app`
-- **Comma-separated**: `--project='project1,project2,project3'`
-- **Glob patterns**: `--project='tom_*_builder'`
-- **Path globs**: `--project='xternal/tom_module_d4rt/*'`
-- **Current directory children**: `--project='./*'`
-- **Recursive from current directory**: `--project='./**/*'`
+> **Important:** Global options must appear **before** the pipeline or command name. Options placed after the pipeline name are silently ignored (BuildKit will print a warning if it detects this).
 
-Multiple patterns can be combined: `--project='tom_*_builder,tom_build_*'`
+### Project Selection
+
+The `--project` option supports multiple specification methods:
+
+| Method | Example |
+|--------|---------|
+| Single project | `--project=my_app` |
+| Comma-separated | `--project='project1,project2,project3'` |
+| Glob patterns | `--project='tom_*_builder'` |
+| Path globs | `--project='xternal/tom_module_d4rt/*'` |
+| Current dir children | `--project='./*'` |
+| Recursive from current | `--project='./**/*'` |
+
+Without `--project` or `--scan`, BuildKit operates on the current directory.
+
+---
 
 ## Execution Steps
 
-Build Kit supports two types of execution steps:
+BuildKit supports two types of execution steps that can be freely combined.
 
 ### Pipelines
 
-Pipelines are named sequences of commands defined in `tom_build.yaml`. They are invoked by name:
+Pipelines are named sequences of commands defined in `tom_build.yaml` or `tom_build_master.yaml`. They are invoked by name:
 
 ```bash
-buildkit build         # Run the "build" pipeline
-buildkit clean build   # Run "clean" then "build" pipelines
+buildkit build          # Run the "build" pipeline
+buildkit clean build    # Run "clean" then "build" in sequence
 ```
 
 ### Direct Commands
 
-Tool commands can be invoked directly using the `:` prefix. This runs the tool without needing a pipeline definition:
+Tool commands are invoked with a `:` prefix, bypassing pipeline configuration:
 
 ```bash
-buildkit :versioner                    # Run versioner
-buildkit :compiler --target myapp      # Run compiler with arguments
-buildkit :versioner :compiler :runner  # Run multiple tools in sequence
+buildkit :versioner                         # Run versioner
+buildkit :compiler --targets linux-x64      # Run compiler with arguments
+buildkit :versioner :compiler :runner       # Run multiple tools in sequence
 ```
 
-**Available commands:**
-- `:versioner` - Generate version files from pubspec.yaml
-- `:compiler` - Compile Dart projects to native executables
-- `:runner` - Run build_runner for code generation
-- `:astgen` - Generate AST files for D4rt
-- `:d4rtgen` - Generate D4rt bridge code
-- `:cleanup` - Clean build artifacts
+Arguments following a `:command` are passed to that command until the next step begins.
 
 ### Mixed Execution
 
-Pipelines and commands can be mixed freely:
+Pipelines and direct commands can be mixed freely:
 
 ```bash
-buildkit build :cleanup --all :versioner
+buildkit build :cleanup --force :versioner
 ```
 
 This runs:
-1. The `build` pipeline
-2. The `cleanup` command with `--all` argument
+
+1. The `build` pipeline (all its configured steps)
+2. The `cleanup` command with `--force`
 3. The `versioner` command
 
-### Output Format
+**Output format:** Each step is clearly separated:
 
-Each step is clearly separated in the output:
-
-```
+```text
 ________ Running build
 
 [pipeline output...]
 
-________ Running :cleanup --all
+________ Running :cleanup --force
 
 [cleanup output...]
 
@@ -143,17 +175,24 @@ ________ Running :versioner
 [versioner output...]
 ```
 
+---
+
 ## Pipeline Configuration
 
-Pipelines are defined in `tom_build.yaml`:
+Pipelines are defined in `tom_build_master.yaml` (workspace level) or `tom_build.yaml` (project level) under the `buildkit:` key:
 
 ```yaml
 buildkit:
+  allowed-binaries:
+    - astgen
+    - d4rtgen
+
   pipelines:
     clean:
       executable: true
       core:
         - commands:
+            - cleanup
             - shell rm -rf build/
 
     build:
@@ -178,18 +217,18 @@ buildkit:
 
 ### Pipeline Properties
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `executable` | bool | Whether the pipeline can be invoked from command line (default: true) |
-| `runBefore` | string/list | Pipeline(s) to run before this one |
-| `runAfter` | string/list | Pipeline(s) to run after this one |
-| `precore` | list | Steps to run before core (can be extended at project level) |
-| `core` | list | Main pipeline steps |
-| `postcore` | list | Steps to run after core (can be extended at project level) |
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `executable` | bool | `true` | Whether the pipeline can be invoked from the command line. Non-executable pipelines can still be called as dependencies via `runBefore`/`runAfter`. |
+| `runBefore` | String or List | — | Pipeline(s) to run **before** this one |
+| `runAfter` | String or List | — | Pipeline(s) to run **after** this one |
+| `precore` | List\<Step\> | — | Steps to run before core |
+| `core` | List\<Step\> | — | Main pipeline steps |
+| `postcore` | List\<Step\> | — | Steps to run after core |
 
 ### Step Structure
 
-Each step in precore/core/postcore is a map with:
+Each step in `precore`, `core`, or `postcore` is a map:
 
 ```yaml
 core:
@@ -201,25 +240,43 @@ core:
       - linux-x64
 ```
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `commands` | list | Commands to execute in this step |
-| `platforms` | list | Platforms this step applies to (empty = all platforms) |
+| Field | Type | Description |
+|-------|------|-------------|
+| `commands` | List\<String\> | Commands to execute in this step |
+| `platforms` | List\<String\> | Platforms this step applies to (empty or omitted = all platforms) |
+
+### Pipeline Phases
+
+Pipeline execution follows this order:
+
+```text
+runBefore pipelines → precore → core → postcore → runAfter pipelines
+```
+
+**Dependency resolution:**
+
+- `runBefore`/`runAfter` references are resolved recursively
+- Circular dependencies are detected and reported as errors
+- Already-executed pipelines are skipped (no duplicate execution)
+
+---
 
 ## Built-in Commands
 
-Built-in commands are Tom workspace tools that can be invoked within pipelines:
+Built-in commands run the respective tools directly via their Dart implementation — no external process is spawned.
 
 | Command | Description |
 |---------|-------------|
-| `versioner` | Generate version.g.dart from pubspec.yaml |
-| `compiler` | Compile Dart to native executables |
-| `runner` | Run build_runner for code generation |
-| `astgen` | Generate AST files for D4rt |
-| `d4rtgen` | Generate D4rt bridge code |
-| `cleanup` | Clean build artifacts |
+| `versioner` | Generate `version.g.dart` files with build metadata |
+| `versionbump` | Bump `pubspec.yaml` versions across projects |
+| `compiler` | Cross-platform Dart compilation |
+| `runner` | `build_runner` wrapper with builder filtering |
+| `cleanup` | Clean generated and temporary files |
+| `dependencies` | Dependency tree visualization |
+| `pubget` | Run `dart pub get` on projects |
+| `pubgetall` | Shortcut for `pubget --scan . --recursive` |
 
-Commands can include arguments:
+Commands can include arguments in pipeline definitions:
 
 ```yaml
 core:
@@ -229,9 +286,51 @@ core:
       - runner --command build
 ```
 
+When a pipeline specifies `--project`, built-in commands automatically receive the project path (unless `--project` is already in their arguments).
+
+**Get help for a specific command:**
+
+```bash
+buildkit help :compiler
+buildkit help :versioner
+```
+
+---
+
+## Allowed Binaries
+
+Beyond built-in commands, additional binaries can be explicitly allowed for execution:
+
+```yaml
+buildkit:
+  allowed-binaries:
+    - astgen
+    - d4rtgen
+    - ws_prepper
+    - ws_analyzer
+```
+
+**Internal allowed binaries** (always available without configuration): `astgen`, `d4rtgen`, `reflector`, `reflectiongenerator`, `ws_prepper`, `ws_analyzer`.
+
+Allowed binaries are invoked via `:name` syntax or as pipeline step commands:
+
+```bash
+buildkit :astgen --project _build
+```
+
+```yaml
+core:
+  - commands:
+      - astgen --project _build
+```
+
+The `allowed-binaries` lists from workspace and project configs are merged additively.
+
+---
+
 ## Shell Commands
 
-Shell commands are prefixed with `shell`:
+Shell commands are prefixed with `shell` and execute arbitrary shell commands:
 
 ```yaml
 core:
@@ -241,18 +340,20 @@ core:
       - shell rsync -av dist/ server:/app/
 ```
 
+> **Note:** The `shell` prefix is only valid in pipeline configuration. Direct `:shell` commands from the command line are not supported — use `shell` in a pipeline step instead.
+
 ### Variable Expansion
 
-Shell commands support variable expansion:
+Shell commands support these variables:
 
-| Variable | Description |
-|----------|-------------|
-| `${project}` | Path to the current project directory |
-| `${root}` | Path to the workspace root directory |
-| `${current-platform-vs}` | VS Code platform format (e.g., `darwin-arm64`) |
-| `${current-os}` | Operating system (e.g., `macos`, `linux`, `windows`) |
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `${project}` | Path to the current project directory | `/path/to/my_app` |
+| `${root}` | Path to the workspace root directory | `/path/to/workspace` |
+| `${current-platform-vs}` | VS Code platform format | `darwin-arm64` |
+| `${current-os}` | Operating system | `macos`, `linux`, `windows` |
 
-Example:
+**Example:**
 
 ```yaml
 core:
@@ -260,9 +361,21 @@ core:
       - shell cp build/app ${root}/_bin/${current-platform-vs}/
 ```
 
+### Environment Variables
+
+Shell commands are executed with these environment variables set:
+
+| Variable | Value |
+|----------|-------|
+| `BUILDKIT_PROJECT` | Current project path |
+| `BUILDKIT_ROOT` | Workspace root path |
+| `BUILDKIT_PLATFORM` | Current platform (VS Code format) |
+
+---
+
 ## Platform Filtering
 
-Steps can be filtered by platform:
+Steps can be filtered by platform to run only on specific operating systems or architectures:
 
 ```yaml
 core:
@@ -297,47 +410,119 @@ core:
 | `macos`, `darwin` | All macOS platforms |
 | `linux` | All Linux platforms |
 | `windows`, `win32` | All Windows platforms |
-| `*-arm64` | All ARM64 platforms (glob pattern) |
+| `darwin-*` | Glob — all macOS architectures |
+| `linux-*` | Glob — all Linux architectures |
+| `*-arm64` | Glob — all ARM64 platforms |
+
+---
+
+## Per-Tool Option Override
+
+When chaining commands, global options (like `--scan`, `--verbose`, `--dry-run`) are inherited by all steps. Use the `-X-` syntax to suppress a specific option for one command:
+
+```bash
+# Scan with cleanup but NOT with compiler
+buildkit -s . :cleanup -s- --project tom_* :compiler
+
+# Verbose for versioner but not for runner
+buildkit -v :versioner :runner -v-
+
+# Dry-run for all except versioner
+buildkit -n :versioner -n- :compiler :runner
+```
+
+| Suppression | Effect |
+|-------------|--------|
+| `-s-` | Suppress `--scan` for this command |
+| `-v-` | Suppress `--verbose` for this command |
+| `-n-` | Suppress `--dry-run` for this command |
+
+The `-X-` syntax works for any single-letter option flag.
+
+---
 
 ## Project Scanning
 
-Build Kit can scan directories to find projects:
+BuildKit can scan directories to find and process multiple projects:
 
 ```bash
 # Scan current directory for projects
 buildkit build --scan .
 
-# Scan recursively (into nested projects)
+# Scan recursively (including nested projects)
 buildkit build --scan . --recursive
 
 # Short form
-buildkit build -s . -R
+buildkit build -s . -r
 ```
 
 ### Scan Behavior
 
-**Always skips:**
+**Always skipped during scanning:**
+
 - `.dart_tool`, `.git`, `.idea`, `.vscode`
 - `build`, `node_modules`, `coverage`
 - `.pub-cache`, `.pub`, `__pycache__`
 - Hidden directories (starting with `.`)
 
-**Inside projects (with `--recursive`):**
+**Skipped inside projects (with `--recursive`):**
+
 - Source dirs: `bin`, `lib`, `src`
 - Build dirs: `build`, `out`, `dist`
 - Asset dirs: `assets`, `fonts`, `images`
 - Platform dirs: `android`, `ios`, `macos`, `windows`, `linux`, `web`
 
+### Exclusion Filters
+
+BuildKit supports the same exclusion mechanisms as individual tools:
+
+```bash
+# Exclude by path glob
+buildkit build -s . -r --exclude "zom_*"
+
+# Exclude projects by name
+buildkit build -s . -r --exclude-projects "_build"
+
+# Exclude projects by path pattern
+buildkit build -s . -r --exclude-projects "xternal/tom_module_basics/*"
+
+# Combined
+buildkit build -s . -r --exclude-projects "zom_*" --exclude-projects "core/*"
+```
+
+Projects with `tom_build_skip.yaml` are automatically skipped. Master YAML `navigation.exclude-projects` patterns are merged automatically.
+
+---
+
 ## Configuration Hierarchy
 
 Configuration is loaded in priority order:
 
-1. **Command-line arguments** (highest priority)
-2. **Project-level `tom_build.yaml`** (in each project folder)
-3. **Workspace-level `tom_build.yaml`** (at workspace root)
-4. **Tool defaults** (lowest priority)
+| Priority | Source | Merge Behavior |
+|----------|--------|----------------|
+| 1 (highest) | **Command-line arguments** | Overrides all |
+| 2 | **Project `tom_build.yaml`** | **Replaces** workspace pipelines for matching names |
+| 3 (lowest) | **Workspace `tom_build_master.yaml`** | Base pipeline definitions |
 
-Project-level pipelines completely replace workspace-level definitions (no merging).
+**Important:** Project-level pipeline definitions **completely replace** workspace-level definitions for the same pipeline name — there is no merging of pipeline steps across levels.
+
+**Allowed binaries** are **additive** across internal defaults, workspace config, and project config.
+
+---
+
+## Command Security
+
+BuildKit enforces strict command security:
+
+1. **Built-in commands** — Always allowed (`versioner`, `compiler`, etc.)
+2. **Configured pipelines** — Pipeline names from `tom_build.yaml` / `tom_build_master.yaml`
+3. **Allowed binaries** — Explicitly listed in `buildkit.allowed-binaries`
+4. **Shell commands** — Only via `shell` prefix in pipeline configuration
+5. **Everything else** — **Rejected** with an "Unknown command" error
+
+Arbitrary shell commands cannot be executed via `:command` syntax. To run shell commands, use the `shell` prefix in a pipeline step.
+
+---
 
 ## Examples
 
@@ -358,7 +543,7 @@ buildkit:
 buildkit build
 ```
 
-### Clean and Build
+### Clean and Build with Dependencies
 
 ```yaml
 buildkit:
@@ -379,10 +564,10 @@ buildkit:
 ```
 
 ```bash
-buildkit build  # Automatically runs clean first
+buildkit build    # Automatically runs clean first
 ```
 
-### Cross-Platform Build
+### Cross-Platform Build with Code Signing
 
 ```yaml
 buildkit:
@@ -414,7 +599,7 @@ buildkit:
 buildkit :versioner :runner :compiler
 
 # With arguments
-buildkit :versioner --no-git :compiler --dry-run
+buildkit :versioner --no-git :compiler --targets linux-x64
 ```
 
 ### Workspace-Wide Build
@@ -424,21 +609,46 @@ buildkit :versioner --no-git :compiler --dry-run
 buildkit build --scan . --recursive
 
 # List projects that would be processed
-buildkit build -s . -R --list
+buildkit build -s . -r --list
+
+# Exclude test projects
+buildkit build -s . -r --exclude-projects "zom_*"
+```
+
+### Pub Get Across Workspace
+
+```bash
+# Run dart pub get on all projects
+buildkit :pubgetall
+
+# Show only projects with errors
+buildkit :pubgetall --errors
+
+# Show projects with available updates
+buildkit :pubgetall --updates
 ```
 
 ### Dry Run
 
 ```bash
-# See what would be executed
-buildkit -n build :versioner
+# See what build would execute
+buildkit -n build
 
-# Output:
-# ________ Running build
-# [DRY RUN] Would run versioner with args: []
-# [DRY RUN] Would run runner with args: []
-# [DRY RUN] Would run compiler with args: []
-#
-# ________ Running :versioner
-# [DRY RUN] Would run versioner with args: []
+# Dry-run a specific tool
+buildkit -n :versioner --project _build
+
+# Verbose dry-run of the full pipeline
+buildkit -v -n build -s . -r
+```
+
+### Summary Output
+
+After processing all projects, BuildKit prints a summary:
+
+```text
+============================================================
+Build Kit Summary
+============================================================
+Projects processed: 12
+Status: SUCCESS
 ```

@@ -1,6 +1,8 @@
 # Tom Build Kit — Tools User Guide
 
-Comprehensive guide for all tools in the `tom_build_kit` package.
+Comprehensive reference for the individual build tools in the `tom_build_kit` package.
+
+For the BuildKit pipeline orchestrator, see [buildkit_user_guide.md](buildkit_user_guide.md).
 
 ---
 
@@ -9,61 +11,77 @@ Comprehensive guide for all tools in the `tom_build_kit` package.
 - [Overview](#overview)
 - [Installation](#installation)
 - [Common CLI Options](#common-cli-options)
+  - [Version Flag](#version-flag)
+  - [Project Discovery](#project-discovery)
+  - [Exclusion Filtering](#exclusion-filtering)
 - [Configuration Files](#configuration-files)
+  - [tom_build_master.yaml](#tom_build_masteryaml)
   - [tom_build.yaml](#tom_buildyaml)
   - [build.yaml](#buildyaml)
-- [Config Precedence](#config-precedence)
+  - [tom_build_skip.yaml](#tom_build_skipyaml)
+- [Config Merge Precedence](#config-merge-precedence)
 - [Tools](#tools)
+  - [Versioner](#versioner)
+  - [VersionBump](#versionbump)
   - [Cleanup](#cleanup)
   - [Compiler](#compiler)
-  - [Dependencies](#dependencies)
   - [Runner](#runner)
-  - [Versioner](#versioner)
-- [BuildKit Orchestrator](#buildkit-orchestrator)
-  - [Pipelines](#pipelines)
-  - [Per-Tool Option Override](#per-tool-option-override)
-  - [Direct Commands](#direct-commands)
+  - [Dependencies](#dependencies)
+  - [Pub Get](#pub-get)
 
 ---
 
 ## Overview
 
-Tom Build Kit consolidates five build tools into a single package:
+Tom Build Kit provides seven CLI tools that share a common infrastructure for project discovery, argument parsing, and configuration loading:
 
-| Tool | Purpose |
-|------|---------|
-| **cleanup** | Remove generated and temporary files |
-| **compiler** | Cross-platform Dart compilation with pre/post-compile commands |
-| **dependencies** | Dependency tree visualization |
-| **runner** | `build_runner` wrapper with project scanning and builder filtering |
-| **versioner** | Generate `version.g.dart` files with build metadata |
+| Tool | Binary | Purpose |
+|------|--------|---------|
+| **Versioner** | `versioner` | Generate `version.g.dart` files with build metadata |
+| **VersionBump** | `versionbump` | Bump `pubspec.yaml` versions across projects |
+| **Cleanup** | `cleanup` | Remove generated and temporary files with safety checks |
+| **Compiler** | `compiler` | Cross-platform Dart compilation with pre/post-compile phases |
+| **Runner** | `runner` | `build_runner` wrapper with builder filtering |
+| **Dependencies** | `dependencies` | Dependency tree visualization |
+| **Pub Get** | via `:pubget` | Run `dart pub get` across projects with output filtering |
 
-All tools share a common base (project discovery, argument parsing, config loading) and can be invoked either standalone or through the **buildkit** orchestrator.
+All tools (except Pub Get) inherit from `ToolBase`, sharing project discovery, exclusion filtering, and configuration loading. They can be invoked standalone or through the [BuildKit orchestrator](buildkit_user_guide.md).
 
 ---
 
 ## Installation
 
-Each tool has a standalone executable and can also be invoked via buildkit:
+Each tool has a standalone executable:
 
 ```bash
-# Standalone
 dart run tom_build_kit:versioner [options]
+dart run tom_build_kit:versionbump [options]
 dart run tom_build_kit:cleanup [options]
 dart run tom_build_kit:compiler [options]
 dart run tom_build_kit:runner [options]
 dart run tom_build_kit:dependencies [options]
+```
 
-# Via buildkit orchestrator
-dart run tom_build_kit:buildkit :versioner [options]
-dart run tom_build_kit:buildkit :cleanup [options]
+Or compile to native executables:
+
+```bash
+dart compile exe bin/versioner.dart -o versioner
+dart compile exe bin/cleanup.dart -o cleanup
+# etc.
+```
+
+Via the BuildKit orchestrator:
+
+```bash
+buildkit :versioner [options]
+buildkit :cleanup [options]
 ```
 
 ---
 
 ## Common CLI Options
 
-All tools share these options:
+All ToolBase-derived tools share these options:
 
 | Flag | Short | Description |
 |------|-------|-------------|
@@ -71,16 +89,17 @@ All tools share these options:
 | `--verbose` | `-v` | Verbose output |
 | `--project <path>` | `-p` | Project directory or glob pattern |
 | `--scan <dir>` | `-s` | Scan directory for projects |
-| `--recursive` | `-R` | Scan recursively |
-| `--exclude <pattern>` | `-x` | Exclude patterns (multi-option) |
-| `--recursion-exclude <pattern>` | | Exclude patterns during recursive scan |
-| `--list` | `-l` | List matching projects |
-| `--show` | | Show configuration for projects |
-| `--dry-run` | `-n` | Show what would be done |
+| `--recursive` | `-r` | Scan recursively into subdirectories |
+| `--exclude <pattern>` | `-x` | Exclude patterns — path-based globs (multi-option) |
+| `--exclude-projects <pattern>` | — | Exclude projects by name or path (multi-option) |
+| `--recursion-exclude <pattern>` | — | Exclude patterns during recursive scanning (multi-option) |
+| `--list` | `-l` | List matching projects without processing them |
+| `--show` | — | Show configuration for matched projects |
+| `--dry-run` | `-n` | Show what would be done without making changes |
 
 ### Version Flag
 
-All tools support `--version`, `-version`, or `version` as the first argument:
+All tools support `version`, `--version`, or `-version` as the **first** argument:
 
 ```bash
 versioner --version
@@ -89,43 +108,103 @@ versioner --version
 
 ### Project Discovery
 
+Tools find projects through three mechanisms:
+
 **Single project:**
+
 ```bash
 versioner --project ./my_package
+versioner --project _build
 ```
 
 **Glob pattern:**
+
 ```bash
 versioner --project "tom_*"
+versioner --project "xternal/tom_module_basics/*"
 ```
 
-**Scan directory:**
+**Directory scan:**
+
 ```bash
 versioner --scan . --recursive
+versioner -s . -r
 ```
 
-**Exclude patterns (glob-based):**
+When neither `--project` nor `--scan` is specified, tools operate on the current directory.
+
+### Exclusion Filtering
+
+Three levels of exclusion are available:
+
+**Path-based exclusion (`--exclude`):**
+
 ```bash
-versioner --scan . -R --exclude "zom_*" --exclude "xternal/**"
+versioner --scan . -r --exclude "zom_*" --exclude "xternal/**"
 ```
+
+**Project name/path exclusion (`--exclude-projects`):**
+
+```bash
+# By folder basename (no / in pattern)
+versioner --scan . -r --exclude-projects "zom_*"
+
+# By workspace-relative path (contains / or **)
+versioner --scan . -r --exclude-projects "xternal/tom_module_basics/*"
+
+# Both patterns combined
+versioner --scan . -r --exclude-projects "zom_*" --exclude-projects "core/*"
+```
+
+Pattern type is auto-detected:
+
+- Patterns without `/` or `**` → match **folder basename** only
+- Patterns with `/` or `**` → match **workspace-relative path**
+
+**Master YAML exclusion:** Additional `exclude-projects` patterns from the `navigation:` section of `tom_build_master.yaml` are merged automatically.
+
+**Skip marker file:** Projects containing `tom_build_skip.yaml` are skipped. If a parent directory contains the skip file, all child projects are also skipped.
 
 ---
 
 ## Configuration Files
 
+### tom_build_master.yaml
+
+Workspace-level configuration file at the workspace root. Contains pipeline definitions and global navigation settings:
+
+```yaml
+# Global project exclusion
+navigation:
+  exclude-projects:
+    - zom_*
+    - "xternal/tom_module_d4rt/*"
+
+# Pipeline definitions (see buildkit_user_guide.md)
+buildkit:
+  pipelines:
+    build:
+      core:
+        - commands:
+            - versioner
+            - compiler
+
+# Workspace-level tool defaults
+versioner:
+  variable-prefix: testDefault
+  output: lib/src/version.g.dart
+```
+
 ### tom_build.yaml
 
-The primary configuration file, placed at the workspace root or in individual project directories. Each tool reads its section by key:
+Project-level configuration file in each project directory. Overrides workspace defaults:
 
 ```yaml
 # Versioner config
 versioner:
   output: lib/src/version.g.dart
   includeGitCommit: true
-  scan: .
-  recursive: true
-  exclude:
-    - zom_*
+  variable-prefix: tomTools
 
 # Cleanup config
 cleanup:
@@ -135,6 +214,8 @@ cleanup:
     - "**/*.g.dart"
   excludes:
     - lib/src/version.g.dart
+  protected-folders:
+    - lib/src
 
 # Compiler config
 compiler:
@@ -145,23 +226,13 @@ compiler:
 build_runner:
   command: build
   delete-conflicting: true
-  scan: .
-  recursive: true
   include-builders:
     - tom_build_kit
-
-# Builder filter config (for runner)
-tom_build_kit:
-  build_runner:
-    include-builders:
-      - json_serializable
-    exclude-builders:
-      - source_gen
 ```
 
 ### build.yaml
 
-Standard `build_runner` configuration file. Used by the builder variants and also read by CLI tools for per-project config:
+Standard `build_runner` configuration file. Used by the builder variants and read by CLI tools for per-project config:
 
 ```yaml
 targets:
@@ -180,7 +251,7 @@ targets:
             - files: [bin/my_tool.dart]
               targets: [linux-x64, darwin-arm64]
               commandlines:
-                - dart compile exe ${file} -o build/${file.name}_${target-platform-vs} --target=${target-platform}
+                - dart compile exe ${file} -o build/${file.name}_${target-platform-vs}
 
       tom_build_kit:cleanup_builder:
         enabled: true
@@ -192,99 +263,271 @@ targets:
             - lib/src/version.g.dart
 ```
 
+### tom_build_skip.yaml
+
+A marker file (contents are ignored). When present in a directory, that directory and all subdirectories are excluded from all tool processing.
+
+```bash
+# Exclude a submodule from all tools
+touch xternal/tom_module_d4rt/tom_build_skip.yaml
+```
+
 ---
 
-## Config Precedence
+## Config Merge Precedence
 
-Configuration is loaded in layers, with later layers overriding earlier ones:
+Configuration is loaded in layers. Higher-priority layers override lower-priority ones:
 
-1. **Workspace root** `tom_build.yaml` — base defaults
-2. **Per-project** `tom_build.yaml` — project-specific overrides
-3. **Per-project** `build.yaml` — builder-specific options
-4. **CLI arguments** — highest priority
+| Priority | Source | Description |
+|----------|--------|-------------|
+| 1 (highest) | **CLI arguments** | Command-line flags and options |
+| 2 | **Project `tom_build.yaml`** | Per-project overrides |
+| 3 | **Project `build.yaml`** | Builder-specific options |
+| 4 (lowest) | **Workspace `tom_build.yaml` / `tom_build_master.yaml`** | Workspace-level defaults |
+
+**Merge rules:**
+
+- **Scalar fields** (output, variable-prefix, command): higher priority wins when non-null
+- **Boolean fields** (verbose, recursive): OR-combined; `includeGitCommit` uses caller's value
+- **List fields** (exclude, protected-folders, recursion-exclude): merged additively (union of all levels)
+- **Cleanup sections**, **compile sections**: higher priority wins if non-empty (not merged)
 
 ---
 
 ## Tools
 
-### Cleanup
+### Versioner
 
-Removes generated and temporary files from Dart projects with two-pass safety checking.
+Generates `version.g.dart` files with build metadata from `pubspec.yaml`, git state, and Dart SDK info.
 
 **Usage:**
+
 ```bash
-cleanup [options]
-buildkit :cleanup [options]
+versioner [common-options] [tool-options]
+buildkit :versioner [tool-options]
 ```
 
 **Tool-specific options:**
 
-| Flag | Short | Description |
-|------|-------|-------------|
-| `--force` | `-f` | Skip safety check on file count |
-| `--max-files <n>` | `-m` | Maximum files to delete without `--force` (default: 10) |
+| Flag | Short | Default | Description |
+|------|-------|---------|-------------|
+| `--output <path>` | `-o` | `lib/src/version.g.dart` | Output file path relative to project |
+| `--no-git` | — | `false` | Skip git commit hash |
+| `--version <ver>` | — | from pubspec | Override version string |
+| `--variable-prefix <name>` | — | — | Prefix for generated class name |
 
-**tom_build.yaml:**
+**tom_build.yaml keys (`versioner:`):**
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `output` | String | `lib/src/version.g.dart` | Output file path |
+| `includeGitCommit` | bool | `true` | Include git commit hash |
+| `version` | String | from pubspec | Override version string |
+| `variable-prefix` | String | — | Prefix for generated class name |
+
+**Generated output format:**
+
+The class name is derived from the `variable-prefix`: prefix `tomTools` → class `TomToolsVersionInfo`. Without a prefix, the default is `TomVersionInfo`.
+
+```dart
+// GENERATED FILE - DO NOT EDIT
+// Generated by versioner at 2026-02-07T09:54:50.320327Z
+
+class TomToolsVersionInfo {
+  TomToolsVersionInfo._();
+
+  static const String version = '1.0.0';
+  static const String buildTime = '2026-02-07T09:54:50.320327Z';
+  static const String gitCommit = 'b54e489';
+  static const int buildNumber = 4;
+  static const String dartSdkVersion = '3.10.4';
+
+  static String get versionShort => '$version+$buildNumber';
+  static String get versionMedium =>
+      '$version+$buildNumber.$gitCommit ($buildTime)';
+  static String get versionLong =>
+      '$version+$buildNumber.$gitCommit ($buildTime) [Dart $dartSdkVersion]';
+}
+```
+
+**Build state:** The build number is tracked in `tom_build_state.json` in each project directory and auto-increments on each run.
+
+**Config merge example:**
+
+With workspace `tom_build_master.yaml`:
+
+```yaml
+versioner:
+  variable-prefix: testDefault
+```
+
+And project `tom_build.yaml`:
+
+```yaml
+versioner:
+  variable-prefix: tomTools
+```
+
+Running `versioner --project _build` uses `tomTools` (project overrides workspace).  
+Running `versioner --project _build --variable-prefix myCustom` uses `myCustom` (CLI overrides both).
+
+---
+
+### VersionBump
+
+Bumps `pubspec.yaml` versions across multiple projects with optional versioner integration.
+
+**Usage:**
+
+```bash
+versionbump [common-options] [tool-options]
+buildkit :versionbump [tool-options]
+```
+
+**Tool-specific options:**
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--minor <projects>` | — | Projects to bump minor version (comma-separated, multi-option) |
+| `--major <projects>` | — | Projects to bump major version (comma-separated, multi-option) |
+| `--versioner` | `false` | Run versioner after bumping to regenerate version files |
+
+**Bump types:**
+
+| Type | Example | Trigger |
+|------|---------|---------|
+| Patch (default) | `1.2.3` → `1.2.4` | All projects not listed in `--minor` or `--major` |
+| Minor | `1.2.3` → `1.3.0` | `--minor my_package` |
+| Major | `1.2.3` → `2.0.0` | `--major my_package` |
+
+**Project matching:** The `--minor` and `--major` values match against the project's folder name or relative path suffix. Comma-separated lists are expanded.
+
+**Build state reset:** After bumping, `tom_build_state.json` is reset to `buildNumber: 0` so the next versioner run starts fresh.
+
+**Versioner integration:** With `--versioner`, automatically runs the versioner tool after bumping. The flags `--scan`, `--project`, `--recursive`, `--verbose`, `--dry-run`, and `--exclude` are forwarded.
+
+**Examples:**
+
+```bash
+# Patch bump all discovered projects
+versionbump --scan . -r
+
+# Minor bump for specific projects, patch for the rest
+versionbump --scan . -r --minor tom_core,tom_basics
+
+# Major bump with versioner regeneration
+versionbump --project my_app --major my_app --versioner
+
+# Dry run to see planned bumps
+versionbump --scan . -r --dry-run
+```
+
+---
+
+### Cleanup
+
+Removes generated and temporary files from Dart projects with two-pass safety checking and protected folder enforcement.
+
+**Usage:**
+
+```bash
+cleanup [common-options] [tool-options]
+buildkit :cleanup [tool-options]
+```
+
+**Tool-specific options:**
+
+| Flag | Short | Default | Description |
+|------|-------|---------|-------------|
+| `--force` | `-f` | `false` | Skip safety check on file count |
+| `--max-files <n>` | `-m` | `100` | Maximum files to delete without `--force` |
+
+**tom_build.yaml keys (`cleanup:`):**
+
+| Key | Type | Description |
+|-----|------|-------------|
+| `cleanup` | List | Cleanup sections (globs and per-section excludes) |
+| `excludes` | List\<String\> | Global exclude patterns |
+| `protected-folders` | List\<String\> | Additional folders to never delete from |
+
+**Cleanup section formats:**
+
 ```yaml
 cleanup:
   cleanup:
+    # Simple glob string
     - build
     - .dart_tool/build
     - "**/*.freezed.dart"
+
+    # Map with per-section excludes
     - globs: ["**/*.g.dart"]
       excludes: ["lib/src/version.g.dart"]
+
   excludes:
     - lib/src/version.g.dart
+
+  protected-folders:
+    - lib/src
 ```
 
-Cleanup sections can be:
-- A simple string (glob pattern)
-- A map with `globs` and optional `excludes` keys
-- A direct YAML list under `cleanup:` key
-
 **Safety features:**
-- Two-pass: first collects files, then deletes
-- `--max-files` limit (default: 10) prevents accidental mass deletion
-- `--force` to override the safety check
-- `--dry-run` to preview what would be deleted
 
-**build.yaml:**
-```yaml
-targets:
-  $default:
-    builders:
-      tom_build_kit:cleanup_builder:
-        options:
-          cleanup:
-            - build
-          excludes:
-            - lib/src/version.g.dart
+| Feature | Description |
+|---------|-------------|
+| Two-pass operation | First pass collects files to delete; second pass deletes them |
+| File count limit | Aborts if file count exceeds `--max-files` (default 100) unless `--force` is set |
+| Protected folders | Built-in set (`.git`, `.github`, `lib`, `bin`) is never deleted from. `protected-folders` in config are additive — you can add but not reduce the built-in set |
+| Dry-run | `--dry-run` lists files that would be deleted without deleting |
+
+**Protected folder matching:**
+
+- Single-segment names (e.g., `lib`) → matched against individual path segments
+- Multi-segment paths (e.g., `lib/src`) → matched via glob pattern `**/{folder}/**`
+
+**Examples:**
+
+```bash
+# Preview what would be deleted
+cleanup --project _build --dry-run
+
+# Delete with safety check
+cleanup --project _build
+
+# Force delete (skip file count limit)
+cleanup --scan . -r --force
+
+# Custom max-files threshold
+cleanup --project _build --max-files 50
 ```
 
 ---
 
 ### Compiler
 
-Cross-platform Dart compilation with configurable pre-compile and post-compile command sequences.
+Cross-platform Dart compilation with configurable pre-compile and post-compile command sequences, placeholder resolution, and platform filtering.
 
 **Usage:**
+
 ```bash
-compiler [options]
-buildkit :compiler [options]
+compiler [common-options] [tool-options]
+buildkit :compiler [tool-options]
 ```
 
 **Tool-specific options:**
 
 | Flag | Short | Description |
 |------|-------|-------------|
-| `--targets <list>` | `-t` | Target platforms (comma-separated) |
+| `--targets <list>` | `-t` | Target platforms to compile for (comma-separated) |
 
-**build.yaml:**
+**Configuration** is read from `build.yaml` under the `tom_build_kit:compiler_builder:` key:
+
 ```yaml
 targets:
   $default:
     builders:
       tom_build_kit:compiler_builder:
+        enabled: true
         options:
           precompile:
             - platforms: [darwin-arm64]
@@ -304,12 +547,23 @@ targets:
                 - echo "Build complete"
 ```
 
+**Compilation phases:** `precompile` → `compiles` → `postcompile` (executed in order).
+
+**Section types:**
+
+| Section | Purpose | Key Fields |
+|---------|---------|------------|
+| `precompile` | Commands before compilation | `commandlines`, `platforms` |
+| `compiles` | Compilation steps | `files`, `targets`, `commandlines`, `platforms` |
+| `postcompile` | Commands after compilation | `commandlines`, `platforms` |
+
+Each section also supports `command:` (built-in tool reference) as an alternative to `commandlines:` (mutually exclusive).
+
 **Placeholders in command lines:**
 
 | Placeholder | Description | Example |
 |-------------|-------------|---------|
-| `${file}` | Source file path | `bin/my_tool.dart` |
-| `${file.path}` | Same as `${file}` | `bin/my_tool.dart` |
+| `${file}` / `${file.path}` | Source file path | `bin/my_tool.dart` |
 | `${file.name}` | File name without extension | `my_tool` |
 | `${file.basename}` | File name with extension | `my_tool.dart` |
 | `${file.extension}` | File extension | `.dart` |
@@ -323,20 +577,121 @@ targets:
 | `${current-platform}` | Current platform (Dart format) | `macos-arm64` |
 | `${current-platform-vs}` | Current platform (VS Code format) | `darwin-arm64` |
 
-Bracket format `[placeholder]` is also supported: `[file]`, `[target-os]`, etc.
+Bracket format is also supported: `[file]`, `[target-os]`, `[target-platform-vs]`, etc.
 
-**Environment variables** are replaced in commands:
-- `$HOME`, `$USER`, `$PATH` — standard `$VAR` format
-- `[HOME]`, `[USER]` — bracket `[VAR]` format
+Environment variables are resolved using `$VAR` or `[VAR]` syntax: `$HOME`, `$USER`, `$PATH`, etc.
 
 **Platform filtering:**
 
-Each compile/precompile/postcompile section can have a `platforms:` list to restrict execution:
+Two independent platform filters exist:
+
+- **`platforms:`** on a section → restricts which **host OS** the section runs on
+- **`targets:`** on a compile section → restricts which **target platforms** are compiled for
+- **`--targets` CLI option** → further restricts the `targets:` list
+
 ```yaml
 precompile:
-  - platforms: [darwin-arm64, darwin-x64]
+  - platforms: [darwin-arm64, darwin-x64]    # Only runs on macOS
     commandlines:
       - codesign --remove-signature build/my_tool
+```
+
+Platform aliases: `macos`/`darwin`, `linux`, `windows`/`win32`. Glob patterns are supported: `darwin-*`, `linux-*`.
+
+**Examples:**
+
+```bash
+# Compile all configured targets
+compiler --project _build
+
+# Compile only for Linux x64
+compiler --project _build --targets linux-x64
+
+# Dry-run to see planned commands
+compiler --project _build --dry-run
+
+# Show compiler config
+compiler --project _build --show
+```
+
+---
+
+### Runner
+
+`build_runner` wrapper with multi-project scanning and builder include/exclude filtering.
+
+**Usage:**
+
+```bash
+runner [common-options] [tool-options]
+buildkit :runner [tool-options]
+```
+
+**Tool-specific options:**
+
+| Flag | Short | Default | Description |
+|------|-------|---------|-------------|
+| `--command <cmd>` | `-c` | `build` | Build runner command: `build`, `watch`, or `clean` |
+| `--include-builders <list>` | `-i` | — | Include only these builders (multi-option) |
+| `--exclude-builders <list>` | — | — | Exclude these builders (multi-option) |
+| `--config <name>` | — | — | Build runner config name |
+| `--release` | — | `false` | Build in release mode |
+| `--delete-conflicting` | — | `true` | Delete conflicting outputs (negatable) |
+
+**tom_build.yaml keys (`build_runner:`):**
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `command` | String | `build` | Build runner command |
+| `delete-conflicting` | bool | `true` | Delete conflicting outputs |
+| `config` | String | — | Build runner config name |
+| `release` | bool | `false` | Release mode |
+| `include-builders` | List\<String\> | — | Builder include filter |
+| `exclude-builders` | List\<String\> | — | Builder exclude filter |
+
+**Builder filter precedence (3 levels):**
+
+| Priority | Source |
+|----------|--------|
+| 1 (highest) | CLI: `--include-builders` / `--exclude-builders` |
+| 2 | Project `tom_build.yaml` → `build_runner` section |
+| 3 (lowest) | Workspace `tom_build.yaml` → `build_runner` section |
+
+The effective filter level is the **first level** with a non-empty include or exclude list.
+
+**build.yaml builder filter config:**
+
+An additional builder filter can be configured per-project in `build.yaml` under the `tom_build_kit:` key:
+
+```yaml
+tom_build_kit:
+  build_runner:
+    include-builders:
+      - json_serializable
+      - freezed
+```
+
+**Builder matching** uses fuzzy substring matching: `json_serializable` matches `json_serializable:json_serializable` and vice versa. Non-matching builders are disabled via `--define=<builder>=enabled=false`.
+
+**Project detection:** Runner only processes projects that have **both** `pubspec.yaml` and `build.yaml`.
+
+**Examples:**
+
+```bash
+# Build with code generation
+runner --project _build
+
+# Clean build artifacts
+runner --project _build --command clean
+
+# Only run json_serializable builder
+runner --project _build --include-builders json_serializable
+
+# Show runner config and builder list
+runner --project _build --show
+
+# Dry-run to see planned build_runner command
+runner --project _build --dry-run
 ```
 
 ---
@@ -346,9 +701,10 @@ precompile:
 Dependency tree visualization for Dart projects. Reads `pubspec.yaml` and `pubspec_overrides.yaml`.
 
 **Usage:**
+
 ```bash
-dependencies [options]
-buildkit :dependencies [options]
+dependencies [common-options] [tool-options]
+buildkit :dependencies [tool-options]
 ```
 
 **Tool-specific options:**
@@ -356,136 +712,69 @@ buildkit :dependencies [options]
 | Flag | Short | Description |
 |------|-------|-------------|
 | `--dev` | `-d` | Show only dev dependencies |
-| `--all` | `-a` | Show all dependency types |
+| `--all` | `-a` | Show all dependency types (normal + dev) |
 | `--deep` | `-D` | Show recursive dependency tree |
 
+**No YAML configuration.** This tool has no config keys in `tom_build.yaml` — it works on any project with a `pubspec.yaml`.
+
 **Output format:**
-```
+
+```text
 my_package (my_package):
   -> path: ^1.9.0
   -> yaml: ^3.1.0
   +> test: ^1.25.0
   +> lints: ^4.0.0
+  -> tom_core: path: ../core/tom_core [override: path ../core/tom_core]
 ```
 
-Legend:
-- `->` normal dependency
-- `+>` dev dependency
-- `[override: ...]` shows dependency overrides
+| Prefix | Meaning |
+|--------|---------|
+| `->` | Normal dependency |
+| `+>` | Dev dependency |
+| `[override: ...]` | Dependency override applied |
 
-**Deep mode** (`--deep`) resolves path dependencies recursively, showing the full transitive dependency tree with circular dependency detection.
+**Dependency source formats:** Version constraints (`^1.0.0`), `path: ../pkg`, `git: url @ref (path)`, `sdk: flutter`, `hosted: ...`, `any`.
+
+**Deep mode (`--deep`):**
+
+- Recursively resolves sub-dependencies for path dependencies
+- Displays indented tree with transitive dependencies
+- Detects and marks circular references with `(circular)`
+- Only path dependencies can be resolved for subtrees (hosted/git deps don't have local pubspec files)
+
+**Examples:**
+
+```bash
+# Show normal dependencies
+dependencies --project _build
+
+# Show dev dependencies only
+dependencies --project _build --dev
+
+# Show all dependencies
+dependencies --project _build --all
+
+# Recursive dependency tree
+dependencies --project _build --deep
+
+# Deep mode with dev deps
+dependencies --project _build --deep --dev
+```
 
 ---
 
-### Runner
+### Pub Get
 
-`build_runner` wrapper with multi-project scanning and 4-level builder include/exclude filtering.
+Runs `dart pub get` across multiple projects with filtered output and summary reporting.
 
-**Usage:**
-```bash
-runner [options]
-buildkit :runner [options]
-```
-
-**Tool-specific options:**
-
-| Flag | Short | Description |
-|------|-------|-------------|
-| `--command <cmd>` | `-c` | Build runner command: `build`, `watch`, `clean` (default: `build`) |
-| `--include-builders <list>` | `-i` | Include specific builders |
-| `--exclude-builders <list>` | | Exclude specific builders |
-| `--config <name>` | | Build runner config name |
-| `--release` | | Build in release mode |
-| `--delete-conflicting` | | Delete conflicting outputs (default: true) |
-
-**tom_build.yaml:**
-```yaml
-build_runner:
-  command: build
-  delete-conflicting: true
-  scan: .
-  recursive: true
-```
-
-**Builder filter precedence (4 levels):**
-
-1. **CLI args** — `--include-builders` / `--exclude-builders`
-2. **build.yaml** — `tom_build_kit.build_runner` section
-3. **Project tom_build.yaml** — `build_runner` section
-4. **Root tom_build.yaml** — `build_runner` section
-
-**build.yaml filter config:**
-```yaml
-tom_build_kit:
-  build_runner:
-    include-builders:
-      - json_serializable
-      - freezed
-```
-
-**Builder matching** uses fuzzy substring matching: `json_serializable` matches `json_serializable:json_serializable` and vice versa.
-
----
-
-### Versioner
-
-Generates `version.g.dart` files with build metadata from `pubspec.yaml`.
+> **Note:** Pub Get is not a `ToolBase` subclass. It has its own argument parser and is only available as a BuildKit command (`:pubget` / `:pubgetall`), not as a standalone binary.
 
 **Usage:**
+
 ```bash
-versioner [options]
-buildkit :versioner [options]
-```
-
-**Tool-specific options:**
-
-| Flag | Short | Description |
-|------|-------|-------------|
-| `--output <path>` | `-o` | Output file path (default: `lib/src/version.g.dart`) |
-| `--no-git` | | Skip git commit hash |
-| `--version <ver>` | | Override version string |
-
-**tom_build.yaml:**
-```yaml
-versioner:
-  output: lib/src/version.g.dart
-  includeGitCommit: true
-  scan: .
-  recursive: true
-```
-
-**Generated file format:**
-
-```dart
-// GENERATED FILE - DO NOT EDIT
-// Generated by versioner at 2026-02-07T09:54:50.320327Z
-
-class TomVersionInfo {
-  TomVersionInfo._();
-
-  static const String version = '1.0.0';
-  static const String buildTime = '2026-02-07T09:54:50.320327Z';
-  static const String gitCommit = 'b54e489';
-  static const int buildNumber = 4;
-  static const String dartSdkVersion = '3.10.4';
-
-  static String get versionShort => '$version+$buildNumber';
-  static String get versionMedium => '$version+$buildNumber.$gitCommit ($buildTime)';
-  static String get versionLong => '$version+$buildNumber.$gitCommit ($buildTime) [Dart $dartSdkVersion]';
-}
-```
-
-**Build state:** The build number is tracked in `tom_build_state.json` in each project directory and increments with each build.
-
----
-
-## BuildKit Orchestrator
-
-The `buildkit` command orchestrates multi-step build pipelines.
-
-**Usage:**
-```bash
-buildkit [options] <pipeline|:command> [args...]
+buildkit :pubget [options]
+buildkit :pubgetall [options]    # Shortcut for :pubget --scan . --recursive
 ```
 
 **Options:**
@@ -493,84 +782,25 @@ buildkit [options] <pipeline|:command> [args...]
 | Flag | Short | Description |
 |------|-------|-------------|
 | `--help` | `-h` | Show help |
-| `--version` | `-V` | Show version |
-| `--verbose` | `-v` | Verbose output |
-| `--dry-run` | `-n` | Show what would be executed |
-| `--list` | `-l` | List available pipelines |
+| `--errors` | `-e` | Only show projects with errors |
+| `--updates` | `-u` | Only show projects with available updates |
+| `--upgrades` | `-U` | Only show projects with incompatible upgrades |
+| `--verbose` | `-v` | Show detailed output |
+| `--recursive` | `-R` | Scan directories recursively (uppercase R) |
 | `--scan <dir>` | `-s` | Scan directory for projects |
-| `--project <path>` | `-p` | Project(s) to run on |
-| `--recursive` | `-R` | Scan recursively |
-| `--root <dir>` | `-r` | Root directory for config lookup |
+| `--project <path>` | `-p` | Project(s) to process |
 
-### Pipelines
+**Output:** Shows per-project results with `📦` headers and a summary with total, succeeded, failed, with-updates, and with-incompatible-upgrades counts. Filters (`--errors`, `--updates`, `--upgrades`) are OR-combined.
 
-Define pipelines in `tom_build.yaml`:
-
-```yaml
-buildkit:
-  pipelines:
-    clean:
-      executable: true
-      core:
-        - commands:
-            - cleanup
-    build:
-      executable: true
-      runBefore: clean
-      core:
-        - commands:
-            - versioner
-            - compiler
-    deploy:
-      executable: true
-      runAfter: build
-      precore:
-        - commands:
-            - shell echo "Preparing..."
-      core:
-        - commands:
-            - shell rsync -av build/ server:/app/
-```
-
-**Pipeline sections:**
-- `precore:` — runs before the main commands
-- `core:` — main command sequence
-- `postcore:` — runs after the main commands
-- `runBefore:` — pipeline to run before this one
-- `runAfter:` — pipeline to run after this one
-- `executable: true` — makes pipeline visible in `--list`
-
-**Command types in pipelines:**
-- `versioner` — run the versioner tool
-- `compiler` — run the compiler tool
-- `runner` — run the build runner tool
-- `cleanup` — run the cleanup tool
-- `dependencies` — run the dependencies tool
-- `shell <command>` — run a shell command
-- `<pipeline-name>` — call another pipeline
-
-### Direct Commands
-
-Use `:` prefix to invoke tools directly:
+**Examples:**
 
 ```bash
-buildkit :versioner --project my_package
-buildkit :cleanup --scan . -R :compiler --project my_tool
+# Run pub get on all workspace projects
+buildkit :pubgetall
+
+# Show only projects with errors
+buildkit :pubgetall --errors
+
+# Run pub get on specific project
+buildkit :pubget --project _build
 ```
-
-### Per-Tool Option Override
-
-When chaining commands, global options (like `--scan`) are inherited. Use `-X-` syntax to suppress a specific option for one command:
-
-```bash
-# Scan with cleanup but NOT with compiler
-buildkit -s . :cleanup -s- --project tom_* :compiler
-
-# Verbose for versioner but not for runner
-buildkit -v :versioner :runner -v-
-```
-
-The `-X-` syntax works for any single-letter option:
-- `-s-` suppresses `--scan`
-- `-v-` suppresses `--verbose`
-- `-n-` suppresses `--dry-run`
