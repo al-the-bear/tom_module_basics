@@ -14,7 +14,6 @@ dependencies:
   tom_basics:
     path: ../../../../tom_basics
   tom_basics_console:
-    path: ../../../../tom_basics_console
   tom_crypto:
     path: ../../../../../tom_module_crypto/tom_crypto
   tom_reflection:

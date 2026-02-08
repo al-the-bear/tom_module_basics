@@ -506,9 +506,10 @@ packages:
   tom_basics_console:
     dependency: "direct main"
     description:
-      path: "../../../../tom_basics_console"
-      relative: true
-    source: path
+      name: tom_basics_console
+      sha256: "5afcd8d103ecf23cd300338a5f28fc29c3dea6017545a1d062be651c1aef0d6f"
+      url: "https://pub.dev"
+    source: hosted
     version: "1.0.0"
   tom_core_kernel:
     dependency: "direct main"
