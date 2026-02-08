@@ -42,3 +42,11 @@ compiler:
     - commandline:
         - chmod -R +x $HOME/.tom/bin/${current-platform-vs}/
       platforms: [macos, linux]
+    
+    # Create bk symlink for buildkit
+    - commandline:
+        - ln -sf $HOME/.tom/bin/${current-platform-vs}/buildkit $HOME/.tom/bin/${current-platform-vs}/bk
+      platforms: [macos, linux]
+    - commandline:
+        - cmd /c mklink $HOME\.tom\bin\${current-platform-vs}\bk.exe $HOME\.tom\bin\${current-platform-vs}\buildkit.exe
+      platforms: [win32-*]

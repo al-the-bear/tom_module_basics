@@ -151,6 +151,16 @@ class BuildSorterTool extends ToolBase {
 
   /// Compute the build order for the given project paths.
   ///
+  /// [allProjectPaths] is the full set of projects used to build the
+  /// dependency graph. This must include all workspace projects so that
+  /// the graph is complete and accurate.
+  ///
+  /// [targetProjectPaths] is an optional subset of projects to include
+  /// in the returned result, in correct build order. If null, all projects
+  /// from [allProjectPaths] are returned. This allows using `--project`
+  /// with `--build-order` to only execute certain projects but in the
+  /// correct dependency order.
+  ///
   /// Returns a list of project paths sorted in dependency order
   /// (projects with no intra-workspace dependencies first).
   /// Returns null if a circular dependency is detected.
@@ -160,14 +170,15 @@ class BuildSorterTool extends ToolBase {
   ///
   /// This method is public so buildkit can reuse it.
   List<String>? computeBuildOrder(
-    List<String> projectPaths, {
+    List<String> allProjectPaths, {
+    List<String>? targetProjectPaths,
     bool includeDev = false,
   }) {
     // Parse all project infos
     final infos = <String, _ProjectInfo>{};
     final nameToPath = <String, String>{};
 
-    for (final projectPath in projectPaths) {
+    for (final projectPath in allProjectPaths) {
       final info = _parseProjectInfo(projectPath);
       if (info == null) continue;
       infos[projectPath] = info;
@@ -259,16 +270,42 @@ class BuildSorterTool extends ToolBase {
 
     // Check for circular dependencies
     if (result.length < dependsOn.length) {
-      final remaining = dependsOn.keys
-          .where((p) => !result.contains(p))
-          .map((p2) => '  ${infos[p2]?.name ?? p.basename(p2)}')
+      final remainingPaths = dependsOn.keys
+          .where((path) => !result.contains(path))
+          .toList();
+      final remainingNames = remainingPaths
+          .map((path) => infos[path]?.name ?? p.basename(path))
           .toList()
         ..sort();
-      print('Error: Circular dependency detected among:');
-      for (final name in remaining) {
-        print(name);
+
+      print('Error: Circular dependency detected!');
+      print('');
+      print('The following ${remainingNames.length} projects form a dependency '
+          'cycle and cannot be ordered:');
+      for (final name in remainingNames) {
+        print('  - $name');
+      }
+      print('');
+      print('Dependency chains in the cycle:');
+      for (final path in remainingPaths) {
+        final info = infos[path];
+        if (info == null) continue;
+        final cycleDeps = dependsOn[path]!
+            .where((dep) => !result.contains(dep))
+            .map((dep) => infos[dep]?.name ?? p.basename(dep))
+            .toList()
+          ..sort();
+        if (cycleDeps.isNotEmpty) {
+          print('  ${info.name} -> ${cycleDeps.join(', ')}');
+        }
       }
       return null;
+    }
+
+    // Filter to target projects if specified
+    if (targetProjectPaths != null) {
+      final targetSet = targetProjectPaths.toSet();
+      result.retainWhere(targetSet.contains);
     }
 
     return result;

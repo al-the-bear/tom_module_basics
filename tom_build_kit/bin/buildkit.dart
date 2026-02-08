@@ -367,10 +367,32 @@ Future<void> main(List<String> args) async {
   // Apply build-order sorting if requested
   final buildOrder = results['build-order'] as bool;
   if (buildOrder) {
+    // Build-order requires workspace root context for a complete dependency graph
+    if (currentDir != rootPath) {
+      print('Error: --build-order must be used from the workspace root.');
+      print('  Current directory: $currentDir');
+      print('  Workspace root:    $rootPath');
+      print('');
+      print('Change to the workspace root directory and try again.');
+      exit(1);
+    }
+
+    // Scan ALL workspace projects for the dependency graph — exclusions must
+    // not affect graph construction, otherwise the order could be incorrect
+    // or unresolvable.
+    final allProjects = await discovery.scanForProjects(
+      rootPath,
+      recursive: true,
+      toolKey: 'buildkit',
+    );
+
     final sorter = BuildSorterTool();
-    final sorted = sorter.computeBuildOrder(projectPaths);
+    final sorted = sorter.computeBuildOrder(
+      allProjects,
+      targetProjectPaths: projectPaths,
+    );
     if (sorted == null) {
-      print('Error: Could not compute build order (circular dependencies?).');
+      // Circularity was already printed by computeBuildOrder
       exit(1);
     }
     projectPaths = sorted;
