@@ -366,11 +366,14 @@ void main() {
       final projectLines = stdout
           .split('\n')
           .where((line) => line.startsWith('  - '))
+          .map((line) => line.substring(4)) // strip "  - " prefix
           .toList();
-      for (final line in projectLines) {
-        expect(line, isNot(contains('_build')),
+      // Check that no project IS _build or ENDS with /_build
+      for (final projPath in projectLines) {
+        expect(projPath == '_build' || projPath.endsWith('/_build'), isFalse,
             reason:
-                '_build with skip file should not appear in project listing');
+                '_build with skip file should not appear in project listing '
+                '(found: $projPath)');
       }
       // Verify the skip message IS present (proves the feature is active)
       expect(stdout, contains('Skipping (tom_build_skip.yaml)'),
