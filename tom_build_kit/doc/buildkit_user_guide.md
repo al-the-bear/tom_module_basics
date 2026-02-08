@@ -272,7 +272,7 @@ Built-in commands run the respective tools directly via their Dart implementatio
 | Command | Description |
 |---------|-------------|
 | `versioner` | Generate `version.g.dart` files with build metadata |
-| `versionbump` | Bump `pubspec.yaml` versions across projects |
+| `versionbumper` | Bump `pubspec.yaml` versions across projects |
 | `compiler` | Cross-platform Dart compilation |
 | `runner` | `build_runner` wrapper with builder filtering |
 | `cleanup` | Clean generated and temporary files |

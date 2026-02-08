@@ -18,7 +18,7 @@ export 'src/pubget_command.dart';
 export 'src/commands/tool_base.dart';
 export 'src/commands/cleanup_tool.dart';
 export 'src/commands/versioner_tool.dart';
-export 'src/commands/versionbump_tool.dart';
+export 'src/commands/versionbumper_tool.dart';
 export 'src/commands/compiler_tool.dart';
 export 'src/commands/runner_tool.dart';
 export 'src/commands/dependencies_tool.dart';

@@ -16,6 +16,7 @@ compiler:
         - bin/compiler.dart
         - bin/dependencies.dart
         - bin/runner.dart
+        - bin/versionbumper.dart
         - bin/versioner.dart
       targets: [darwin-arm64, linux-x64, linux-arm64, linux-armhf]
       platforms: [darwin-arm64]
@@ -30,6 +31,7 @@ compiler:
         - bin/compiler.dart
         - bin/dependencies.dart
         - bin/runner.dart
+        - bin/versionbumper.dart
         - bin/versioner.dart
       platforms: [darwin-x64, linux-*, win32-*]
 

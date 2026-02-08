@@ -1,17 +1,6 @@
 # Build configuration for tom_build_kit
 #
-# This package provides both:
-# - A CLI orchestration tool (buildkit) with integrated tools
-# - A build_runner builder (version_builder) for version file generation
+# This package uses the versioner tool (tom_build.yaml) for version
+# file generation instead of build_runner builders.
 #
-# Note: Version generation for this package uses the versioner tool
-# configured in tom_build.yaml, not the build_runner builder.
-
-# Builder definitions
-builders:
-  version_builder:
-    import: "package:tom_build_kit/builder.dart"
-    builder_factories: ["versionBuilder"]
-    build_extensions: {".dart": [".version.g.dart"]}
-    auto_apply: none
-    build_to: source
+# No build_runner builders are configured.

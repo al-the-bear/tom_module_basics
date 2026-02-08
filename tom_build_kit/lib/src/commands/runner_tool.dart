@@ -546,7 +546,6 @@ class RunnerTool extends ToolBase {
     print('  runner                            # Build in current project');
     print('  runner -c watch                   # Watch mode');
     print('  runner -c clean                   # Clean build outputs');
-    print('  runner -i tom_build_kit:version_builder  # Only run versioner');
     print('  runner -s . -r                    # All projects recursively');
   }
 }

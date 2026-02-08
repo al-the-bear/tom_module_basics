@@ -22,20 +22,20 @@ import 'versioner_tool.dart';
 ///
 /// ```bash
 /// # Bump all projects in workspace (patch by default)
-/// versionbump -s . -r
+/// versionbumper -s . -r
 ///
 /// # Bump with minor for specific projects, major for others
-/// versionbump -s . -r --minor tom_core,tom_basics --major tom_d4rt
+/// versionbumper -s . -r --minor tom_core,tom_basics --major tom_d4rt
 ///
 /// # Bump and regenerate version files
-/// versionbump -s . -r --versioner
+/// versionbumper -s . -r --versioner
 ///
 /// # Dry run to see what would change
-/// versionbump -s . -r --dry-run
+/// versionbumper -s . -r --dry-run
 /// ```
-class VersionBumpTool extends ToolBase {
+class VersionBumperTool extends ToolBase {
   @override
-  String get toolKey => 'versionbump';
+  String get toolKey => 'versionbumper';
 
   @override
   String get toolDescription =>
@@ -367,10 +367,10 @@ class VersionBumpTool extends ToolBase {
   void _printUsage(ArgParser parser) {
     print('Version Bump Tool - $toolDescription');
     print('');
-    print('Usage: versionbump [options]');
-    print('       buildkit :versionbump [options]');
-    print('       dart run tom_build_kit:versionbump [options]');
-    print('       versionbump version');
+    print('Usage: versionbumper [options]');
+    print('       buildkit :versionbumper [options]');
+    print('       dart run tom_build_kit:versionbumper [options]');
+    print('       versionbumper version');
     print('');
     print('Options:');
     print(parser.usage);
@@ -383,12 +383,12 @@ class VersionBumpTool extends ToolBase {
     print('  - Use --versioner to regenerate version.g.dart files after bump');
     print('');
     print('Examples:');
-    print('  versionbump -s . -r                        # Patch bump all');
-    print('  versionbump -s . -r -v                     # Bump all + versioner');
-    print('  versionbump -s . -r --minor tom_core       # Minor for tom_core');
-    print('  versionbump -s . -r --minor tom_core,tom_basics --major tom_d4rt');
-    print('  versionbump --project tom_build_kit         # Bump single project');
-    print('  versionbump -s . -r -n                     # Dry run');
+    print('  versionbumper -s . -r                        # Patch bump all');
+    print('  versionbumper -s . -r -v                     # Bump all + versioner');
+    print('  versionbumper -s . -r --minor tom_core       # Minor for tom_core');
+    print('  versionbumper -s . -r --minor tom_core,tom_basics --major tom_d4rt');
+    print('  versionbumper --project tom_build_kit         # Bump single project');
+    print('  versionbumper -s . -r -n                     # Dry run');
   }
 }
 
