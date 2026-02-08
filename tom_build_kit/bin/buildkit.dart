@@ -90,7 +90,7 @@ import 'package:yaml/yaml.dart';
 String get _version {
   try {
     // ignore: avoid_relative_lib_imports
-    return TomVersionInfo.versionLong;
+    return BuildkitVersionInfo.versionLong;
   } catch (_) {
     return '1.0.0-dev';
   }
@@ -139,6 +139,10 @@ Future<void> main(List<String> args) async {
         abbr: 'l', negatable: false, help: 'List available pipelines')
     ..addFlag('recursive',
         abbr: 'r', negatable: false, help: 'Scan directories recursively')
+    ..addFlag('git-scan',
+        abbr: 'g',
+        negatable: false,
+        help: 'Scan for git repositories in the workspace')
     ..addOption('scan',
         abbr: 's', help: 'Scan directory for projects to run pipeline in')
     ..addOption('root',
@@ -176,6 +180,7 @@ Future<void> main(List<String> args) async {
   final dryRun = results['dry-run'] as bool;
   final listPipelines = results['list'] as bool;
   final recursive = results['recursive'] as bool;
+  final gitScan = results['git-scan'] as bool;
   final scanPath = results['scan'] as String?;
 
   // Warn if known global flags appear after the pipeline/command name.
@@ -243,6 +248,19 @@ Future<void> main(List<String> args) async {
       exit(1);
     }
     print('Found ${projectPaths.length} project(s) to process');
+    if (_verbose) {
+      for (final path in projectPaths) {
+        print('  - ${p.relative(path, from: currentDir)}');
+      }
+    }
+  } else if (gitScan) {
+    // Scan for git repositories in the workspace
+    projectPaths = _findGitRepositories(rootPath, recursive: recursive);
+    if (projectPaths.isEmpty) {
+      print('No git repositories found in: $rootPath');
+      exit(1);
+    }
+    print('Found ${projectPaths.length} git repository(ies) to process');
     if (_verbose) {
       for (final path in projectPaths) {
         print('  - ${p.relative(path, from: currentDir)}');
@@ -322,7 +340,15 @@ Future<void> main(List<String> args) async {
       );
 
       bool result;
-      if (step.isCommand) {
+      if (step.isCommand && step.name == 'git') {
+        // Special :git command — execute git directly in project directory
+        result = await _executeGitCommand(
+          args: step.args,
+          workingDirectory: projectPath,
+          dryRun: stepDryRun,
+          verbose: stepVerbose,
+        );
+      } else if (step.isCommand) {
         // Execute command directly via BuiltinCommands
         final commandStr = [step.name, ...step.args].join(' ');
         result = await stepExecutor.executeCommand(commandStr);
@@ -374,6 +400,7 @@ void _printUsage(ArgParser parser) {
   print('  :dependencies   Dependency tree visualization');
   print('  :pubget         Run dart pub get on projects');
   print('  :pubgetall      Shortcut for :pubget --scan . --recursive');
+  print('  :git            Run git commands in each project directory');
   print('');
   print('Allowed binaries (configured in tom_build.yaml buildkit.allowed-binaries):');
   print('  Additional binaries can be executed via :name syntax.');
@@ -407,6 +434,8 @@ void _printUsage(ArgParser parser) {
   print('  buildkit -n deploy                  # Dry-run deploy pipeline');
   print('  buildkit build --scan .             # Run build in projects under current dir');
   print('  buildkit build -s . -r              # Run build recursively in all projects');
+  print('  buildkit -g :git status              # Run git status in all repos');
+  print('  buildkit -g :git push                # Push all git repos in workspace');
 }
 
 void _listPipelines(PipelineConfig config) {
@@ -462,6 +491,119 @@ String _findWorkspaceRoot(String startPath) {
   }
 
   return startPath;
+}
+
+/// Find all git repository roots under [rootPath].
+///
+/// Scans for directories containing a `.git` folder or file (submodules
+/// use a `.git` file pointing to the parent repo's modules directory).
+/// The root path itself is included if it is a git repository. Submodules
+/// and nested repos under known directories (`xternal/`, `xternal_apps/`)
+/// are discovered by scanning one level deep by default, or recursively
+/// if [recursive] is true.
+List<String> _findGitRepositories(String rootPath, {bool recursive = false}) {
+  final repos = <String>[];
+  final rootDir = Directory(rootPath);
+
+  if (!rootDir.existsSync()) return repos;
+
+  // Helper: check if a directory is a git repo (directory .git or file .git for submodules)
+  bool isGitRepo(String dirPath) {
+    final gitPath = p.join(dirPath, '.git');
+    return Directory(gitPath).existsSync() || File(gitPath).existsSync();
+  }
+
+  // Check if root itself is a git repo
+  if (isGitRepo(rootPath)) {
+    repos.add(rootPath);
+  }
+
+  // Scan immediate subdirectories for .git folders/files
+  // Also scan xternal/*/ and xternal_apps/*/ for submodules
+  final searchDirs = <String>[rootPath];
+  final xternalDir = Directory(p.join(rootPath, 'xternal'));
+  if (xternalDir.existsSync()) {
+    searchDirs.add(xternalDir.path);
+  }
+  final xternalAppsDir = Directory(p.join(rootPath, 'xternal_apps'));
+  if (xternalAppsDir.existsSync()) {
+    searchDirs.add(xternalAppsDir.path);
+  }
+
+  for (final searchDir in searchDirs) {
+    try {
+      for (final entity in Directory(searchDir).listSync()) {
+        if (entity is Directory && entity.path != rootPath) {
+          if (isGitRepo(entity.path)) {
+            repos.add(entity.path);
+          }
+        }
+      }
+    } catch (_) {
+      // Permission errors, etc.
+    }
+  }
+
+  // Sort for consistent ordering
+  repos.sort((a, b) => p.relative(a, from: rootPath)
+      .compareTo(p.relative(b, from: rootPath)));
+
+  return repos;
+}
+
+/// Execute a git command in the specified working directory.
+///
+/// Used by the `:git` command to spawn git with the provided [args].
+Future<bool> _executeGitCommand({
+  required List<String> args,
+  required String workingDirectory,
+  required bool dryRun,
+  required bool verbose,
+}) async {
+  final displayDir = p.basename(workingDirectory);
+  final argsStr = args.join(' ');
+
+  if (dryRun) {
+    print('  [DRY RUN] ($displayDir) git $argsStr');
+    return true;
+  }
+
+  if (verbose) {
+    print('  ($displayDir) git $argsStr');
+  }
+
+  try {
+    final result = await Process.run(
+      'git',
+      args,
+      workingDirectory: workingDirectory,
+    );
+
+    final stdoutStr = result.stdout.toString();
+    final stderrStr = result.stderr.toString();
+
+    // Prefix output with directory name for clarity
+    if (stdoutStr.trim().isNotEmpty) {
+      for (final line in stdoutStr.trimRight().split('\n')) {
+        print('  ($displayDir) $line');
+      }
+    }
+    if (stderrStr.trim().isNotEmpty) {
+      for (final line in stderrStr.trimRight().split('\n')) {
+        stderr.writeln('  ($displayDir) $line');
+      }
+    }
+
+    if (result.exitCode != 0) {
+      print('  ($displayDir) git exited with code ${result.exitCode}');
+      return false;
+    }
+
+    return true;
+  } catch (e) {
+    print('  Error executing git in $displayDir: $e');
+    return false;
+  }
 }
 
 /// Parse execution steps from remaining command line arguments.
@@ -556,6 +698,7 @@ const _builtinCommandNames = {
   'dependencies',
   'pubget',
   'pubgetall',
+  'git',
 };
 
 /// Print separator before a step.
@@ -583,10 +726,26 @@ Future<bool> _runCommandHelp(String commandName) async {
     case 'pubget' || 'pubgetall':
       PubGetCommand.printUsage();
       return true;
+    case 'git':
+      print('Git Command — run git in each project directory');
+      print('');
+      print('Usage: buildkit --git-scan :git <args...>');
+      print('       buildkit -g :git <args...>');
+      print('');
+      print('Executes git with the given arguments in each discovered');
+      print('git repository root. Use --git-scan (-g) to automatically');
+      print('discover all git repositories in the workspace.');
+      print('');
+      print('Examples:');
+      print('  buildkit -g :git status            # Status of all repos');
+      print('  buildkit -g :git push              # Push all repos');
+      print('  buildkit -g :git pull --rebase     # Pull with rebase');
+      print('  buildkit -g :git stash             # Stash in all repos');
+      return true;
     default:
       print('Unknown command: $commandName');
       print('');
-      print('Available commands: versioner, versionbump, compiler, runner, cleanup, dependencies, pubget');
+      print('Available commands: versioner, versionbump, compiler, runner, cleanup, dependencies, pubget, git');
       return false;
   }
 }
@@ -679,6 +838,7 @@ const _knownGlobalFlags = {
   '--verbose', '-v',
   '--dry-run', '-n',
   '--recursive', '-r',
+  '--git-scan', '-g',
   '--scan', '-s',
   '--project', '-p',
   '--root', '-R',

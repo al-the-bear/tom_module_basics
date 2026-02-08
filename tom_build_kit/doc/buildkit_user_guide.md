@@ -23,6 +23,7 @@ For the individual tool reference, see [tools_user_guide.md](tools_user_guide.md
   - [Pipeline Phases](#pipeline-phases)
 - [Built-in Commands](#built-in-commands)
 - [Allowed Binaries](#allowed-binaries)
+- [Git Operations](#git-operations)
 - [Shell Commands](#shell-commands)
   - [Variable Expansion](#variable-expansion)
   - [Environment Variables](#environment-variables)
@@ -100,6 +101,7 @@ Usage: buildkit [options] <pipeline|:command> [args...] [<pipeline|:command> [ar
 | `--recursive` | `-r` | Scan directories recursively |
 | `--project <path>` | `-p` | Project(s) to run on |
 | `--root <dir>` | `-R` | Root directory for configuration lookup |
+| `--git-scan` | `-g` | Scan for git repositories instead of build projects |
 | `--exclude <pattern>` | `-x` | Exclude patterns — path-based globs (multi-option) |
 | `--exclude-projects <pattern>` | — | Exclude projects by name or path (multi-option) |
 
@@ -277,6 +279,7 @@ Built-in commands run the respective tools directly via their Dart implementatio
 | `dependencies` | Dependency tree visualization |
 | `pubget` | Run `dart pub get` on projects |
 | `pubgetall` | Shortcut for `pubget --scan . --recursive` |
+| `git` | Run git commands across all workspace repositories (requires `--git-scan`) |
 
 Commands can include arguments in pipeline definitions:
 
@@ -327,6 +330,71 @@ core:
 ```
 
 The `allowed-binaries` lists from workspace and project configs are merged additively.
+
+---
+
+## Git Operations
+
+BuildKit can scan the workspace for git repositories and run git commands across all of them in a single invocation.
+
+### Git Scan Flag
+
+The `--git-scan` (`-g`) flag tells BuildKit to discover all git repositories in the workspace instead of scanning for build projects. It searches:
+
+- The workspace root directory
+- Subdirectories under `xternal/` (external sub-workspaces)
+- Subdirectories under `xternal_apps/` (external applications)
+
+Both regular git repositories (`.git/` directory) and git submodules (`.git` file) are detected.
+
+### The :git Command
+
+Use the `:git` command with `--git-scan` to run git commands across all discovered repositories:
+
+```bash
+# Check status of all repositories
+buildkit -g :git status --short
+
+# Pull latest changes in all repositories
+buildkit -g :git pull
+
+# Show recent commits across all repos
+buildkit -g :git log --oneline -3
+
+# Fetch all remotes
+buildkit -g :git fetch --all
+```
+
+Each repository's output is prefixed with its directory name for easy identification:
+
+```
+________ Running :git status --short in (tom2)
+ M _build/pubspec.yaml
+
+________ Running :git status --short in (tom_module_basics)
+ M tom_build_kit/bin/buildkit.dart
+
+________ Running :git status --short in (tom_module_d4rt)
+(clean)
+```
+
+The `--dry-run` (`-n`) and `--verbose` (`-v`) flags work with `:git`:
+
+```bash
+# Preview which repos would be affected
+buildkit -g -n :git pull
+
+# Verbose output with full git command details
+buildkit -g -v :git status --short
+```
+
+**Get help:**
+
+```bash
+buildkit help :git
+```
+
+> **Note:** The `:git` command requires `--git-scan` (`-g`). Without it, BuildKit reports an error. Regular project scanning (`--scan`) is not relevant for git operations.
 
 ---
 

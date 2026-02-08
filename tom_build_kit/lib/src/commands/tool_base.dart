@@ -57,7 +57,7 @@ abstract class ToolBase {
     if (args.isNotEmpty) {
       final first = args.first.toLowerCase();
       if (first == 'version' || first == '--version' || first == '-version') {
-        print('$toolKey ${TomVersionInfo.versionLong}');
+        print('$toolKey ${BuildkitVersionInfo.versionLong}');
         return true;
       }
     }
