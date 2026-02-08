@@ -55,8 +55,11 @@ void main() {
   });
 
   tearDownAll(() async {
+    print('');
+    print('  ── Versioner Tests: Tear-down ──');
     // Verify no commits leaked during the test run
     await ws.verifyHeadRefs();
+    print('  ── Versioner Tests: Complete ──');
   });
 
   group('versioner', () {

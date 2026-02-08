@@ -192,11 +192,12 @@ class TestWorkspace {
   /// Call this in `setUpAll` before running any integration tests.
   /// Excludes submodule pointer changes in the main repo.
   Future<void> requireCleanWorkspace() async {
+    print('    🔍 Checking workspace cleanliness...');
     final dirty = await hasUncommittedChanges();
     if (dirty.isNotEmpty) {
-      print('WARNING: Workspace has uncommitted changes:');
+      print('    ⚠️  Workspace has uncommitted changes:');
       for (final f in dirty) {
-        print('  $f');
+        print('       $f');
       }
       fail(
         'Workspace must be clean before running integration tests. '
@@ -204,6 +205,7 @@ class TestWorkspace {
         'See _copilot_guidelines/testing.md for the pre-test safety protocol.',
       );
     }
+    print('    ✓ Workspace is clean');
   }
 
   /// Save HEAD SHA for the main repo and all submodules.
@@ -211,19 +213,27 @@ class TestWorkspace {
   /// Call this in `setUpAll` after [requireCleanWorkspace].
   /// Use [verifyHeadRefs] in `tearDownAll` to verify no commits leaked.
   Future<void> saveHeadRefs() async {
+    print('    📸 Saving HEAD refs (backup for leak detection)...');
     _savedHeadRefs.clear();
 
     // Main repo
     final mainHead = await _getHeadSha(workspaceRoot);
     _savedHeadRefs[workspaceRoot] = mainHead;
+    print('       main repo: ${mainHead.substring(0, 8)}');
 
     // Submodules (skip those with skip file)
-    for (final subPath in await getSubmodulePaths()) {
+    final subPaths = await getSubmodulePaths();
+    for (final subPath in subPaths) {
       final absPath = p.join(workspaceRoot, subPath);
-      if (isSkippedRepo(absPath)) continue;
+      if (isSkippedRepo(absPath)) {
+        print('       $subPath: SKIPPED (has $skipFileName)');
+        continue;
+      }
       final sha = await _getHeadSha(absPath);
       _savedHeadRefs[absPath] = sha;
+      print('       $subPath: ${sha.substring(0, 8)}');
     }
+    print('    ✓ Saved ${_savedHeadRefs.length} HEAD refs');
   }
 
   /// Verify that HEAD SHAs haven't changed since [saveHeadRefs].
@@ -231,8 +241,9 @@ class TestWorkspace {
   /// Call this in `tearDownAll`. Fails the test if any repo has a
   /// different HEAD than the saved reference.
   Future<void> verifyHeadRefs() async {
+    print('    🔒 Verifying HEAD refs (leak detection)...');
     if (_savedHeadRefs.isEmpty) {
-      print('WARNING: No saved HEAD refs to verify. Was saveHeadRefs called?');
+      print('    ⚠️  No saved HEAD refs to verify. Was saveHeadRefs called?');
       return;
     }
 
@@ -241,11 +252,14 @@ class TestWorkspace {
       final path = entry.key;
       final savedSha = entry.value;
       final currentSha = await _getHeadSha(path);
+      final label = path == workspaceRoot
+          ? 'main repo'
+          : p.relative(path, from: workspaceRoot);
       if (currentSha != savedSha) {
-        final label = path == workspaceRoot
-            ? 'main repo'
-            : p.relative(path, from: workspaceRoot);
+        print('       ✗ $label: was ${savedSha.substring(0, 8)}, now ${currentSha.substring(0, 8)} — LEAKED!');
         mismatches.add('$label: was $savedSha, now $currentSha');
+      } else {
+        print('       ✓ $label: ${currentSha.substring(0, 8)} (unchanged)');
       }
     }
 
@@ -255,24 +269,30 @@ class TestWorkspace {
         '  ${mismatches.join('\n  ')}',
       );
     }
+    print('    ✓ All HEAD refs intact — no leaked commits');
   }
 
   /// Revert all changes and verify workspace is clean after test suite.
   ///
   /// Convenience method that combines revert + verify for `tearDownAll`.
   Future<void> tearDownProtocol() async {
+    print('    🔄 Running tear-down protocol...');
     // Revert main repo
     await revertAll();
 
     // Revert submodules (skip those with skip file)
     for (final subPath in await getSubmodulePaths()) {
       final absPath = p.join(workspaceRoot, subPath);
-      if (isSkippedRepo(absPath)) continue;
+      if (isSkippedRepo(absPath)) {
+        print('    ⏭️  Skipping submodule $subPath (has $skipFileName)');
+        continue;
+      }
       await revertSubmodule(absPath);
     }
 
     // Verify no commits leaked
     await verifyHeadRefs();
+    print('    ✓ Tear-down protocol complete');
   }
 
   /// Check if a directory has a tom_build_skip.yaml marker.
@@ -338,6 +358,7 @@ class TestWorkspace {
     }
     final dst = File(p.join(workspaceRoot, 'tom_build_master.yaml'));
     await src.copy(dst.path);
+    print('    📋 Installed fixture "$fixtureName" → tom_build_master.yaml');
   }
 
   // ---------------------------------------------------------------------------
@@ -349,7 +370,9 @@ class TestWorkspace {
   /// Note: This only reverts files tracked in the main repo, not in
   /// submodules. For submodule files, use [revertSubmodule].
   Future<void> revertAll() async {
+    print('    ↩️  Reverting workspace (git checkout -- .)...');
     await _git(['checkout', '--', '.'], workingDirectory: workspaceRoot);
+    print('    ✓ Workspace reverted');
   }
 
   /// Revert all changes in a submodule directory.
@@ -357,7 +380,10 @@ class TestWorkspace {
     final absPath = p.isAbsolute(submodulePath)
         ? submodulePath
         : p.join(workspaceRoot, submodulePath);
+    final label = p.relative(absPath, from: workspaceRoot);
+    print('    ↩️  Reverting submodule $label...');
     await _git(['checkout', '--', '.'], workingDirectory: absPath);
+    print('    ✓ Submodule $label reverted');
   }
 
   /// Revert specific files (paths relative to workspace root).
@@ -414,11 +440,14 @@ class TestWorkspace {
     String? workingDirectory,
   }) async {
     final binPath = p.join(buildkitRoot, 'bin', '$tool.dart');
-    return Process.run(
+    print('    🔧 Running: $tool ${args.join(' ')}');
+    final result = await Process.run(
       'dart',
       ['run', binPath, ...args],
       workingDirectory: workingDirectory ?? workspaceRoot,
     );
+    print('    ✓ $tool exited with code ${result.exitCode}');
+    return result;
   }
 
   /// Run a buildkit pipeline.
@@ -431,11 +460,14 @@ class TestWorkspace {
     String? workingDirectory,
   }) async {
     final binPath = p.join(buildkitRoot, 'bin', 'buildkit.dart');
-    return Process.run(
+    print('    🔧 Running pipeline: buildkit $pipeline ${args.join(' ')}');
+    final result = await Process.run(
       'dart',
       ['run', binPath, pipeline, ...args],
       workingDirectory: workingDirectory ?? workspaceRoot,
     );
+    print('    ✓ buildkit $pipeline exited with code ${result.exitCode}');
+    return result;
   }
 
   // ---------------------------------------------------------------------------
@@ -468,6 +500,7 @@ class TestWorkspace {
       '# Temporary skip file placed by integration test.\n'
       '# Should be removed automatically in tearDown.\n',
     );
+    print('    📄 Placed skip file: $relativeDir/$skipFileName');
     return absPath;
   }
 
@@ -478,6 +511,7 @@ class TestWorkspace {
     final file = File(absPath);
     if (file.existsSync()) {
       file.deleteSync();
+      print('    🗑️  Removed skip file: $relativeDir/$skipFileName');
     }
   }
 

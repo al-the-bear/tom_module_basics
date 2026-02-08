@@ -50,21 +50,29 @@ void main() {
     log.finish();
 
     // Remove any temporary skip files placed during this test
-    for (final skipFilePath in tempSkipFiles) {
-      final file = File(skipFilePath);
-      if (file.existsSync()) {
-        file.deleteSync();
+    if (tempSkipFiles.isNotEmpty) {
+      print('    🗑️  Cleaning up ${tempSkipFiles.length} temporary skip file(s)...');
+      for (final skipFilePath in tempSkipFiles) {
+        final file = File(skipFilePath);
+        if (file.existsSync()) {
+          final rel = p.relative(skipFilePath, from: ws.workspaceRoot);
+          file.deleteSync();
+          print('       removed: $rel');
+        }
       }
+      tempSkipFiles.clear();
     }
-    tempSkipFiles.clear();
 
     // Revert all changes in the main repo (fixture, etc.)
     await ws.revertAll();
   });
 
   tearDownAll(() async {
+    print('');
+    print('  ── Exclusion Tests: Tear-down ──');
     // Verify no commits leaked during the test run
     await ws.verifyHeadRefs();
+    print('  ── Exclusion Tests: Complete ──');
   });
 
   // ---------------------------------------------------------------------------
