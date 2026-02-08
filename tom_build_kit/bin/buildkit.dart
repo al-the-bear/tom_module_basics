@@ -149,7 +149,8 @@ Future<void> main(List<String> args) async {
     ..addMultiOption('exclude',
         abbr: 'x', help: 'Exclude patterns (path-based globs)')
     ..addMultiOption('exclude-projects',
-        help: 'Exclude projects by folder name (glob patterns)');
+        help:
+            'Exclude projects by name or path (e.g. zom_*, xternal/tom_module_basics/*)');
 
   ArgResults results;
   try {
@@ -631,15 +632,20 @@ List<String> _filterProjectPaths(
     }
   }
 
-  // Apply exclude-projects (folder name-based filtering)
+  // Apply exclude-projects filtering
+  // Patterns with '/' or '**' match against the workspace-relative path;
+  // simple patterns match against the folder basename only.
   if (allExcludeProjects.isNotEmpty) {
     result = result.where((projectPath) {
       final folderName = p.basename(projectPath);
+      final relativePath = p.relative(projectPath, from: rootPath);
       for (final pattern in allExcludeProjects) {
+        final isPathPattern = pattern.contains('/') || pattern.contains('**');
+        final matchTarget = isPathPattern ? relativePath : folderName;
         try {
-          if (Glob(pattern).matches(folderName)) return false;
+          if (Glob(pattern).matches(matchTarget)) return false;
         } catch (_) {
-          if (folderName == pattern) return false;
+          if (matchTarget.contains(pattern)) return false;
         }
       }
       return true;

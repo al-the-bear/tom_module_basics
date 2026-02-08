@@ -76,7 +76,8 @@ abstract class ToolBase {
       ..addMultiOption('exclude',
           abbr: 'x', help: 'Exclude patterns (path-based globs)')
       ..addMultiOption('exclude-projects',
-          help: 'Exclude projects by folder name (glob patterns)')
+          help:
+              'Exclude projects by name or path (e.g. zom_*, xternal/tom_module_basics/*)')
       ..addMultiOption('recursion-exclude',
           help: 'Exclude patterns during recursive scan')
       ..addFlag('list',
@@ -134,8 +135,9 @@ abstract class ToolBase {
       ..._loadMasterExcludeProjects(basePath),
     ];
 
-    // Apply --exclude-projects (folder name-based filtering)
-    results = _filterProjectsByName(results, allExcludeProjects);
+    // Apply --exclude-projects filtering
+    final wsRoot = findWorkspaceRoot(basePath);
+    results = _filterProjectsByName(results, allExcludeProjects, wsRoot);
 
     // Remove projects that contain tom_build_skip.yaml
     results = _filterSkippedProjects(results);
@@ -173,21 +175,28 @@ abstract class ToolBase {
     }).toList();
   }
 
-  /// Filter projects by folder name using glob matching.
+  /// Filter projects by exclude-projects patterns.
   ///
-  /// Unlike [_filterProjects] which matches on the full path,
-  /// this matches only on the directory basename (folder name).
+  /// Patterns that contain `/` or `**` are treated as **path patterns** and
+  /// matched against the workspace-relative path (e.g. `xternal/tom_module_basics/*`,
+  /// `**/tom_module_basics/*`).
+  ///
+  /// All other patterns are treated as **folder name patterns** and matched
+  /// against the directory basename only (e.g. `zom_*`, `tom_test_*`).
   List<String> _filterProjectsByName(
-      List<String> projects, List<String> excludePatterns) {
+      List<String> projects, List<String> excludePatterns, String wsRoot) {
     if (excludePatterns.isEmpty) return projects;
 
     return projects.where((projectPath) {
       final folderName = p.basename(projectPath);
+      final relativePath = p.relative(projectPath, from: wsRoot);
       for (final pattern in excludePatterns) {
+        final isPathPattern = pattern.contains('/') || pattern.contains('**');
+        final matchTarget = isPathPattern ? relativePath : folderName;
         try {
-          if (Glob(pattern).matches(folderName)) return false;
+          if (Glob(pattern).matches(matchTarget)) return false;
         } catch (_) {
-          if (folderName == pattern) return false;
+          if (matchTarget.contains(pattern)) return false;
         }
       }
       return true;
