@@ -64,11 +64,14 @@ tom_build_kit/
     fixtures/
       versioner/
         tom_build_master.yaml   # Minimal master config for versioner tests
+      exclusion/
+        tom_build_master.yaml   # Minimal master config for exclusion tests
       cleanup/
         tom_build_master.yaml   # Minimal master config for cleanup tests
       pipeline/
         tom_build_master.yaml   # Pipeline-specific configs
     versioner_test.dart         # Versioner tool integration tests
+    exclusion_test.dart         # Cross-tool project exclusion tests (27 tests)
     cleanup_test.dart           # Cleanup tool integration tests
     pipeline_test.dart          # Buildkit pipeline integration tests
 ```
@@ -90,6 +93,7 @@ The shared `TestWorkspace` class provides:
   - `verifyHeadRefs()` — post-suite check that no commits leaked (call in `tearDownAll`)
   - `tearDownProtocol()` — combined revert + verify for `tearDownAll`
 - **Skip file support**: `isSkippedRepo(path)` — checks for `tom_build_skip.yaml` marker; repos with this file are excluded from test git operations (no commit check, no checkout revert)
+- **Skip file placement**: `placeSkipFile(relativeDir)` — creates a temporary `tom_build_skip.yaml` in a directory; `removeSkipFile(relativeDir)` — removes it. Tests should track placed files and clean them up in `tearDown`.
 - **Fixture installation**: `installFixture(name)` — copies fixture `tom_build_master.yaml` to workspace root
 - **Git revert**: `revertAll()` — reverts all changes in main repo; `revertSubmodule(path)` — reverts submodule
 - **Tool execution**: `runTool(name, args)` — runs a tool via `dart run <bin/tool.dart>` from workspace root

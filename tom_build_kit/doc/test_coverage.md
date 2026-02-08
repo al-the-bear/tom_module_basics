@@ -16,7 +16,7 @@ For the testing strategy, safety protocol, and test infrastructure, see [_copilo
 
 | # | Feature Area | Tests | Status | Test File | Details |
 |---|-------------|-------|--------|-----------|---------|
-| 1 | [ToolBase — Shared Infrastructure](#1-toolbase--shared-infrastructure) | 14 | ⬜ | `toolbase_test.dart` | [→](#1-toolbase--shared-infrastructure) |
+| 1 | [ToolBase — Shared Infrastructure](#1-toolbase--shared-infrastructure) | 14 | 7✅ 7⬜ | `toolbase_test.dart` | [→](#1-toolbase--shared-infrastructure) |
 | 2 | [Versioner — Version File Generation](#2-versioner--version-file-generation) | 7 | 5✅ 2🐛 | `versioner_test.dart` | [→](#2-versioner--version-file-generation) |
 | 3 | [Cleanup — File Deletion](#3-cleanup--file-deletion) | 8 | ⬜ | `cleanup_test.dart` | [→](#3-cleanup--file-deletion) |
 | 4 | [Compiler — Cross-Platform Compilation](#4-compiler--cross-platform-compilation) | 6 | ⬜ | `compiler_test.dart` | [→](#4-compiler--cross-platform-compilation) |
@@ -26,7 +26,8 @@ For the testing strategy, safety protocol, and test infrastructure, see [_copilo
 | 8 | [BuildKit — Pipeline Orchestrator](#8-buildkit--pipeline-orchestrator) | 9 | ⬜ | `buildkit_test.dart` | [→](#8-buildkit--pipeline-orchestrator) |
 | 9 | [Config Merge — Merge Precedence](#9-config-merge--merge-precedence) | 4 | ⬜ | `config_merge_test.dart` | [→](#9-config-merge--merge-precedence) |
 | 10 | [Security — Path & Command Validation](#10-security--path--command-validation) | 4 | ⬜ | `security_test.dart` | [→](#10-security--path--command-validation) |
-| — | **Total** | **66** | **5✅ 2🐛 59⬜** | | |
+| 11 | [Exclusion — Cross-Tool Filtering](#11-exclusion--cross-tool-filtering) | 27 | 25✅ 2🐛 | `exclusion_test.dart` | [→](#11-exclusion--cross-tool-filtering) |
+| — | **Total** | **93** | **37✅ 4🐛 52⬜** | | |
 
 ---
 
@@ -44,13 +45,13 @@ These features are shared by all tools. Test via any tool (e.g., versioner or de
 | 1.4 | `--exclude` glob filtering | ⬜ | Run versioner `--scan . -r --list --exclude 'zom_*'`. Verify no `zom_` projects in output. |
 | 1.5 | `--recursion-exclude` during scanning | ⬜ | Run with `--recursion-exclude node_modules`. Verify node_modules subdirs not scanned. |
 | 1.6 | Workspace root discovery | ⬜ | Run tool from workspace root vs from a subdirectory. Both should find `tom_build_master.yaml`. |
-| 1.7 | `--exclude-projects` folder name filtering | ⬜ | Run versioner `--scan . -r --list --exclude-projects 'tom_d4rt*'`. Verify no `tom_d4rt*` folders in output. |
-| 1.8 | `--exclude-projects` from master YAML | ⬜ | Set `exclude-projects: ['tom_test_*']` in master YAML navigation. Run `--list`. Verify excluded. |
-| 1.9 | `tom_build_skip.yaml` skips directory | ⬜ | Place `tom_build_skip.yaml` in a project dir. Run `--list`. Verify project excluded. |
-| 1.10 | `tom_build_skip.yaml` skips subdirectories | ⬜ | Place skip file in parent dir. Run `--scan` recursively. Verify no children found. |
-| 1.11 | `--exclude-projects` with relative path pattern | ⬜ | Run versioner `--scan . -r --list --exclude-projects 'xternal/tom_module_basics/*'`. Verify all projects under that submodule excluded. |
-| 1.12 | `--exclude-projects` with `**` glob path pattern | ⬜ | Run versioner `--scan . -r --list --exclude-projects '**/tom_module_basics/*'`. Verify same exclusion regardless of leading path. |
-| 1.13 | `--exclude-projects` combined basename + path patterns | ⬜ | Run versioner `--scan . -r --list --exclude-projects 'zom_*' --exclude-projects 'xternal/tom_module_basics/*'`. Verify both pattern types applied. |
+| 1.7 | `--exclude-projects` folder name filtering | ✅ | Run versioner `--scan . -r --list --exclude-projects 'tom_d4rt*'`. Verify no `tom_d4rt*` folders in output. |
+| 1.8 | `--exclude-projects` from master YAML | ✅ | Set `exclude-projects: ['tom_test_*']` in master YAML navigation. Run `--list`. Verify excluded. |
+| 1.9 | `tom_build_skip.yaml` skips directory | ✅ | Place `tom_build_skip.yaml` in a project dir. Run `--list`. Verify project excluded. |
+| 1.10 | `tom_build_skip.yaml` skips subdirectories | ✅ | Place skip file in parent dir. Run `--scan` recursively. Verify no children found. |
+| 1.11 | `--exclude-projects` with relative path pattern | ✅ | Run versioner `--scan . -r --list --exclude-projects 'xternal/tom_module_basics/*'`. Verify all projects under that submodule excluded. |
+| 1.12 | `--exclude-projects` with `**` glob path pattern | ✅ | Run versioner `--scan . -r --list --exclude-projects '**/tom_module_basics/*'`. Verify same exclusion regardless of leading path. |
+| 1.13 | `--exclude-projects` combined basename + path patterns | ✅ | Run versioner `--scan . -r --list --exclude-projects 'zom_*' --exclude-projects 'xternal/tom_module_basics/*'`. Verify both pattern types applied. |
 | 1.14 | `--exclude-projects` pattern auto-detection | ⬜ | Verify patterns without `/` or `**` match basename only (e.g. `tom_basics` excludes `tom_basics` but not `xternal/tom_module_basics/tom_basics`). Verify patterns with `/` match workspace-relative path. |
 
 ---
@@ -208,6 +209,71 @@ Tests that verify security boundaries are enforced.
 
 ---
 
+## 11. Exclusion — Cross-Tool Filtering
+
+**Test file:** `test/exclusion_test.dart`
+
+Comprehensive cross-tool tests for all project exclusion features. Tests every tool with `--scan . --recursive --list` and verifies exclusion filters work correctly.
+
+### Basename Patterns (`--exclude-projects`)
+
+| # | Feature | Status | How to Test |
+|---|---------|--------|-------------|
+| 11.1 | Versioner excludes by basename | ✅ | `--exclude-projects '_build'`. Verify `_build` absent from `--list`. |
+| 11.2 | Cleanup excludes by basename | ✅ | `--exclude-projects '_build'`. Verify `_build` absent. |
+| 11.3 | Compiler excludes by basename | ✅ | `--exclude-projects '_build'`. Verify `_build` absent. |
+| 11.4 | Dependencies excludes by basename | ✅ | `--exclude-projects '_build'`. Verify `_build` absent. |
+| 11.5 | Runner excludes by basename | ✅ | `--exclude-projects 'tom_build_cli'`. Verify no `tom_build_cli` basename. |
+| 11.6 | VersionBump crashes (known bug #13) | 🐛 | `--exclude-projects '_build'`. Exit code 255 due to `-v` conflict. |
+| 11.7 | Glob pattern excludes multiple | ✅ | `--exclude-projects 'tom_core_*'`. Verify no `tom_core_*` basenames. |
+
+### Path Patterns (`--exclude-projects`)
+
+| # | Feature | Status | How to Test |
+|---|---------|--------|-------------|
+| 11.8 | Path pattern `core/*` | ✅ | `--exclude-projects 'core/*'`. No `core/` projects in output. |
+| 11.9 | Path pattern `devops/**` for runner | ✅ | `--exclude-projects 'devops/**'`. No `devops/` projects (including nested). |
+| 11.10 | `**` glob matches nested paths | ✅ | `--exclude-projects '**/tom_core_*'`. No `tom_core_*` at any depth. |
+| 11.11 | Combined basename + path patterns | ✅ | `--exclude-projects '_build' --exclude-projects 'core/*'`. Both applied. |
+
+### `tom_build_skip.yaml` Marker File
+
+| # | Feature | Status | How to Test |
+|---|---------|--------|-------------|
+| 11.12 | Skip file excludes from versioner | ✅ | Place skip file in `_build`. Run `--list`. Verify `_build` absent. |
+| 11.13 | Skip file excludes from cleanup | ✅ | Place skip file in `_build`. Verify absent. |
+| 11.14 | Skip file excludes from compiler | ✅ | Place skip file in `_build`. Verify absent. |
+| 11.15 | Skip file excludes from dependencies | ✅ | Place skip file in `_build`. Verify absent. |
+| 11.16 | Skip file excludes from runner | ✅ | Place skip file in `devops/tom_build_cli`. Verify absent. |
+| 11.17 | Skip file excludes from versionbump (bug) | 🐛 | Place skip file. Exit 255 due to bug #13. |
+| 11.18 | Skip file in parent excludes children | ✅ | Place skip file in `core/`. No `core/*` children found. |
+| 11.19 | Skip file cleanup in tearDown | ✅ | Verify file exists after placement, removed in tearDown. |
+
+### BuildKit Exclusion
+
+| # | Feature | Status | How to Test |
+|---|---------|--------|-------------|
+| 11.20 | BuildKit excludes by basename | ✅ | `--exclude-projects '_build' --verbose`. Verify not in project listing. |
+| 11.21 | BuildKit excludes by path pattern | ✅ | `--exclude-projects 'core/*' --verbose`. No `core/` in listing. |
+| 11.22 | BuildKit respects skip file | ✅ | Place skip file. Verify not in listing, skip message present. |
+
+### Master YAML Exclusion
+
+| # | Feature | Status | How to Test |
+|---|---------|--------|-------------|
+| 11.23 | Master YAML basename exclude | ✅ | Set `exclude-projects: ['_build']` in fixture. Verify `_build` absent. |
+| 11.24 | Master YAML path pattern exclude | ✅ | Set `exclude-projects: ['core/*']` in fixture. No `core/` projects. |
+
+### Baseline (No Exclusion)
+
+| # | Feature | Status | How to Test |
+|---|---------|--------|-------------|
+| 11.25 | Versioner finds _build without filters | ✅ | No exclusions. `_build` in output. |
+| 11.26 | Dependencies finds core projects | ✅ | No exclusions. `core/` projects in output. |
+| 11.27 | Runner finds projects | ✅ | No exclusions. Projects with `build.yaml` in output. |
+
+---
+
 ## Known Bugs Affecting Tests
 
 These bugs are tracked in [issues.md](issues.md) and affect test expectations:
@@ -215,5 +281,5 @@ These bugs are tracked in [issues.md](issues.md) and affect test expectations:
 | Issue | Bug | Impact on Tests |
 |-------|-----|-----------------|
 | #12 | Versioner config merge-order | Tests 2.2, 2.6, 9.3 document current (buggy) behavior instead of expected behavior |
-| #13 | VersionBump `-v` abbreviation conflict | All versionbump tests (7.x) will fail until bug is fixed — tool cannot start |
+| #13 | VersionBump `-v` abbreviation conflict | All versionbump tests (7.x) will fail until bug is fixed — tool cannot start. Exclusion tests 11.6, 11.17 document crash. |
 | #14 | BuiltinCommands dry-run inconsistency | Pipeline dry-run tests (8.5) may not fully verify tool-level dry-run |
