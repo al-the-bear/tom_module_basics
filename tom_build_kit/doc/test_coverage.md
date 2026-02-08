@@ -18,16 +18,16 @@ For the testing strategy, safety protocol, and test infrastructure, see [_copilo
 |---|-------------|-------|--------|-----------|---------|
 | 1 | [ToolBase — Shared Infrastructure](#1-toolbase--shared-infrastructure) | 14 | 7✅ 7⬜ | `toolbase_test.dart` | [→](#1-toolbase--shared-infrastructure) |
 | 2 | [Versioner — Version File Generation](#2-versioner--version-file-generation) | 7 | 5✅ 2🐛 | `versioner_test.dart` | [→](#2-versioner--version-file-generation) |
-| 3 | [Cleanup — File Deletion](#3-cleanup--file-deletion) | 8 | ⬜ | `cleanup_test.dart` | [→](#3-cleanup--file-deletion) |
-| 4 | [Compiler — Cross-Platform Compilation](#4-compiler--cross-platform-compilation) | 6 | ⬜ | `compiler_test.dart` | [→](#4-compiler--cross-platform-compilation) |
-| 5 | [Runner — Build Runner Wrapper](#5-runner--build-runner-wrapper) | 5 | ⬜ | `runner_test.dart` | [→](#5-runner--build-runner-wrapper) |
-| 6 | [Dependencies — Dependency Tree](#6-dependencies--dependency-tree) | 4 | ⬜ | `dependencies_test.dart` | [→](#6-dependencies--dependency-tree) |
-| 7 | [VersionBump — Version Bumping](#7-versionbump--version-bumping) | 5 | ⬜ | `versionbump_test.dart` | [→](#7-versionbump--version-bumping) |
-| 8 | [BuildKit — Pipeline Orchestrator](#8-buildkit--pipeline-orchestrator) | 9 | ⬜ | `buildkit_test.dart` | [→](#8-buildkit--pipeline-orchestrator) |
-| 9 | [Config Merge — Merge Precedence](#9-config-merge--merge-precedence) | 4 | ⬜ | `config_merge_test.dart` | [→](#9-config-merge--merge-precedence) |
-| 10 | [Security — Path & Command Validation](#10-security--path--command-validation) | 4 | ⬜ | `security_test.dart` | [→](#10-security--path--command-validation) |
+| 3 | [Cleanup — File Deletion](#3-cleanup--file-deletion) | 8 | 8✅ | `cleanup_test.dart` | [→](#3-cleanup--file-deletion) |
+| 4 | [Compiler — Cross-Platform Compilation](#4-compiler--cross-platform-compilation) | 6 | 6✅ | `compiler_test.dart` | [→](#4-compiler--cross-platform-compilation) |
+| 5 | [Runner — Build Runner Wrapper](#5-runner--build-runner-wrapper) | 5 | 5✅ | `runner_test.dart` | [→](#5-runner--build-runner-wrapper) |
+| 6 | [Dependencies — Dependency Tree](#6-dependencies--dependency-tree) | 4 | 4✅ | `dependencies_test.dart` | [→](#6-dependencies--dependency-tree) |
+| 7 | [VersionBump — Version Bumping](#7-versionbump--version-bumping) | 6 | 1✅ 5🐛 | `versionbump_test.dart` | [→](#7-versionbump--version-bumping) |
+| 8 | [BuildKit — Pipeline Orchestrator](#8-buildkit--pipeline-orchestrator) | 9 | 9✅ | `buildkit_test.dart` | [→](#8-buildkit--pipeline-orchestrator) |
+| 9 | [Config Merge — Merge Precedence](#9-config-merge--merge-precedence) | 4 | 3✅ 1🐛 | `config_merge_test.dart` | [→](#9-config-merge--merge-precedence) |
+| 10 | [Security — Path & Command Validation](#10-security--path--command-validation) | 4 | 3✅ 1⬜ | `security_test.dart` | [→](#10-security--path--command-validation) |
 | 11 | [Exclusion — Cross-Tool Filtering](#11-exclusion--cross-tool-filtering) | 27 | 25✅ 2🐛 | `exclusion_test.dart` | [→](#11-exclusion--cross-tool-filtering) |
-| — | **Total** | **93** | **37✅ 4🐛 52⬜** | | |
+| — | **Total** | **94** | **76✅ 10🐛 8⬜** | | |
 
 ---
 
@@ -39,12 +39,12 @@ These features are shared by all tools. Test via any tool (e.g., versioner or de
 
 | ID | Feature | Status | How to Test |
 |----|---------|--------|-------------|
-| TB_VER01 | Version argument (`version`, `--version`, `-version`) | ⬜ | Run tool with `version` as first arg. Verify stdout contains tool name and version string. |
-| TB_HLP01 | `--help` flag | ⬜ | Run tool with `--help`. Verify exit code 0 and stdout contains usage text. |
-| TB_LST01 | `--list` with `--scan` and `--recursive` | ⬜ | Run versioner `--scan . --recursive --list`. Verify output lists discovered projects. |
-| TB_EXC01 | `--exclude` glob filtering | ⬜ | Run versioner `--scan . -r --list --exclude 'zom_*'`. Verify no `zom_` projects in output. |
+| TB_VER01 | Version argument (`version`, `--version`, `-version`) | ✅ | Run tool with `version` as first arg. Verify stdout contains tool name and version string. |
+| TB_HLP01 | `--help` flag | ✅ | Run tool with `--help`. Verify exit code 0 and stdout contains usage text. |
+| TB_LST01 | `--list` with `--scan` and `--recursive` | ✅ | Run versioner `--scan . --recursive --list`. Verify output lists discovered projects. |
+| TB_EXC01 | `--exclude` glob filtering | ✅ | Run versioner `--scan . -r --list --exclude 'zom_*'`. Verify no `zom_` projects in output. |
 | TB_EXC02 | `--recursion-exclude` during scanning | ⬜ | Run with `--recursion-exclude node_modules`. Verify node_modules subdirs not scanned. |
-| TB_DSC01 | Workspace root discovery | ⬜ | Run tool from workspace root vs from a subdirectory. Both should find `tom_build_master.yaml`. |
+| TB_DSC01 | Workspace root discovery | ✅ | Run tool from workspace root vs from a subdirectory. Both should find `tom_build_master.yaml`. |
 | TB_XPJ01 | `--exclude-projects` folder name filtering | ✅ | Run versioner `--scan . -r --list --exclude-projects 'tom_d4rt*'`. Verify no `tom_d4rt*` folders in output. |
 | TB_XPJ02 | `--exclude-projects` from master YAML | ✅ | Set `exclude-projects: ['tom_test_*']` in master YAML navigation. Run `--list`. Verify excluded. |
 | TB_SKP01 | `tom_build_skip.yaml` skips directory | ✅ | Place `tom_build_skip.yaml` in a project dir. Run `--list`. Verify project excluded. |
@@ -52,7 +52,7 @@ These features are shared by all tools. Test via any tool (e.g., versioner or de
 | TB_XPJ03 | `--exclude-projects` with relative path pattern | ✅ | Run versioner `--scan . -r --list --exclude-projects 'xternal/tom_module_basics/*'`. Verify all projects under that submodule excluded. |
 | TB_XPJ04 | `--exclude-projects` with `**` glob path pattern | ✅ | Run versioner `--scan . -r --list --exclude-projects '**/tom_module_basics/*'`. Verify same exclusion regardless of leading path. |
 | TB_XPJ05 | `--exclude-projects` combined basename + path patterns | ✅ | Run versioner `--scan . -r --list --exclude-projects 'zom_*' --exclude-projects 'xternal/tom_module_basics/*'`. Verify both pattern types applied. |
-| TB_XPJ06 | `--exclude-projects` pattern auto-detection | ⬜ | Verify patterns without `/` or `**` match basename only (e.g. `tom_basics` excludes `tom_basics` but not `xternal/tom_module_basics/tom_basics`). Verify patterns with `/` match workspace-relative path. |
+| TB_XPJ06 | `--exclude-projects` pattern auto-detection | ✅ | Verify patterns without `/` or `**` match basename only (e.g. `tom_basics` excludes `tom_basics` but not `xternal/tom_module_basics/tom_basics`). Verify patterns with `/` match workspace-relative path. |
 
 ---
 
@@ -82,14 +82,14 @@ Target project: `_build` (has cleanup config) or a test project.
 
 | ID | Feature | Status | How to Test |
 |----|---------|--------|-------------|
-| CLN_DEL01 | Deletes files matching glob patterns | ⬜ | Create temp `.g.dart` files in target project. Run cleanup. Verify files deleted. |
-| CLN_DRY01 | `--dry-run` lists files without deleting | ⬜ | Create temp files. Run with `--dry-run`. Verify files still exist and stdout lists them. |
-| CLN_EXC01 | `excludes` patterns prevent deletion | ⬜ | Create a `version.g.dart` file. Configure exclude for it. Run cleanup. Verify it survives. |
-| CLN_PRO01 | Protected folders are never deleted | ⬜ | Attempt cleanup on directory containing `.git` or `.github`. Verify those are untouched. |
-| CLN_SAF01 | `--max-files` safety limit triggers abort | ⬜ | Create >100 matching files. Run without `--force`. Verify exit code != 0 and files remain. |
-| CLN_SAF02 | `--force` skips safety limit | ⬜ | Create >100 matching files. Run with `--force`. Verify deletion proceeds. |
-| CLN_LST01 | `--list` shows cleanup-configured projects | ⬜ | Run with `--list`. Verify projects with `cleanup:` config appear. |
-| CLN_SHW01 | `--show` displays cleanup config | ⬜ | Run with `--show`. Verify cleanup sections are displayed. |
+| CLN_DEL01 | Deletes files matching glob patterns | ✅ | Create temp `.g.dart` files in target project. Run cleanup. Verify files deleted. |
+| CLN_DRY01 | `--dry-run` lists files without deleting | ✅ | Create temp files. Run with `--dry-run`. Verify files still exist and stdout lists them. |
+| CLN_EXC01 | `excludes` patterns prevent deletion | ✅ | Create a `version.g.dart` file. Configure exclude for it. Run cleanup. Verify it survives. |
+| CLN_PRO01 | Protected folders are never deleted | ✅ | Attempt cleanup on directory containing `.git` or `.github`. Verify those are untouched. |
+| CLN_SAF01 | `--max-files` safety limit triggers abort | ✅ | Create >100 matching files. Run without `--force`. Verify exit code != 0 and files remain. |
+| CLN_SAF02 | `--force` skips safety limit | ✅ | Create >100 matching files. Run with `--force`. Verify deletion proceeds. |
+| CLN_LST01 | `--list` shows cleanup-configured projects | ✅ | Run with `--list`. Verify projects with `cleanup:` config appear. |
+| CLN_SHW01 | `--show` displays cleanup config | ✅ | Run with `--show`. Verify cleanup sections are displayed. |
 
 ---
 
@@ -101,12 +101,12 @@ Target project: `_build` or another project with `compiler:` config.
 
 | ID | Feature | Status | How to Test |
 |----|---------|--------|-------------|
-| CMP_LST01 | `--list` shows compiler-configured projects | ⬜ | Run with `--list`. Verify only projects with `compiler:` config appear. |
-| CMP_SHW01 | `--show` displays compiler config | ⬜ | Run with `--show`. Verify compile sections, targets, and pre/postcompile displayed. |
-| CMP_DRY01 | `--dry-run` shows commands without executing | ⬜ | Run with `--dry-run`. Verify stdout shows planned compilation commands. No binaries produced. |
-| CMP_TGT01 | `--targets` filters target platforms | ⬜ | Run with `--targets linux-x64`. Verify only linux-x64 compilation attempted. |
-| CMP_PLC01 | Placeholder resolution in commandlines | ⬜ | Configure `commandline` with `${file}`, `${target-platform}`. Run. Verify placeholders resolved in verbose output. |
-| CMP_PHS01 | Precompile/postcompile phases execute | ⬜ | Configure pre/postcompile steps (e.g., `echo` commands). Run. Verify all phases execute in order. |
+| CMP_LST01 | `--list` shows compiler-configured projects | ✅ | Run with `--list`. Verify only projects with `compiler:` config appear. |
+| CMP_SHW01 | `--show` displays compiler config | ✅ | Run with `--show`. Verify compile sections, targets, and pre/postcompile displayed. |
+| CMP_DRY01 | `--dry-run` shows commands without executing | ✅ | Run with `--dry-run`. Verify stdout shows planned compilation commands. No binaries produced. |
+| CMP_TGT01 | `--targets` filters target platforms | ✅ | Run with `--targets linux-x64`. Verify only linux-x64 compilation attempted. |
+| CMP_PLC01 | Placeholder resolution in commandlines | ✅ | Configure `commandline` with `${file}`, `${target-platform}`. Run. Verify placeholders resolved in verbose output. |
+| CMP_PHS01 | Precompile/postcompile phases execute | ✅ | Configure pre/postcompile steps (e.g., `echo` commands). Run. Verify all phases execute in order. |
 
 ---
 
@@ -118,11 +118,11 @@ Target project: Any project with `build.yaml` (e.g., `_build`).
 
 | ID | Feature | Status | How to Test |
 |----|---------|--------|-------------|
-| RUN_LST01 | `--list` shows runner-eligible projects | ⬜ | Run with `--list`. Verify projects with `build.yaml` appear. |
-| RUN_SHW01 | `--show` displays runner config and builders | ⬜ | Run with `--show`. Verify builder names and filter config displayed. |
-| RUN_DRY01 | `--dry-run` shows build_runner command | ⬜ | Run with `--dry-run`. Verify planned command shown without execution. |
-| RUN_FLT01 | `--include-builders` filters to specific builders | ⬜ | Run with `--include-builders reflection`. Verify only reflection builder runs. |
-| RUN_CLN01 | `--command clean` runs build_runner clean | ⬜ | Run with `--command clean`. Verify build_runner clean executed successfully. |
+| RUN_LST01 | `--list` shows runner-eligible projects | ✅ | Run with `--list`. Verify projects with `build.yaml` appear. |
+| RUN_SHW01 | `--show` displays runner config and builders | ✅ | Run with `--show`. Verify builder names and filter config displayed. |
+| RUN_DRY01 | `--dry-run` shows build_runner command | ✅ | Run with `--dry-run`. Verify planned command shown without execution. |
+| RUN_FLT01 | `--include-builders` filters to specific builders | ✅ | Run with `--include-builders reflection`. Verify only reflection builder runs. |
+| RUN_CLN01 | `--command clean` runs build_runner clean | ✅ | Run with `--command clean`. Verify build_runner clean executed successfully. |
 
 ---
 
@@ -134,10 +134,10 @@ Target project: Any project with dependencies (e.g., `_build`).
 
 | ID | Feature | Status | How to Test |
 |----|---------|--------|-------------|
-| DEP_NRM01 | Default mode shows normal dependencies | ⬜ | Run dependencies. Verify stdout lists `->` prefixed dependency names. |
-| DEP_DEV01 | `--dev` shows dev dependencies only | ⬜ | Run with `--dev`. Verify stdout lists `+>` prefixed dependencies. No `->` entries. |
-| DEP_ALL01 | `--all` shows both normal and dev | ⬜ | Run with `--all`. Verify both `->` and `+>` entries present. |
-| DEP_DRP01 | `--deep` shows recursive dependency tree | ⬜ | Run with `--deep`. Verify indented tree output with transitive dependencies. |
+| DEP_NRM01 | Default mode shows normal dependencies | ✅ | Run dependencies. Verify stdout lists `->` prefixed dependency names. |
+| DEP_DEV01 | `--dev` shows dev dependencies only | ✅ | Run with `--dev`. Verify stdout lists `+>` prefixed dependencies. No `->` entries. |
+| DEP_ALL01 | `--all` shows both normal and dev | ✅ | Run with `--all`. Verify both `->` and `+>` entries present. |
+| DEP_DRP01 | `--deep` shows recursive dependency tree | ✅ | Run with `--deep`. Verify indented tree output with transitive dependencies. |
 
 ---
 
@@ -151,11 +151,12 @@ Target project: `_build` (has `version:` in pubspec.yaml).
 
 | ID | Feature | Status | How to Test |
 |----|---------|--------|-------------|
-| VBM_PAT01 | Default patch bump | ⬜ | Run versionbump on `_build`. Verify `version:` in pubspec.yaml incremented patch (e.g., 1.0.0 → 1.0.1). |
-| VBM_MIN01 | `--minor` bump for specific project | ⬜ | Run with `--minor _build`. Verify minor version bumped (e.g., 1.0.0 → 1.1.0). |
-| VBM_MAJ01 | `--major` bump for specific project | ⬜ | Run with `--major _build`. Verify major version bumped (e.g., 1.0.0 → 2.0.0). |
-| VBM_RST01 | Build counter reset after bump | ⬜ | Run versionbump. Verify `tom_build_state.json` has `buildNumber: 0`. |
-| VBM_DRY01 | `--dry-run` shows planned bumps without changing files | ⬜ | Run with `--dry-run`. Verify pubspec.yaml unchanged and stdout shows planned bump. |
+| VBM_BUG13 | Bug #13: `--help` crashes due to `-v` conflict | ✅ | Run `versionbump --help`. Verify exit 255 with abbreviation error. |
+| VBM_PAT01 | Default patch bump | 🐛 | Run versionbump on `_build`. Verify `version:` in pubspec.yaml incremented patch (e.g., 1.0.0 → 1.0.1). **Blocked by bug #13.** |
+| VBM_MIN01 | `--minor` bump for specific project | 🐛 | Run with `--minor _build`. Verify minor version bumped (e.g., 1.0.0 → 1.1.0). **Blocked by bug #13.** |
+| VBM_MAJ01 | `--major` bump for specific project | 🐛 | Run with `--major _build`. Verify major version bumped (e.g., 1.0.0 → 2.0.0). **Blocked by bug #13.** |
+| VBM_RST01 | Build counter reset after bump | 🐛 | Run versionbump. Verify `tom_build_state.json` has `buildNumber: 0`. **Blocked by bug #13.** |
+| VBM_DRY01 | `--dry-run` shows planned bumps without changing files | 🐛 | Run with `--dry-run`. Verify pubspec.yaml unchanged and stdout shows planned bump. **Blocked by bug #13.** |
 
 ---
 
@@ -167,15 +168,15 @@ Uses workspace-level pipeline configuration from `tom_build_master.yaml`.
 
 | ID | Feature | Status | How to Test |
 |----|---------|--------|-------------|
-| BKT_LST01 | `--list` shows available pipelines | ⬜ | Run `buildkit --list`. Verify pipeline names from `tom_build_master.yaml` are listed. |
-| BKT_HLP01 | `--help` shows usage | ⬜ | Run `buildkit --help`. Verify usage text displayed. |
-| BKT_CMD01 | Direct command execution (`:versioner`) | ⬜ | Run `buildkit :versioner --project _build`. Verify versioner executes. |
-| BKT_PIP01 | Pipeline execution (`build`, `clean`) | ⬜ | Run `buildkit clean --project _build`. Verify pipeline steps execute in order. |
-| BKT_DRY01 | `--dry-run` on pipeline | ⬜ | Run `buildkit build --dry-run --project _build`. Verify no changes made. |
-| BKT_OPT01 | Per-step option suppression (`-s-`, `-v-`) | ⬜ | Run `buildkit :versioner -s- --project _build`. Verify `-s` not passed to versioner. |
-| BKT_SHL01 | Shell command execution in pipeline | ⬜ | Configure pipeline step with `shell echo hello`. Run. Verify "hello" in output. |
-| BKT_XPJ01 | `--exclude-projects` filters pipeline targets | ⬜ | Run `buildkit build --exclude-projects 'zom_*'`. Verify no `zom_` projects processed by any pipeline step. |
-| BKT_XPJ02 | `--exclude` combined with `--exclude-projects` | ⬜ | Run `buildkit build --exclude '*.g.dart' --exclude-projects 'xternal/tom_module_basics/*'`. Verify both file-level and project-level exclusions applied independently. |
+| BKT_LST01 | `--list` shows available pipelines | ✅ | Run `buildkit --list`. Verify pipeline names from `tom_build_master.yaml` are listed. |
+| BKT_HLP01 | `--help` shows usage | ✅ | Run `buildkit --help`. Verify usage text displayed. |
+| BKT_CMD01 | Direct command execution (`:versioner`) | ✅ | Run `buildkit :versioner --project _build`. Verify versioner executes. |
+| BKT_PIP01 | Pipeline execution (`build`, `clean`) | ✅ | Run `buildkit clean --project _build`. Verify pipeline steps execute in order. |
+| BKT_DRY01 | `--dry-run` on pipeline | ✅ | Run `buildkit build --dry-run --project _build`. Verify no changes made. |
+| BKT_OPT01 | Per-step option suppression (`-s-`, `-v-`) | ✅ | Run `buildkit :versioner -s- --project _build`. Verify `-s` not passed to versioner. |
+| BKT_SHL01 | Shell command execution in pipeline | ✅ | Configure pipeline step with `shell echo hello`. Run. Verify "hello" in output. |
+| BKT_XPJ01 | `--exclude-projects` filters pipeline targets | ✅ | Run `buildkit build --exclude-projects 'zom_*'`. Verify no `zom_` projects processed by any pipeline step. |
+| BKT_XPJ02 | `--exclude` combined with `--exclude-projects` | ✅ | Run `buildkit build --exclude '*.g.dart' --exclude-projects 'xternal/tom_module_basics/*'`. Verify both file-level and project-level exclusions applied independently. |
 
 ---
 
@@ -187,10 +188,10 @@ Tests that verify the config merge hierarchy works correctly across all tools.
 
 | ID | Feature | Status | How to Test |
 |----|---------|--------|-------------|
-| CFG_DEF01 | Workspace defaults apply when project has no config | ⬜ | Use fixture with workspace-level `versioner:` prefix. Target project without `versioner:` in `tom_build.yaml`. Verify workspace prefix used. |
-| CFG_OVR01 | Project config overrides workspace config | ⬜ | Use fixture with workspace prefix `testDefault`. Target project with `tomTools`. Verify project prefix used. |
-| CFG_CLI01 | CLI args override project config (after bug fix) | ⬜ | Run with `--variable-prefix myCustom`. Verify `MyCustomVersionInfo`. **Blocked by issues.md #12.** |
-| CFG_MRG01 | Additive merge for list fields (excludes, protected-folders) | ⬜ | Configure workspace and project with different exclude patterns. Verify both patterns applied (union). |
+| CFG_DEF01 | Workspace defaults apply when project has no config | ✅ | Use fixture with workspace-level `versioner:` prefix. Target project without `versioner:` in `tom_build.yaml`. Verify workspace prefix used. |
+| CFG_OVR01 | Project config overrides workspace config | ✅ | Use fixture with workspace prefix `testDefault`. Target project with `tomTools`. Verify project prefix used. |
+| CFG_CLI01 | CLI args override project config (after bug fix) | 🐛 | Run with `--variable-prefix myCustom`. Verify `MyCustomVersionInfo`. **Blocked by issues.md #12.** |
+| CFG_MRG01 | Additive merge for list fields (excludes, protected-folders) | ✅ | Configure workspace and project with different exclude patterns. Verify both patterns applied (union). |
 
 ---
 
@@ -202,9 +203,9 @@ Tests that verify security boundaries are enforced.
 
 | ID | Feature | Status | How to Test |
 |----|---------|--------|-------------|
-| SEC_PRJ01 | `--project` rejects paths outside workspace | ⬜ | Run versioner `--project /tmp/evil`. Verify non-zero exit code and error message about path containment. |
-| SEC_SCN01 | `--scan` rejects paths outside workspace | ⬜ | Run versioner `--scan /tmp`. Verify rejection. |
-| SEC_PRO01 | Protected folders survive cleanup | ⬜ | Configure cleanup that would match `.git/` contents. Run. Verify `.git/` untouched. |
+| SEC_PRJ01 | `--project` rejects paths outside workspace | ✅ | Run versioner `--project /tmp/evil`. Verify non-zero exit code and error message about path containment. |
+| SEC_SCN01 | `--scan` rejects paths outside workspace | ✅ | Run versioner `--scan /tmp`. Verify rejection. |
+| SEC_PRO01 | Protected folders survive cleanup | ✅ | Configure cleanup that would match `.git/` contents. Run. Verify `.git/` untouched. |
 | SEC_CMD01 | Pipeline rejects unknown commands | ⬜ | Configure pipeline with `rm -rf /`. Run. Verify command rejected (not an allowed binary or `shell ` prefix). |
 
 ---
