@@ -7,6 +7,7 @@ import 'package:yaml/yaml.dart';
 import '../builtin_commands.dart';
 import '../compiler_config.dart';
 import '../platform_utils.dart';
+import '../script_utils.dart' as script_utils;
 import 'tool_base.dart';
 
 /// Configuration for the compiler tool CLI.
@@ -462,6 +463,27 @@ class CompilerTool extends ToolBase {
               PlatformUtils.vsCodeToDartTarget(currentPlatform))
           .replaceAll(r'${current-platform-vs}', currentPlatform);
 
+      // Check if this is a stdin-piping command before env var replacement
+      if (script_utils.isStdinCommand(command)) {
+        final parsed = script_utils.parseStdinCommand(command);
+        if (parsed != null) {
+          // Expand env vars in command only, not stdin content
+          final expandedCmd = _replaceEnvVars(parsed.command);
+          final result = await script_utils.executeWithStdin(
+            command: expandedCmd,
+            stdinContent: parsed.stdinContent,
+            environment: Platform.environment,
+            dryRun: dryRun,
+            verbose: verbose,
+          );
+          if (!result) {
+            print('  Error: $sectionName stdin command failed: '
+                '${parsed.command}');
+          }
+          continue;
+        }
+      }
+
       // Replace environment variables
       command = _replaceEnvVars(command);
 
@@ -545,6 +567,39 @@ class CompilerTool extends ToolBase {
           .replaceAll('[target-arch]', targetArch)
           .replaceAll('[target-platform]', targetDart)
           .replaceAll('[target-platform-vs]', targetPlatform);
+
+      // Check if this is a stdin-piping command before env var replacement
+      if (script_utils.isStdinCommand(command)) {
+        final parsed = script_utils.parseStdinCommand(command);
+        if (parsed != null) {
+          final expandedCmd = _replaceEnvVars(parsed.command);
+          if (dryRun) {
+            print('  [DRY RUN] compile stdin ($targetPlatform): '
+                '${parsed.command}');
+            continue;
+          }
+          if (verbose) {
+            print('  Compiling $fileName for $targetPlatform (stdin)...');
+            print('    Command: ${parsed.command}');
+          } else {
+            print('  Compiling $fileName for $targetPlatform (stdin)');
+          }
+          final result = await script_utils.executeWithStdin(
+            command: expandedCmd,
+            stdinContent: parsed.stdinContent,
+            workingDirectory: projectPath,
+            environment: Platform.environment,
+            dryRun: dryRun,
+            verbose: verbose,
+          );
+          if (!result) {
+            print('  Error: Compilation failed for $fileName '
+                '($targetPlatform)');
+            return false;
+          }
+          continue;
+        }
+      }
 
       // Replace environment variables
       command = _replaceEnvVars(command);
@@ -733,6 +788,11 @@ class CompilerTool extends ToolBase {
     print('');
     print('  Use "command:" instead of "commandline:" to trigger a built-in');
     print('  tool (versioner, compiler, runner, cleanup, etc.).');
+    print('');
+    print('Multi-line scripts & stdin piping:');
+    print('  commandline entries support multi-line content via YAML');
+    print('  literal block scalars (|). Use "stdin <cmd>" prefix to pipe');
+    print('  content to a command\'s stdin instead of running as a script.');
     print('');
     print('Examples:');
     print('  compiler                          # Compile in current project');

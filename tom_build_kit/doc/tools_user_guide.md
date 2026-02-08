@@ -581,6 +581,36 @@ Bracket format is also supported: `[file]`, `[target-os]`, `[target-platform-vs]
 
 Environment variables are resolved using `$VAR` or `[VAR]` syntax: `$HOME`, `$USER`, `$PATH`, etc.
 
+**Multi-line scripts and stdin piping:**
+
+Command line entries support multi-line content using YAML literal block scalars (`|`). Multi-line commands are executed as a single script via `sh -c`:
+
+```yaml
+precompile:
+  - commandlines:
+      - |
+        echo "Preparing build..."
+        mkdir -p build/${target-platform-vs}
+        if [ -f "build/cache" ]; then
+          echo "Using cached artifacts"
+        fi
+```
+
+Use the `stdin` prefix to pipe content to a command's stdin. The first line specifies the command; subsequent lines are the stdin content:
+
+```yaml
+precompile:
+  - commandlines:
+      - |
+        stdin dcli
+        import 'dart:io';
+        void main() {
+          print('Pre-compile setup via DartScript');
+        }
+```
+
+> **Note:** Variable expansion (`${file}`, `${target-os}`, etc.) is applied to the command line only, not to stdin content. This avoids conflicts with language-specific `$` syntax (e.g., Dart string interpolation).
+
 **Platform filtering:**
 
 Two independent platform filters exist:

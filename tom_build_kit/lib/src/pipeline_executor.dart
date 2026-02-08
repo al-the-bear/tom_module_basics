@@ -4,6 +4,7 @@ import 'dart:io';
 import 'pipeline_config.dart';
 import 'pipeline_step.dart';
 import 'builtin_commands.dart';
+import 'script_utils.dart' as script_utils;
 
 /// Executes pipelines with dependency resolution.
 class PipelineExecutor {
@@ -160,6 +161,39 @@ class PipelineExecutor {
   Future<bool> _executeCommand(String command) async {
     final trimmed = command.trim();
     if (trimmed.isEmpty) return true;
+
+    // Check if it's a multi-line shell script (shell\n<body>)
+    if (script_utils.isMultiLineShellScript(trimmed)) {
+      final scriptBody = script_utils.extractScriptBody(trimmed);
+      if (verbose) {
+        print('  Multi-line shell script:');
+        for (final line in scriptBody.split('\n').take(3)) {
+          print('    $line');
+        }
+        final lineCount = scriptBody.split('\n').length;
+        if (lineCount > 3) print('    ... (${lineCount - 3} more lines)');
+      }
+      return _executeShellCommand(scriptBody);
+    }
+
+    // Check if it's a stdin-piping command (stdin <cmd>\n<content>)
+    if (script_utils.isStdinCommand(trimmed)) {
+      final parsed = script_utils.parseStdinCommand(trimmed);
+      if (parsed != null) {
+        final expandedCommand = _expandVariables(parsed.command);
+        if (verbose) {
+          print('  Stdin command: ${parsed.command}');
+        }
+        return script_utils.executeWithStdin(
+          command: expandedCommand,
+          stdinContent: parsed.stdinContent,
+          workingDirectory: projectPath,
+          environment: _buildEnvironment(),
+          dryRun: dryRun,
+          verbose: verbose,
+        );
+      }
+    }
 
     if (verbose) print('  Command: $trimmed');
 

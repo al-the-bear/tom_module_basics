@@ -26,6 +26,8 @@ For the individual tool reference, see [tools_user_guide.md](tools_user_guide.md
 - [Shell Commands](#shell-commands)
   - [Variable Expansion](#variable-expansion)
   - [Environment Variables](#environment-variables)
+  - [Multi-Line Shell Scripts](#multi-line-shell-scripts)
+  - [Stdin Piping](#stdin-piping)
 - [Platform Filtering](#platform-filtering)
   - [Platform Aliases](#platform-aliases)
 - [Per-Tool Option Override](#per-tool-option-override)
@@ -370,6 +372,62 @@ Shell commands are executed with these environment variables set:
 | `BUILDKIT_PROJECT` | Current project path |
 | `BUILDKIT_ROOT` | Workspace root path |
 | `BUILDKIT_PLATFORM` | Current platform (VS Code format) |
+
+### Multi-Line Shell Scripts
+
+Instead of individual shell commands, you can write entire shell scripts using YAML literal block scalars (`|`). The script body follows the `shell` keyword on a new line:
+
+```yaml
+core:
+  - commands:
+      - |
+        shell
+        echo "Starting build..."
+        mkdir -p build/output
+        if [ -f "build/app" ]; then
+          strip build/app
+          echo "Binary stripped"
+        fi
+        echo "Build complete"
+```
+
+Multi-line shell scripts are executed as a single script via `sh -c`. All variable expansion (`${project}`, `${root}`, etc.) and environment variables (`BUILDKIT_PROJECT`, etc.) work the same as single-line shell commands.
+
+> **Tip:** Use YAML literal block scalar `|` to preserve newlines exactly as written. The folded block scalar `>` collapses newlines into spaces and is not suitable for shell scripts.
+
+### Stdin Piping
+
+You can pipe multi-line content to a command's stdin using the `stdin` prefix. The first line specifies the command to run, and subsequent lines provide the stdin content:
+
+```yaml
+core:
+  - commands:
+      - |
+        stdin dcli
+        import 'dart:io';
+        void main() {
+          print('Hello from DartScript!');
+          print('Platform: ${Platform.operatingSystem}');
+        }
+```
+
+This executes `dcli` and pipes the Dart code to its standard input. Useful for:
+
+- **DartScript execution** — pipe Dart scripts to `dcli` or `d4rt` for cross-platform scripting
+- **Data processing** — pipe JSON/YAML content to processing tools
+- **Code generation** — pipe template content to generators
+
+**Important:** Variable expansion (`${project}`, etc.) is applied only to the command line (first line after `stdin`), not to the stdin content. This prevents conflicts with language-specific `$` syntax (e.g., Dart string interpolation).
+
+```yaml
+core:
+  - commands:
+      # Variables expanded in command, NOT in stdin body
+      - |
+        stdin myprocessor --output ${project}/build/result.txt
+        Content that uses $dartVariable safely
+        without BuildKit expanding it
+```
 
 ---
 
