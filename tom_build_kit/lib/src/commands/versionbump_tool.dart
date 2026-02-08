@@ -107,6 +107,7 @@ class VersionBumpTool extends ToolBase {
       scan: results['scan'] as String?,
       recursive: results['recursive'] as bool,
       exclude: results['exclude'] as List<String>,
+      excludeProjects: results['exclude-projects'] as List<String>,
       recursionExclude: results['recursion-exclude'] as List<String>,
       basePath: basePath,
     );

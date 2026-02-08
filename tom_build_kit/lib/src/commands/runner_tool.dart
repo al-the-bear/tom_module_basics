@@ -297,6 +297,7 @@ class RunnerTool extends ToolBase {
       scan: config.scan,
       recursive: config.recursive,
       exclude: config.exclude,
+      excludeProjects: results['exclude-projects'] as List<String>,
       recursionExclude: config.recursionExclude,
       basePath: basePath,
     );

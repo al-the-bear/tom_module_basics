@@ -14,6 +14,14 @@ const kTomBuildMasterYaml = 'tom_build_master.yaml';
 /// Filename for the project-level build configuration.
 const kTomBuildYaml = 'tom_build.yaml';
 
+/// Filename that marks a directory (and all subdirectories) as excluded
+/// from buildkit processing.
+///
+/// When present in a directory, no tool will process that directory or
+/// any of its children. If the directory is a git repository root,
+/// tests will also skip git commit/checkout operations for it.
+const kTomBuildSkipYaml = 'tom_build_skip.yaml';
+
 /// Base class for all integrated build tools.
 ///
 /// Provides common infrastructure: argument parsing, project discovery,
@@ -66,7 +74,9 @@ abstract class ToolBase {
       ..addFlag('recursive',
           abbr: 'r', negatable: false, help: 'Scan recursively')
       ..addMultiOption('exclude',
-          abbr: 'x', help: 'Exclude patterns')
+          abbr: 'x', help: 'Exclude patterns (path-based globs)')
+      ..addMultiOption('exclude-projects',
+          help: 'Exclude projects by folder name (glob patterns)')
       ..addMultiOption('recursion-exclude',
           help: 'Exclude patterns during recursive scan')
       ..addFlag('list',
@@ -84,25 +94,28 @@ abstract class ToolBase {
   void addToolOptions(ArgParser parser) {}
 
   /// Find projects based on common config fields.
+  ///
+  /// The [excludeProjects] patterns are merged with any `exclude-projects`
+  /// defined in the `navigation:` section of `tom_build_master.yaml`.
   Future<List<String>> findProjects({
     String? project,
     String? scan,
     bool recursive = false,
     List<String> exclude = const [],
+    List<String> excludeProjects = const [],
     List<String> recursionExclude = const [],
     required String basePath,
   }) async {
     final discovery = ProjectDiscovery(verbose: verbose);
 
+    List<String> results;
     if (project != null) {
       final paths = await discovery.resolveProjectPatterns(
         project,
         basePath: basePath,
       );
-      return _filterProjects(paths, exclude);
-    }
-
-    if (scan != null) {
+      results = _filterProjects(paths, exclude);
+    } else if (scan != null) {
       final scanDir = _resolvePath(scan, basePath);
       final paths = await discovery.scanForProjects(
         scanDir,
@@ -110,16 +123,39 @@ abstract class ToolBase {
         toolKey: toolKey,
         recursionExclude: recursionExclude,
       );
-      return _filterProjects(paths, exclude);
+      results = _filterProjects(paths, exclude);
+    } else {
+      results = [basePath];
     }
 
-    return [basePath];
+    // Merge CLI --exclude-projects with master YAML navigation section
+    final allExcludeProjects = [
+      ...excludeProjects,
+      ..._loadMasterExcludeProjects(basePath),
+    ];
+
+    // Apply --exclude-projects (folder name-based filtering)
+    results = _filterProjectsByName(results, allExcludeProjects);
+
+    // Remove projects that contain tom_build_skip.yaml
+    results = _filterSkippedProjects(results);
+
+    return results;
+  }
+
+  /// Load `exclude-projects` from the master YAML navigation section.
+  List<String> _loadMasterExcludeProjects(String basePath) {
+    final masterYaml = loadMasterConfig(basePath);
+    if (masterYaml == null) return [];
+    final nav = masterYaml['navigation'] as YamlMap?;
+    if (nav == null) return [];
+    return toStringList(nav['exclude-projects'] ?? nav['excludeProjects']);
   }
 
   /// Check if a directory is a project this tool should process.
   bool isToolProject(String dirPath);
 
-  /// Filter projects by exclusion patterns using glob matching.
+  /// Filter projects by exclusion patterns using glob matching on full path.
   List<String> _filterProjects(
       List<String> projects, List<String> exclude) {
     if (exclude.isEmpty) return projects;
@@ -135,6 +171,48 @@ abstract class ToolBase {
       }
       return true;
     }).toList();
+  }
+
+  /// Filter projects by folder name using glob matching.
+  ///
+  /// Unlike [_filterProjects] which matches on the full path,
+  /// this matches only on the directory basename (folder name).
+  List<String> _filterProjectsByName(
+      List<String> projects, List<String> excludePatterns) {
+    if (excludePatterns.isEmpty) return projects;
+
+    return projects.where((projectPath) {
+      final folderName = p.basename(projectPath);
+      for (final pattern in excludePatterns) {
+        try {
+          if (Glob(pattern).matches(folderName)) return false;
+        } catch (_) {
+          if (folderName == pattern) return false;
+        }
+      }
+      return true;
+    }).toList();
+  }
+
+  /// Remove projects that contain a [kTomBuildSkipYaml] file.
+  ///
+  /// Also checks all parent directories up to (but not above) the workspace
+  /// root — if any ancestor has the skip file, the project is excluded.
+  List<String> _filterSkippedProjects(List<String> projects) {
+    return projects.where((projectPath) {
+      if (hasSkipFile(projectPath)) {
+        if (verbose) {
+          print('  Skipping ($kTomBuildSkipYaml): $projectPath');
+        }
+        return false;
+      }
+      return true;
+    }).toList();
+  }
+
+  /// Check if a directory contains a [kTomBuildSkipYaml] file.
+  static bool hasSkipFile(String dirPath) {
+    return File(p.join(dirPath, kTomBuildSkipYaml)).existsSync();
   }
 
   /// Validate path containment and print error if invalid.

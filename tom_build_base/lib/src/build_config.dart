@@ -31,7 +31,13 @@ class TomBuildConfig {
   
   /// Glob patterns for projects to exclude from processing.
   final List<String> exclude;
-  
+
+  /// Glob patterns to exclude projects by folder name.
+  ///
+  /// Unlike [exclude] which matches against full paths, these patterns
+  /// match against the directory basename only (e.g., `zom_*`).
+  final List<String> excludeProjects;
+
   /// Glob patterns to exclude from recursive traversal.
   final List<String> recursionExclude;
   
@@ -49,6 +55,7 @@ class TomBuildConfig {
     this.scan,
     this.recursive = false,
     this.exclude = const [],
+    this.excludeProjects = const [],
     this.recursionExclude = const [],
     this.verbose = false,
     this.toolOptions = const {},
@@ -149,6 +156,9 @@ class TomBuildConfig {
       scan: yaml['scan'] as String?,
       recursive: yaml['recursive'] as bool? ?? false,
       exclude: _toStringList(yaml['exclude']),
+      excludeProjects: _toStringList(
+        yaml['exclude-projects'] ?? yaml['excludeProjects'],
+      ),
       recursionExclude: _toStringList(
         yaml['recursion-exclude'] ?? yaml['recursionExclude'],
       ),
@@ -193,6 +203,9 @@ class TomBuildConfig {
       scan: other.scan ?? scan,
       recursive: other.recursive || recursive,
       exclude: other.exclude.isNotEmpty ? other.exclude : exclude,
+      excludeProjects: other.excludeProjects.isNotEmpty
+          ? other.excludeProjects
+          : excludeProjects,
       recursionExclude: other.recursionExclude.isNotEmpty
           ? other.recursionExclude
           : recursionExclude,
@@ -209,6 +222,7 @@ class TomBuildConfig {
     String? scan,
     bool? recursive,
     List<String>? exclude,
+    List<String>? excludeProjects,
     List<String>? recursionExclude,
     bool? verbose,
     Map<String, dynamic>? toolOptions,
@@ -220,6 +234,7 @@ class TomBuildConfig {
       scan: scan ?? this.scan,
       recursive: recursive ?? this.recursive,
       exclude: exclude ?? this.exclude,
+      excludeProjects: excludeProjects ?? this.excludeProjects,
       recursionExclude: recursionExclude ?? this.recursionExclude,
       verbose: verbose ?? this.verbose,
       toolOptions: toolOptions ?? this.toolOptions,

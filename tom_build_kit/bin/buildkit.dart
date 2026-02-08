@@ -81,10 +81,11 @@ library;
 import 'dart:io';
 
 import 'package:args/args.dart';
+import 'package:glob/glob.dart';
 import 'package:path/path.dart' as p;
 import 'package:tom_build_base/tom_build_base.dart';
 import 'package:tom_build_kit/tom_build_kit.dart';
-
+import 'package:yaml/yaml.dart';
 /// Version info - will be replaced by generated version
 String get _version {
   try {
@@ -144,7 +145,11 @@ Future<void> main(List<String> args) async {
         abbr: 'R', help: 'Root directory for configuration lookup')
     ..addOption('project',
         abbr: 'p',
-        help: 'Project(s) to run (comma-separated, globs: tom_*_builder, ./*)');
+        help: 'Project(s) to run (comma-separated, globs: tom_*_builder, ./*)')
+    ..addMultiOption('exclude',
+        abbr: 'x', help: 'Exclude patterns (path-based globs)')
+    ..addMultiOption('exclude-projects',
+        help: 'Exclude projects by folder name (glob patterns)');
 
   ArgResults results;
   try {
@@ -257,6 +262,19 @@ Future<void> main(List<String> args) async {
   } else {
     // Default: current directory
     projectPaths = [currentDir];
+  }
+
+  // Apply exclusion filters
+  projectPaths = _filterProjectPaths(
+    projectPaths,
+    exclude: results['exclude'] as List<String>,
+    excludeProjects: results['exclude-projects'] as List<String>,
+    rootPath: rootPath,
+  );
+
+  if (projectPaths.isEmpty) {
+    print('No projects remaining after exclusion filters.');
+    exit(1);
   }
 
   // Execute steps in each project
@@ -564,4 +582,80 @@ Future<bool> _runCommandHelp(String commandName) async {
       print('Available commands: versioner, versionbump, compiler, runner, cleanup, dependencies, pubget');
       return false;
   }
+}
+
+/// Filter project paths by exclude patterns, exclude-projects patterns,
+/// master YAML exclude-projects, and tom_build_skip.yaml marker files.
+List<String> _filterProjectPaths(
+  List<String> projects, {
+  required List<String> exclude,
+  required List<String> excludeProjects,
+  required String rootPath,
+}) {
+  var result = projects;
+
+  // Apply --exclude (path-based globs)
+  if (exclude.isNotEmpty) {
+    result = result.where((path) {
+      for (final pattern in exclude) {
+        try {
+          if (Glob(pattern).matches(path)) return false;
+        } catch (_) {
+          if (path.contains(pattern)) return false;
+        }
+      }
+      return true;
+    }).toList();
+  }
+
+  // Merge CLI --exclude-projects with master YAML navigation section
+  final allExcludeProjects = [...excludeProjects];
+  final masterFile = File(p.join(rootPath, 'tom_build_master.yaml'));
+  if (masterFile.existsSync()) {
+    try {
+      final content = masterFile.readAsStringSync();
+      final yaml = loadYaml(content);
+      if (yaml is Map) {
+        final nav = yaml['navigation'];
+        if (nav is Map) {
+          final ep = nav['exclude-projects'] ?? nav['excludeProjects'];
+          if (ep is String) {
+            allExcludeProjects.add(ep);
+          } else if (ep is List) {
+            allExcludeProjects.addAll(ep.map((e) => e.toString()));
+          }
+        }
+      }
+    } catch (_) {
+      // Ignore YAML parse errors
+    }
+  }
+
+  // Apply exclude-projects (folder name-based filtering)
+  if (allExcludeProjects.isNotEmpty) {
+    result = result.where((projectPath) {
+      final folderName = p.basename(projectPath);
+      for (final pattern in allExcludeProjects) {
+        try {
+          if (Glob(pattern).matches(folderName)) return false;
+        } catch (_) {
+          if (folderName == pattern) return false;
+        }
+      }
+      return true;
+    }).toList();
+  }
+
+  // Remove projects that contain tom_build_skip.yaml
+  result = result.where((projectPath) {
+    if (ProjectDiscovery.hasSkipFile(projectPath)) {
+      if (_verbose) {
+        print('  Skipping (${ProjectDiscovery.skipFileName}): $projectPath');
+      }
+      return false;
+    }
+    return true;
+  }).toList();
+
+  return result;
 }

@@ -261,6 +261,15 @@ class ProjectDiscovery {
     return projects;
   }
 
+  /// Filename that marks a directory (and all subdirectories) as excluded
+  /// from buildkit processing.
+  static const skipFileName = 'tom_build_skip.yaml';
+
+  /// Check if a directory contains a skip marker file.
+  static bool hasSkipFile(String dirPath) {
+    return File(p.join(dirPath, skipFileName)).existsSync();
+  }
+
   Future<void> _scanDirectory(
     Directory dir,
     List<String> projects, {
@@ -271,6 +280,14 @@ class ProjectDiscovery {
     String? scanRoot,
   }) async {
     final dirName = p.basename(dir.path);
+
+    // Skip directories that contain a tom_build_skip.yaml marker file
+    if (hasSkipFile(dir.path)) {
+      if (verbose) {
+        _log('  Skipping ($skipFileName): ${dir.path}');
+      }
+      return;
+    }
 
     // Always skip these directories (but not the initial scan directory)
     if (alwaysSkipDirectories.contains(dirName)) {

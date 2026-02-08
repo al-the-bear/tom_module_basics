@@ -33,26 +33,20 @@ void main() {
     print('Buildkit root:   ${ws.buildkitRoot}');
     print('Target project:  $targetProject');
 
-    // Safety: verify workspace is clean before running tests.
-    // Tests assume exclusive access and a committed baseline.
-    final dirty = await ws.hasUncommittedChanges();
-    if (dirty.isNotEmpty) {
-      print('WARNING: Workspace has uncommitted changes:');
-      for (final f in dirty) {
-        print('  $f');
-      }
-      fail(
-        'Workspace must be clean before running integration tests. '
-        'Commit or stash all changes first. '
-        'See _copilot_guidelines/testing.md for the pre-test safety protocol.',
-      );
-    }
+    // Full workspace protection protocol
+    await ws.requireCleanWorkspace();
+    await ws.saveHeadRefs();
   });
 
   tearDown(() async {
     // Revert all changes in the main repo (tom_build_master.yaml,
     // _build/lib/src/version.g.dart, _build/tom_build_state.json)
     await ws.revertAll();
+  });
+
+  tearDownAll(() async {
+    // Verify no commits leaked during the test run
+    await ws.verifyHeadRefs();
   });
 
   group('versioner', () {

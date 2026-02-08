@@ -84,12 +84,36 @@ tom_build_kit/
 
 The shared `TestWorkspace` class provides:
 
+- **Workspace protection protocol**:
+  - `requireCleanWorkspace()` — fails if uncommitted changes exist (call in `setUpAll`)
+  - `saveHeadRefs()` — records HEAD SHAs for main repo + all submodules (call in `setUpAll`)
+  - `verifyHeadRefs()` — post-suite check that no commits leaked (call in `tearDownAll`)
+  - `tearDownProtocol()` — combined revert + verify for `tearDownAll`
+- **Skip file support**: `isSkippedRepo(path)` — checks for `tom_build_skip.yaml` marker; repos with this file are excluded from test git operations (no commit check, no checkout revert)
 - **Fixture installation**: `installFixture(name)` — copies fixture `tom_build_master.yaml` to workspace root
 - **Git revert**: `revertAll()` — reverts all changes in main repo; `revertSubmodule(path)` — reverts submodule
 - **Tool execution**: `runTool(name, args)` — runs a tool via `dart run <bin/tool.dart>` from workspace root
 - **Pipeline execution**: `runPipeline(name, args)` — runs buildkit with a pipeline name
 - **File helpers**: `readWorkspaceFile()`, `workspaceFileExists()` — read/check files relative to workspace root
 - **Dirty check**: `hasUncommittedChanges()` — verifies workspace is clean before tests start
+
+### Automatic Workspace Protection
+
+When you run `dart test`, the test infrastructure **automatically** protects the workspace:
+
+1. `setUpAll` calls `requireCleanWorkspace()` + `saveHeadRefs()`
+2. Each `tearDown` calls `revertAll()` to restore files
+3. `tearDownAll` calls `verifyHeadRefs()` to verify no commits leaked
+
+This means even a single test file run (`dart test test/versioner_test.dart`) provides full workspace protection without any manual steps beyond the initial commit/push.
+
+### tom_build_skip.yaml
+
+A marker file `tom_build_skip.yaml` in a directory root excludes that directory from:
+
+- **Tool processing**: ProjectDiscovery skips the directory and all subdirectories
+- **Test git operations**: `saveHeadRefs()` and `tearDownProtocol()` skip repos with this file
+- **buildkit scanning**: Both `--exclude-projects` and skip file checks apply
 
 ### Git Revert Strategy
 
