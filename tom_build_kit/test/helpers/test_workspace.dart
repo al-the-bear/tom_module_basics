@@ -356,6 +356,30 @@ class TestWorkspace {
     return p.relative(projectAbsolutePath, from: workspaceRoot);
   }
 
+  /// Place a temporary `tom_build_skip.yaml` in a directory.
+  ///
+  /// Returns the absolute path to the created file. Use [removeSkipFile]
+  /// or add the returned path to a cleanup list for tearDown.
+  String placeSkipFile(String relativeDir) {
+    final absPath =
+        p.join(workspaceRoot, relativeDir, TestWorkspace.skipFileName);
+    File(absPath).writeAsStringSync(
+      '# Temporary skip file placed by integration test.\n'
+      '# Should be removed automatically in tearDown.\n',
+    );
+    return absPath;
+  }
+
+  /// Remove a temporary `tom_build_skip.yaml` from a directory.
+  void removeSkipFile(String relativeDir) {
+    final absPath =
+        p.join(workspaceRoot, relativeDir, TestWorkspace.skipFileName);
+    final file = File(absPath);
+    if (file.existsSync()) {
+      file.deleteSync();
+    }
+  }
+
   // ---------------------------------------------------------------------------
   // Private
   // ---------------------------------------------------------------------------
