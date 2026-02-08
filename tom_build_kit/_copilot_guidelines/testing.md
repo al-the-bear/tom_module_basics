@@ -107,6 +107,27 @@ When you run `dart test`, the test infrastructure **automatically** protects the
 
 This means even a single test file run (`dart test test/versioner_test.dart`) provides full workspace protection without any manual steps beyond the initial commit/push.
 
+### `--exclude-projects` Pattern Matching
+
+The `--exclude-projects` option supports two kinds of glob patterns, auto-detected at match time:
+
+**Basename patterns** (no `/` or `**` in the pattern):
+- Matched against the project directory's basename only
+- Example: `--exclude-projects 'zom_*'` excludes all projects whose folder name starts with `zom_`
+- Example: `--exclude-projects 'tom_d4rt*'` excludes `tom_d4rt` and `tom_d4rt_generator`
+
+**Path patterns** (contain `/` or `**`):
+- Matched against the workspace-relative path of the project
+- Example: `--exclude-projects 'xternal/tom_module_basics/*'` excludes all projects under that specific submodule
+- Example: `--exclude-projects '**/tom_module_basics/*'` matches regardless of leading path segments
+
+**Auto-detection rule:** If the pattern contains `/` or `**`, it is treated as a path pattern. Otherwise it is treated as a basename pattern. Both types can be combined in a single invocation by passing `--exclude-projects` multiple times.
+
+This same logic applies to:
+- `--exclude-projects` CLI flag on all tools (via `ToolBase._filterProjectsByName`)
+- `--exclude-projects` CLI flag on buildkit (via `_filterProjectPaths`)
+- `exclude-projects` list in `tom_build_master.yaml` navigation section
+
 ### tom_build_skip.yaml
 
 A marker file `tom_build_skip.yaml` in a directory root excludes that directory from:

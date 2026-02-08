@@ -16,17 +16,17 @@ For the testing strategy, safety protocol, and test infrastructure, see [_copilo
 
 | # | Feature Area | Tests | Status | Test File | Details |
 |---|-------------|-------|--------|-----------|---------|
-| 1 | [ToolBase — Shared Infrastructure](#1-toolbase--shared-infrastructure) | 10 | ⬜ | `toolbase_test.dart` | [→](#1-toolbase--shared-infrastructure) |
+| 1 | [ToolBase — Shared Infrastructure](#1-toolbase--shared-infrastructure) | 14 | ⬜ | `toolbase_test.dart` | [→](#1-toolbase--shared-infrastructure) |
 | 2 | [Versioner — Version File Generation](#2-versioner--version-file-generation) | 7 | 5✅ 2🐛 | `versioner_test.dart` | [→](#2-versioner--version-file-generation) |
 | 3 | [Cleanup — File Deletion](#3-cleanup--file-deletion) | 8 | ⬜ | `cleanup_test.dart` | [→](#3-cleanup--file-deletion) |
 | 4 | [Compiler — Cross-Platform Compilation](#4-compiler--cross-platform-compilation) | 6 | ⬜ | `compiler_test.dart` | [→](#4-compiler--cross-platform-compilation) |
 | 5 | [Runner — Build Runner Wrapper](#5-runner--build-runner-wrapper) | 5 | ⬜ | `runner_test.dart` | [→](#5-runner--build-runner-wrapper) |
 | 6 | [Dependencies — Dependency Tree](#6-dependencies--dependency-tree) | 4 | ⬜ | `dependencies_test.dart` | [→](#6-dependencies--dependency-tree) |
 | 7 | [VersionBump — Version Bumping](#7-versionbump--version-bumping) | 5 | ⬜ | `versionbump_test.dart` | [→](#7-versionbump--version-bumping) |
-| 8 | [BuildKit — Pipeline Orchestrator](#8-buildkit--pipeline-orchestrator) | 7 | ⬜ | `buildkit_test.dart` | [→](#8-buildkit--pipeline-orchestrator) |
+| 8 | [BuildKit — Pipeline Orchestrator](#8-buildkit--pipeline-orchestrator) | 9 | ⬜ | `buildkit_test.dart` | [→](#8-buildkit--pipeline-orchestrator) |
 | 9 | [Config Merge — Merge Precedence](#9-config-merge--merge-precedence) | 4 | ⬜ | `config_merge_test.dart` | [→](#9-config-merge--merge-precedence) |
 | 10 | [Security — Path & Command Validation](#10-security--path--command-validation) | 4 | ⬜ | `security_test.dart` | [→](#10-security--path--command-validation) |
-| — | **Total** | **60** | **5✅ 2🐛 53⬜** | | |
+| — | **Total** | **66** | **5✅ 2🐛 59⬜** | | |
 
 ---
 
@@ -48,6 +48,10 @@ These features are shared by all tools. Test via any tool (e.g., versioner or de
 | 1.8 | `--exclude-projects` from master YAML | ⬜ | Set `exclude-projects: ['tom_test_*']` in master YAML navigation. Run `--list`. Verify excluded. |
 | 1.9 | `tom_build_skip.yaml` skips directory | ⬜ | Place `tom_build_skip.yaml` in a project dir. Run `--list`. Verify project excluded. |
 | 1.10 | `tom_build_skip.yaml` skips subdirectories | ⬜ | Place skip file in parent dir. Run `--scan` recursively. Verify no children found. |
+| 1.11 | `--exclude-projects` with relative path pattern | ⬜ | Run versioner `--scan . -r --list --exclude-projects 'xternal/tom_module_basics/*'`. Verify all projects under that submodule excluded. |
+| 1.12 | `--exclude-projects` with `**` glob path pattern | ⬜ | Run versioner `--scan . -r --list --exclude-projects '**/tom_module_basics/*'`. Verify same exclusion regardless of leading path. |
+| 1.13 | `--exclude-projects` combined basename + path patterns | ⬜ | Run versioner `--scan . -r --list --exclude-projects 'zom_*' --exclude-projects 'xternal/tom_module_basics/*'`. Verify both pattern types applied. |
+| 1.14 | `--exclude-projects` pattern auto-detection | ⬜ | Verify patterns without `/` or `**` match basename only (e.g. `tom_basics` excludes `tom_basics` but not `xternal/tom_module_basics/tom_basics`). Verify patterns with `/` match workspace-relative path. |
 
 ---
 
@@ -169,6 +173,8 @@ Uses workspace-level pipeline configuration from `tom_build_master.yaml`.
 | 8.5 | `--dry-run` on pipeline | ⬜ | Run `buildkit build --dry-run --project _build`. Verify no changes made. |
 | 8.6 | Per-step option suppression (`-s-`, `-v-`) | ⬜ | Run `buildkit :versioner -s- --project _build`. Verify `-s` not passed to versioner. |
 | 8.7 | Shell command execution in pipeline | ⬜ | Configure pipeline step with `shell echo hello`. Run. Verify "hello" in output. |
+| 8.8 | `--exclude-projects` filters pipeline targets | ⬜ | Run `buildkit build --exclude-projects 'zom_*'`. Verify no `zom_` projects processed by any pipeline step. |
+| 8.9 | `--exclude` combined with `--exclude-projects` | ⬜ | Run `buildkit build --exclude '*.g.dart' --exclude-projects 'xternal/tom_module_basics/*'`. Verify both file-level and project-level exclusions applied independently. |
 
 ---
 
