@@ -360,8 +360,21 @@ void main() {
         ],
       );
       final stdout = result.stdout as String;
-      expect(stdout, isNot(contains('/_build')),
-          reason: '_build with skip file should not appear in buildkit output');
+      // Verbose mode lists discovered projects with "  - <relative-path>"
+      // The skip message itself will contain the project name, so we check
+      // that _build does not appear in the project listing lines.
+      final projectLines = stdout
+          .split('\n')
+          .where((line) => line.startsWith('  - '))
+          .toList();
+      for (final line in projectLines) {
+        expect(line, isNot(contains('_build')),
+            reason:
+                '_build with skip file should not appear in project listing');
+      }
+      // Verify the skip message IS present (proves the feature is active)
+      expect(stdout, contains('Skipping (tom_build_skip.yaml)'),
+          reason: 'Should log skip message for _build in verbose mode');
     });
   });
 
