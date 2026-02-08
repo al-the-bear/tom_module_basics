@@ -241,6 +241,8 @@ class CompilerTool extends ToolBase {
       basePath: basePath,
     );
 
+    if (findProjectsError) return false;
+
     if (listMode) {
       print('Projects with compiler configuration:');
       for (final project in projects) {

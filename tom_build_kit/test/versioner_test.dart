@@ -126,14 +126,10 @@ void main() {
       expect(content, contains('static const String dartSdkVersion'));
     });
 
-    // BUG: --no-git is overridden by project-level tom_build.yaml
-    // because generateVersionFile() merges project config AFTER CLI args.
-    // The merge order should be: master → project → CLI (highest priority).
-    // Currently: master → CLI → project (project wins over CLI).
-    // TODO: Fix merge order in versioner_tool.dart generateVersionFile()
-    test('--project --no-git currently does NOT omit git commit (merge bug)',
-        () async {
-      log.start('VER_GIT01', '--no-git override by project config (bug #12)');
+    // Bug #12 FIXED: --no-git now correctly overrides project-level config.
+    // The merge order is now: CLI > project > workspace > defaults.
+    test('--no-git omits git commit field (bug #12 FIXED)', () async {
+      log.start('VER_GIT01', '--no-git overrides project config (bug #12 fixed)');
       await ws.installFixture('versioner');
 
       final result = await ws.runTool(
@@ -148,15 +144,11 @@ void main() {
       final content =
           File(p.join(ws.workspaceRoot, versionFileRelative)).readAsStringSync();
 
-      // BUG: project YAML includeGitCommit:true overrides CLI --no-git
-      // When fixed, this should use isNot(contains(...)).
-      final hasBug = content.contains('static const String gitCommit');
-      log.expectation('BUG: gitCommit still present (project overrides CLI)', hasBug);
-      expect(
-        content,
-        contains('static const String gitCommit'),
-        reason: 'BUG: project config overrides CLI --no-git flag',
-      );
+      // Bug #12 FIXED: CLI --no-git should override project config.
+      // gitCommit field should be empty string (not absent, but empty).
+      expect(content, contains("gitCommit = ''"),
+          reason: 'Bug #12 fixed: --no-git should produce empty gitCommit');
+      log.expectation('gitCommit is empty', content.contains("gitCommit = ''"));
 
       // Version and build number should always be present
       log.expectation('version field present', content.contains('static const String version'));
@@ -227,12 +219,10 @@ void main() {
       );
     });
 
-    // BUG: --variable-prefix is overridden by project-level tom_build.yaml
-    // Same merge order issue as --no-git above.
-    // TODO: Fix merge order in versioner_tool.dart generateVersionFile()
-    test('--variable-prefix currently does NOT override project config (merge bug)',
+    // Bug #12 FIXED: --variable-prefix now correctly overrides project config.
+    test('--variable-prefix overrides project config (bug #12 FIXED)',
         () async {
-      log.start('VER_PFX01', '--variable-prefix override by project config (bug #12)');
+      log.start('VER_PFX01', '--variable-prefix overrides project config (bug #12 fixed)');
       await ws.installFixture('versioner');
 
       final result = await ws.runTool(
@@ -247,15 +237,12 @@ void main() {
       final content =
           File(p.join(ws.workspaceRoot, versionFileRelative)).readAsStringSync();
 
-      // BUG: project config prefix "tomTools" overrides CLI "myCustom"
-      // When fixed, this should expect 'class MyCustomVersionInfo'.
-      final hasBug = content.contains('class TomToolsVersionInfo');
-      log.expectation('BUG: class still TomToolsVersionInfo (project overrides CLI)', hasBug);
-      expect(
-        content,
-        contains('class TomToolsVersionInfo'),
-        reason: 'BUG: project config overrides CLI --variable-prefix',
-      );
+      // Bug #12 FIXED: CLI prefix "myCustom" should override project "tomTools"
+      expect(content, contains('class MyCustomVersionInfo'),
+          reason: 'Bug #12 fixed: CLI --variable-prefix should override '
+              'project config. Expected MyCustomVersionInfo');
+      log.expectation('class is MyCustomVersionInfo',
+          content.contains('class MyCustomVersionInfo'));
     });
 
     test('build number increments on each run', () async {

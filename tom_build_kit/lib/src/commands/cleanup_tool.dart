@@ -249,6 +249,8 @@ class CleanupTool extends ToolBase {
       basePath: basePath,
     );
 
+    if (findProjectsError) return false;
+
     if (listMode) {
       print('Projects with cleanup configuration:');
       for (final project in projects) {
@@ -429,9 +431,31 @@ class CleanupTool extends ToolBase {
   Set<String> _effectiveProtectedFolders = builtinProtectedFolders;
 
   /// Returns true if [path] is inside a protected folder.
+  ///
+  /// Single-segment names (e.g., `.git`, `src`) are matched against
+  /// individual path segments for fast lookup.
+  /// Multi-segment entries containing `/` or glob characters (e.g.,
+  /// `lib/src`, `**/generated`) are matched using Glob patterns.
   bool _isInProtectedFolder(String path) {
     final parts = p.split(path);
-    return parts.any((part) => _effectiveProtectedFolders.contains(part));
+    for (final folder in _effectiveProtectedFolders) {
+      if (folder.contains('/') || folder.contains('*')) {
+        // Multi-segment or glob pattern — use Glob matching
+        try {
+          if (Glob('**/$folder/**').matches(path) ||
+              Glob('$folder/**').matches(path)) {
+            return true;
+          }
+        } catch (_) {
+          // Fallback: check if the path contains the folder as a substring
+          if (path.contains(folder)) return true;
+        }
+      } else {
+        // Single-segment — fast path via set lookup
+        if (parts.contains(folder)) return true;
+      }
+    }
+    return false;
   }
 
   /// Collect files matching a glob pattern, excluding specified patterns.

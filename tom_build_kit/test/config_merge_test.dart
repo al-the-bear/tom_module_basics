@@ -4,7 +4,7 @@
 /// CLI args) works correctly across tools.
 ///
 /// Test IDs: CFG_DEF01, CFG_OVR01, CFG_MRG01
-/// Note: CFG_CLI01 is blocked by bug #12 (project config overrides CLI args).
+/// Note: Bug #12 is fixed — CLI args now correctly override project config.
 @TestOn('!browser')
 @Timeout(Duration(seconds: 120))
 library;

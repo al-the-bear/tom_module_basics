@@ -46,10 +46,19 @@ class BuiltinCommands {
   /// Execute a built-in command.
   /// 
   /// Returns true if successful, false otherwise.
+  /// Automatically injects `--project <projectPath>` into tool args
+  /// when no `--project` or `-p` is already specified in the args.
   Future<bool> execute(String command) async {
     final parts = command.trim().split(RegExp(r'\s+'));
     final cmd = parts.first.toLowerCase();
-    final args = parts.skip(1).toList();
+    var args = parts.skip(1).toList();
+
+    // Forward --project to tool if not already in args (bug #18 fix)
+    if (projectPath.isNotEmpty &&
+        !args.contains('--project') &&
+        !args.contains('-p')) {
+      args = ['--project', projectPath, ...args];
+    }
 
     switch (cmd) {
       case 'versioner':
@@ -76,11 +85,9 @@ class BuiltinCommands {
 
   Future<bool> _runVersioner(List<String> args) async {
     if (verbose) print('  [builtin] Running versioner...');
-    if (dryRun) {
-      print('  [DRY RUN] Would run versioner with args: $args');
-      return true;
-    }
-    final tool = VersionerTool()..verbose = verbose;
+    final tool = VersionerTool()
+      ..verbose = verbose
+      ..dryRun = dryRun;
     return tool.run(args);
   }
 
@@ -130,11 +137,9 @@ class BuiltinCommands {
 
   Future<bool> _runDependencies(List<String> args) async {
     if (verbose) print('  [builtin] Running dependencies...');
-    if (dryRun) {
-      print('  [DRY RUN] Would run dependencies with args: $args');
-      return true;
-    }
-    final tool = DependenciesTool()..verbose = verbose;
+    final tool = DependenciesTool()
+      ..verbose = verbose
+      ..dryRun = dryRun;
     return tool.run(args);
   }
 

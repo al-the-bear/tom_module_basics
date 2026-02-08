@@ -39,6 +39,11 @@ abstract class ToolBase {
   /// Whether dry-run mode is enabled.
   bool dryRun = false;
 
+  /// Set to true when [findProjects] encounters a validation error
+  /// (e.g., non-existent `--project` path). Tools should check this
+  /// after calling [findProjects] and return false if set.
+  bool findProjectsError = false;
+
   /// Run the tool with the given arguments.
   ///
   /// Returns true if successful, false otherwise.
@@ -98,6 +103,10 @@ abstract class ToolBase {
   ///
   /// The [excludeProjects] patterns are merged with any `exclude-projects`
   /// defined in the `navigation:` section of `tom_build_master.yaml`.
+  ///
+  /// When [project] is specified and is not a glob pattern, validates
+  /// that the path exists. Returns an empty list and prints an error
+  /// if the path does not exist.
   Future<List<String>> findProjects({
     String? project,
     String? scan,
@@ -108,9 +117,25 @@ abstract class ToolBase {
     required String basePath,
   }) async {
     final discovery = ProjectDiscovery(verbose: verbose);
+    findProjectsError = false;
 
     List<String> results;
     if (project != null) {
+      // Validate --project path existence for non-glob patterns
+      if (!project.contains('*') &&
+          !project.contains('?') &&
+          !project.contains('[') &&
+          !project.contains(',')) {
+        final resolvedPath = p.isAbsolute(project)
+            ? project
+            : p.normalize(p.join(basePath, project));
+        if (!Directory(resolvedPath).existsSync()) {
+          print('Error: Project path does not exist: $project');
+          findProjectsError = true;
+          return [];
+        }
+      }
+
       final paths = await discovery.resolveProjectPatterns(
         project,
         basePath: basePath,

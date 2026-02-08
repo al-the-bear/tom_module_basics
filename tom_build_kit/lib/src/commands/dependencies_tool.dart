@@ -158,6 +158,8 @@ class DependenciesTool extends ToolBase {
       basePath: basePath,
     );
 
+    if (findProjectsError) return false;
+
     if (listMode) {
       print('Dart projects:');
       for (final project in projects) {
@@ -230,7 +232,8 @@ class DependenciesTool extends ToolBase {
       // Deep tree mode - start visited set with project name to prevent self-references
       final visited = <String>{deps.projectName};
       for (final dep in filteredDeps) {
-        _printDependencyTree(dep, config, visited);
+        _printDependencyTree(dep, config, visited,
+            projectPath: projectPath);
       }
     } else {
       // Flat list
@@ -249,6 +252,7 @@ class DependenciesTool extends ToolBase {
     DependenciesConfig config,
     Set<String> visited, {
     int indent = 1,
+    required String projectPath,
   }) {
     final prefix = '  ' * indent;
     final circular = visited.contains(dep.name);
@@ -260,7 +264,7 @@ class DependenciesTool extends ToolBase {
     visited.add(dep.name);
 
     // Try to resolve path dependency for sub-tree
-    final depPath = _resolveDependencyPath(dep);
+    final depPath = _resolveDependencyPath(dep, projectPath);
     if (depPath != null) {
       final subDeps = _parseDependencies(depPath);
       if (subDeps != null) {
@@ -277,7 +281,7 @@ class DependenciesTool extends ToolBase {
         });
         for (final subDep in filteredSubDeps) {
           _printDependencyTree(subDep, config, visited,
-              indent: indent + 1);
+              indent: indent + 1, projectPath: depPath);
         }
       }
     }
@@ -286,7 +290,10 @@ class DependenciesTool extends ToolBase {
   }
 
   /// Resolve a path dependency to its absolute directory path.
-  String? _resolveDependencyPath(Dependency dep) {
+  ///
+  /// Relative paths are resolved against [projectPath] (the directory
+  /// containing the pubspec.yaml that declares the dependency).
+  String? _resolveDependencyPath(Dependency dep, String projectPath) {
     // Check override first, then source
     final source = dep.override ?? dep.source;
     // Only path dependencies can be resolved
@@ -295,8 +302,8 @@ class DependenciesTool extends ToolBase {
         ? source.substring(6).trim()
         : source.substring(5).trim();
     if (p.isAbsolute(pathStr)) return pathStr;
-    // Resolve relative paths against current working directory
-    final resolved = p.normalize(p.join(Directory.current.path, pathStr));
+    // Resolve relative paths against the project directory
+    final resolved = p.normalize(p.join(projectPath, pathStr));
     if (Directory(resolved).existsSync()) return resolved;
     return null;
   }

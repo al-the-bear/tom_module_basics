@@ -302,6 +302,8 @@ class RunnerTool extends ToolBase {
       basePath: basePath,
     );
 
+    if (findProjectsError) return false;
+
     if (listMode) {
       print('Projects with build.yaml:');
       for (final project in projects) {

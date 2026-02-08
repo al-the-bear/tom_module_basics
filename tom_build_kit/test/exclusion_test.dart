@@ -183,24 +183,22 @@ void main() {
       expect(projects.isNotEmpty, isTrue);
     });
 
-    // BUG: VersionBump has a -v abbreviation conflict (issues.md #13)
-    // that prevents the tool from starting. Test documents the crash.
-    test('versionbump crashes due to -v conflict (known bug #13)', () async {
-      log.start('EXCL_BN06', 'versionbump crashes due to -v conflict (bug #13)');
+    // Bug #13 FIXED: -v abbreviation removed from --versioner flag.
+    test('versionbump excludes by basename (bug #13 FIXED)', () async {
+      log.start('EXCL_BN06', 'versionbump excludes by basename (bug #13 fixed)');
       final result = await ws.runTool(
         'versionbump',
         ['--scan', '.', '--recursive', '--list',
          '--exclude-projects', '_build'],
       );
       log.capture('versionbump --list --exclude-projects _build', result);
-      // BUG: Tool crashes before processing any args
-      final crashed = result.exitCode == 255;
-      log.expectation('exit code 255 (crash)', crashed);
-      expect(result.exitCode, 255,
-          reason: 'BUG #13: versionbump crashes due to -v abbreviation conflict');
-      final hasMsg = (result.stderr as String).contains('Abbreviation "v" is already used');
-      log.expectation('stderr contains abbreviation error', hasMsg);
-      expect(result.stderr as String, contains('Abbreviation "v" is already used'));
+
+      log.expectation('exit code 0', result.exitCode == 0);
+      expect(result.exitCode, 0,
+          reason: 'Bug #13 fixed: versionbump should start successfully');
+
+      final stdout = result.stdout as String;
+      log.expectation('_build excluded from output', !stdout.contains('_build/'));
     });
 
     test('glob pattern excludes multiple projects', () async {
@@ -360,10 +358,10 @@ void main() {
       log.expectation('devops/tom_build_cli absent from list', allExcluded);
     });
 
-    // BUG: VersionBump -v abbreviation conflict (issues.md #13)
-    test('versionbump skip file crashes due to -v conflict (known bug #13)',
+    // Bug #13 FIXED: -v abbreviation removed from --versioner flag.
+    test('versionbump skip file excludes project (bug #13 FIXED)',
         () async {
-      log.start('EXCL_SF06', 'versionbump skip file crashes (bug #13)');
+      log.start('EXCL_SF06', 'versionbump skip file excludes project (bug #13 fixed)');
       tempSkipFiles.add(ws.placeSkipFile('_build'));
 
       final result = await ws.runTool(
@@ -371,10 +369,10 @@ void main() {
         ['--scan', '.', '--recursive', '--list'],
       );
       log.capture('versionbump --list (skip file in _build)', result);
-      final crashed = result.exitCode == 255;
-      log.expectation('exit code 255 (crash)', crashed);
-      expect(result.exitCode, 255,
-          reason: 'BUG #13: versionbump crashes due to -v abbreviation conflict');
+
+      log.expectation('exit code 0', result.exitCode == 0);
+      expect(result.exitCode, 0,
+          reason: 'Bug #13 fixed: versionbump should start successfully');
     });
 
     test('skip file in parent excludes all children', () async {

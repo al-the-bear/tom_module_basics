@@ -166,8 +166,9 @@ void main() {
       log.expectation('no bare echo output',
           !lines.any((l) => l.trim() == 'step-1-hello'));
     },
-        skip: 'Bug #15: --dry-run after pipeline name is silently ignored '
-            '(allowTrailingOptions: false in buildkit.dart)');
+        skip: 'Bug #15: --dry-run after pipeline name is passed to '
+            'pipeline_executor as rest arg. Fix adds a CLI warning but '
+            'does not change parsing behavior (by design).');
 
     test('--dry-run before pipeline name works correctly', () async {
       log.start('BKT_DRY02', '--dry-run before pipeline (workaround)');

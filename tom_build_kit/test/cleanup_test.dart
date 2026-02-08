@@ -307,15 +307,15 @@ cleanup:
           'unprotected file deleted', !File(tempFile).existsSync());
     });
 
-    test('protected-folders with multi-segment paths (bug #17)', () async {
+    test('protected-folders with multi-segment paths (bug #17 FIXED)',
+        () async {
       log.start('CLN_PRO02', 'protected-folders multi-segment path');
-      // Bug #17: _isInProtectedFolder() uses p.split() to get individual
-      // path segments, then checks if ANY segment is in the protected set.
-      // Multi-segment paths like 'lib/src' can never match because p.split()
-      // only produces single segments ('lib', 'src'), never 'lib/src'.
+      // Bug #17 FIXED: _isInProtectedFolder() now uses Glob matching for
+      // multi-segment entries containing '/'. Single-segment entries still
+      // use fast path via p.split() + set lookup.
       //
       // Set 'lib/src' as a protected folder — files under lib/src/ should
-      // survive cleanup, but due to the bug they are deleted.
+      // survive cleanup.
       setBuildConfig('''
 # Modified by integration test — CLN_PRO02
 versioner:
@@ -343,13 +343,13 @@ cleanup:
 
       expect(result.exitCode, equals(0));
 
-      // INTENDED behavior: version.g.dart under lib/src/ should survive
-      // because 'lib/src' is listed in protected-folders.
-      // Bug #17: multi-segment paths silently ignored, file is deleted.
+      // Bug #17 FIXED: version.g.dart under lib/src/ should survive
+      // because 'lib/src' is listed in protected-folders and Glob
+      // matching now handles multi-segment paths correctly.
       expect(File(versionFile).existsSync(), isTrue,
           reason: 'version.g.dart in protected lib/src/ folder should '
-              'survive cleanup. Bug #17: multi-segment paths silently '
-              'ignored by _isInProtectedFolder()');
+              'survive cleanup. Bug #17 fixed: multi-segment paths now '
+              'handled via Glob matching in _isInProtectedFolder()');
 
       // Unprotected file should be deleted
       expect(File(tempFile).existsSync(), isFalse,
@@ -361,9 +361,7 @@ cleanup:
           'protected file survives', File(versionFile).existsSync());
       log.expectation(
           'unprotected file deleted', !File(tempFile).existsSync());
-    },
-        skip: 'Bug #17: protected-folders silently ignores multi-segment '
-            'paths (p.split() only produces single segments)');
+    });
 
     test('safety limit triggers abort when too many files', () async {
       log.start('CLN_SAF01', 'safety limit triggers abort');

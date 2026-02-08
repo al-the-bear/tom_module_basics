@@ -69,19 +69,25 @@ class VersionerConfig {
     );
   }
 
-  /// Merge with another config (other takes precedence).
+  /// Merge with another config (this takes precedence for explicitly set values).
+  ///
+  /// The caller is the higher-priority config (e.g., CLI args).
+  /// The [other] parameter is the lower-priority config (e.g., project YAML).
+  /// For boolean fields that may have been explicitly set via CLI, the caller
+  /// wins. For nullable fields, the caller's non-null value wins.
+  /// List fields are merged additively (union).
   VersionerConfig merge(VersionerConfig other) {
     return VersionerConfig(
-      project: other.project ?? project,
-      scan: other.scan ?? scan,
-      recursive: other.recursive || recursive,
+      project: project ?? other.project,
+      scan: scan ?? other.scan,
+      recursive: recursive || other.recursive,
       exclude: [...exclude, ...other.exclude],
       recursionExclude: [...recursionExclude, ...other.recursionExclude],
-      verbose: other.verbose || verbose,
-      output: other.output != 'lib/src/version.g.dart' ? other.output : output,
-      includeGitCommit: other.includeGitCommit,
-      versionOverride: other.versionOverride ?? versionOverride,
-      variablePrefix: other.variablePrefix ?? variablePrefix,
+      verbose: verbose || other.verbose,
+      output: output != 'lib/src/version.g.dart' ? output : other.output,
+      includeGitCommit: includeGitCommit,
+      versionOverride: versionOverride ?? other.versionOverride,
+      variablePrefix: variablePrefix ?? other.variablePrefix,
     );
   }
 
@@ -162,10 +168,10 @@ class VersionerTool extends ToolBase {
     // Load workspace-level config
     final basePath = Directory.current.path;
     final wsRoot = ToolBase.findWorkspaceRoot(basePath);
-    var config = VersionerConfig.loadFromMasterYaml(wsRoot) ?? VersionerConfig();
+    final wsConfig = VersionerConfig.loadFromMasterYaml(wsRoot) ?? VersionerConfig();
 
-    // Override with CLI options
-    config = config.merge(VersionerConfig(
+    // Build CLI config (highest priority)
+    final cliConfig = VersionerConfig(
       project: results['project'] as String?,
       scan: results['scan'] as String?,
       recursive: results['recursive'] as bool,
@@ -176,7 +182,10 @@ class VersionerTool extends ToolBase {
       includeGitCommit: !(results['no-git'] as bool),
       versionOverride: results['version'] as String?,
       variablePrefix: results['variable-prefix'] as String?,
-    ));
+    );
+
+    // Merge: CLI > workspace (CLI takes precedence)
+    var config = cliConfig.merge(wsConfig);
 
     // Validate paths
     if (!validateAndEnforcePaths(
@@ -197,6 +206,8 @@ class VersionerTool extends ToolBase {
       recursionExclude: config.recursionExclude,
       basePath: basePath,
     );
+
+    if (findProjectsError) return false;
 
     if (listMode) {
       print('Projects with versioner configuration:');
@@ -279,8 +290,17 @@ class VersionerTool extends ToolBase {
         className: projectConfig.className,
       );
 
-      // Write file
+      // Write file (skip in dry-run mode)
       final outputPath = '$projectPath/${projectConfig.output}';
+      if (dryRun) {
+        print('  [DRY RUN] Would generate: ${projectConfig.output}');
+        print('    Version: $version');
+        print('    Build: $buildNumber');
+        if (gitCommit != null) print('    Git: $gitCommit');
+        print('    Class: ${projectConfig.className}');
+        return true;
+      }
+
       final outputFile = File(outputPath);
       outputFile.parent.createSync(recursive: true);
       outputFile.writeAsStringSync(content);

@@ -123,13 +123,11 @@ void main() {
       log.expectation('has +> entries', stdout.contains('+>'));
     });
 
-    test('--deep shows indented transitive dependency tree (bug #16)',
+    test('--deep shows indented transitive dependency tree (bug #16 FIXED)',
         () async {
       log.start('DEP_DRP01', '--deep shows indented transitive tree');
-      // Bug #16: _resolveDependencyPath() resolves relative paths against
-      // Directory.current.path (workspace root) instead of the project
-      // directory. All relative path deps fail to resolve, so no sub-trees
-      // are explored and --deep produces identical flat output to normal mode.
+      // Bug #16 FIXED: _resolveDependencyPath() now resolves relative paths
+      // against the project directory instead of Directory.current.path.
       final result =
           await ws.runTool('dependencies', ['--project', '_build', '--deep']);
       log.capture('dependencies --project _build --deep', result);
@@ -139,8 +137,7 @@ void main() {
 
       // _build has path dependencies to other workspace projects (e.g.
       // tom_build_cli, tom_basics). Those projects have their own deps.
-      // INTENDED behavior: deep mode shows indented sub-dependencies
-      // with 2+ spaces of leading indentation for transitive deps.
+      // Bug #16 FIXED: deep mode now shows indented sub-dependencies.
       final lines = stdout.split('\n');
       final indentedDepLines = lines.where((l) =>
           l.startsWith('  ') &&
@@ -151,14 +148,12 @@ void main() {
 
       log.expectation(
           'has indented sub-deps', indentedDepLines.isNotEmpty);
-    },
-        skip: 'Bug #16: --deep fails to resolve relative path dependencies '
-            '(resolves against CWD instead of project directory)');
+    });
 
-    test('--deep output differs from normal mode (bug #16)', () async {
+    test('--deep output differs from normal mode (bug #16 FIXED)', () async {
       log.start('DEP_DRP02', '--deep output differs from normal');
-      // Bug #16: Because path deps can't be resolved, --deep produces
-      // identical output to normal mode.
+      // Bug #16 FIXED: path deps are now correctly resolved against
+      // the project directory, so --deep shows more entries.
 
       // Run normal mode
       final normalResult =
@@ -183,7 +178,7 @@ void main() {
           .where((l) => l.trimLeft().startsWith('->'))
           .length;
 
-      // INTENDED behavior: deep mode shows MORE dependency entries because
+      // Bug #16 FIXED: deep mode shows MORE dependency entries because
       // it recursively follows path dependencies and shows their transitive deps.
       expect(deepDepLines, greaterThan(normalDepLines),
           reason: '--deep should show more dependencies than normal mode '
@@ -192,9 +187,7 @@ void main() {
 
       log.expectation(
           'deep has more deps', deepDepLines > normalDepLines);
-    },
-        skip: 'Bug #16: --deep produces identical output to normal mode '
-            '(path resolution resolves against CWD instead of project dir)');
+    });
 
     test('--deep --dev shows recursive dev dependency tree', () async {
       log.start('DEP_CBD01', '--deep --dev combined flags');
@@ -225,16 +218,16 @@ void main() {
       log.expectation('no normal deps', normalLines.isEmpty);
     });
 
-    test('--project with non-existent path gives clear error', () async {
+    test('--project with non-existent path gives clear error (bug #19 FIXED)',
+        () async {
       log.start('DEP_ERR01', 'non-existent --project error');
-      // Bug #19: Dependencies tool returns exit code 0 for non-existent
-      // --project path instead of reporting an error. When a user explicitly
-      // specifies --project, the tool should validate the path exists.
+      // Bug #19 FIXED: ToolBase.findProjects() now validates --project
+      // path existence for non-glob patterns and returns an error.
       final result = await ws.runTool(
           'dependencies', ['--project', '_build/nonexistent']);
       log.capture('dependencies --project _build/nonexistent', result);
 
-      // INTENDED behavior: non-existent project should produce a clear error
+      // Bug #19 FIXED: non-existent project should produce a clear error
       expect(result.exitCode, isNot(equals(0)),
           reason: 'Non-existent --project path should fail with non-zero exit. '
               'Got exit code ${result.exitCode}');
@@ -250,8 +243,6 @@ void main() {
 
       log.expectation('non-zero exit', result.exitCode != 0);
       log.expectation('has error message', hasError);
-    },
-        skip: 'Bug #19: Dependencies tool returns exit code 0 for '
-            'non-existent --project path (no validation)');
+    });
   });
 }

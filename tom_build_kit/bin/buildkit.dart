@@ -178,6 +178,12 @@ Future<void> main(List<String> args) async {
   final recursive = results['recursive'] as bool;
   final scanPath = results['scan'] as String?;
 
+  // Warn if known global flags appear after the pipeline/command name.
+  // ArgParser(allowTrailingOptions: false) stops parsing at the first
+  // non-option argument, so flags after the pipeline name end up in
+  // results.rest and are silently ignored. (Issue #15)
+  _warnOnMisplacedFlags(results.rest);
+
   // Determine root directory
   final currentDir = Directory.current.path;
   final rootPath = results['root'] as String? ?? _findWorkspaceRoot(currentDir);
@@ -664,4 +670,35 @@ List<String> _filterProjectPaths(
   }).toList();
 
   return result;
+}
+
+/// Known global flags that users might accidentally place after the
+/// pipeline/command name. These are silently consumed by `results.rest`
+/// when `allowTrailingOptions: false` is set.
+const _knownGlobalFlags = {
+  '--verbose', '-v',
+  '--dry-run', '-n',
+  '--recursive', '-r',
+  '--scan', '-s',
+  '--project', '-p',
+  '--root', '-R',
+  '--exclude', '-x',
+  '--exclude-projects',
+  '--list', '-l',
+  '--help', '-h',
+};
+
+/// Warn if known global flags appear in the rest args (i.e., after the
+/// pipeline/command name). These flags are silently ignored by ArgParser
+/// due to `allowTrailingOptions: false`.
+void _warnOnMisplacedFlags(List<String> rest) {
+  final misplaced = rest.where((arg) => _knownGlobalFlags.contains(arg)).toList();
+  if (misplaced.isEmpty) return;
+
+  print('⚠️  Warning: The following global flag(s) appear AFTER the '
+      'pipeline/command name and will be ignored:');
+  print('   ${misplaced.join(', ')}');
+  print('   Move them BEFORE the pipeline name. Example:');
+  print('     buildkit ${misplaced.join(' ')} <pipeline>');
+  print('');
 }

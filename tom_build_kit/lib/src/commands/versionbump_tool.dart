@@ -49,7 +49,6 @@ class VersionBumpTool extends ToolBase {
       ..addMultiOption('major',
           help: 'Projects to bump major version (comma-separated or repeated)')
       ..addFlag('versioner',
-          abbr: 'v',
           negatable: false,
           help: 'Run versioner after bumping to regenerate version files');
   }
@@ -111,6 +110,8 @@ class VersionBumpTool extends ToolBase {
       recursionExclude: results['recursion-exclude'] as List<String>,
       basePath: basePath,
     );
+
+    if (findProjectsError) return false;
 
     if (listMode) {
       print('Projects with pubspec.yaml:');
