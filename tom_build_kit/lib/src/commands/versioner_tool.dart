@@ -230,7 +230,7 @@ class VersionerTool extends ToolBase {
     // Process each project
     var success = true;
     for (final projectPath in projects) {
-      if (!await generateVersionFile(projectPath, config)) {
+      if (!await generateVersionFile(projectPath, cliConfig, wsConfig)) {
         success = false;
       }
     }
@@ -239,15 +239,24 @@ class VersionerTool extends ToolBase {
   }
 
   /// Generate version.g.dart for a single project.
+  ///
+  /// Merge order: CLI > project > workspace.
+  /// [cliConfig] contains values from CLI args (highest priority).
+  /// [wsConfig] contains workspace-level defaults (lowest priority).
+  /// Project-level config is loaded inside this method.
   Future<bool> generateVersionFile(
-      String projectPath, VersionerConfig config) async {
+      String projectPath, VersionerConfig cliConfig, VersionerConfig wsConfig) async {
     if (verbose) print('Processing: ${p.basename(projectPath)}');
 
-    // Merge with project-level config (tom_build.yaml only, no build.yaml)
-    var projectConfig = config;
+    // 3-way merge: CLI > project > workspace
     final yamlConfig = VersionerConfig.loadFromYaml(projectPath);
+    VersionerConfig projectConfig;
     if (yamlConfig != null) {
-      projectConfig = projectConfig.merge(yamlConfig);
+      // Project config wins over workspace, then CLI wins over both
+      projectConfig = cliConfig.merge(yamlConfig.merge(wsConfig));
+    } else {
+      // No project config — CLI wins over workspace
+      projectConfig = cliConfig.merge(wsConfig);
     }
 
     // Read pubspec.yaml for package name and version
