@@ -123,8 +123,13 @@ void main() {
       log.expectation('has +> entries', stdout.contains('+>'));
     });
 
-    test('--deep shows recursive dependency tree', () async {
-      log.start('DEP_DRP01', '--deep shows recursive tree');
+    test('--deep shows indented transitive dependency tree (bug #16)',
+        () async {
+      log.start('DEP_DRP01', '--deep shows indented transitive tree');
+      // Bug #16: _resolveDependencyPath() resolves relative paths against
+      // Directory.current.path (workspace root) instead of the project
+      // directory. All relative path deps fail to resolve, so no sub-trees
+      // are explored and --deep produces identical flat output to normal mode.
       final result =
           await ws.runTool('dependencies', ['--project', '_build', '--deep']);
       log.capture('dependencies --project _build --deep', result);
@@ -132,24 +137,121 @@ void main() {
       final stdout = (result.stdout as String);
       expect(result.exitCode, equals(0));
 
-      // Deep mode should show dependencies
-      expect(stdout, contains('->'),
-          reason: 'Deep mode should show dependencies');
+      // _build has path dependencies to other workspace projects (e.g.
+      // tom_build_cli, tom_basics). Those projects have their own deps.
+      // INTENDED behavior: deep mode shows indented sub-dependencies
+      // with 2+ spaces of leading indentation for transitive deps.
+      final lines = stdout.split('\n');
+      final indentedDepLines = lines.where((l) =>
+          l.startsWith('  ') &&
+          (l.trimLeft().startsWith('->') || l.trimLeft().startsWith('+>')));
+      expect(indentedDepLines, isNotEmpty,
+          reason: 'Deep mode should show indented transitive dependencies '
+              '(sub-deps of path dependencies). Got only flat output.');
 
-      // Deep mode should show the project header
-      expect(stdout, contains('_build'),
-          reason: 'Deep mode should show project name');
-
-      // Verify deep output contains at least as many deps as normal mode
-      // (deep may show additional transitive deps, or same if all are leaf nodes)
-      final depLines = stdout.split('\n').where(
-          (l) => l.trimLeft().startsWith('->') || l.trimLeft().startsWith('+>'));
-      expect(depLines, isNotEmpty,
-          reason: 'Deep mode should list dependency entries');
-
-      log.expectation('has dependency output', stdout.contains('->'));
       log.expectation(
-          'dependency lines found', depLines.isNotEmpty);
+          'has indented sub-deps', indentedDepLines.isNotEmpty);
+    },
+        skip: 'Bug #16: --deep fails to resolve relative path dependencies '
+            '(resolves against CWD instead of project directory)');
+
+    test('--deep output differs from normal mode (bug #16)', () async {
+      log.start('DEP_DRP02', '--deep output differs from normal');
+      // Bug #16: Because path deps can't be resolved, --deep produces
+      // identical output to normal mode.
+
+      // Run normal mode
+      final normalResult =
+          await ws.runTool('dependencies', ['--project', '_build']);
+      final normalStdout = (normalResult.stdout as String);
+
+      // Run deep mode
+      final deepResult =
+          await ws.runTool('dependencies', ['--project', '_build', '--deep']);
+      final deepStdout = (deepResult.stdout as String);
+
+      expect(normalResult.exitCode, equals(0));
+      expect(deepResult.exitCode, equals(0));
+
+      // Count dependency lines in each mode
+      final normalDepLines = normalStdout
+          .split('\n')
+          .where((l) => l.trimLeft().startsWith('->'))
+          .length;
+      final deepDepLines = deepStdout
+          .split('\n')
+          .where((l) => l.trimLeft().startsWith('->'))
+          .length;
+
+      // INTENDED behavior: deep mode shows MORE dependency entries because
+      // it recursively follows path dependencies and shows their transitive deps.
+      expect(deepDepLines, greaterThan(normalDepLines),
+          reason: '--deep should show more dependencies than normal mode '
+              '(transitive deps of path dependencies). '
+              'Normal: $normalDepLines, Deep: $deepDepLines');
+
+      log.expectation(
+          'deep has more deps', deepDepLines > normalDepLines);
+    },
+        skip: 'Bug #16: --deep produces identical output to normal mode '
+            '(path resolution resolves against CWD instead of project dir)');
+
+    test('--deep --dev shows recursive dev dependency tree', () async {
+      log.start('DEP_CBD01', '--deep --dev combined flags');
+      // Test that --deep and --dev can be combined.
+      // Should show dev dependencies recursively (if path deps have dev deps).
+      final result = await ws.runTool(
+          'dependencies', ['--project', '_build', '--deep', '--dev']);
+      log.capture('dependencies --project _build --deep --dev', result);
+
+      final stdout = (result.stdout as String);
+      final stderr = (result.stderr as String);
+      expect(result.exitCode, equals(0),
+          reason: 'Combined --deep --dev should not crash. '
+              'Stderr: ${stderr.substring(0, stderr.length.clamp(0, 300))}');
+
+      // Should show dev dependencies (+> prefix)
+      expect(stdout, contains('+>'),
+          reason: '--dev mode should show +> prefixed dev dependencies');
+
+      // Should NOT show normal deps (-> prefix) in --dev mode
+      final lines = stdout.split('\n');
+      final normalLines = lines.where((l) => l.trimLeft().startsWith('->'));
+      expect(normalLines, isEmpty,
+          reason: '--deep --dev should only show dev dependencies, '
+              'not normal deps');
+
+      log.expectation('has dev deps', stdout.contains('+>'));
+      log.expectation('no normal deps', normalLines.isEmpty);
     });
+
+    test('--project with non-existent path gives clear error', () async {
+      log.start('DEP_ERR01', 'non-existent --project error');
+      // Bug #19: Dependencies tool returns exit code 0 for non-existent
+      // --project path instead of reporting an error. When a user explicitly
+      // specifies --project, the tool should validate the path exists.
+      final result = await ws.runTool(
+          'dependencies', ['--project', '_build/nonexistent']);
+      log.capture('dependencies --project _build/nonexistent', result);
+
+      // INTENDED behavior: non-existent project should produce a clear error
+      expect(result.exitCode, isNot(equals(0)),
+          reason: 'Non-existent --project path should fail with non-zero exit. '
+              'Got exit code ${result.exitCode}');
+
+      final combined = '${result.stdout}\n${result.stderr}';
+      final hasError =
+          combined.toLowerCase().contains('error') ||
+          combined.toLowerCase().contains('not found') ||
+          combined.toLowerCase().contains('does not exist') ||
+          combined.toLowerCase().contains('no pubspec');
+      expect(hasError, isTrue,
+          reason: 'Should show clear error for non-existent project path');
+
+      log.expectation('non-zero exit', result.exitCode != 0);
+      log.expectation('has error message', hasError);
+    },
+        skip: 'Bug #19: Dependencies tool returns exit code 0 for '
+            'non-existent --project path (no validation)');
   });
 }

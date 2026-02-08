@@ -18,16 +18,16 @@ For the testing strategy, safety protocol, and test infrastructure, see [_copilo
 |---|-------------|-------|--------|-----------|---------|
 | 1 | [ToolBase — Shared Infrastructure](#1-toolbase--shared-infrastructure) | 14 | 7✅ 7⬜ | `toolbase_test.dart` | [→](#1-toolbase--shared-infrastructure) |
 | 2 | [Versioner — Version File Generation](#2-versioner--version-file-generation) | 7 | 5✅ 2🐛 | `versioner_test.dart` | [→](#2-versioner--version-file-generation) |
-| 3 | [Cleanup — File Deletion](#3-cleanup--file-deletion) | 8 | 8✅ | `cleanup_test.dart` | [→](#3-cleanup--file-deletion) |
+| 3 | [Cleanup — File Deletion](#3-cleanup--file-deletion) | 9 | 8✅ 1🐛 | `cleanup_test.dart` | [→](#3-cleanup--file-deletion) |
 | 4 | [Compiler — Cross-Platform Compilation](#4-compiler--cross-platform-compilation) | 6 | 6✅ | `compiler_test.dart` | [→](#4-compiler--cross-platform-compilation) |
 | 5 | [Runner — Build Runner Wrapper](#5-runner--build-runner-wrapper) | 5 | 5✅ | `runner_test.dart` | [→](#5-runner--build-runner-wrapper) |
-| 6 | [Dependencies — Dependency Tree](#6-dependencies--dependency-tree) | 4 | 4✅ | `dependencies_test.dart` | [→](#6-dependencies--dependency-tree) |
+| 6 | [Dependencies — Dependency Tree](#6-dependencies--dependency-tree) | 7 | 4✅ 3🐛 | `dependencies_test.dart` | [→](#6-dependencies--dependency-tree) |
 | 7 | [VersionBump — Version Bumping](#7-versionbump--version-bumping) | 6 | 1✅ 5🐛 | `versionbump_test.dart` | [→](#7-versionbump--version-bumping) |
-| 8 | [BuildKit — Pipeline Orchestrator](#8-buildkit--pipeline-orchestrator) | 9 | 9✅ | `buildkit_test.dart` | [→](#8-buildkit--pipeline-orchestrator) |
+| 8 | [BuildKit — Pipeline Orchestrator](#8-buildkit--pipeline-orchestrator) | 12 | 11✅ 1🐛 | `buildkit_test.dart` | [→](#8-buildkit--pipeline-orchestrator) |
 | 9 | [Config Merge — Merge Precedence](#9-config-merge--merge-precedence) | 4 | 3✅ 1🐛 | `config_merge_test.dart` | [→](#9-config-merge--merge-precedence) |
 | 10 | [Security — Path & Command Validation](#10-security--path--command-validation) | 4 | 3✅ 1⬜ | `security_test.dart` | [→](#10-security--path--command-validation) |
 | 11 | [Exclusion — Cross-Tool Filtering](#11-exclusion--cross-tool-filtering) | 27 | 25✅ 2🐛 | `exclusion_test.dart` | [→](#11-exclusion--cross-tool-filtering) |
-| — | **Total** | **94** | **76✅ 10🐛 8⬜** | | |
+| — | **Total** | **101** | **81✅ 14🐛 8⬜** | | |
 
 ---
 
@@ -86,6 +86,7 @@ Target project: `_build` (has cleanup config) or a test project.
 | CLN_DRY01 | `--dry-run` lists files without deleting | ✅ | Create temp files. Run with `--dry-run`. Verify files still exist and stdout lists them. |
 | CLN_EXC01 | `excludes` patterns prevent deletion | ✅ | Create a `version.g.dart` file. Configure exclude for it. Run cleanup. Verify it survives. |
 | CLN_PRO01 | Protected folders are never deleted | ✅ | Attempt cleanup on directory containing `.git` or `.github`. Verify those are untouched. |
+| CLN_PRO02 | Protected folders with multi-segment paths | 🐛 | Set `protected-folders: ['lib/src']`. Verify lib/src/ contents survive. **BUG:** Multi-segment paths silently ignored. See issues.md #17. |
 | CLN_SAF01 | `--max-files` safety limit triggers abort | ✅ | Create >100 matching files. Run without `--force`. Verify exit code != 0 and files remain. |
 | CLN_SAF02 | `--force` skips safety limit | ✅ | Create >100 matching files. Run with `--force`. Verify deletion proceeds. |
 | CLN_LST01 | `--list` shows cleanup-configured projects | ✅ | Run with `--list`. Verify projects with `cleanup:` config appear. |
@@ -137,7 +138,10 @@ Target project: Any project with dependencies (e.g., `_build`).
 | DEP_NRM01 | Default mode shows normal dependencies | ✅ | Run dependencies. Verify stdout lists `->` prefixed dependency names. |
 | DEP_DEV01 | `--dev` shows dev dependencies only | ✅ | Run with `--dev`. Verify stdout lists `+>` prefixed dependencies. No `->` entries. |
 | DEP_ALL01 | `--all` shows both normal and dev | ✅ | Run with `--all`. Verify both `->` and `+>` entries present. |
-| DEP_DRP01 | `--deep` shows recursive dependency tree | ✅ | Run with `--deep`. Verify indented tree output with transitive dependencies. |
+| DEP_DRP01 | `--deep` shows recursive dependency tree | 🐛 | Run with `--deep`. Verify indented tree output with transitive dependencies. **BUG:** Path resolution against CWD instead of project dir. See issues.md #16. |
+| DEP_DRP02 | `--deep` output differs from normal mode | 🐛 | Compare `--deep` vs normal output. Deep should have more entries. **BUG:** Identical output due to path resolution. See issues.md #16. |
+| DEP_CBD01 | `--deep --dev` combined flags | ✅ | Run with `--deep --dev`. Verify no crash, shows only dev deps with +> prefix. |
+| DEP_ERR01 | Non-existent `--project` path error | 🐛 | Run with `--project nonexistent`. Verify error reported. **BUG:** Returns exit 0 silently. See issues.md #19. |
 
 ---
 
@@ -172,11 +176,14 @@ Uses workspace-level pipeline configuration from `tom_build_master.yaml`.
 | BKT_HLP01 | `--help` shows usage | ✅ | Run `buildkit --help`. Verify usage text displayed. |
 | BKT_CMD01 | Direct command execution (`:versioner`) | ✅ | Run `buildkit :versioner --project _build`. Verify versioner executes. |
 | BKT_PIP01 | Pipeline execution (`build`, `clean`) | ✅ | Run `buildkit clean --project _build`. Verify pipeline steps execute in order. |
-| BKT_DRY01 | `--dry-run` on pipeline | ✅ | Run `buildkit build --dry-run --project _build`. Verify no changes made. |
+| BKT_DRY01 | `--dry-run` on pipeline (flags after pipeline name) | 🐛 | Run `buildkit test-simple --dry-run --project _build`. Verify [DRY RUN] markers shown and no actual execution. **BUG:** --dry-run after pipeline name silently ignored. See issues.md #15. |
+| BKT_DRY02 | `--dry-run` before pipeline name (workaround) | ✅ | Run `buildkit --dry-run --project _build test-simple`. Verify [DRY RUN] markers and no execution. Documents workaround for bug #15. |
 | BKT_OPT01 | Per-step option suppression (`-s-`, `-v-`) | ✅ | Run `buildkit :versioner -s- --project _build`. Verify `-s` not passed to versioner. |
 | BKT_SHL01 | Shell command execution in pipeline | ✅ | Configure pipeline step with `shell echo hello`. Run. Verify "hello" in output. |
 | BKT_XPJ01 | `--exclude-projects` filters pipeline targets | ✅ | Run `buildkit build --exclude-projects 'zom_*'`. Verify no `zom_` projects processed by any pipeline step. |
 | BKT_XPJ02 | `--exclude` combined with `--exclude-projects` | ✅ | Run `buildkit build --exclude '*.g.dart' --exclude-projects 'xternal/tom_module_basics/*'`. Verify both file-level and project-level exclusions applied independently. |
+| BKT_ERR01 | Unknown pipeline name error handling | ✅ | Run `buildkit nonexistent-pipeline`. Verify non-zero exit and clear error message. |
+| BKT_ERR02 | Non-existent `--project` path error | ✅ | Run `buildkit --project nonexistent test-simple`. Verify error reported. |
 
 ---
 
@@ -283,4 +290,8 @@ These bugs are tracked in [issues.md](issues.md) and affect test expectations:
 |-------|-----|-----------------|
 | #12 | Versioner config merge-order | Tests 2.2, 2.6, 9.3 document current (buggy) behavior instead of expected behavior |
 | #13 | VersionBump `-v` abbreviation conflict | All versionbump tests (7.x) will fail until bug is fixed — tool cannot start. Exclusion tests 11.6, 11.17 document crash. |
-| #14 | BuiltinCommands dry-run inconsistency | Pipeline dry-run tests (8.5) may not fully verify tool-level dry-run |
+| #14 | BuiltinCommands dry-run inconsistency | Pipeline dry-run tests (8.5) may not fully verify tool-level dry-run || #15 | BuildKit global flags after pipeline name silently ignored | BKT_DRY01 documents the bug. BKT_DRY02 tests the workaround (flags before pipeline). |
+| #16 | Dependencies `--deep` path resolution | DEP_DRP01, DEP_DRP02 document the bug. --deep produces identical output to normal mode. |
+| #17 | Cleanup protected-folders multi-segment paths | CLN_PRO02 documents the bug. Multi-segment paths like `lib/src` silently ignored. |
+| #18 | BuildKit pipeline steps don't forward --project | Pipeline built-in tool commands default to CWD instead of --project path. |
+| #19 | Dependencies accepts non-existent --project path | DEP_ERR01 documents the bug. Tool returns exit 0 instead of error for invalid paths. |

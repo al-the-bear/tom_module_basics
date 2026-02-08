@@ -4,7 +4,8 @@
 /// test-shell, and test-internal pipeline definitions.
 ///
 /// Test IDs: BKT_LST01, BKT_HLP01, BKT_CMD01, BKT_PIP01, BKT_DRY01,
-///           BKT_OPT01, BKT_SHL01, BKT_XPJ01, BKT_XPJ02
+///           BKT_DRY02, BKT_OPT01, BKT_SHL01, BKT_XPJ01, BKT_XPJ02,
+///           BKT_ERR01, BKT_ERR02
 @TestOn('!browser')
 @Timeout(Duration(seconds: 180))
 library;
@@ -131,31 +132,81 @@ void main() {
       log.expectation('step 2 executed', stdout.contains('step-2-world'));
     });
 
-    test('--dry-run shows steps without executing', () async {
-      log.start('BKT_DRY01', '--dry-run on pipeline');
+    test('--dry-run after pipeline name prevents execution (bug #15)',
+        () async {
+      log.start('BKT_DRY01', '--dry-run after pipeline prevents execution');
+      // Command: buildkit test-simple --project _build --dry-run
+      // Bug #15: ArgParser(allowTrailingOptions: false) silently drops
+      // --dry-run when placed after the pipeline name.
       final result = await ws.runPipeline(
           'test-simple', ['--project', '_build', '--dry-run']);
-      log.capture('buildkit test-simple --dry-run', result);
+      log.capture(
+          'buildkit test-simple --project _build --dry-run', result);
 
       final stdout = (result.stdout as String);
       expect(result.exitCode, equals(0));
 
-      // Dry-run should complete successfully
-      // Shell commands may still execute with --dry-run (buildkit design),
-      // but the pipeline should show summary
-      final hasSummary =
-          stdout.contains('Summary') || stdout.contains('SUCCESS');
-      expect(hasSummary, isTrue,
-          reason: 'Dry-run pipeline should show summary');
+      // INTENDED behavior: dry-run should show [DRY RUN] markers
+      expect(stdout, contains('[DRY RUN]'),
+          reason: 'Dry-run should print [DRY RUN] markers for shell cmds');
 
-      // Verify the pipeline step ran (even in dry-run for shell commands)
-      final hasStepOutput = stdout.contains('step-1-hello') ||
-          stdout.toLowerCase().contains('dry run') ||
-          stdout.contains('Would execute');
-      expect(hasStepOutput, isTrue,
-          reason: 'Dry-run should show step output or dry-run markers');
+      // INTENDED behavior: step commands should appear in [DRY RUN] context
+      // only — not as actual echo output on their own lines
+      final lines = stdout.split('\n');
+      final stepLines = lines.where((l) =>
+          l.contains('step-1-hello') || l.contains('step-2-world'));
+      for (final line in stepLines) {
+        expect(line, contains('[DRY RUN]'),
+            reason: 'Step commands should only appear in [DRY RUN] context, '
+                'not as actual echo output. Line: $line');
+      }
 
-      log.expectation('pipeline completed', hasSummary);
+      log.expectation(
+          'has [DRY RUN] markers', stdout.contains('[DRY RUN]'));
+      log.expectation('no bare echo output',
+          !lines.any((l) => l.trim() == 'step-1-hello'));
+    },
+        skip: 'Bug #15: --dry-run after pipeline name is silently ignored '
+            '(allowTrailingOptions: false in buildkit.dart)');
+
+    test('--dry-run before pipeline name works correctly', () async {
+      log.start('BKT_DRY02', '--dry-run before pipeline (workaround)');
+      // Workaround for bug #15: place global flags BEFORE the pipeline name.
+      // Command: buildkit --dry-run --project _build test-simple
+      // Use runPipeline with --dry-run as "pipeline" arg for correct ordering.
+      final result = await ws.runPipeline(
+          '--dry-run', ['--project', '_build', 'test-simple']);
+      log.capture(
+          'buildkit --dry-run --project _build test-simple', result);
+
+      final stdout = (result.stdout as String);
+      expect(result.exitCode, equals(0));
+
+      // With flags before pipeline name, --dry-run IS parsed correctly
+      expect(stdout, contains('[DRY RUN]'),
+          reason:
+              'Dry-run markers should appear when flag is before pipeline');
+      expect(stdout, contains('Would execute'),
+          reason: 'Should show "Would execute:" for each shell command');
+
+      // Step commands should appear only in [DRY RUN] context
+      final lines = stdout.split('\n');
+      final stepLines = lines.where((l) =>
+          l.contains('step-1-hello') || l.contains('step-2-world'));
+      for (final line in stepLines) {
+        expect(line, contains('[DRY RUN]'),
+            reason: 'Step commands should only appear in [DRY RUN] context, '
+                'not as actual echo output. Line: $line');
+      }
+
+      // No bare echo output (just the text without [DRY RUN] prefix)
+      expect(lines.any((l) => l.trim() == 'step-1-hello'), isFalse,
+          reason: 'Dry-run should prevent shell commands from executing');
+
+      log.expectation(
+          'has [DRY RUN] markers', stdout.contains('[DRY RUN]'));
+      log.expectation('no bare echo output',
+          !lines.any((l) => l.trim() == 'step-1-hello'));
     });
 
     test('per-step option suppression (-s-)', () async {
@@ -229,6 +280,54 @@ void main() {
 
       // Both exclusion types should apply
       log.expectation('exit code 0', result.exitCode == 0);
+    });
+
+    test('unknown pipeline name produces clear error', () async {
+      log.start('BKT_ERR01', 'unknown pipeline error handling');
+      // Use flags-before-pipeline workaround for bug #15.
+      // Command: buildkit --project _build nonexistent-pipeline-xyz
+      final result = await ws.runPipeline(
+          '--project', ['_build', 'nonexistent-pipeline-xyz']);
+      log.capture(
+          'buildkit --project _build nonexistent-pipeline-xyz', result);
+
+      // Unknown pipeline should produce an error (non-zero exit)
+      expect(result.exitCode, isNot(equals(0)),
+          reason: 'Unknown pipeline name should fail with non-zero exit');
+
+      final combined = '${result.stdout}\n${result.stderr}';
+      final hasError = combined.toLowerCase().contains('not found') ||
+          combined.toLowerCase().contains('unknown') ||
+          combined.toLowerCase().contains('error') ||
+          combined.toLowerCase().contains('pipeline');
+      expect(hasError, isTrue,
+          reason: 'Should show clear error for unknown pipeline name. '
+              'Output: ${combined.substring(0, combined.length.clamp(0, 300))}');
+
+      log.expectation('non-zero exit', result.exitCode != 0);
+      log.expectation('has error message', hasError);
+    });
+
+    test('--project with non-existent path gives clear error', () async {
+      log.start('BKT_ERR02', 'non-existent --project error');
+      // Command: buildkit --project _build/nonexistent test-simple
+      final result = await ws.runPipeline(
+          '--project', ['_build/nonexistent_dir', 'test-simple']);
+      log.capture(
+          'buildkit --project _build/nonexistent_dir test-simple', result);
+
+      // Non-existent project should produce an error
+      final combined = '${result.stdout}\n${result.stderr}';
+      final isError = result.exitCode != 0 ||
+          combined.toLowerCase().contains('error') ||
+          combined.toLowerCase().contains('not found') ||
+          combined.toLowerCase().contains('does not exist');
+      expect(isError, isTrue,
+          reason: 'Non-existent project path should produce error. '
+              'Exit: ${result.exitCode}, '
+              'Output: ${combined.substring(0, combined.length.clamp(0, 300))}');
+
+      log.expectation('reports error', isError);
     });
   });
 }

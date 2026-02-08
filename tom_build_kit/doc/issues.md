@@ -117,3 +117,57 @@ Tracked issues from the tool consolidation (5 standalone tools → tom_build_kit
 - [ ] Compare with `_runCompiler()` which correctly sets `..dryRun = dryRun` on the tool instance
 - [ ] If `--dry-run` is passed as pipeline-level flag but not in tool args, versioner won't respect dry-run
 - Files: `lib/src/pipeline/builtin_commands.dart`
+
+### 15. BuildKit global flags after pipeline/command name are silently ignored
+- [ ] `ArgParser(allowTrailingOptions: false)` in `buildkit.dart` stops parsing flags at the first non-option argument
+- [ ] `buildkit test-simple --project _build --dry-run` → `--dry-run` and `--project` go into `results.rest`, NOT into parsed flags
+- [ ] `buildkit --dry-run test-simple --project _build` → `--dry-run` is correctly parsed, `test-simple --project _build` goes into rest
+- [ ] This means `--project`, `--dry-run`, `--verbose`, `--scan`, `--recursive`, `--exclude`, `--exclude-projects` ALL silently fail when placed after the pipeline name
+- [ ] The `--project` flag after pipeline name gets passed as a step arg, which only works by accident for built-in tools that happen to parse their own args
+- [ ] `--dry-run` after pipeline name is silently dropped — commands execute with side effects when user expects dry-run
+- [ ] Workaround: always place global flags BEFORE the pipeline/command name
+- [ ] Fix: either (a) use `allowTrailingOptions: true` (may break step arg parsing), (b) pre-process args to extract known global flags before ArgParser, or (c) document the required flag order
+- Discovered by: integration test BKT_DRY01 initially failed because `--dry-run` was after pipeline name
+- Files: `bin/buildkit.dart` (line ~132)
+
+### 16. Dependencies `--deep` fails to resolve relative path dependencies
+- [ ] `_resolveDependencyPath()` resolves relative paths against `Directory.current.path` (workspace root)
+- [ ] But pubspec.yaml relative paths are relative to the PROJECT directory, not the workspace root
+- [ ] Example: `_build/pubspec.yaml` has `path: ../xternal/tom_module_basics/tom_basics_network`
+- [ ] `p.join(cwd, '../xternal/...')` with cwd as workspace root goes ABOVE the workspace, directory doesn't exist
+- [ ] Should resolve against the project path: `p.join(projectPath, '../xternal/...')` which correctly resolves within workspace
+- [ ] Result: `--deep` produces IDENTICAL output to normal mode because all path deps fail to resolve
+- [ ] No transitive dependency tree is ever shown
+- Discovered by: integration test DEP_DRP01 initially expected indented output, relaxed when output was flat
+- Files: `lib/src/commands/dependencies_tool.dart` (line ~289-301)
+
+### 17. Cleanup `protected-folders` silently ignores multi-segment paths
+- [ ] `_isInProtectedFolder()` uses `p.split(path)` to get individual segments, then checks if ANY segment is in the protected set
+- [ ] Multi-segment paths like `lib/src` can never match because `p.split()` never produces a `lib/src` segment
+- [ ] Adding `'lib/src'` to `protected-folders` silently does nothing — no error, no warning
+- [ ] Only single-segment names like `'src'` work, but they protect ALL folders named `src` everywhere in the tree
+- [ ] Expected: `protected-folders: ['lib/src']` should protect only the `lib/src/` subtree
+- [ ] Actual: silently ignored, files in `lib/src/` are deleted
+- Discovered by: integration test CLN_PRO01 initially used `'lib/src'`, changed to `'src'` to make it pass
+- Files: `lib/src/commands/cleanup_tool.dart` (line ~432-435)
+
+### 18. BuildKit pipeline steps don't forward `--project` to built-in tool commands
+- [ ] When buildkit runs a pipeline like `buildkit test-pipeline --project _build`, each step gets a `PipelineExecutor` with `projectPath` set
+- [ ] Shell commands correctly use `workingDirectory: projectPath` — they run in the right directory
+- [ ] But built-in commands (`BuiltinCommands.execute()`) only receive args from the pipeline step command string
+- [ ] The `projectPath` stored in `BuiltinCommands` is NOT forwarded as `--project` to the tool's `run()` method
+- [ ] The tool's `run()` then defaults to `Directory.current.path` which may NOT be the project directory
+- [ ] Example: pipeline step `versioner` runs as `tool.run([])` → versioner uses cwd (workspace root) as project → "No pubspec.yaml found"
+- [ ] Workaround: use `versioner --project <path>` explicitly in the pipeline step command string
+- Discovered by: buildkit_test.dart pipeline tests initially used built-in tool steps, changed to shell commands
+- Files: `lib/src/builtin_commands.dart`, `lib/src/pipeline_executor.dart`
+
+### 19. Dependencies tool accepts non-existent `--project` path without error
+- [ ] `dependencies --project _build/nonexistent` returns exit code 0
+- [ ] No error message, no warning — the tool silently produces no output
+- [ ] Expected: non-zero exit code and clear error message when `--project` path doesn't exist
+- [ ] Affects user experience: typo in project path silently produces empty results
+- [ ] Buildkit validates project paths correctly (exits with error), but dependencies tool does not
+- [ ] Likely affects all tools inheriting from `ToolBase` that don't validate `--project` paths
+- Discovered by: integration test DEP_ERR01 found the tool returns exit 0 for non-existent path
+- Files: `lib/src/commands/dependencies_tool.dart`, `lib/src/commands/tool_base.dart`
