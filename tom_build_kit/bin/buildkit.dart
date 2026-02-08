@@ -139,10 +139,14 @@ Future<void> main(List<String> args) async {
         abbr: 'l', negatable: false, help: 'List available pipelines')
     ..addFlag('recursive',
         abbr: 'r', negatable: false, help: 'Scan directories recursively')
-    ..addFlag('git-scan',
-        abbr: 'g',
+    ..addFlag('inner-first-git',
+        abbr: 'i',
         negatable: false,
-        help: 'Scan for git repositories in the workspace')
+        help: 'Scan git repos, process innermost (deepest) first (for commit/push)')
+    ..addFlag('outer-first-git',
+        abbr: 'o',
+        negatable: false,
+        help: 'Scan git repos, process outermost (shallowest) first (for pull/fetch)')
     ..addOption('scan',
         abbr: 's', help: 'Scan directory for projects to run pipeline in')
     ..addOption('root',
@@ -184,8 +188,15 @@ Future<void> main(List<String> args) async {
   final dryRun = results['dry-run'] as bool;
   final listPipelines = results['list'] as bool;
   final recursive = results['recursive'] as bool;
-  final gitScan = results['git-scan'] as bool;
+  final innerFirstGit = results['inner-first-git'] as bool;
+  final outerFirstGit = results['outer-first-git'] as bool;
   final scanPath = results['scan'] as String?;
+
+  // Validate mutual exclusivity of git scan flags
+  if (innerFirstGit && outerFirstGit) {
+    print('Error: --inner-first-git and --outer-first-git are mutually exclusive.');
+    exit(1);
+  }
 
   // Warn if known global flags appear after the pipeline/command name.
   // ArgParser(allowTrailingOptions: false) stops parsing at the first
@@ -257,14 +268,26 @@ Future<void> main(List<String> args) async {
         print('  - ${p.relative(path, from: currentDir)}');
       }
     }
-  } else if (gitScan) {
-    // Scan for git repositories in the workspace
+  } else if (innerFirstGit || outerFirstGit) {
+    // Scan for git repositories in the workspace, sorted by depth
     projectPaths = _findGitRepositories(rootPath, recursive: recursive);
     if (projectPaths.isEmpty) {
       print('No git repositories found in: $rootPath');
       exit(1);
     }
-    print('Found ${projectPaths.length} git repository(ies) to process');
+    // Sort by path depth: inner-first = deepest first, outer-first = shallowest first
+    projectPaths.sort((a, b) {
+      final depthA = p.split(a).length;
+      final depthB = p.split(b).length;
+      if (depthA != depthB) {
+        return innerFirstGit
+            ? depthB.compareTo(depthA) // deepest first
+            : depthA.compareTo(depthB); // shallowest first
+      }
+      return p.basename(a).compareTo(p.basename(b)); // alphabetic tie-break
+    });
+    print('Found ${projectPaths.length} git repository(ies) to process'
+        ' (${innerFirstGit ? 'inner-first' : 'outer-first'})');
     if (_verbose) {
       for (final path in projectPaths) {
         print('  - ${p.relative(path, from: currentDir)}');
@@ -289,7 +312,7 @@ Future<void> main(List<String> args) async {
       }
     }
   } else {
-    // No explicit --scan, --project, or --git-scan: load navigation defaults
+    // No explicit --scan, --project, or git flags: load navigation defaults
     // from tom_build_master.yaml
     final masterFile = File(p.join(rootPath, 'tom_build_master.yaml'));
     String? navScan;
@@ -536,8 +559,8 @@ void _printUsage(ArgParser parser) {
   print('  buildkit -n deploy                  # Dry-run deploy pipeline');
   print('  buildkit build --scan .             # Run build in projects under current dir');
   print('  buildkit build -s . -r              # Run build recursively in all projects');
-  print('  buildkit -g :git status              # Run git status in all repos');
-  print('  buildkit -g :git push                # Push all git repos in workspace');
+  print('  buildkit -i :git add -A :git commit -m "msg"  # Commit all repos (inner first)');
+  print('  buildkit -o :git pull --rebase       # Pull all repos (outer first)');
 }
 
 void _listPipelines(PipelineConfig config) {
@@ -833,18 +856,22 @@ Future<bool> _runCommandHelp(String commandName) async {
     case 'git':
       print('Git Command — run git in each project directory');
       print('');
-      print('Usage: buildkit --git-scan :git <args...>');
-      print('       buildkit -g :git <args...>');
+      print('Usage: buildkit --inner-first-git :git <args...>');
+      print('       buildkit -i :git <args...>');
+      print('       buildkit --outer-first-git :git <args...>');
+      print('       buildkit -o :git <args...>');
       print('');
       print('Executes git with the given arguments in each discovered');
-      print('git repository root. Use --git-scan (-g) to automatically');
-      print('discover all git repositories in the workspace.');
+      print('git repository root, ordered by nesting depth.');
+      print('');
+      print('  --inner-first-git / -i  Deepest repos first (for commit, push, tag, stash)');
+      print('  --outer-first-git / -o  Shallowest repos first (for pull, fetch, checkout)');
       print('');
       print('Examples:');
-      print('  buildkit -g :git status            # Status of all repos');
-      print('  buildkit -g :git push              # Push all repos');
-      print('  buildkit -g :git pull --rebase     # Pull with rebase');
-      print('  buildkit -g :git stash             # Stash in all repos');
+      print('  buildkit -i :git add -A :git commit -m "msg"  # Commit all (inner first)');
+      print('  buildkit -i :git push                         # Push all (inner first)');
+      print('  buildkit -o :git pull --rebase                # Pull all (outer first)');
+      print('  buildkit -i :git status                       # Status of all repos');
       return true;
     default:
       print('Unknown command: $commandName');
@@ -942,7 +969,8 @@ const _knownGlobalFlags = {
   '--verbose', '-v',
   '--dry-run', '-n',
   '--recursive', '-r',
-  '--git-scan', '-g',
+  '--inner-first-git', '-i',
+  '--outer-first-git', '-o',
   '--scan', '-s',
   '--project', '-p',
   '--root', '-R',
