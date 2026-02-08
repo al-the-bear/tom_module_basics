@@ -42,3 +42,4 @@ export 'src/path_utils.dart';
 export 'src/processing_result.dart';
 export 'src/project_discovery.dart';
 export 'src/project_scanner.dart';
+export 'src/show_versions.dart';

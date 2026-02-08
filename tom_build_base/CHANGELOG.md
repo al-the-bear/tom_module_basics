@@ -1,3 +1,15 @@
+## 1.2.0
+
+### Features
+
+- **`show_versions` CLI tool** — New executable in `bin/show_versions.dart`. Run via `dart run tom_build_base:show_versions [workspace-path]` or install globally with `dart pub global activate tom_build_base`.
+- **`showVersions()` library function** — Importable API in `lib/src/show_versions.dart` that discovers projects and reads their pubspec versions. Returns a structured `ShowVersionsResult`.
+- **`readPubspecVersion()` helper** — Reusable function to read the `version:` field from any project's `pubspec.yaml`.
+
+### Improvements
+
+- Example file now delegates to the library function instead of reimplementing the logic.
+
 ## 1.1.0
 
 ### Improvements

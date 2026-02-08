@@ -354,17 +354,33 @@ exit(result.hasFailures ? 1 : 0);
 
 ---
 
-## Complete CLI Tool Example
+## Included CLI Tool — `show_versions`
 
-See [example/tom_build_base_example.dart](../example/tom_build_base_example.dart) for a full working tool that:
+The package ships a ready-to-use tool in `bin/show_versions.dart`:
 
-1. Loads and merges master + project configuration
-2. Uses `ConfigMerger` for additive exclude-list merging
-3. Validates paths with `validatePathContainment`
-4. Discovers projects via `ProjectScanner` or `ProjectDiscovery`
-5. Skips builder-definition packages
-6. Reads `pubspec.yaml` version from every discovered project
-7. Tracks and reports results with `ProcessingResult`
+```bash
+dart run tom_build_base:show_versions [workspace-path]
+```
+
+The underlying logic is the importable `showVersions()` function:
+
+```dart
+final result = await showVersions(ShowVersionsOptions(
+  basePath: workspaceRoot,
+  verbose: true,
+  log: print,
+));
+
+for (final entry in result.versions.entries) {
+  print('${p.basename(entry.key)}: ${entry.value}');
+}
+
+if (!result.isSuccess) exit(1);
+```
+
+`showVersions()` exercises the full library surface: config loading & merging, project scanning & discovery, build.yaml utilities, path validation, and result tracking.
+
+See [example/tom_build_base_example.dart](../example/tom_build_base_example.dart) for a minimal usage example.
 
 ---
 
@@ -394,6 +410,9 @@ See [example/tom_build_base_example.dart](../example/tom_build_base_example.dart
 | `ProcessingResult` | processing_result | Batch result tracker |
 | `isPathContained()` | path_utils | Single path containment |
 | `validatePathContainment()` | path_utils | Multi-path validation |
+| `showVersions()` | show_versions | Discover projects & read versions |
+| `readPubspecVersion()` | show_versions | Read version from pubspec.yaml |
+| `ShowVersionsResult` | show_versions | Structured result with versions map |
 | `isBuildYamlBuilderDefinition()` | build_yaml_utils | Detect builder packages |
 | `hasBuildYamlConsumerConfig()` | build_yaml_utils | Detect consumer config |
 | `getBuildYamlBuilderOptions()` | build_yaml_utils | Read builder options |

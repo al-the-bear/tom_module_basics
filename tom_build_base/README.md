@@ -18,7 +18,29 @@ This package provides the common foundation that Tom CLI build tools (like `tom_
 
 ```yaml
 dependencies:
-  tom_build_base: ^1.1.0
+  tom_build_base: ^1.2.0
+```
+
+## Included CLI Tool — `show_versions`
+
+The package ships a ready-to-use CLI tool that discovers Dart projects and prints their versions:
+
+```bash
+# Run from a workspace
+dart run tom_build_base:show_versions [workspace-path]
+
+# Or install globally
+dart pub global activate tom_build_base
+show_versions [workspace-path]
+```
+
+The same logic is available as an importable function:
+
+```dart
+final result = await showVersions(ShowVersionsOptions(basePath: '.'));
+for (final entry in result.versions.entries) {
+  print('${basename(entry.key)}: ${entry.value}');
+}
 ```
 
 ## Usage
