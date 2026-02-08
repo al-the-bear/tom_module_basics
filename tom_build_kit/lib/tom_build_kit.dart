@@ -22,6 +22,7 @@ export 'src/commands/versionbumper_tool.dart';
 export 'src/commands/compiler_tool.dart';
 export 'src/commands/runner_tool.dart';
 export 'src/commands/dependencies_tool.dart';
+export 'src/commands/buildsorter_tool.dart';
 export 'src/compiler_config.dart';
 
 // Utilities

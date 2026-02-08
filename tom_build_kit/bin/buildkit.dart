@@ -154,7 +154,11 @@ Future<void> main(List<String> args) async {
         abbr: 'x', help: 'Exclude patterns (path-based globs)')
     ..addMultiOption('exclude-projects',
         help:
-            'Exclude projects by name or path (e.g. zom_*, xternal/tom_module_basics/*)');
+            'Exclude projects by name or path (e.g. zom_*, xternal/tom_module_basics/*)')
+    ..addFlag('build-order',
+        abbr: 'b',
+        negatable: false,
+        help: 'Sort projects in dependency build order');
 
   ArgResults results;
   try {
@@ -358,6 +362,24 @@ Future<void> main(List<String> args) async {
   if (projectPaths.isEmpty) {
     print('No projects remaining after exclusion filters.');
     exit(1);
+  }
+
+  // Apply build-order sorting if requested
+  final buildOrder = results['build-order'] as bool;
+  if (buildOrder) {
+    final sorter = BuildSorterTool();
+    final sorted = sorter.computeBuildOrder(projectPaths);
+    if (sorted == null) {
+      print('Error: Could not compute build order (circular dependencies?).');
+      exit(1);
+    }
+    projectPaths = sorted;
+    if (_verbose) {
+      print('Build order:');
+      for (var i = 0; i < projectPaths.length; i++) {
+        print('  ${i + 1}. ${p.relative(projectPaths[i], from: currentDir)}');
+      }
+    }
   }
 
   // Execute steps in each project

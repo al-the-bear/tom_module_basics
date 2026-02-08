@@ -12,6 +12,7 @@ compiler:
         - dart compile exe ${file} --target-os=${target-os} -o $HOME/.tom/bin/${target-platform-vs}/${file.name}
       files:
         - bin/buildkit.dart
+        - bin/buildsorter.dart
         - bin/cleanup.dart
         - bin/compiler.dart
         - bin/dependencies.dart
@@ -27,6 +28,7 @@ compiler:
         - dart compile exe ${file} -o $HOME/.tom/bin/${target-platform-vs}/${file.name}
       files:
         - bin/buildkit.dart
+        - bin/buildsorter.dart
         - bin/cleanup.dart
         - bin/compiler.dart
         - bin/dependencies.dart
