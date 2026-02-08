@@ -1,6 +1,7 @@
 # Build configuration for tom_d4rt_astgen
 #
-# This registers the astgen builder as a builder that can be used by other packages.
+# This registers the astgen builder that can be used by other packages.
+# Version generation is configured in tom_build.yaml.
 
 builders:
   astgen:
@@ -10,14 +11,3 @@ builders:
       r"$lib$": [".astgen.done"]
     auto_apply: none
     build_to: source
-
-targets:
-  $default:
-    builders:
-      # Version builder - generates version.g.dart with build info
-      tom_build_kit:version_builder:
-        enabled: true
-        options:
-          output: lib/src/version.g.dart
-          includeGitCommit: true
-          variablePrefix: astgenTool
