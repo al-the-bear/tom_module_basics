@@ -25,13 +25,28 @@ void main() {
   /// Relative path from workspace root to the version.g.dart file.
   late String versionFileRelative;
 
-  setUpAll(() {
+  setUpAll(() async {
     ws = TestWorkspace();
     targetProject = p.join(ws.workspaceRoot, '_build');
     versionFileRelative = '_build/lib/src/version.g.dart';
     print('Workspace root:  ${ws.workspaceRoot}');
     print('Buildkit root:   ${ws.buildkitRoot}');
     print('Target project:  $targetProject');
+
+    // Safety: verify workspace is clean before running tests.
+    // Tests assume exclusive access and a committed baseline.
+    final dirty = await ws.hasUncommittedChanges();
+    if (dirty.isNotEmpty) {
+      print('WARNING: Workspace has uncommitted changes:');
+      for (final f in dirty) {
+        print('  $f');
+      }
+      fail(
+        'Workspace must be clean before running integration tests. '
+        'Commit or stash all changes first. '
+        'See _copilot_guidelines/testing.md for the pre-test safety protocol.',
+      );
+    }
   });
 
   tearDown(() async {

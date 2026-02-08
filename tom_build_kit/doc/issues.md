@@ -91,3 +91,29 @@ Tracked issues from the tool consolidation (5 standalone tools → tom_build_kit
 - [x] BuildKit orchestrator section with pipelines, direct commands, per-tool override
 - [x] Table of contents with links
 - File: `doc/tools_user_guide.md`
+
+---
+
+## Open Issues
+
+### 12. Versioner config merge-order bug
+- [ ] `generateVersionFile()` in `versioner_tool.dart` does `config.merge(yamlConfig)` where `yamlConfig` (project config) is the "other" parameter
+- [ ] The `merge()` method gives "other" higher priority: `includeGitCommit: other.includeGitCommit` (unconditional), `variablePrefix: other.variablePrefix ?? variablePrefix` (non-null wins)
+- [ ] This means project `tom_build.yaml` overrides CLI args for `--no-git` and `--variable-prefix`
+- [ ] Expected precedence: CLI > project `tom_build.yaml` > workspace `tom_build_master.yaml` > defaults
+- [ ] Actual precedence: project `tom_build.yaml` > CLI > workspace `tom_build_master.yaml` > defaults
+- [ ] Discovered by integration tests: `test/versioner_test.dart` (2 tests document the bug)
+- Files: `lib/src/commands/versioner_tool.dart` (lines ~74-84 merge method, line ~235 generateVersionFile)
+
+### 13. VersionBump `-v` abbreviation conflict
+- [ ] `VersionBumpTool.addToolOptions()` registers `--versioner` with abbreviation `-v`
+- [ ] Conflicts with `--verbose` (`-v`) inherited from `ToolBase.createParser()`
+- [ ] Causes runtime `ArgParser` error: "Abbreviation 'v' is already used by 'verbose'"
+- [ ] The tool cannot start at all — any invocation including `--help` crashes
+- Files: `lib/src/commands/versionbump_tool.dart` (line ~51)
+
+### 14. BuiltinCommands dry-run inconsistency
+- [ ] `_runVersioner()` checks `dryRun` before calling `tool.run(args)` but doesn't set `tool.dryRun = dryRun`
+- [ ] Compare with `_runCompiler()` which correctly sets `..dryRun = dryRun` on the tool instance
+- [ ] If `--dry-run` is passed as pipeline-level flag but not in tool args, versioner won't respect dry-run
+- Files: `lib/src/pipeline/builtin_commands.dart`

@@ -4,14 +4,55 @@
 
 Buildkit tests are **integration tests** that run against the **real workspace**. They exercise the actual CLI tools by spawning them as child processes, then verify outcomes through file system checks and git diffs.
 
+**No one may make changes to the workspace during tests.** The tests assume exclusive access to the workspace. Any concurrent changes will corrupt test results and may prevent git revert from working correctly.
+
+## Pre-Test Safety Protocol
+
+**This protocol MUST be followed before running any integration tests.** There are no shortcuts or workarounds.
+
+### Step 1: Commit and push all submodules
+
+Every submodule must be clean (no uncommitted changes) and pushed to origin.
+
+```bash
+# For each submodule:
+cd xternal/<submodule>
+git add -A && git commit -m "..." && git push
+```
+
+### Step 2: Commit and push the main workspace repo
+
+```bash
+cd <workspace-root>
+git add -A && git commit -m "..." && git push
+```
+
+### Step 3: Make a backup copy of the complete workspace
+
+This is the secondary safety net. If a tool under test deletes git files or otherwise destroys the workspace beyond what `git checkout` can recover, this backup is the fallback.
+
+```bash
+cp -a tom2 tom2_backup
+```
+
+### Step 4: Run the test loop
+
+For each test:
+
+1. **Run** the test (installs fixture, executes tool)
+2. **Verify** changes (check generated files, stdout, exit code)
+3. **Revert** all changes via `git checkout -- .` from workspace root (and submodule roots if needed)
+
+The `tearDown()` in each test file handles the revert automatically. The `setUpAll()` verifies the workspace is in a clean state before any tests run.
+
+## Test Architecture
+
 ### Core Mechanism
 
-1. **Replace** `tom_build_master.yaml` at the workspace root with a test-specific fixture
-2. **Run** the buildkit command via `Process.run('dart', ['run', 'tom_build_kit:<tool>', ...])`
-3. **Verify** results: exit code, stdout/stderr output, generated/modified files
-4. **Revert** all changes via `git checkout` (both `tom_build_master.yaml` and any project files)
-
-Since `tom_build_master.yaml` is tracked by git, no backup/rename is needed — `git checkout` restores it after each test.
+1. **Install fixture**: Copy a test-specific `tom_build_master.yaml` into the workspace root, overwriting the real one
+2. **Run tool**: Execute the buildkit command via `dart run <path/to/bin/tool.dart>`
+3. **Verify**: Check exit code, stdout/stderr, generated/modified files
+4. **Revert**: `git checkout -- .` restores everything (fixture, generated files, state files)
 
 ### Directory Layout
 
@@ -34,76 +75,51 @@ tom_build_kit/
 
 ### Fixture Design Principles
 
-- Each fixture `tom_build_master.yaml` targets **1–2 small projects** (e.g., `tom_build_kit` itself, `tom_d4rt_astgen`) to keep tests fast
+- Each fixture `tom_build_master.yaml` targets **1–2 small projects** to keep tests fast
 - Fixtures define only the **minimum config** needed for the specific test
 - The `navigation:` section in fixtures uses explicit `exclude:` patterns to limit scope
+- Target projects must be in the **main repo** (not submodules) for simple git revert
 
-### Test Helper Pattern
+### Test Helper: TestWorkspace
 
-The shared `TestWorkspace` helper provides:
+The shared `TestWorkspace` class provides:
 
-```dart
-class TestWorkspace {
-  /// Path to the workspace root (found by walking up from buildkit dir)
-  final String workspaceRoot;
-
-  /// Path to the tom_build_kit project
-  final String buildkitRoot;
-
-  /// Copy a fixture tom_build_master.yaml into the workspace root
-  Future<void> installFixture(String fixturePath);
-
-  /// Revert all git changes in workspace root (tom_build_master.yaml + generated files)
-  Future<void> revertAll();
-
-  /// Revert specific files via git checkout
-  Future<void> revertFiles(List<String> relativePaths);
-
-  /// Run a buildkit tool as a child process
-  Future<ProcessResult> runTool(String tool, List<String> args, {String? workingDirectory});
-
-  /// Run buildkit with a pipeline
-  Future<ProcessResult> runPipeline(String pipeline, List<String> args, {String? workingDirectory});
-}
-```
+- **Fixture installation**: `installFixture(name)` — copies fixture `tom_build_master.yaml` to workspace root
+- **Git revert**: `revertAll()` — reverts all changes in main repo; `revertSubmodule(path)` — reverts submodule
+- **Tool execution**: `runTool(name, args)` — runs a tool via `dart run <bin/tool.dart>` from workspace root
+- **Pipeline execution**: `runPipeline(name, args)` — runs buildkit with a pipeline name
+- **File helpers**: `readWorkspaceFile()`, `workspaceFileExists()` — read/check files relative to workspace root
+- **Dirty check**: `hasUncommittedChanges()` — verifies workspace is clean before tests start
 
 ### Git Revert Strategy
 
-After each test (in `tearDown`):
-1. `git checkout -- tom_build_master.yaml` — restore workspace config
-2. `git checkout -- <project>/lib/src/version.g.dart` — restore generated files
-3. `git checkout -- <project>/tom_build_state.json` — restore build state
+After each test (`tearDown`):
 
-For broader reverts: `git checkout -- .` from workspace root (use sparingly).
+1. `git checkout -- .` from workspace root — restores `tom_build_master.yaml`, generated files, state files
+2. For submodule targets: `git checkout -- .` from submodule root
 
-### Key Considerations
+The revert restores all tracked files to their committed state. Untracked files created by tests are not automatically cleaned — tests that create new files must delete them explicitly.
 
-- **Working directory matters**: Tools discover the workspace root by walking up from `cwd`. Set `workingDirectory` on `Process.run` appropriately.
-- **Build state**: The versioner writes `tom_build_state.json` (build number). Always revert this.
-- **No mocking**: These are true integration tests — they exercise the real tool chain.
-- **Test isolation**: Each test gets a fresh fixture and clean git state. Tests must not depend on execution order.
-- **Process timeout**: Set reasonable timeouts (30–60s) since `dart run` has startup overhead.
+### Test Isolation Rules
 
-### Commands to Test
+- Each test gets a fresh fixture installed in `setUp` or at test start
+- Each test reverts all changes in `tearDown`
+- Tests **must not depend on execution order**
+- Tests **must not leave untracked files** behind (delete them in tearDown if created)
+- The `setUpAll()` verifies the workspace starts clean
 
-| Tool | Key Behaviors | Verification |
-|------|--------------|--------------|
-| `versioner` | Generates `version.g.dart` with correct prefix, version, git hash | File contents, variable names |
-| `cleanup` | Deletes files matching glob patterns | File absence after run |
-| `compiler` | Invokes `dart compile` per config | Exit code, `--list` output |
-| `runner` | Wraps `build_runner` | Exit code, `--list` output |
-| `dependencies` | Shows dependency tree | Stdout output |
-| `versionbump` | Bumps version in pubspec.yaml | File contents |
-| `buildkit` (pipelines) | Executes steps in order | Combined tool outputs, exit code |
+## Test Coverage
 
-### Running Tests
+See [doc/test_coverage.md](../doc/test_coverage.md) for the complete feature coverage plan with all tools and their testable features.
+
+## Running Tests
 
 ```bash
 cd xternal/tom_module_basics/tom_build_kit
 dart test
 ```
 
-Tests should also be runnable individually:
+Individual test files:
 
 ```bash
 dart test test/versioner_test.dart

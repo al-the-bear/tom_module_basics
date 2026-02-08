@@ -113,6 +113,28 @@ class TestWorkspace {
     return result.stdout.toString().trim().isNotEmpty;
   }
 
+  /// Check if the workspace has any uncommitted changes (staged or unstaged)
+  /// that could affect test results.
+  ///
+  /// Returns a list of changed file paths, or empty if clean.
+  /// Excludes submodule pointer changes (xternal/) since those don't affect
+  /// the test fixtures or tool behavior.
+  Future<List<String>> hasUncommittedChanges() async {
+    final result = await _git(
+      ['status', '--porcelain'],
+      workingDirectory: workspaceRoot,
+    );
+    final output = result.stdout.toString().trim();
+    if (output.isEmpty) return [];
+    return output
+        .split('\n')
+        .map((line) => line.trim())
+        .where((line) => line.isNotEmpty)
+        // Exclude submodule pointer changes — they don't affect tests
+        .where((line) => !RegExp(r'^\s*M\s+xternal/').hasMatch(line))
+        .toList();
+  }
+
   // ---------------------------------------------------------------------------
   // Tool execution
   // ---------------------------------------------------------------------------
