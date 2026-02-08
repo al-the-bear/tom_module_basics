@@ -107,6 +107,11 @@ abstract class ToolBase {
   /// When [project] is specified and is not a glob pattern, validates
   /// that the path exists. Returns an empty list and prints an error
   /// if the path does not exist.
+  ///
+  /// When neither [project] nor [scan] is provided, loads navigation
+  /// defaults from `tom_build_master.yaml` (`navigation:` section).
+  /// If the master config defines `scan:`, that is used as the default;
+  /// otherwise falls back to processing only the current directory.
   Future<List<String>> findProjects({
     String? project,
     String? scan,
@@ -118,6 +123,27 @@ abstract class ToolBase {
   }) async {
     final discovery = ProjectDiscovery(verbose: verbose);
     findProjectsError = false;
+
+    // When no explicit --project or --scan, load defaults from master YAML.
+    // If no master config exists, fall back to --scan . --recursive.
+    if (project == null && scan == null) {
+      final navDefaults = _loadNavigationDefaults(basePath);
+      if (navDefaults != null) {
+        scan = navDefaults.scan;
+        recursive = navDefaults.recursive || recursive;
+        if (navDefaults.exclude.isNotEmpty && exclude.isEmpty) {
+          exclude = navDefaults.exclude;
+        }
+        if (navDefaults.recursionExclude.isNotEmpty &&
+            recursionExclude.isEmpty) {
+          recursionExclude = navDefaults.recursionExclude;
+        }
+      } else {
+        // Hardcoded fallback: --scan . --recursive
+        scan = '.';
+        recursive = true;
+      }
+    }
 
     List<String> results;
     if (project != null) {
@@ -177,6 +203,24 @@ abstract class ToolBase {
     final nav = masterYaml['navigation'] as YamlMap?;
     if (nav == null) return [];
     return toStringList(nav['exclude-projects'] ?? nav['excludeProjects']);
+  }
+
+  /// Load navigation defaults (scan, recursive, exclude, recursion-exclude)
+  /// from `tom_build_master.yaml`'s `navigation:` section.
+  ///
+  /// Returns null if no master config or no navigation section is found.
+  _NavigationDefaults? _loadNavigationDefaults(String basePath) {
+    final masterYaml = loadMasterConfig(basePath);
+    if (masterYaml == null) return null;
+    final nav = masterYaml['navigation'] as YamlMap?;
+    if (nav == null) return null;
+    return _NavigationDefaults(
+      scan: nav['scan'] as String?,
+      recursive: nav['recursive'] as bool? ?? false,
+      exclude: toStringList(nav['exclude']),
+      recursionExclude: toStringList(
+          nav['recursion-exclude'] ?? nav['recursionExclude']),
+    );
   }
 
   /// Check if a directory is a project this tool should process.
@@ -388,4 +432,19 @@ abstract class ToolBase {
       print('  Error reading tom_build.yaml: $e');
     }
   }
+}
+
+/// Navigation defaults loaded from `tom_build_master.yaml`.
+class _NavigationDefaults {
+  final String? scan;
+  final bool recursive;
+  final List<String> exclude;
+  final List<String> recursionExclude;
+
+  const _NavigationDefaults({
+    this.scan,
+    this.recursive = false,
+    this.exclude = const [],
+    this.recursionExclude = const [],
+  });
 }

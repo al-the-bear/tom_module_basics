@@ -285,8 +285,66 @@ Future<void> main(List<String> args) async {
       }
     }
   } else {
-    // Default: current directory
-    projectPaths = [currentDir];
+    // No explicit --scan, --project, or --git-scan: load navigation defaults
+    // from tom_build_master.yaml
+    final masterFile = File(p.join(rootPath, 'tom_build_master.yaml'));
+    String? navScan;
+    var navRecursive = false;
+    if (masterFile.existsSync()) {
+      try {
+        final content = masterFile.readAsStringSync();
+        final yaml = loadYaml(content);
+        if (yaml is Map) {
+          final nav = yaml['navigation'];
+          if (nav is Map) {
+            navScan = nav['scan'] as String?;
+            navRecursive = nav['recursive'] as bool? ?? false;
+          }
+        }
+      } catch (_) {
+        // Ignore YAML parse errors
+      }
+    }
+
+    if (navScan != null) {
+      // Use navigation defaults from master YAML
+      final scanDir =
+          p.isAbsolute(navScan) ? navScan : p.join(currentDir, navScan);
+      projectPaths = await discovery.scanForProjects(
+        scanDir,
+        recursive: navRecursive || recursive,
+        toolKey: 'buildkit',
+      );
+      if (projectPaths.isEmpty) {
+        print('No projects found in: $scanDir');
+        exit(1);
+      }
+      print('Found ${projectPaths.length} project(s) to process');
+      if (_verbose) {
+        for (final path in projectPaths) {
+          print('  - ${p.relative(path, from: currentDir)}');
+        }
+      }
+    } else {
+      // Hardcoded fallback: --scan . --recursive
+      final fallbackDir = p.join(currentDir, '.');
+      projectPaths = await discovery.scanForProjects(
+        fallbackDir,
+        recursive: true,
+        toolKey: 'buildkit',
+      );
+      if (projectPaths.isEmpty) {
+        // No projects found scanning, just use current directory
+        projectPaths = [currentDir];
+      } else {
+        print('Found ${projectPaths.length} project(s) to process');
+        if (_verbose) {
+          for (final path in projectPaths) {
+            print('  - ${p.relative(path, from: currentDir)}');
+          }
+        }
+      }
+    }
   }
 
   // Apply exclusion filters
