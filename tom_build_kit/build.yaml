@@ -1,6 +1,0 @@
-# Build configuration for tom_build_kit
-#
-# This package uses the versioner tool (tom_build.yaml) for version
-# file generation instead of build_runner builders.
-#
-# No build_runner builders are configured.
