@@ -22,7 +22,7 @@ executables:
   buildkit:
   cleanup:
   versioner:
-  versionbumper:
+  bumpversion:
   compiler:
   runner:
   dependencies:

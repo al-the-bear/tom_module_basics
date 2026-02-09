@@ -6,7 +6,7 @@ import 'package:path/path.dart' as p;
 import 'commands/buildsorter_tool.dart';
 import 'commands/cleanup_tool.dart';
 import 'commands/versioner_tool.dart';
-import 'commands/versionbumper_tool.dart';
+import 'commands/bumpversion_tool.dart';
 import 'commands/compiler_tool.dart';
 import 'commands/runner_tool.dart';
 import 'commands/dependencies_tool.dart';
@@ -29,17 +29,17 @@ class BuiltinCommands {
     required this.dryRun,
   });
 
-  /// Check if a command is a built-in command.
+  /// Check if a command is a built-in command (supports shorthands).
   bool isBuiltin(String command) {
     final parts = command.trim().split(RegExp(r'\s+'));
     final cmd = parts.first.toLowerCase();
-    return _builtinNames.contains(cmd);
+    return _resolveShorthand(cmd) != null;
   }
 
   static const _builtinNames = {
     'buildsorter',
     'versioner',
-    'versionbumper',
+    'bumpversion',
     'compiler',
     'runner',
     'cleanup',
@@ -49,14 +49,36 @@ class BuiltinCommands {
     'dcli',
   };
 
+  /// Resolve a command shorthand to full command name.
+  ///
+  /// Returns the full command name if [shorthand] uniquely matches a single
+  /// built-in command via `startsWith()`. Returns null if no match or multiple
+  /// matches (ambiguous).
+  static String? _resolveShorthand(String shorthand) {
+    final lower = shorthand.toLowerCase();
+    if (_builtinNames.contains(lower)) return lower;
+    final matches =
+        _builtinNames.where((cmd) => cmd.startsWith(lower)).toList();
+    if (matches.length == 1) {
+      return matches.first;
+    }
+    return null; // No match or ambiguous
+  }
+
   /// Execute a built-in command.
   /// 
   /// Returns true if successful, false otherwise.
   /// Automatically injects `--project <projectPath>` into tool args
   /// when no `--project` or `-p` is already specified in the args.
+  /// Supports command shorthands (e.g., 'v' → 'versioner' if unique).
   Future<bool> execute(String command) async {
     final parts = command.trim().split(RegExp(r'\s+'));
-    final cmd = parts.first.toLowerCase();
+    final rawCmd = parts.first.toLowerCase();
+    final cmd = _resolveShorthand(rawCmd);
+    if (cmd == null) {
+      print('  Unknown or ambiguous command: $rawCmd');
+      return false;
+    }
     var args = parts.skip(1).toList();
 
     // Forward --project to tool if not already in args (bug #18 fix).
@@ -74,8 +96,8 @@ class BuiltinCommands {
         return _runBuildSorter(args);
       case 'versioner':
         return _runVersioner(args);
-      case 'versionbumper':
-        return _runVersionBumper(args);
+      case 'bumpversion':
+        return _runBumpVersion(args);
       case 'compiler':
         return _runCompiler(args);
       case 'runner':
@@ -104,9 +126,9 @@ class BuiltinCommands {
     return tool.run(args);
   }
 
-  Future<bool> _runVersionBumper(List<String> args) async {
-    if (verbose) print('  [builtin] Running versionbumper...');
-    final tool = VersionBumperTool()
+  Future<bool> _runBumpVersion(List<String> args) async {
+    if (verbose) print('  [builtin] Running bumpversion...');
+    final tool = BumpVersionTool()
       ..verbose = verbose
       ..dryRun = dryRun;
     return tool.run(args);

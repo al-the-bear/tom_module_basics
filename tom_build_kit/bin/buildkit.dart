@@ -234,8 +234,27 @@ Future<void> main(List<String> args) async {
     return;
   }
 
+  // Handle :define and undefine commands (modify YAML and exit)
+  var restArgs = results.rest.toList();
+  if (_handleDefineCommand(restArgs, rootPath)) {
+    return;
+  }
+  if (_handleUndefineCommand(restArgs, rootPath)) {
+    return;
+  }
+
+  // Load and expand macros
+  final macros = _loadMacros(rootPath);
+  if (macros.isNotEmpty) {
+    final expandedArgs = _expandMacros(restArgs, macros);
+    if (expandedArgs != restArgs && _verbose) {
+      print('[macro] Expanded: ${expandedArgs.join(' ')}');
+    }
+    restArgs = expandedArgs;
+  }
+
   // Parse execution steps from remaining args
-  final steps = _parseExecutionSteps(results.rest, pipelineConfig);
+  final steps = _parseExecutionSteps(restArgs, pipelineConfig);
   if (steps.isEmpty) {
     print('Error: No pipeline or command specified.');
     print('');
@@ -518,7 +537,7 @@ void _printUsage(ArgParser parser) {
   print('');
   print('Built-in commands:');
   print('  :versioner      Generate version.g.dart files with build metadata');
-  print('  :versionbumper  Bump pubspec.yaml versions across projects');
+  print('  :bumpversion    Bump pubspec.yaml versions across projects');
   print('  :compiler       Cross-platform Dart compilation with pre/post-compile commands');
   print('  :runner         Build_runner wrapper with builder filtering');
   print('  :cleanup        Clean generated and temporary files');
@@ -532,6 +551,15 @@ void _printUsage(ArgParser parser) {
   print('  Additional binaries can be executed via :name syntax.');
   print('  Unknown commands that are not built-in, not a pipeline, and not');
   print('  in the allowed-binaries list will cause an error.');
+  print('');
+  print('Command shorthands:');
+  print('  Commands can be abbreviated if unique. E.g., :v → :versioner, :cl → :cleanup.');
+  print('  Ambiguous shorthands (e.g., :c matches compiler, cleanup) are rejected.');
+  print('');
+  print('Macros:');
+  print('  :define <name>=<commands>   Define a reusable macro (saved to tom_build_master.yaml)');
+  print('  undefine <name>             Remove a macro');
+  print(r'  $name [args]                Expand macro, replacing $1-$9 with args, $$ with all');
   print('');
   print('Per-tool option override:');
   print('  -s-   Suppress global --scan for this command');
@@ -620,6 +648,302 @@ String _findWorkspaceRoot(String startPath) {
 
   return startPath;
 }
+
+// ============================================================================
+// Macro System
+// ============================================================================
+
+/// Load macros from `defines:` section of `tom_build_master.yaml`.
+Map<String, String> _loadMacros(String rootPath) {
+  final masterFile = File(p.join(rootPath, 'tom_build_master.yaml'));
+  if (!masterFile.existsSync()) return {};
+
+  try {
+    final content = masterFile.readAsStringSync();
+    final yaml = loadYaml(content);
+    if (yaml is! Map) return {};
+
+    final defines = yaml['defines'];
+    if (defines is! Map) return {};
+
+    final macros = <String, String>{};
+    for (final entry in defines.entries) {
+      if (entry.key is String && entry.value is String) {
+        macros[entry.key as String] = entry.value as String;
+      }
+    }
+    return macros;
+  } catch (e) {
+    if (_verbose) print('Warning: Failed to load macros: $e');
+    return {};
+  }
+}
+
+/// Save a macro to `defines:` section of `tom_build_master.yaml`.
+bool _saveMacro(String rootPath, String name, String value) {
+  final masterFile = File(p.join(rootPath, 'tom_build_master.yaml'));
+
+  try {
+    String content;
+    Map<dynamic, dynamic> yaml;
+
+    if (masterFile.existsSync()) {
+      content = masterFile.readAsStringSync();
+      final parsed = loadYaml(content);
+      yaml = parsed is Map ? Map<dynamic, dynamic>.from(parsed) : {};
+    } else {
+      content = '';
+      yaml = {};
+    }
+
+    // Get or create defines section
+    final defines = yaml['defines'] is Map
+        ? Map<String, String>.from(yaml['defines'] as Map)
+        : <String, String>{};
+    defines[name] = value;
+    yaml['defines'] = defines;
+
+    // Write back as formatted YAML (simple format)
+    final buffer = StringBuffer();
+
+    // Write non-defines sections first (preserve order)
+    for (final key in yaml.keys) {
+      if (key != 'defines') {
+        _writeYamlSection(buffer, key, yaml[key]);
+      }
+    }
+
+    // Write defines section
+    buffer.writeln('defines:');
+    for (final entry in defines.entries) {
+      buffer.writeln('  ${entry.key}: "${_escapeYamlString(entry.value)}"');
+    }
+
+    masterFile.writeAsStringSync(buffer.toString());
+    return true;
+  } catch (e) {
+    print('Error saving macro: $e');
+    return false;
+  }
+}
+
+/// Remove a macro from `defines:` section of `tom_build_master.yaml`.
+bool _removeMacro(String rootPath, String name) {
+  final masterFile = File(p.join(rootPath, 'tom_build_master.yaml'));
+  if (!masterFile.existsSync()) {
+    print('No macros defined (tom_build_master.yaml not found)');
+    return false;
+  }
+
+  try {
+    final content = masterFile.readAsStringSync();
+    final parsed = loadYaml(content);
+    if (parsed is! Map) {
+      print('No macros defined');
+      return false;
+    }
+
+    final yaml = Map<dynamic, dynamic>.from(parsed);
+    final defines = yaml['defines'];
+    if (defines is! Map || !defines.containsKey(name)) {
+      print('Macro not found: $name');
+      return false;
+    }
+
+    final updatedDefines = Map<String, String>.from(defines);
+    updatedDefines.remove(name);
+
+    if (updatedDefines.isEmpty) {
+      yaml.remove('defines');
+    } else {
+      yaml['defines'] = updatedDefines;
+    }
+
+    // Write back as formatted YAML
+    final buffer = StringBuffer();
+    for (final key in yaml.keys) {
+      if (key == 'defines') {
+        if (updatedDefines.isNotEmpty) {
+          buffer.writeln('defines:');
+          for (final entry in updatedDefines.entries) {
+            buffer.writeln(
+                '  ${entry.key}: "${_escapeYamlString(entry.value)}"');
+          }
+        }
+      } else {
+        _writeYamlSection(buffer, key, yaml[key]);
+      }
+    }
+
+    masterFile.writeAsStringSync(buffer.toString());
+    return true;
+  } catch (e) {
+    print('Error removing macro: $e');
+    return false;
+  }
+}
+
+/// Helper to write a YAML section (simple key-value or nested).
+void _writeYamlSection(StringBuffer buffer, dynamic key, dynamic value) {
+  if (value == null) {
+    buffer.writeln('$key:');
+  } else if (value is String) {
+    buffer.writeln('$key: "$value"');
+  } else if (value is num || value is bool) {
+    buffer.writeln('$key: $value');
+  } else if (value is List) {
+    buffer.writeln('$key:');
+    for (final item in value) {
+      buffer.writeln('  - $item');
+    }
+  } else if (value is Map) {
+    buffer.writeln('$key:');
+    for (final entry in value.entries) {
+      _writeYamlSection(
+          buffer, '  ${entry.key}', entry.value);
+    }
+  }
+}
+
+/// Escape a string for YAML double-quoted format.
+String _escapeYamlString(String s) {
+  return s.replaceAll('\\', '\\\\').replaceAll('"', '\\"');
+}
+
+/// Expand macros in command line arguments.
+///
+/// Replaces `$macroname` with the macro definition, substituting:
+/// - `$1`, `$2`, etc. with positional arguments
+/// - `$$` with all remaining arguments joined
+///
+/// Returns the expanded argument list.
+List<String> _expandMacros(List<String> args, Map<String, String> macros) {
+  final result = <String>[];
+  var i = 0;
+
+  while (i < args.length) {
+    final arg = args[i];
+
+    // Check for macro invocation: $name or $name(args)
+    if (arg.startsWith(r'$') && arg.length > 1) {
+      final macroName = arg.substring(1);
+
+      // Check if this is a positional placeholder (not a macro)
+      if (RegExp(r'^\d+$').hasMatch(macroName) || macroName == r'$') {
+        result.add(arg);
+        i++;
+        continue;
+      }
+
+      final definition = macros[macroName];
+      if (definition != null) {
+        // Collect macro arguments until next command/pipeline/macro
+        final macroArgs = <String>[];
+        i++;
+        while (i < args.length) {
+          final next = args[i];
+          // Stop at next command, pipeline, or macro
+          if (next.startsWith(':') ||
+              next.startsWith(r'$') ||
+              next == 'undefine') {
+            break;
+          }
+          macroArgs.add(next);
+          i++;
+        }
+
+        // Expand the macro definition
+        var expanded = definition;
+
+        // Replace $$ with all args
+        expanded = expanded.replaceAll(r'$$', macroArgs.join(' '));
+
+        // Replace $1, $2, etc. with positional args
+        for (var j = 0; j < macroArgs.length; j++) {
+          expanded = expanded.replaceAll('\$${j + 1}', macroArgs[j]);
+        }
+
+        // Remove unused positional placeholders
+        expanded = expanded.replaceAll(RegExp(r'\$\d+'), '');
+
+        // Split the expanded definition and add to result
+        final expandedParts = expanded.trim().split(RegExp(r'\s+'));
+        result.addAll(expandedParts.where((p) => p.isNotEmpty));
+        continue;
+      }
+    }
+
+    result.add(arg);
+    i++;
+  }
+
+  return result;
+}
+
+/// Handle `:define` command: save macro and return true if handled.
+bool _handleDefineCommand(List<String> args, String rootPath) {
+  // Format: :define name=value value value...
+  // Or: :define name=:cmd1 :cmd2 ...
+  for (var i = 0; i < args.length; i++) {
+    if (args[i] == ':define') {
+      if (i + 1 >= args.length) {
+        print('Error: :define requires name=value format');
+        print('Usage: :define <name>=<command sequence>');
+        return true;
+      }
+
+      // Parse name=value from next arg
+      final def = args[i + 1];
+      final eqIndex = def.indexOf('=');
+      if (eqIndex <= 0) {
+        print('Error: :define requires name=value format');
+        print('Usage: :define <name>=<command sequence>');
+        return true;
+      }
+
+      final name = def.substring(0, eqIndex);
+      var value = def.substring(eqIndex + 1);
+
+      // Collect remaining args until end or another :define/undefine
+      final valueArgs = <String>[value];
+      for (var j = i + 2; j < args.length; j++) {
+        if (args[j] == ':define' || args[j] == 'undefine') break;
+        valueArgs.add(args[j]);
+      }
+      value = valueArgs.join(' ').trim();
+
+      if (_saveMacro(rootPath, name, value)) {
+        print('Defined macro: $name = $value');
+      }
+      return true;
+    }
+  }
+  return false;
+}
+
+/// Handle `undefine` command: remove macro and return true if handled.
+bool _handleUndefineCommand(List<String> args, String rootPath) {
+  for (var i = 0; i < args.length; i++) {
+    if (args[i] == 'undefine') {
+      if (i + 1 >= args.length) {
+        print('Error: undefine requires a macro name');
+        print('Usage: undefine <name>');
+        return true;
+      }
+
+      final name = args[i + 1];
+      if (_removeMacro(rootPath, name)) {
+        print('Removed macro: $name');
+      }
+      return true;
+    }
+  }
+  return false;
+}
+
+// ============================================================================
+// Git Repository Discovery
+// ============================================================================
 
 /// Find all git repository roots under [rootPath].
 ///
@@ -783,7 +1107,19 @@ List<_ExecutionStep> _parseExecutionSteps(
     if (arg.startsWith(':')) {
       // Start of a command step
       flushStep();
-      currentName = arg.substring(1); // Remove : prefix
+      final rawName = arg.substring(1); // Remove : prefix
+      // Resolve shorthand if not an exact match
+      if (_builtinCommandNames.contains(rawName.toLowerCase())) {
+        currentName = rawName.toLowerCase();
+      } else {
+        final resolved = _resolveCommandShorthand(rawName);
+        if (resolved != null) {
+          currentName = resolved;
+        } else {
+          // Keep raw name for error handling downstream (allowed-binaries, etc.)
+          currentName = rawName;
+        }
+      }
       currentIsCommand = true;
     } else if (currentName == null ||
         config.pipelines.containsKey(arg) ||
@@ -819,7 +1155,7 @@ List<_ExecutionStep> _parseExecutionSteps(
 /// Names of built-in commands (without : prefix).
 const _builtinCommandNames = {
   'versioner',
-  'versionbumper',
+  'bumpversion',
   'compiler',
   'runner',
   'cleanup',
@@ -830,6 +1166,21 @@ const _builtinCommandNames = {
   'dcli',
 };
 
+/// Resolve a command shorthand to full command name.
+///
+/// Returns the full command name if [shorthand] uniquely matches a single
+/// built-in command via `startsWith()`. Returns null if no match or multiple
+/// matches (ambiguous).
+String? _resolveCommandShorthand(String shorthand) {
+  final lower = shorthand.toLowerCase();
+  final matches =
+      _builtinCommandNames.where((cmd) => cmd.startsWith(lower)).toList();
+  if (matches.length == 1) {
+    return matches.first;
+  }
+  return null; // No match or ambiguous
+}
+
 /// Print separator before a step.
 void _printStepSeparator(_ExecutionStep step) {
   print('');
@@ -837,13 +1188,35 @@ void _printStepSeparator(_ExecutionStep step) {
   print('');
 }
 
-/// Run --help for a built-in command by name.
+/// Run --help for a built-in command by name (supports shorthands).
 Future<bool> _runCommandHelp(String commandName) async {
-  switch (commandName.toLowerCase()) {
+  // Resolve shorthand to full command name
+  final resolved = _resolveCommandShorthand(commandName) ??
+      ((_builtinCommandNames.contains(commandName.toLowerCase()))
+          ? commandName.toLowerCase()
+          : null);
+  if (resolved == null) {
+    // Check if it's ambiguous
+    final matches = _builtinCommandNames
+        .where((cmd) => cmd.startsWith(commandName.toLowerCase()))
+        .toList();
+    if (matches.length > 1) {
+      print('Ambiguous command shorthand: $commandName');
+      print('Matches: ${matches.join(', ')}');
+      return false;
+    }
+    print('Unknown command: $commandName');
+    print('');
+    print(
+        'Available commands: buildsorter, versioner, bumpversion, compiler, runner, cleanup, dependencies, pubget, git, dcli');
+    return false;
+  }
+
+  switch (resolved) {
     case 'versioner':
       return VersionerTool().run(['--help']);
-    case 'versionbumper':
-      return VersionBumperTool().run(['--help']);
+    case 'bumpversion':
+      return BumpVersionTool().run(['--help']);
     case 'compiler':
       return CompilerTool().run(['--help']);
     case 'runner':
@@ -908,12 +1281,9 @@ Future<bool> _runCommandHelp(String commandName) async {
       print('  bk :dcli "print(DateTime.now())"         # Run expression in every project');
       print('  bk :dcli ~s/init.dart -no-init-source    # Skip init source');
       return true;
-    default:
-      print('Unknown command: $commandName');
-      print('');
-      print('Available commands: buildsorter, versioner, versionbumper, compiler, runner, cleanup, dependencies, pubget, git, dcli');
-      return false;
   }
+  // Unreachable — all cases covered after early validation
+  return false;
 }
 
 /// Filter project paths by exclude patterns, exclude-projects patterns,

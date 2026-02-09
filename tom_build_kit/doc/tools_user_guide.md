@@ -22,7 +22,7 @@ For the BuildKit pipeline orchestrator, see [buildkit_user_guide.md](buildkit_us
 - [Config Merge Precedence](#config-merge-precedence)
 - [Tools](#tools)
   - [Versioner](#versioner)
-  - [VersionBumper](#versionbumper)
+  - [BumpVersion](#bumpversion)
   - [Cleanup](#cleanup)
   - [Compiler](#compiler)
   - [Runner](#runner)
@@ -39,7 +39,7 @@ Tom Build Kit provides seven CLI tools and two additional built-in commands that
 | Tool | Binary | Purpose |
 |------|--------|---------|
 | **Versioner** | `versioner` | Generate `version.g.dart` files with build metadata |
-| **VersionBumper** | `versionbumper` | Bump `pubspec.yaml` versions across projects |
+| **BumpVersion** | `bumpversion` | Bump `pubspec.yaml` versions across projects |
 | **Cleanup** | `cleanup` | Remove generated and temporary files with safety checks |
 | **Compiler** | `compiler` | Cross-platform Dart compilation with pre/post-compile phases |
 | **Runner** | `runner` | `build_runner` wrapper with builder filtering |
@@ -57,7 +57,7 @@ Each tool has a standalone executable:
 
 ```bash
 dart run tom_build_kit:versioner [options]
-dart run tom_build_kit:versionbumper [options]
+dart run tom_build_kit:bumpversion [options]
 dart run tom_build_kit:cleanup [options]
 dart run tom_build_kit:compiler [options]
 dart run tom_build_kit:runner [options]
@@ -375,15 +375,15 @@ Running `versioner --project _build --variable-prefix myCustom` uses `myCustom` 
 
 ---
 
-### VersionBumper
+### BumpVersion
 
 Bumps `pubspec.yaml` versions across multiple projects with optional versioner integration.
 
 **Usage:**
 
 ```bash
-versionbumper [common-options] [tool-options]
-buildkit :versionbumper [tool-options]
+bumpversion [common-options] [tool-options]
+buildkit :bumpversion [tool-options]
 ```
 
 **Tool-specific options:**
@@ -412,16 +412,16 @@ buildkit :versionbumper [tool-options]
 
 ```bash
 # Patch bump all discovered projects
-versionbumper --scan . -r
+bumpversion --scan . -r
 
 # Minor bump for specific projects, patch for the rest
-versionbumper --scan . -r --minor tom_core,tom_basics
+bumpversion --scan . -r --minor tom_core,tom_basics
 
 # Major bump with versioner regeneration
-versionbumper --project my_app --major my_app --versioner
+bumpversion --project my_app --major my_app --versioner
 
 # Dry run to see planned bumps
-versionbumper --scan . -r --dry-run
+bumpversion --scan . -r --dry-run
 ```
 
 ---
