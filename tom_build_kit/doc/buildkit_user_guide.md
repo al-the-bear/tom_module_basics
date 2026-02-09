@@ -408,25 +408,25 @@ Example with placeholders:
 
 ```bash
 bk define run=:runner --command $$
-bk $run build          # Expands to: :runner --command build
-bk $run clean build    # Expands to: :runner --command clean build
+bk @run build          # Expands to: :runner --command build
+bk @run clean build    # Expands to: :runner --command clean build
 ```
 
 ### Using Macros
 
-Invoke a macro with the `$` prefix:
+Invoke a macro with the `@` prefix:
 
 ```bash
-bk $cv                 # Expands to: :versioner :compiler
-bk $cvc                # Expands to: :cleanup :versioner :compiler
-bk $test               # Expands to: :runner --command build
+bk @cv                 # Expands to: :versioner :compiler
+bk @cvc                # Expands to: :cleanup :versioner :compiler
+bk @test               # Expands to: :runner --command build
 ```
 
 Macros can be combined with other commands:
 
 ```bash
-bk :cleanup $cv        # Run cleanup, then expand cv macro
-bk $cv :compiler       # Expand macro, then run compiler again
+bk :cleanup @cv        # Run cleanup, then expand cv macro
+bk @cv :compiler       # Expand macro, then run compiler again
 ```
 
 ### Managing Macros

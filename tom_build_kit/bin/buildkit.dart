@@ -565,7 +565,7 @@ void _printUsage(ArgParser parser) {
   print('  define <name>=<commands>    Define a reusable macro (saved to buildkit_master.yaml)');
   print('  undefine <name>             Remove a macro');
   print('  defines                     List all defined macros');
-  print(r'  $name [args]                Expand macro, replacing $1-$9 with args, $$ with all');
+  print(r'  @name [args]                Expand macro, replacing $1-$9 with args, $$ with all');
   print('');
   print('Per-tool option override:');
   print('  -s-   Suppress global --scan for this command');
@@ -818,16 +818,9 @@ List<String> _expandMacros(List<String> args, Map<String, String> macros) {
   while (i < args.length) {
     final arg = args[i];
 
-    // Check for macro invocation: $name or $name(args)
-    if (arg.startsWith(r'$') && arg.length > 1) {
+    // Check for macro invocation: @name
+    if (arg.startsWith('@') && arg.length > 1) {
       final macroName = arg.substring(1);
-
-      // Check if this is a positional placeholder (not a macro)
-      if (RegExp(r'^\d+$').hasMatch(macroName) || macroName == r'$') {
-        result.add(arg);
-        i++;
-        continue;
-      }
 
       final definition = macros[macroName];
       if (definition != null) {
@@ -838,7 +831,7 @@ List<String> _expandMacros(List<String> args, Map<String, String> macros) {
           final next = args[i];
           // Stop at next command, pipeline, define/undefine, or macro
           if (next.startsWith(':') ||
-              next.startsWith(r'$') ||
+              next.startsWith('@') ||
               next == 'define' ||
               next == 'undefine') {
             break;
@@ -1323,9 +1316,9 @@ Future<bool> _runCommandHelp(String commandName) async {
       print('');
       print('Examples:');
       print('  bk define cv=:versioner :compiler     # Create macro');
-      print(r'  bk $cv                                # Expands to: :versioner :compiler');
+      print('  bk @cv                                # Expands to: :versioner :compiler');
       print(r'  bk define test=:runner --command $$   # With all-args placeholder');
-      print(r'  bk $test build                        # Expands to: :runner --command build');
+      print('  bk @test build                        # Expands to: :runner --command build');
       print('');
       print('See also: undefine, defines');
       return true;
