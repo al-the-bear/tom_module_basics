@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 
 import 'commands/buildsorter_tool.dart';
@@ -16,7 +17,8 @@ import 'pubget_command.dart';
 ///
 /// Handles both single and double quotes. Quoted strings preserve their
 /// quote characters (needed for dcli expression detection).
-List<String> _parseCommandArgs(String command) {
+@visibleForTesting
+List<String> parseCommandArgs(String command) {
   final result = <String>[];
   final buffer = StringBuffer();
   String? quoteChar;
@@ -86,7 +88,7 @@ class BuiltinCommands {
   bool isBuiltin(String command) {
     final parts = command.trim().split(RegExp(r'\s+'));
     final cmd = parts.first.toLowerCase();
-    return _resolveShorthand(cmd) != null;
+    return resolveShorthand(cmd) != null;
   }
 
   static const _builtinNames = {
@@ -107,7 +109,8 @@ class BuiltinCommands {
   /// Returns the full command name if [shorthand] uniquely matches a single
   /// built-in command via `startsWith()`. Returns null if no match or multiple
   /// matches (ambiguous).
-  static String? _resolveShorthand(String shorthand) {
+  @visibleForTesting
+  static String? resolveShorthand(String shorthand) {
     final lower = shorthand.toLowerCase();
     if (_builtinNames.contains(lower)) return lower;
     final matches =
@@ -125,13 +128,13 @@ class BuiltinCommands {
   /// when no `--project` or `-p` is already specified in the args.
   /// Supports command shorthands (e.g., 'v' → 'versioner' if unique).
   Future<bool> execute(String command) async {
-    final parts = _parseCommandArgs(command.trim());
+    final parts = parseCommandArgs(command.trim());
     if (parts.isEmpty) {
       print('  Empty command');
       return false;
     }
     final rawCmd = parts.first.toLowerCase();
-    final cmd = _resolveShorthand(rawCmd);
+    final cmd = resolveShorthand(rawCmd);
     if (cmd == null) {
       print('  Unknown or ambiguous command: $rawCmd');
       return false;

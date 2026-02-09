@@ -234,7 +234,7 @@ Future<void> main(List<String> args) async {
     return;
   }
 
-  // Handle :define and undefine commands (modify YAML and exit)
+  // Handle define and undefine commands (modify YAML and exit)
   var restArgs = results.rest.toList();
   if (_handleDefineCommand(restArgs, rootPath)) {
     return;
@@ -557,7 +557,7 @@ void _printUsage(ArgParser parser) {
   print('  Ambiguous shorthands (e.g., :c matches compiler, cleanup) are rejected.');
   print('');
   print('Macros:');
-  print('  :define <name>=<commands>   Define a reusable macro (saved to tom_build_master.yaml)');
+  print('  define <name>=<commands>    Define a reusable macro (saved to tom_build_master.yaml)');
   print('  undefine <name>             Remove a macro');
   print(r'  $name [args]                Expand macro, replacing $1-$9 with args, $$ with all');
   print('');
@@ -842,9 +842,10 @@ List<String> _expandMacros(List<String> args, Map<String, String> macros) {
         i++;
         while (i < args.length) {
           final next = args[i];
-          // Stop at next command, pipeline, or macro
+          // Stop at next command, pipeline, define/undefine, or macro
           if (next.startsWith(':') ||
               next.startsWith(r'$') ||
+              next == 'define' ||
               next == 'undefine') {
             break;
           }
@@ -880,15 +881,15 @@ List<String> _expandMacros(List<String> args, Map<String, String> macros) {
   return result;
 }
 
-/// Handle `:define` command: save macro and return true if handled.
+/// Handle `define` command: save macro and return true if handled.
 bool _handleDefineCommand(List<String> args, String rootPath) {
-  // Format: :define name=value value value...
-  // Or: :define name=:cmd1 :cmd2 ...
+  // Format: define name=value value value...
+  // Or: define name=:cmd1 :cmd2 ...
   for (var i = 0; i < args.length; i++) {
-    if (args[i] == ':define') {
+    if (args[i] == 'define') {
       if (i + 1 >= args.length) {
-        print('Error: :define requires name=value format');
-        print('Usage: :define <name>=<command sequence>');
+        print('Error: define requires name=value format');
+        print('Usage: define <name>=<command sequence>');
         return true;
       }
 
@@ -896,18 +897,18 @@ bool _handleDefineCommand(List<String> args, String rootPath) {
       final def = args[i + 1];
       final eqIndex = def.indexOf('=');
       if (eqIndex <= 0) {
-        print('Error: :define requires name=value format');
-        print('Usage: :define <name>=<command sequence>');
+        print('Error: define requires name=value format');
+        print('Usage: define <name>=<command sequence>');
         return true;
       }
 
       final name = def.substring(0, eqIndex);
       var value = def.substring(eqIndex + 1);
 
-      // Collect remaining args until end or another :define/undefine
+      // Collect remaining args until end or another define/undefine
       final valueArgs = <String>[value];
       for (var j = i + 2; j < args.length; j++) {
-        if (args[j] == ':define' || args[j] == 'undefine') break;
+        if (args[j] == 'define' || args[j] == 'undefine') break;
         valueArgs.add(args[j]);
       }
       value = valueArgs.join(' ').trim();
