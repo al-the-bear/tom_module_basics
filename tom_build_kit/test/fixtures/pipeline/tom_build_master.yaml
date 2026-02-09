@@ -59,3 +59,12 @@ buildkit:
               stdin cat
               stdin-line-1
               stdin-line-2
+
+    test-dcli-stdin:
+      executable: true
+      core:
+        - commands:
+            - |
+              stdin dcli --stdin
+              print("First line");
+              print("Second line");

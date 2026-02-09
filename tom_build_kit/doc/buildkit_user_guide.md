@@ -22,6 +22,7 @@ For the individual tool reference, see [tools_user_guide.md](tools_user_guide.md
   - [Step Structure](#step-structure)
   - [Pipeline Phases](#pipeline-phases)
 - [Built-in Commands](#built-in-commands)
+  - [DCli Command](#dcli-command)
 - [Allowed Binaries](#allowed-binaries)
 - [Git Operations](#git-operations)
 - [Shell Commands](#shell-commands)
@@ -267,7 +268,7 @@ runBefore pipelines → precore → core → postcore → runAfter pipelines
 
 ## Built-in Commands
 
-Built-in commands run the respective tools directly via their Dart implementation — no external process is spawned.
+Built-in commands run the respective tools directly via their Dart implementation — no external process is spawned. The `dcli` and `git` commands are exceptions that spawn external processes.
 
 | Command | Description |
 |---------|-------------|
@@ -279,7 +280,8 @@ Built-in commands run the respective tools directly via their Dart implementatio
 | `dependencies` | Dependency tree visualization |
 | `pubget` | Run `dart pub get` on projects |
 | `pubgetall` | Shortcut for `pubget --scan . --recursive` |
-| `git` | Run git commands across all workspace repositories (requires `--git-scan`) |
+| `git` | Run git commands across all workspace repositories |
+| `dcli` | Execute Dart scripts/expressions via dcli |
 
 Commands can include arguments in pipeline definitions:
 
@@ -291,13 +293,86 @@ core:
       - runner --command build
 ```
 
-When a pipeline specifies `--project`, built-in commands automatically receive the project path (unless `--project` is already in their arguments).
+When a pipeline specifies `--project`, built-in commands automatically receive the project path (unless `--project` is already in their arguments). The `dcli` command is exempt from `--project` injection — it uses the working directory instead.
 
 **Get help for a specific command:**
 
 ```bash
 buildkit help :compiler
 buildkit help :versioner
+buildkit help :dcli
+```
+
+### DCli Command
+
+The `dcli` command executes Dart scripts or expressions via the dcli runtime in each project directory.
+
+**Syntax:**
+
+```bash
+buildkit :dcli <file|expression> [-init-source <file>] [-no-init-source]
+bk :dcli <file|expression> [-init-source <file>] [-no-init-source]
+```
+
+Only `-init-source <file>` and `-no-init-source` are allowed in the buildkit context. All other dcli options are rejected.
+
+#### Path Notations
+
+| Notation | Resolves To | Example |
+|----------|-------------|---------|
+| `~w/path` | Workspace root | `~w/tool/setup.dart` → `<root>/tool/setup.dart` |
+| `~s/path` | `_scripts/` folder | `~s/build_hook.dart` → `<root>/_scripts/build_hook.dart` |
+| `::name` | `_scripts/bin/` folder | `::poll_binaries` → `<root>/_scripts/bin/poll_binaries.dart` |
+
+If the filename has no extension, `.dart` is automatically appended.
+
+#### Expression Mode
+
+If the argument is wrapped in double quotes, it is treated as a Dart expression and always executed (no file existence check):
+
+```bash
+bk :dcli "print(DateTime.now())"
+bk :dcli "print(Platform.operatingSystem)"
+```
+
+#### Optional Script Pattern
+
+For file targets, the command is **only executed if the file exists**. If the file is not found, the step is silently skipped (returns success). This enables optional per-project build scripts:
+
+```bash
+# Only runs in projects that have a build_hook.dart script
+bk :dcli build_hook.dart
+
+# Run workspace-level script if it exists
+bk :dcli ~s/pre_build.dart
+```
+
+#### Pipeline Usage
+
+```yaml
+buildkit:
+  pipelines:
+    build:
+      executable: true
+      precore:
+        - commands:
+            - dcli ~s/build_hook.dart -no-init-source
+      core:
+        - commands:
+            - versioner
+            - compiler
+```
+
+#### Compiler Usage
+
+The dcli command can also be used in compiler `precompile` and `postcompile` sections:
+
+```yaml
+compiler:
+  precompile:
+    - command: dcli ~s/pre_compile.dart
+  postcompile:
+    - command: dcli ~s/post_compile.dart -no-init-source
 ```
 
 ---
@@ -496,6 +571,19 @@ core:
         Content that uses $dartVariable safely
         without BuildKit expanding it
 ```
+
+**DCli --stdin mode:** You can also use stdin piping with `dcli --stdin` to execute inline Dart code without creating script files. DCli's `--stdin` mode auto-detects the input format (bare statements, main with no imports, or complete script):
+
+```yaml
+core:
+  - commands:
+      - |
+        stdin dcli --stdin
+        print("First line");
+        print("Second line");
+```
+
+> **Note:** `stdin dcli --stdin` uses the **stdin piping mechanism** (shell command with piped input), while `:dcli` or `dcli` in pipeline commands uses the **built-in dcli command** with path resolution and file existence checking. They serve different purposes — stdin piping is for inline code, the built-in command is for script files.
 
 ---
 
@@ -765,6 +853,58 @@ buildkit -n :versioner --project _build
 
 # Verbose dry-run of the full pipeline
 buildkit -v -n build -s . -r
+```
+
+### DCli Script Execution
+
+```bash
+# Run a workspace-level script in every project (skips if file doesn't exist)
+bk :dcli ~s/build_hook.dart
+
+# Run a script from _scripts/bin/
+bk :dcli ::poll_binaries
+
+# Run per-project optional script
+bk :dcli build_step.dart
+
+# Run a Dart expression in every project
+bk :dcli "print(DateTime.now())"
+
+# Combine with other steps
+bk :versioner :dcli ~s/pre_compile.dart :compiler
+```
+
+### DCli in Pipeline Configuration
+
+```yaml
+buildkit:
+  pipelines:
+    build:
+      precore:
+        - commands:
+            - dcli ~s/build_hook.dart -no-init-source
+      core:
+        - commands:
+            - versioner
+            - compiler
+      postcore:
+        - commands:
+            - dcli ~s/post_build.dart
+```
+
+### DCli via Stdin in Pipeline
+
+```yaml
+buildkit:
+  pipelines:
+    test-dcli:
+      executable: true
+      core:
+        - commands:
+            - |
+              stdin dcli --stdin
+              print("First line");
+              print("Second line");
 ```
 
 ### Summary Output

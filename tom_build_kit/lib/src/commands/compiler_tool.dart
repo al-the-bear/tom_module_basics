@@ -438,7 +438,7 @@ class CompilerTool extends ToolBase {
         if (!builtinCommands.isBuiltin(commandRef)) {
           print('  Error: "$commandRef" is not a recognized built-in command.');
           print('  Available: versioner, compiler, runner, cleanup, '
-              'dependencies, pubget, pubgetall');
+              'dependencies, pubget, pubgetall, dcli');
           return false;
         }
 

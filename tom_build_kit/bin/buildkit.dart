@@ -526,6 +526,7 @@ void _printUsage(ArgParser parser) {
   print('  :pubget         Run dart pub get on projects');
   print('  :pubgetall      Shortcut for :pubget --scan . --recursive');
   print('  :git            Run git commands in each project directory');
+  print('  :dcli           Execute Dart scripts/expressions via dcli');
   print('');
   print('Allowed binaries (configured in tom_build.yaml buildkit.allowed-binaries):');
   print('  Additional binaries can be executed via :name syntax.');
@@ -561,6 +562,8 @@ void _printUsage(ArgParser parser) {
   print('  buildkit build -s . -r              # Run build recursively in all projects');
   print('  buildkit -i :git add -A :git commit -m "msg"  # Commit all repos (inner first)');
   print('  buildkit -o :git pull --rebase       # Pull all repos (outer first)');
+  print('  buildkit :dcli ~s/build_hook.dart     # Run workspace script (if it exists)');
+  print('  buildkit :dcli "print(DateTime.now())" # Run expression in every project');
 }
 
 void _listPipelines(PipelineConfig config) {
@@ -824,6 +827,7 @@ const _builtinCommandNames = {
   'pubget',
   'pubgetall',
   'git',
+  'dcli',
 };
 
 /// Print separator before a step.
@@ -873,10 +877,41 @@ Future<bool> _runCommandHelp(String commandName) async {
       print('  buildkit -o :git pull --rebase                # Pull all (outer first)');
       print('  buildkit -i :git status                       # Status of all repos');
       return true;
+    case 'dcli':
+      print('DCli Command — execute Dart scripts via dcli');
+      print('');
+      print('Usage: buildkit :dcli <file|expression> [-init-source <file>] [-no-init-source]');
+      print('       bk :dcli <file|expression> [-init-source <file>] [-no-init-source]');
+      print('');
+      print('Runs dcli with the given script, file, or expression in each');
+      print('discovered project directory. For file targets, the command is');
+      print('only executed if the file exists — this enables optional');
+      print('per-project build scripts.');
+      print('');
+      print('Path notations:');
+      print('  ~w/path   Workspace root (e.g., ~w/tool/setup.dart)');
+      print('  ~s/path   Workspace _scripts/ folder (e.g., ~s/build_hook.dart)');
+      print('  ::name    Workspace _scripts/bin/ folder (e.g., ::poll_binaries)');
+      print('');
+      print('If the filename has no extension, .dart is appended automatically.');
+      print('If the argument is wrapped in double quotes, it is treated as a');
+      print('Dart expression and always executed (no file check).');
+      print('');
+      print('Options (only these are allowed in buildkit context):');
+      print('  -init-source <file>   Use custom init source file for dcli');
+      print('  -no-init-source       Do not load custom init source');
+      print('');
+      print('Examples:');
+      print('  bk :dcli ~s/build_hook.dart             # Run workspace script (if exists)');
+      print('  bk :dcli ::poll_binaries                 # Run _scripts/bin/poll_binaries.dart');
+      print('  bk :dcli build_step.dart                 # Run per-project script (optional)');
+      print('  bk :dcli "print(DateTime.now())"         # Run expression in every project');
+      print('  bk :dcli ~s/init.dart -no-init-source    # Skip init source');
+      return true;
     default:
       print('Unknown command: $commandName');
       print('');
-      print('Available commands: buildsorter, versioner, versionbumper, compiler, runner, cleanup, dependencies, pubget, git');
+      print('Available commands: buildsorter, versioner, versionbumper, compiler, runner, cleanup, dependencies, pubget, git, dcli');
       return false;
   }
 }

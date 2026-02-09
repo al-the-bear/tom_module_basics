@@ -28,12 +28,13 @@ For the BuildKit pipeline orchestrator, see [buildkit_user_guide.md](buildkit_us
   - [Runner](#runner)
   - [Dependencies](#dependencies)
   - [Pub Get](#pub-get)
+  - [DCli](#dcli)
 
 ---
 
 ## Overview
 
-Tom Build Kit provides seven CLI tools that share a common infrastructure for project discovery, argument parsing, and configuration loading:
+Tom Build Kit provides seven CLI tools and two additional built-in commands that share a common infrastructure for project discovery, argument parsing, and configuration loading:
 
 | Tool | Binary | Purpose |
 |------|--------|---------|
@@ -44,6 +45,7 @@ Tom Build Kit provides seven CLI tools that share a common infrastructure for pr
 | **Runner** | `runner` | `build_runner` wrapper with builder filtering |
 | **Dependencies** | `dependencies` | Dependency tree visualization |
 | **Pub Get** | via `:pubget` | Run `dart pub get` across projects with output filtering |
+| **DCli** | via `:dcli` | Execute Dart scripts/expressions via dcli with path resolution |
 
 All tools (except Pub Get) inherit from `ToolBase`, sharing project discovery, exclusion filtering, and configuration loading. They can be invoked standalone or through the [BuildKit orchestrator](buildkit_user_guide.md).
 
@@ -833,4 +835,94 @@ buildkit :pubgetall --errors
 
 # Run pub get on specific project
 buildkit :pubget --project _build
+```
+
+---
+
+### DCli
+
+Executes Dart scripts or expressions via the dcli runtime. Unlike other built-in commands, dcli spawns an external process.
+
+> **Note:** DCli is not a `ToolBase` subclass. It is only available as a BuildKit command (`:dcli`), not as a standalone binary within tom_build_kit. The dcli binary must be installed separately (see [tom_d4rt_dcli](../../xternal/tom_module_d4rt/tom_d4rt_dcli/)).
+
+**Usage:**
+
+```bash
+buildkit :dcli <file|expression> [-init-source <file>] [-no-init-source]
+bk :dcli <file|expression> [-init-source <file>] [-no-init-source]
+```
+
+**Options (only these are allowed in buildkit context):**
+
+| Flag | Description |
+|------|-------------|
+| `-init-source <file>` | Use custom init source file for dcli |
+| `-no-init-source` | Do not load custom init source |
+
+**Path notations:**
+
+| Notation | Resolves To | Example |
+|----------|-------------|---------|
+| `~w/path` | Workspace root | `~w/tool/setup.dart` |
+| `~s/path` | `_scripts/` folder | `~s/build_hook.dart` |
+| `::name` | `_scripts/bin/` folder | `::poll_binaries` |
+
+If the filename has no extension, `.dart` is automatically appended.
+
+**Expression mode:** If the argument is wrapped in double quotes, it is treated as a Dart expression and always executed (no file existence check).
+
+**Optional script pattern:** For file targets, the command is only executed if the file exists. If not found, the step is silently skipped (returns success). This enables optional per-project build scripts.
+
+**Examples:**
+
+```bash
+# Run a workspace-level script (only if it exists)
+bk :dcli ~s/build_hook.dart
+
+# Run a script from _scripts/bin/
+bk :dcli ::poll_binaries
+
+# Run per-project optional script
+bk :dcli build_step.dart
+
+# Run a Dart expression in every project
+bk :dcli "print(DateTime.now())"
+
+# Skip init source loading
+bk :dcli ~s/init.dart -no-init-source
+```
+
+**In pipeline configuration:**
+
+```yaml
+buildkit:
+  pipelines:
+    build:
+      precore:
+        - commands:
+            - dcli ~s/build_hook.dart -no-init-source
+      core:
+        - commands:
+            - versioner
+            - compiler
+```
+
+**In compiler precompile/postcompile:**
+
+```yaml
+compiler:
+  precompile:
+    - command: dcli ~s/pre_compile.dart
+  postcompile:
+    - command: dcli ~s/post_compile.dart -no-init-source
+```
+
+**Stdin alternative:** For inline Dart code without a script file, use the stdin piping mechanism with `dcli --stdin`:
+
+```yaml
+core:
+  - commands:
+      - |
+        stdin dcli --stdin
+        print("Hello from inline Dart!");
 ```
