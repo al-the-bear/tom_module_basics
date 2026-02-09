@@ -187,6 +187,10 @@ class CleanupTool extends ToolBase {
   @override
   Future<bool> run(List<String> args) async {
     if (checkVersionArg(args)) return true;
+    if (checkHelpArg(args)) {
+      _printUsage(createParser());
+      return true;
+    }
 
     final parser = createParser();
     ArgResults results;
@@ -536,15 +540,11 @@ class CleanupTool extends ToolBase {
   }
 
   void _printUsage(ArgParser parser) {
-    print('Cleanup Tool - $toolDescription');
-    print('');
-    print('Usage: cleanup [options]');
-    print('       buildkit :cleanup [options]');
-    print('       dart run tom_build_kit:cleanup [options]');
-    print('       cleanup version');
-    print('');
+    printUsageHeader();
     print('Options:');
     print(parser.usage);
+    print('');
+    printExecutionModesExplanation();
     print('');
     print('Default targets (when no config is provided):');
     print('  build, .dart_tool/build, **/*.g.dart, **/*.r.dart, **/*.b.dart,');

@@ -142,6 +142,10 @@ class VersionerTool extends ToolBase {
   @override
   Future<bool> run(List<String> args) async {
     if (checkVersionArg(args)) return true;
+    if (checkHelpArg(args)) {
+      _printUsage(createParser());
+      return true;
+    }
 
     final parser = createParser();
     ArgResults results;
@@ -446,15 +450,11 @@ $sdkLine
   }
 
   void _printUsage(ArgParser parser) {
-    print('Versioner Tool - $toolDescription');
-    print('');
-    print('Usage: versioner [options]');
-    print('       buildkit :versioner [options]');
-    print('       dart run tom_build_kit:versioner [options]');
-    print('       versioner version');
-    print('');
+    printUsageHeader();
     print('Options:');
     print(parser.usage);
+    print('');
+    printExecutionModesExplanation();
     print('');
     print('Configuration (buildkit.yaml):');
     print('  versioner:');

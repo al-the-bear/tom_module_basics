@@ -103,6 +103,10 @@ class DependenciesTool extends ToolBase {
   @override
   Future<bool> run(List<String> args) async {
     if (checkVersionArg(args)) return true;
+    if (checkHelpArg(args)) {
+      _printUsage(createParser());
+      return true;
+    }
 
     final parser = createParser();
     ArgResults results;
@@ -428,15 +432,11 @@ class DependenciesTool extends ToolBase {
   }
 
   void _printUsage(ArgParser parser) {
-    print('Dependencies Tool - $toolDescription');
-    print('');
-    print('Usage: dependencies [options]');
-    print('       buildkit :dependencies [options]');
-    print('       dart run tom_build_kit:dependencies [options]');
-    print('       dependencies version');
-    print('');
+    printUsageHeader();
     print('Options:');
     print(parser.usage);
+    print('');
+    printExecutionModesExplanation();
     print('');
     print('Legend:');
     print('  ->  normal dependency');

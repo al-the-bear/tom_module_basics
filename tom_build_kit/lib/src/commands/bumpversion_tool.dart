@@ -63,6 +63,10 @@ class BumpVersionTool extends ToolBase {
   @override
   Future<bool> run(List<String> args) async {
     if (checkVersionArg(args)) return true;
+    if (checkHelpArg(args)) {
+      _printUsage(createParser());
+      return true;
+    }
 
     final parser = createParser();
     ArgResults results;
@@ -361,15 +365,11 @@ class BumpVersionTool extends ToolBase {
   }
 
   void _printUsage(ArgParser parser) {
-    print('Version Bump Tool - $toolDescription');
-    print('');
-    print('Usage: bumpversion [options]');
-    print('       buildkit :bumpversion [options]');
-    print('       dart run tom_build_kit:bumpversion [options]');
-    print('       bumpversion version');
-    print('');
+    printUsageHeader();
     print('Options:');
     print(parser.usage);
+    print('');
+    printExecutionModesExplanation();
     print('');
     print('Behavior:');
     print('  - All projects get a patch bump by default');

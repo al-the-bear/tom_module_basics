@@ -178,6 +178,10 @@ class CompilerTool extends ToolBase {
   @override
   Future<bool> run(List<String> args) async {
     if (checkVersionArg(args)) return true;
+    if (checkHelpArg(args)) {
+      _printUsage(createParser());
+      return true;
+    }
 
     final parser = createParser();
     ArgResults results;
@@ -753,15 +757,11 @@ class CompilerTool extends ToolBase {
   }
 
   void _printUsage(ArgParser parser) {
-    print('Compiler Tool - $toolDescription');
-    print('');
-    print('Usage: compiler [options]');
-    print('       buildkit :compiler [options]');
-    print('       dart run tom_build_kit:compiler [options]');
-    print('       compiler version');
-    print('');
+    printUsageHeader();
     print('Options:');
     print(parser.usage);
+    print('');
+    printExecutionModesExplanation();
     print('');
     print('Placeholders in command lines:');
     print('  \${file}               - Source file path');

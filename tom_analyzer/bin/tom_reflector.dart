@@ -1,30 +1,7 @@
 /// tom_reflector CLI - Dart code reflection generation tool
 ///
 /// Configuration is read from buildkit.yaml (tom_reflector: section).
-///
-/// Usage:
-///   dart run tom_analyzer:tom_reflector [options]
-///   reflector [options]
-///   buildkit :reflector [options]
-///
-/// Tool Options:
-///   -c, --config=`<path>`    Path to config file (default: buildkit.yaml)
-///   -e, --entry=`<file>`     Entry point file(s) (can repeat, comma-separated)
-///   -b, --barrel=`<path>`    Barrel file (legacy mode)
-///   -o, --output=`<path>`    Output file path
-///   -v, --verbose          Enable verbose output
-///   -l, --list             List projects that would be processed (no action)
-///   -h, --help             Show this help message
-///
-/// Navigation Options (common to all Tom build tools):
-///   -s, --scan=`<path>`      Scan directory for projects
-///   -r, --recursive        Scan directories recursively
-///   -b, --build-order      Sort projects in dependency build order
-///   -p, --project=`<pattern>` Project(s) to run (comma-separated, globs supported)
-///   -R, --root             Workspace root (bare: detected, path: specified)
-///   -x, --exclude          Exclude patterns (path-based globs)
-///   --exclude-projects     Exclude projects by name or path
-///   --recursion-exclude    Exclude patterns during recursive scan
+/// Run `reflector help` or `--help` for full usage information.
 library;
 
 import 'dart:io';
@@ -39,6 +16,18 @@ import 'package:tom_analyzer/src/reflection/generator/generator.dart' as gen;
 const _toolKey = 'tom_reflector';
 
 void main(List<String> args) async {
+  // Check for help command first (before parsing)
+  if (isHelpCommand(args)) {
+    _printUsage(null);
+    return;
+  }
+
+  // Check for version command first (before parsing)
+  if (isVersionCommand(args)) {
+    _printVersion();
+    return;
+  }
+
   // Preprocess args for bare -R detection
   final (processedArgs, bareRoot) = preprocessRootFlag(args);
 
@@ -65,6 +54,14 @@ void main(List<String> args) async {
   final ArgResults results;
   try {
     results = parser.parse(processedArgs);
+
+    // Check for unexpected arguments
+    if (results.rest.isNotEmpty) {
+      stderr.writeln('Error: Unknown arguments: ${results.rest.join(' ')}\n');
+      _printUsage(parser);
+      exitCode = 1;
+      return;
+    }
   } catch (e) {
     stderr.writeln('Error: $e');
     _printUsage(parser);
@@ -335,31 +332,68 @@ Future<bool> _runLegacyReflect({
   return true;
 }
 
-void _printUsage(ArgParser parser) {
-  stdout.writeln('tom_reflector - Dart code reflection generation tool');
-  stdout.writeln();
-  stdout.writeln('Usage: dart run tom_analyzer:tom_reflector [options]');
-  stdout.writeln('       reflector [options]');
-  stdout.writeln('       buildkit :reflector [options]');
-  stdout.writeln();
-  stdout.writeln('Options:');
-  stdout.writeln(parser.usage);
-  stdout.writeln();
-  stdout.writeln('Examples:');
-  stdout.writeln('  # Generate reflection for current project (reads buildkit.yaml)');
-  stdout.writeln('  dart run tom_analyzer:tom_reflector');
-  stdout.writeln();
-  stdout.writeln('  # Scan workspace for all reflector projects');
-  stdout.writeln('  dart run tom_analyzer:tom_reflector -R');
-  stdout.writeln();
-  stdout.writeln('  # Specific project');
-  stdout.writeln('  dart run tom_analyzer:tom_reflector -p reflect_dart_overview');
-  stdout.writeln();
-  stdout.writeln('  # Override barrel on command line');
-  stdout.writeln('  dart run tom_analyzer:tom_reflector --barrel lib/my_lib.dart');
-  stdout.writeln();
-  stdout.writeln('  # Entry points for new-style generation');
-  stdout.writeln('  dart run tom_analyzer:tom_reflector -e lib/my_app.dart');
+void _printUsage(ArgParser? parser) {
+  // Standard header
+  for (final line in getToolHelpHeader(
+    toolName: 'Tom Reflector',
+    toolDescription: 'Dart code reflection generation tool',
+    usagePatterns: [
+      'reflector [options]',
+      'dart run tom_analyzer:tom_reflector [options]',
+      'buildkit :reflector [options]',
+      'reflector help',
+      'reflector version',
+    ],
+  )) {
+    print(line);
+  }
+
+  // Tool-specific options
+  print('Tool Options:');
+  print('  -c, --config=<path>  Path to config file (default: buildkit.yaml)');
+  print('  -e, --entry=<file>   Entry point file(s) (can repeat, comma-separated)');
+  print('      --barrel=<path>  Barrel file (legacy mode)');
+  print('      --output=<path>  Output file path');
+  print('  -v, --verbose        Enable verbose output');
+  print('  -l, --list           List projects that would be processed (no action)');
+  print('  -h, --help           Show this help message');
+  print('');
+
+  // Standard navigation options from tom_build_base
+  printNavigationOptionsHelp();
+  print('');
+
+  // Tool-specific configuration info
+  print('Configuration:');
+  print('  Reads from buildkit.yaml file with the following structure:');
+  print('');
+  print('  tom_reflector:');
+  print('    barrels:');
+  print('      - lib/my_package.dart');
+  print('');
+
+  // Standard footer
+  for (final line in getToolHelpFooter(toolName: 'reflector')) {
+    print(line);
+  }
+  print('');
+  print('Related:');
+  print('  For code analysis, use tom_analyzer:');
+  print('    dart run tom_analyzer --help');
+}
+
+void _printVersion() {
+  const version = String.fromEnvironment('version', defaultValue: '1.0.0');
+  const buildNumber =
+      String.fromEnvironment('buildNumber', defaultValue: '0');
+  const gitCommit =
+      String.fromEnvironment('gitCommit', defaultValue: 'unknown');
+  const buildTimestamp =
+      String.fromEnvironment('buildTimestamp', defaultValue: '');
+
+  print('Tom Reflector $version+$buildNumber');
+  if (gitCommit != 'unknown') print('Git: $gitCommit');
+  if (buildTimestamp.isNotEmpty) print('Built: $buildTimestamp');
 }
 
 String _resolveReflectionOutput({

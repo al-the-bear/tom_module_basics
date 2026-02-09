@@ -238,6 +238,10 @@ class RunnerTool extends ToolBase {
   @override
   Future<bool> run(List<String> args) async {
     if (checkVersionArg(args)) return true;
+    if (checkHelpArg(args)) {
+      _printUsage(createParser());
+      return true;
+    }
 
     final parser = createParser();
     ArgResults results;
@@ -521,15 +525,11 @@ class RunnerTool extends ToolBase {
   }
 
   void _printUsage(ArgParser parser) {
-    print('Runner Tool - $toolDescription');
-    print('');
-    print('Usage: runner [options]');
-    print('       buildkit :runner [options]');
-    print('       dart run tom_build_kit:runner [options]');
-    print('       runner version');
-    print('');
+    printUsageHeader();
     print('Options:');
     print(parser.usage);
+    print('');
+    printExecutionModesExplanation();
     print('');
     print('Builder filter precedence:');
     print('  1. CLI --include-builders / --exclude-builders');

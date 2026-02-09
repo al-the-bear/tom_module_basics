@@ -60,6 +60,10 @@ class BuildSorterTool extends ToolBase {
   @override
   Future<bool> run(List<String> args) async {
     if (checkVersionArg(args)) return true;
+    if (checkHelpArg(args)) {
+      _printUsage(createParser());
+      return true;
+    }
 
     final parser = createParser();
     ArgResults results;
@@ -351,15 +355,11 @@ class BuildSorterTool extends ToolBase {
   }
 
   void _printUsage(ArgParser parser) {
-    print('Build Sorter - $toolDescription');
-    print('');
-    print('Usage: buildsorter [options]');
-    print('       buildkit :buildsorter [options]');
-    print('       dart run tom_build_kit:buildsorter [options]');
-    print('       buildsorter version');
-    print('');
+    printUsageHeader();
     print('Options:');
     print(parser.usage);
+    print('');
+    printExecutionModesExplanation();
     print('');
     print('Output: Projects sorted in build order (dependencies first).');
     print('Projects at the same dependency level are sorted alphabetically.');

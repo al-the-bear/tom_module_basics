@@ -1,30 +1,7 @@
 /// tom_analyzer CLI - Dart code analysis tool
 ///
 /// Configuration is read from buildkit.yaml (tom_analyzer: section).
-///
-/// Usage:
-///   dart run tom_analyzer [options]
-///   analyzer [options]
-///   buildkit :analyzer [options]
-///
-/// Tool Options:
-///   -c, --config=`<path>`    Path to config file (default: buildkit.yaml)
-///   -b, --barrel=`<path>`    Barrel file to analyze (overrides config)
-///   -o, --output=`<path>`    Output file path
-///   -f, --format=`<fmt>`     Output format: yaml or json (default: yaml)
-///   -v, --verbose          Enable verbose output
-///   -l, --list             List projects that would be processed (no action)
-///   -h, --help             Show this help message
-///
-/// Navigation Options (common to all Tom build tools):
-///   -s, --scan=`<path>`      Scan directory for projects
-///   -r, --recursive        Scan directories recursively
-///   -b, --build-order      Sort projects in dependency build order
-///   -p, --project=`<pattern>` Project(s) to run (comma-separated, globs supported)
-///   -R, --root             Workspace root (bare: detected, path: specified)
-///   -x, --exclude          Exclude patterns (path-based globs)
-///   --exclude-projects     Exclude projects by name or path
-///   --recursion-exclude    Exclude patterns during recursive scan
+/// Run `analyzer help` or `--help` for full usage information.
 library;
 
 import 'dart:io';
@@ -38,6 +15,18 @@ import 'package:tom_analyzer/tom_analyzer.dart';
 const _toolKey = 'tom_analyzer';
 
 void main(List<String> args) async {
+  // Check for help command first (before parsing)
+  if (isHelpCommand(args)) {
+    _printUsage(null);
+    return;
+  }
+
+  // Check for version command first (before parsing)
+  if (isVersionCommand(args)) {
+    _printVersion();
+    return;
+  }
+
   // Preprocess args for bare -R detection
   final (processedArgs, bareRoot) = preprocessRootFlag(args);
 
@@ -62,6 +51,14 @@ void main(List<String> args) async {
   final ArgResults results;
   try {
     results = parser.parse(processedArgs);
+
+    // Check for unexpected arguments
+    if (results.rest.isNotEmpty) {
+      stderr.writeln('Error: Unknown arguments: ${results.rest.join(' ')}\n');
+      _printUsage(parser);
+      exitCode = 1;
+      return;
+    }
   } catch (e) {
     stderr.writeln('Error: $e');
     _printUsage(parser);
@@ -263,35 +260,67 @@ Future<bool> _processProject({
   }
 }
 
-void _printUsage(ArgParser parser) {
-  stdout.writeln('tom_analyzer - Dart code analysis tool');
-  stdout.writeln();
-  stdout.writeln('Usage: dart run tom_analyzer [options]');
-  stdout.writeln('       analyzer [options]');
-  stdout.writeln('       buildkit :analyzer [options]');
-  stdout.writeln();
-  stdout.writeln('Analyzes Dart barrel files and outputs structured');
-  stdout.writeln('code information in YAML or JSON format.');
-  stdout.writeln();
-  stdout.writeln('Options:');
-  stdout.writeln(parser.usage);
-  stdout.writeln();
-  stdout.writeln('Examples:');
-  stdout.writeln('  # Analyze current project (reads buildkit.yaml)');
-  stdout.writeln('  dart run tom_analyzer');
-  stdout.writeln();
-  stdout.writeln('  # Scan workspace for all analyzer projects');
-  stdout.writeln('  dart run tom_analyzer -R');
-  stdout.writeln();
-  stdout.writeln('  # Analyze specific project');
-  stdout.writeln('  dart run tom_analyzer -p analyze_dart_overview');
-  stdout.writeln();
-  stdout.writeln('  # Override barrel on command line');
-  stdout.writeln('  dart run tom_analyzer --barrel lib/my_lib.dart');
-  stdout.writeln();
-  stdout.writeln('  # Output as JSON');
-  stdout.writeln('  dart run tom_analyzer --barrel lib/my_lib.dart --format json');
-  stdout.writeln();
-  stdout.writeln('For reflection generation, use tom_reflector:');
-  stdout.writeln('  dart run tom_analyzer:tom_reflector --help');
+void _printUsage(ArgParser? parser) {
+  // Standard header
+  for (final line in getToolHelpHeader(
+    toolName: 'Tom Analyzer',
+    toolDescription: 'Dart code analysis tool',
+    usagePatterns: [
+      'analyzer [options]',
+      'dart run tom_analyzer [options]',
+      'buildkit :analyzer [options]',
+      'analyzer help',
+      'analyzer version',
+    ],
+  )) {
+    print(line);
+  }
+
+  // Tool-specific options
+  print('Tool Options:');
+  print('  -c, --config=<path>  Path to config file (default: buildkit.yaml)');
+  print('      --barrel=<path>  Barrel file to analyze (overrides config)');
+  print('      --output=<path>  Output file path');
+  print('  -f, --format=<fmt>   Output format: yaml or json (default: yaml)');
+  print('  -v, --verbose        Enable verbose output');
+  print('  -l, --list           List projects that would be processed (no action)');
+  print('  -h, --help           Show this help message');
+  print('');
+
+  // Standard navigation options from tom_build_base
+  printNavigationOptionsHelp();
+  print('');
+
+  // Tool-specific configuration info
+  print('Configuration:');
+  print('  Reads from buildkit.yaml file with the following structure:');
+  print('');
+  print('  tom_analyzer:');
+  print('    barrels:');
+  print('      - lib/my_package.dart');
+  print('    output_format: yaml');
+  print('');
+
+  // Standard footer
+  for (final line in getToolHelpFooter(toolName: 'analyzer')) {
+    print(line);
+  }
+  print('');
+  print('Related:');
+  print('  For reflection generation, use tom_reflector:');
+  print('    dart run tom_analyzer:tom_reflector --help');
+}
+
+void _printVersion() {
+  const version = String.fromEnvironment('version', defaultValue: '1.0.0');
+  const buildNumber =
+      String.fromEnvironment('buildNumber', defaultValue: '0');
+  const gitCommit =
+      String.fromEnvironment('gitCommit', defaultValue: 'unknown');
+  const buildTimestamp =
+      String.fromEnvironment('buildTimestamp', defaultValue: '');
+
+  print('Tom Analyzer $version+$buildNumber');
+  if (gitCommit != 'unknown') print('Git: $gitCommit');
+  if (buildTimestamp.isNotEmpty) print('Built: $buildTimestamp');
 }
