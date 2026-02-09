@@ -13,6 +13,7 @@ export 'src/pipeline_executor.dart';
 export 'src/pipeline_step.dart';
 export 'src/builtin_commands.dart';
 export 'src/pubget_command.dart';
+export 'src/pubupdate_command.dart';
 
 // Integrated tool commands
 export 'src/commands/tool_base.dart';

@@ -547,6 +547,8 @@ void _printUsage(ArgParser parser) {
   print('  :dependencies   Dependency tree visualization');
   print('  :pubget         Run dart pub get on projects');
   print('  :pubgetall      Shortcut for :pubget --scan . --recursive');
+  print('  :pubupdate      Run dart pub upgrade on projects');
+  print('  :pubupdateall   Shortcut for :pubupdate --scan . --recursive');
   print('  :git            Run git commands in each project directory');
   print('  :dcli           Execute Dart scripts/expressions via dcli');
   print('');
@@ -1167,6 +1169,7 @@ List<_ExecutionStep> _parseExecutionSteps(
 
 /// Names of built-in commands (without : prefix).
 const _builtinCommandNames = {
+  'buildsorter',
   'versioner',
   'bumpversion',
   'compiler',
@@ -1175,6 +1178,8 @@ const _builtinCommandNames = {
   'dependencies',
   'pubget',
   'pubgetall',
+  'pubupdate',
+  'pubupdateall',
   'git',
   'dcli',
 };
@@ -1221,7 +1226,7 @@ Future<bool> _runCommandHelp(String commandName) async {
     print('Unknown command: $commandName');
     print('');
     print(
-        'Available commands: buildsorter, versioner, bumpversion, compiler, runner, cleanup, dependencies, pubget, git, dcli');
+        'Available commands: buildsorter, versioner, bumpversion, compiler, runner, cleanup, dependencies, pubget, pubupdate, git, dcli');
     return false;
   }
 
@@ -1242,6 +1247,9 @@ Future<bool> _runCommandHelp(String commandName) async {
       return BuildSorterTool().run(['--help']);
     case 'pubget' || 'pubgetall':
       PubGetCommand.printUsage();
+      return true;
+    case 'pubupdate' || 'pubupdateall':
+      PubUpdateCommand.printUsage();
       return true;
     case 'git':
       print('Git Command — run git in each project directory');

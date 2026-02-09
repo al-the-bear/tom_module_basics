@@ -12,6 +12,7 @@ import 'commands/compiler_tool.dart';
 import 'commands/runner_tool.dart';
 import 'commands/dependencies_tool.dart';
 import 'pubget_command.dart';
+import 'pubupdate_command.dart';
 
 /// Parse a command string into parts, respecting quoted strings.
 ///
@@ -101,6 +102,8 @@ class BuiltinCommands {
     'dependencies',
     'pubget',
     'pubgetall',
+    'pubupdate',
+    'pubupdateall',
     'dcli',
   };
 
@@ -170,6 +173,10 @@ class BuiltinCommands {
         return _runPubGet(args);
       case 'pubgetall':
         return _runPubGetAll(args);
+      case 'pubupdate':
+        return _runPubUpdate(args);
+      case 'pubupdateall':
+        return _runPubUpdateAll(args);
       case 'dcli':
         return _runDcli(args);
       default:
@@ -271,6 +278,35 @@ class BuiltinCommands {
     );
     final fullArgs = ['--scan', '.', '--recursive', ...args];
     return pubGetCommand.execute(fullArgs);
+  }
+
+  Future<bool> _runPubUpdate(List<String> args) async {
+    if (verbose) print('  [builtin] Running pubupdate...');
+    if (dryRun) {
+      print('  [DRY RUN] Would run pubupdate with args: $args');
+      return true;
+    }
+    final pubUpdateCommand = PubUpdateCommand(
+      rootPath: rootPath,
+      verbose: verbose,
+    );
+    return pubUpdateCommand.execute(args);
+  }
+
+  Future<bool> _runPubUpdateAll(List<String> args) async {
+    if (verbose) {
+      print('  [builtin] Running pubupdateall (scan . --recursive)...');
+    }
+    if (dryRun) {
+      print('  [DRY RUN] Would run pubupdateall with args: $args');
+      return true;
+    }
+    final pubUpdateCommand = PubUpdateCommand(
+      rootPath: rootPath,
+      verbose: verbose,
+    );
+    final fullArgs = ['--scan', '.', '--recursive', ...args];
+    return pubUpdateCommand.execute(fullArgs);
   }
 
   // ---------------------------------------------------------------------------
