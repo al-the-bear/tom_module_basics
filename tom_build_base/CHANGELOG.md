@@ -1,3 +1,9 @@
+## 1.3.2
+
+### Internal
+
+- **Config filename standardization** — Updated all code references from `tom_build.yaml` to `buildkit.yaml`. The `TomBuildConfig.projectFilename` constant was already correct; this release ensures `hasTomBuildConfig()` and `ProjectDiscovery.getProjectRecursiveSetting()` use the constant instead of hardcoded strings.
+
 ## 1.3.0
 
 ### Features
