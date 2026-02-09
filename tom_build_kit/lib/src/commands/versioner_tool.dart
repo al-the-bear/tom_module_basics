@@ -34,7 +34,7 @@ class VersionerConfig {
     this.variablePrefix,
   });
 
-  /// Load config from bk.yaml.
+  /// Load config from buildkit.yaml.
   static VersionerConfig? loadFromYaml(String dir) {
     final config = TomBuildConfig.load(dir: dir, toolKey: 'versioner');
     if (config == null) return null;
@@ -54,7 +54,7 @@ class VersionerConfig {
     );
   }
 
-  /// Load config from bk_master.yaml (workspace level).
+  /// Load config from buildkit_master.yaml (workspace level).
   static VersionerConfig? loadFromMasterYaml(String dir) {
     final config = TomBuildConfig.loadMaster(dir: dir, toolKey: 'versioner');
     if (config == null) return null;
@@ -461,7 +461,7 @@ $sdkLine
     print('Options:');
     print(parser.usage);
     print('');
-    print('Configuration (bk.yaml):');
+    print('Configuration (buildkit.yaml):');
     print('  versioner:');
     print('    output: lib/src/version.g.dart');
     print('    includeGitCommit: true');

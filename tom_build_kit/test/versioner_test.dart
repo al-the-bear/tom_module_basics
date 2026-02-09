@@ -49,7 +49,7 @@ void main() {
 
   tearDown(() async {
     log.finish();
-    // Revert all changes in the main repo (bk_master.yaml,
+    // Revert all changes in the main repo (buildkit_master.yaml,
     // _build/lib/src/version.g.dart, _build/tom_build_state.json)
     await ws.revertAll();
   });
@@ -93,7 +93,7 @@ void main() {
 
       final content = versionFile.readAsStringSync();
 
-      // _build/bk.yaml has variable-prefix: tomTools
+      // _build/buildkit.yaml has variable-prefix: tomTools
       // → class name should be TomToolsVersionInfo
       final hasClass = content.contains('class TomToolsVersionInfo');
       log.expectation('class name TomToolsVersionInfo', hasClass);
@@ -174,7 +174,7 @@ void main() {
       expect(result.stdout as String, contains('_build'));
     });
 
-    test('--show displays versioner config from bk.yaml', () async {
+    test('--show displays versioner config from buildkit.yaml', () async {
       log.start('VER_SHW01', '--show displays versioner config');
       await ws.installFixture('versioner');
 

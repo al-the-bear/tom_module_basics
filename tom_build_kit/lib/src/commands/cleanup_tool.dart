@@ -70,9 +70,9 @@ class CleanupConfig {
     this.protectedFolders = const [],
   });
 
-  /// Load config from bk.yaml in the given directory.
+  /// Load config from buildkit.yaml in the given directory.
   static CleanupConfig? loadFromYaml(String dir) {
-    final file = File('$dir/bk.yaml');
+    final file = File('$dir/buildkit.yaml');
     if (!file.existsSync()) return null;
 
     try {
@@ -423,7 +423,7 @@ class CleanupTool extends ToolBase {
   /// Built-in folders that must never be deleted or have their contents
   /// removed. This is a hard safety guard — cleanup will always skip these.
   /// Additional folders can be added via `protected-folders` in
-  /// bk.yaml, but the built-in set can never be reduced.
+  /// buildkit.yaml, but the built-in set can never be reduced.
   static const builtinProtectedFolders = {'.git', '.github', '.vscode', '.idea'};
 
   /// The effective set of protected folders for the current project.
@@ -551,7 +551,7 @@ class CleanupTool extends ToolBase {
     print('  build, .dart_tool/build, **/*.g.dart, **/*.r.dart, **/*.b.dart,');
     print('  **/*.reflection.dart, **/*.reflectable.dart');
     print('');
-    print('Configuration (bk.yaml):');
+    print('Configuration (buildkit.yaml):');
     print('  cleanup:');
     print('    - build');
     print('    - globs: ["**/*.g.dart", "**/*.r.dart"]');
@@ -564,6 +564,6 @@ class CleanupTool extends ToolBase {
     print('Protected folders (never deleted):');
     print('  Built-in: .git, .github, .vscode, .idea');
     print('  Additional folders can be configured via protected-folders');
-    print('  in bk.yaml (additive only — cannot reduce built-in list).');
+    print('  in buildkit.yaml (additive only — cannot reduce built-in list).');
   }
 }

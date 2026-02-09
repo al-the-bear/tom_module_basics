@@ -1,12 +1,12 @@
 # Tom Build Base User Guide
 
-This guide explains how to use `tom_build_base` to create CLI tools that integrate with the `bk.yaml` and `build.yaml` configuration patterns used in Tom workspaces.
+This guide explains how to use `tom_build_base` to create CLI tools that integrate with the `buildkit.yaml` and `build.yaml` configuration patterns used in Tom workspaces.
 
 ## Overview
 
 `tom_build_base` provides shared infrastructure for Tom build tools:
 
-- **Configuration loading** — `TomBuildConfig` for reading `bk.yaml` and `bk_master.yaml`
+- **Configuration loading** — `TomBuildConfig` for reading `buildkit.yaml` and `buildkit_master.yaml`
 - **Configuration merging** — `ConfigMerger` for combining workspace and project settings
 - **Build.yaml utilities** — detect builder definitions vs consumers, read options
 - **Project scanning** — `ProjectScanner` for directory traversal with custom validators
@@ -31,10 +31,10 @@ import 'package:tom_build_base/tom_build_base.dart';
 
 ### Two-Tier Configuration Pattern
 
-Tom tools use a **workspace-level** master config (`bk_master.yaml`) and **project-level** configs (`bk.yaml`). Each file contains sections keyed by tool name.
+Tom tools use a **workspace-level** master config (`buildkit_master.yaml`) and **project-level** configs (`buildkit.yaml`). Each file contains sections keyed by tool name.
 
 ```yaml
-# bk_master.yaml (workspace root)
+# buildkit_master.yaml (workspace root)
 navigation:                     # shared defaults for all tools
   scan: .
   recursive: true
@@ -45,7 +45,7 @@ show_versions:                  # tool-specific section
 ```
 
 ```yaml
-# bk.yaml (inside a project)
+# buildkit.yaml (inside a project)
 show_versions:
   verbose: true                 # overrides workspace default
 ```
@@ -99,7 +99,7 @@ final config = (masterConfig != null && projectConfig != null)
 ### Checking for Configuration
 
 ```dart
-// Does this project have a show_versions: section in bk.yaml?
+// Does this project have a show_versions: section in buildkit.yaml?
 if (hasTomBuildConfig(projectPath, 'show_versions')) {
   print('Has tool config');
 }

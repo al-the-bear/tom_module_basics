@@ -119,10 +119,10 @@ class TestLogger {
 /// 3. [revertAll] / [revertSubmodule] — restores files after each test
 /// 4. [verifyHeadRefs] — post-test-suite check that no commits leaked
 ///
-/// Tests that use `bk_skip.yaml` markers can check
+/// Tests that use `buildkit_skip.yaml` markers can check
 /// [isSkippedRepo] to avoid git operations on those repos.
 class TestWorkspace {
-  /// Workspace root (contains bk_master.yaml).
+  /// Workspace root (contains buildkit_master.yaml).
   final String workspaceRoot;
 
   /// Path to the tom_build_kit project.
@@ -162,17 +162,17 @@ class TestWorkspace {
     return dir;
   }
 
-  /// Find workspace root by walking up looking for bk_master.yaml.
+  /// Find workspace root by walking up looking for buildkit_master.yaml.
   static String _findWorkspaceRoot(String startDir) {
     var dir = startDir;
     while (true) {
-      if (File(p.join(dir, 'bk_master.yaml')).existsSync()) {
+      if (File(p.join(dir, 'buildkit_master.yaml')).existsSync()) {
         return dir;
       }
       final parent = p.dirname(dir);
       if (parent == dir) {
         throw StateError(
-          'Could not find workspace root (no bk_master.yaml found '
+          'Could not find workspace root (no buildkit_master.yaml found '
           'above $startDir)',
         );
       }
@@ -185,7 +185,7 @@ class TestWorkspace {
   // ---------------------------------------------------------------------------
 
   /// Skip file name that marks a repo as excluded from test git operations.
-  static const skipFileName = 'bk_skip.yaml';
+  static const skipFileName = 'buildkit_skip.yaml';
 
   /// Fail the test suite if the workspace has uncommitted changes.
   ///
@@ -329,7 +329,7 @@ class TestWorkspace {
     print('    ✓ Tear-down protocol complete');
   }
 
-  /// Check if a directory has a bk_skip.yaml marker.
+  /// Check if a directory has a buildkit_skip.yaml marker.
   ///
   /// Repos with this marker are excluded from test git operations
   /// (no commit check, no checkout revert).
@@ -383,16 +383,16 @@ class TestWorkspace {
   /// Path to the fixtures directory.
   String get fixturesDir => p.join(buildkitRoot, 'test', 'fixtures');
 
-  /// Install a test fixture by copying its bk_master.yaml
+  /// Install a test fixture by copying its buildkit_master.yaml
   /// into the workspace root, overwriting the real one.
   Future<void> installFixture(String fixtureName) async {
-    final src = File(p.join(fixturesDir, fixtureName, 'bk_master.yaml'));
+    final src = File(p.join(fixturesDir, fixtureName, 'buildkit_master.yaml'));
     if (!src.existsSync()) {
       throw StateError('Fixture not found: ${src.path}');
     }
-    final dst = File(p.join(workspaceRoot, 'bk_master.yaml'));
+    final dst = File(p.join(workspaceRoot, 'buildkit_master.yaml'));
     await src.copy(dst.path);
-    print('    📋 Installed fixture "$fixtureName" → bk_master.yaml');
+    print('    📋 Installed fixture "$fixtureName" → buildkit_master.yaml');
   }
 
   // ---------------------------------------------------------------------------
@@ -523,7 +523,7 @@ class TestWorkspace {
     return p.relative(projectAbsolutePath, from: workspaceRoot);
   }
 
-  /// Place a temporary `bk_skip.yaml` in a directory.
+  /// Place a temporary `buildkit_skip.yaml` in a directory.
   ///
   /// Returns the absolute path to the created file. Use [removeSkipFile]
   /// or add the returned path to a cleanup list for tearDown.

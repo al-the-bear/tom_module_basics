@@ -38,9 +38,9 @@ class CompilerConfig {
     this.postcompileSections = const [],
   });
 
-  /// Load config from bk.yaml.
+  /// Load config from buildkit.yaml.
   static CompilerConfig? loadFromYaml(String dir) {
-    final file = File('$dir/bk.yaml');
+    final file = File('$dir/buildkit.yaml');
     if (!file.existsSync()) return null;
 
     try {
@@ -64,9 +64,9 @@ class CompilerConfig {
     }
   }
 
-  /// Load compilation config from bk.yaml compiler section.
+  /// Load compilation config from buildkit.yaml compiler section.
   static CompilerConfig? loadCompileSections(String dir) {
-    final file = File('$dir/bk.yaml');
+    final file = File('$dir/buildkit.yaml');
     if (!file.existsSync()) return null;
 
     try {
@@ -163,7 +163,7 @@ class CompilerTool extends ToolBase {
   bool isToolProject(String dirPath) {
     final pubspec = File('$dirPath/pubspec.yaml');
     if (!pubspec.existsSync()) return false;
-    final tomBuildYaml = File('$dirPath/bk.yaml');
+    final tomBuildYaml = File('$dirPath/buildkit.yaml');
     if (!tomBuildYaml.existsSync()) return false;
     try {
       final content = tomBuildYaml.readAsStringSync();
@@ -278,7 +278,7 @@ class CompilerTool extends ToolBase {
       String projectPath, CompilerConfig config) async {
     if (verbose) print('Processing: ${p.basename(projectPath)}');
 
-    // Load project-level config (bk.yaml)
+    // Load project-level config (buildkit.yaml)
     var projectConfig = config;
     final yamlConfig = CompilerConfig.loadFromYaml(projectPath);
     if (yamlConfig != null) {
@@ -780,7 +780,7 @@ class CompilerTool extends ToolBase {
     print('  \${current-platform-vs} - Current platform (VS Code format)');
     print('  \$HOME, \$USER, etc.   - Environment variables');
     print('');
-    print('Configuration (bk.yaml):');
+    print('Configuration (buildkit.yaml):');
     print('  compiler:');
     print('    precompile:  [{commandline: [...], platforms: [...]}]');
     print('    compiles:    [{commandline: [...], files: [...], targets: [...], platforms: [...]}]');

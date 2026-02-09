@@ -67,17 +67,17 @@ void main() {
       // The exclusion fixture sets workspace-level versioner prefix to
       // 'testDefault'. _build has project-level prefix 'tomTools'.
       // To test workspace defaults, we need a project WITHOUT a versioner
-      // section. We'll modify _build's bk.yaml to remove the
+      // section. We'll modify _build's buildkit.yaml to remove the
       // versioner section, then run versioner with workspace defaults.
       final buildConfig =
-          p.join(ws.workspaceRoot, '_build', 'bk.yaml');
+          p.join(ws.workspaceRoot, '_build', 'buildkit.yaml');
       final originalContent = File(buildConfig).readAsStringSync();
 
       // Remove the versioner section from project config
       final modifiedContent =
           originalContent.replaceAll(RegExp(r'versioner:.*?(?=\n\S|\Z)', dotAll: true), '');
       File(buildConfig).writeAsStringSync(modifiedContent);
-      print('    📝 Removed versioner section from _build/bk.yaml');
+      print('    📝 Removed versioner section from _build/buildkit.yaml');
 
       final result =
           await ws.runTool('versioner', ['--project', '_build']);
@@ -127,14 +127,14 @@ void main() {
       // Project adds: 'custom_protected'
       // Effective set should be: {.git, .github, .vscode, .idea, custom_protected}
       final buildConfig =
-          p.join(ws.workspaceRoot, '_build', 'bk.yaml');
+          p.join(ws.workspaceRoot, '_build', 'buildkit.yaml');
       final buildContent = File(buildConfig).readAsStringSync();
       final modifiedBuild = buildContent.replaceAll(
         RegExp(r"cleanup:\n  - '\*\*/version\.g\.dart'"),
         "cleanup:\n  cleanup:\n    - '**/*.g.dart'\n  protected-folders:\n    - 'custom_protected'",
       );
       File(buildConfig).writeAsStringSync(modifiedBuild);
-      print('    📝 Added project protected-folders to _build/bk.yaml');
+      print('    📝 Added project protected-folders to _build/buildkit.yaml');
 
       // Create file in project-level custom protected folder
       final customDir = Directory(

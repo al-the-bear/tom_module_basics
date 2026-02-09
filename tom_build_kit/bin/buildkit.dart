@@ -6,7 +6,7 @@
 ///
 /// ## Configuration
 ///
-/// Pipelines are defined in `bk.yaml`:
+/// Pipelines are defined in `buildkit.yaml`:
 ///
 /// ```yaml
 /// buildkit:
@@ -41,7 +41,7 @@
 /// - `runner` - Run build_runner wrapper
 /// - `cleanup` - Clean build artifacts
 /// - `dependencies` - Show dependency tree
-/// - `<allowed-binary>` - Run an allowed binary (configured in bk.yaml)
+/// - `<allowed-binary>` - Run an allowed binary (configured in buildkit.yaml)
 /// - `shell <command>` - Run shell command (pipeline config only)
 /// - Pipeline names - Call other pipelines
 ///
@@ -52,7 +52,7 @@
 /// via `:command` syntax or as pipeline step commands. To run arbitrary
 /// shell commands, use the `shell ` prefix in pipeline configuration.
 ///
-/// Allowed binaries are configured in bk.yaml:
+/// Allowed binaries are configured in buildkit.yaml:
 ///
 /// ```yaml
 /// buildkit:
@@ -335,8 +335,8 @@ Future<void> main(List<String> args) async {
     }
   } else {
     // No explicit --scan, --project, or git flags: load navigation defaults
-    // from bk_master.yaml
-    final masterFile = File(p.join(rootPath, 'bk_master.yaml'));
+    // from buildkit_master.yaml
+    final masterFile = File(p.join(rootPath, 'buildkit_master.yaml'));
     String? navScan;
     var navRecursive = false;
     if (masterFile.existsSync()) {
@@ -535,7 +535,7 @@ void _printUsage(ArgParser parser) {
   print('       buildkit --version            Show version information');
   print('');
   print('Steps can be:');
-  print('  <pipeline>        Run a pipeline defined in bk.yaml');
+  print('  <pipeline>        Run a pipeline defined in buildkit.yaml');
   print('  :<command> [args] Run a tool command directly');
   print('');
   print('Built-in commands:');
@@ -550,7 +550,7 @@ void _printUsage(ArgParser parser) {
   print('  :git            Run git commands in each project directory');
   print('  :dcli           Execute Dart scripts/expressions via dcli');
   print('');
-  print('Allowed binaries (configured in bk.yaml buildkit.allowed-binaries):');
+  print('Allowed binaries (configured in buildkit.yaml buildkit.allowed-binaries):');
   print('  Additional binaries can be executed via :name syntax.');
   print('  Unknown commands that are not built-in, not a pipeline, and not');
   print('  in the allowed-binaries list will cause an error.');
@@ -560,7 +560,7 @@ void _printUsage(ArgParser parser) {
   print('  Ambiguous shorthands (e.g., :c matches compiler, cleanup) are rejected.');
   print('');
   print('Macros:');
-  print('  define <name>=<commands>    Define a reusable macro (saved to bk_master.yaml)');
+  print('  define <name>=<commands>    Define a reusable macro (saved to buildkit_master.yaml)');
   print('  undefine <name>             Remove a macro');
   print('  defines                     List all defined macros');
   print(r'  $name [args]                Expand macro, replacing $1-$9 with args, $$ with all');
@@ -574,8 +574,8 @@ void _printUsage(ArgParser parser) {
   print(parser.usage);
   print('');
   print('Configuration:');
-  print('  Pipelines are defined in bk_master.yaml (workspace) or');
-  print('  bk.yaml (project) under the buildkit: key.');
+  print('  Pipelines are defined in buildkit_master.yaml (workspace) or');
+  print('  buildkit.yaml (project) under the buildkit: key.');
   print('  Allowed binaries are defined in buildkit.allowed-binaries.');
   print('  See the project documentation for the full pipeline YAML format.');
   print('');
@@ -636,13 +636,13 @@ void _listPipelines(PipelineConfig config) {
   }
 }
 
-/// Find workspace root by looking for bk_master.yaml or tom_workspace.yaml.
+/// Find workspace root by looking for buildkit_master.yaml or tom_workspace.yaml.
 String _findWorkspaceRoot(String startPath) {
   var current = p.normalize(p.absolute(startPath));
   final root = p.rootPrefix(current);
 
   while (current != root) {
-    if (File(p.join(current, 'bk_master.yaml')).existsSync() ||
+    if (File(p.join(current, 'buildkit_master.yaml')).existsSync() ||
         File(p.join(current, 'tom_workspace.yaml')).existsSync() ||
         File(p.join(current, 'tom.code-workspace')).existsSync()) {
       return current;
@@ -657,9 +657,9 @@ String _findWorkspaceRoot(String startPath) {
 // Macro System
 // ============================================================================
 
-/// Load macros from `defines:` section of `bk_master.yaml`.
+/// Load macros from `defines:` section of `buildkit_master.yaml`.
 Map<String, String> _loadMacros(String rootPath) {
-  final masterFile = File(p.join(rootPath, 'bk_master.yaml'));
+  final masterFile = File(p.join(rootPath, 'buildkit_master.yaml'));
   if (!masterFile.existsSync()) return {};
 
   try {
@@ -683,11 +683,11 @@ Map<String, String> _loadMacros(String rootPath) {
   }
 }
 
-/// Save a macro to `defines:` section of `bk_master.yaml`.
+/// Save a macro to `defines:` section of `buildkit_master.yaml`.
 ///
 /// Uses text-based editing to preserve the file's original formatting.
 bool _saveMacro(String rootPath, String name, String value) {
-  final masterFile = File(p.join(rootPath, 'bk_master.yaml'));
+  final masterFile = File(p.join(rootPath, 'buildkit_master.yaml'));
 
   try {
     String content = '';
@@ -738,13 +738,13 @@ bool _saveMacro(String rootPath, String name, String value) {
   }
 }
 
-/// Remove a macro from `defines:` section of `bk_master.yaml`.
+/// Remove a macro from `defines:` section of `buildkit_master.yaml`.
 ///
 /// Uses text-based editing to preserve the file's original formatting.
 bool _removeMacro(String rootPath, String name) {
-  final masterFile = File(p.join(rootPath, 'bk_master.yaml'));
+  final masterFile = File(p.join(rootPath, 'buildkit_master.yaml'));
   if (!masterFile.existsSync()) {
-    print('No macros defined (bk_master.yaml not found)');
+    print('No macros defined (buildkit_master.yaml not found)');
     return false;
   }
 
@@ -1300,7 +1300,7 @@ Future<bool> _runCommandHelp(String commandName) async {
 }
 
 /// Filter project paths by exclude patterns, exclude-projects patterns,
-/// master YAML exclude-projects, and bk_skip.yaml marker files.
+/// master YAML exclude-projects, and buildkit_skip.yaml marker files.
 List<String> _filterProjectPaths(
   List<String> projects, {
   required List<String> exclude,
@@ -1325,7 +1325,7 @@ List<String> _filterProjectPaths(
 
   // Merge CLI --exclude-projects with master YAML navigation section
   final allExcludeProjects = [...excludeProjects];
-  final masterFile = File(p.join(rootPath, 'bk_master.yaml'));
+  final masterFile = File(p.join(rootPath, 'buildkit_master.yaml'));
   if (masterFile.existsSync()) {
     try {
       final content = masterFile.readAsStringSync();
@@ -1366,7 +1366,7 @@ List<String> _filterProjectPaths(
     }).toList();
   }
 
-  // Remove projects that contain bk_skip.yaml
+  // Remove projects that contain buildkit_skip.yaml
   result = result.where((projectPath) {
     if (ProjectDiscovery.hasSkipFile(projectPath)) {
       if (_verbose) {

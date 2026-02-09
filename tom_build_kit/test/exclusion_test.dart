@@ -14,7 +14,7 @@ import 'helpers/test_workspace.dart';
 /// Tests cover:
 /// - `--exclude-projects` with basename patterns (e.g. `_build`)
 /// - `--exclude-projects` with path patterns (e.g. `core/*`)
-/// - `bk_skip.yaml` marker file exclusion
+/// - `buildkit_skip.yaml` marker file exclusion
 /// - All 6 standalone tools + buildkit
 ///
 /// These tests use `--scan . --recursive --list` to discover projects,
@@ -292,10 +292,10 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
-  // Group: bk_skip.yaml marker file
+  // Group: buildkit_skip.yaml marker file
   // ---------------------------------------------------------------------------
 
-  group('bk_skip.yaml marker file', () {
+  group('buildkit_skip.yaml marker file', () {
     test('skip file excludes project from versioner', () async {
       log.start('EXCL_SF01', 'skip file excludes project from versioner');
       // Place a temporary skip file in _build
@@ -452,8 +452,8 @@ void main() {
           reason: 'core/ projects should not appear when excluded by path');
     });
 
-    test('buildkit respects bk_skip.yaml', () async {
-      log.start('EXCL_BK03', 'buildkit respects bk_skip.yaml');
+    test('buildkit respects buildkit_skip.yaml', () async {
+      log.start('EXCL_BK03', 'buildkit respects buildkit_skip.yaml');
       tempSkipFiles.add(ws.placeSkipFile('_build'));
 
       final result = await ws.runTool(
@@ -486,9 +486,9 @@ void main() {
       }
       log.expectation('_build not in project listing lines', allExcluded);
       // Verify the skip message IS present (proves the feature is active)
-      final hasSkipMsg = stdout.contains('Skipping (bk_skip.yaml)');
+      final hasSkipMsg = stdout.contains('Skipping (buildkit_skip.yaml)');
       log.expectation('skip message present in output', hasSkipMsg);
-      expect(stdout, contains('Skipping (bk_skip.yaml)'),
+      expect(stdout, contains('Skipping (buildkit_skip.yaml)'),
           reason: 'Should log skip message for _build in verbose mode');
     });
   });
@@ -502,7 +502,7 @@ void main() {
       log.start('EXCL_MY01', 'master YAML basename exclude-projects');
       // Write a custom fixture with exclude-projects in navigation
       final masterPath =
-          p.join(ws.workspaceRoot, 'bk_master.yaml');
+          p.join(ws.workspaceRoot, 'buildkit_master.yaml');
       File(masterPath).writeAsStringSync('''
 navigation:
   exclude:
@@ -532,7 +532,7 @@ versioner:
     test('master YAML path pattern exclude-projects', () async {
       log.start('EXCL_MY02', 'master YAML path pattern exclude-projects');
       final masterPath =
-          p.join(ws.workspaceRoot, 'bk_master.yaml');
+          p.join(ws.workspaceRoot, 'buildkit_master.yaml');
       File(masterPath).writeAsStringSync('''
 navigation:
   exclude:

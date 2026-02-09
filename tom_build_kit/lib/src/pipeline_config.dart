@@ -85,8 +85,8 @@ class Pipeline {
 class PipelineConfig {
   /// Internal (hardcoded) list of allowed binaries.
   ///
-  /// These are always allowed without any bk.yaml configuration.
-  /// The `allowed-binaries` list in bk.yaml is additive on top
+  /// These are always allowed without any buildkit.yaml configuration.
+  /// The `allowed-binaries` list in buildkit.yaml is additive on top
   /// of this internal list.
   static const internalAllowedBinaries = <String>{
     'astgen',
@@ -103,7 +103,7 @@ class PipelineConfig {
   /// Binaries allowed to be executed directly from the command line.
   ///
   /// This is the merged set of [internalAllowedBinaries] plus any
-  /// additional entries from bk.yaml `buildkit.allowed-binaries`.
+  /// additional entries from buildkit.yaml `buildkit.allowed-binaries`.
   /// Additive to the built-in commands (versioner, compiler, etc.).
   /// Binaries not in this list or the built-in list will cause an error
   /// when invoked via `:command` syntax or as pipeline step commands.
@@ -124,20 +124,20 @@ class PipelineConfig {
   /// Load pipeline configuration.
   /// 
   /// Priority (project replaces workspace, no merging):
-  /// 1. bk.yaml in project directory
-  /// 2. bk_master.yaml in root directory
+  /// 1. buildkit.yaml in project directory
+  /// 2. buildkit_master.yaml in root directory
   factory PipelineConfig.load({
     required String projectPath,
     required String rootPath,
   }) {
-    // First, load workspace-level config from bk_master.yaml
+    // First, load workspace-level config from buildkit_master.yaml
     final workspaceConfig = _loadFromYaml(
-      p.join(rootPath, kBkMasterYaml),
+      p.join(rootPath, kBuildkitMasterYaml),
     );
     
-    // Then, load project-level config from bk.yaml
+    // Then, load project-level config from buildkit.yaml
     final projectConfig = projectPath != rootPath
-        ? _loadFromYaml(p.join(projectPath, kBkYaml))
+        ? _loadFromYaml(p.join(projectPath, kBuildkitYaml))
         : null;
 
     // Merge: project replaces workspace for matching pipeline names
@@ -165,9 +165,9 @@ class PipelineConfig {
     }
 
     final source = projectConfig != null
-        ? 'project bk.yaml (with workspace fallback)'
+        ? 'project buildkit.yaml (with workspace fallback)'
         : workspaceConfig != null
-            ? 'workspace bk.yaml'
+            ? 'workspace buildkit.yaml'
             : 'none';
 
     return PipelineConfig(

@@ -1,6 +1,6 @@
-# Test fixture: Minimal bk_master.yaml for versioner tests.
+# Test fixture: Minimal buildkit_master.yaml for versioner tests.
 #
-# Targets only tom_build_kit itself via its project-level bk.yaml.
+# Targets only tom_build_kit itself via its project-level buildkit.yaml.
 # Navigation is restricted to prevent scanning the whole workspace.
 
 navigation:

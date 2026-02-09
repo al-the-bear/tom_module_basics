@@ -43,11 +43,11 @@ These features are shared by all tools. Test via any tool (e.g., versioner or de
 | TB_LST01 | `--list` with `--scan` and `--recursive` | ✅ | Run versioner `--scan . --recursive --list`. Verify output lists discovered projects. |
 | TB_EXC01 | `--exclude` glob filtering | ✅ | Run versioner `--scan . -r --list --exclude 'zom_*'`. Verify no `zom_` projects in output. |
 | TB_EXC02 | `--recursion-exclude` during scanning | ✅ | Run with `--recursion-exclude node_modules`. Verify node_modules subdirs not scanned. |
-| TB_DSC01 | Workspace root discovery | ✅ | Run tool from workspace root vs from a subdirectory. Both should find `bk_master.yaml`. |
+| TB_DSC01 | Workspace root discovery | ✅ | Run tool from workspace root vs from a subdirectory. Both should find `buildkit_master.yaml`. |
 | TB_XPJ01 | `--exclude-projects` folder name filtering | ✅ | Run versioner `--scan . -r --list --exclude-projects 'tom_d4rt*'`. Verify no `tom_d4rt*` folders in output. |
 | TB_XPJ02 | `--exclude-projects` from master YAML | ✅ | Set `exclude-projects: ['tom_test_*']` in master YAML navigation. Run `--list`. Verify excluded. |
-| TB_SKP01 | `bk_skip.yaml` skips directory | ✅ | Place `bk_skip.yaml` in a project dir. Run `--list`. Verify project excluded. |
-| TB_SKP02 | `bk_skip.yaml` skips subdirectories | ✅ | Place skip file in parent dir. Run `--scan` recursively. Verify no children found. |
+| TB_SKP01 | `buildkit_skip.yaml` skips directory | ✅ | Place `buildkit_skip.yaml` in a project dir. Run `--list`. Verify project excluded. |
+| TB_SKP02 | `buildkit_skip.yaml` skips subdirectories | ✅ | Place skip file in parent dir. Run `--scan` recursively. Verify no children found. |
 | TB_XPJ03 | `--exclude-projects` with relative path pattern | ✅ | Run versioner `--scan . -r --list --exclude-projects 'xternal/tom_module_basics/*'`. Verify all projects under that submodule excluded. |
 | TB_XPJ04 | `--exclude-projects` with `**` glob path pattern | ✅ | Run versioner `--scan . -r --list --exclude-projects '**/tom_module_basics/*'`. Verify same exclusion regardless of leading path. |
 | TB_XPJ05 | `--exclude-projects` combined basename + path patterns | ✅ | Run versioner `--scan . -r --list --exclude-projects 'zom_*' --exclude-projects 'xternal/tom_module_basics/*'`. Verify both pattern types applied. |
@@ -59,7 +59,7 @@ These features are shared by all tools. Test via any tool (e.g., versioner or de
 
 **Test file:** `test/versioner_test.dart`
 
-Target project: `_build` (main repo, has `variable-prefix: tomTools` in its `bk.yaml`).
+Target project: `_build` (main repo, has `variable-prefix: tomTools` in its `buildkit.yaml`).
 
 | ID | Feature | Status | How to Test |
 |----|---------|--------|-------------|
@@ -167,11 +167,11 @@ Target project: `_build` (has `version:` in pubspec.yaml).
 
 **Test file:** `test/buildkit_test.dart`
 
-Uses workspace-level pipeline configuration from `bk_master.yaml`.
+Uses workspace-level pipeline configuration from `buildkit_master.yaml`.
 
 | ID | Feature | Status | How to Test |
 |----|---------|--------|-------------|
-| BKT_LST01 | `--list` shows available pipelines | ✅ | Run `buildkit --list`. Verify pipeline names from `bk_master.yaml` are listed. |
+| BKT_LST01 | `--list` shows available pipelines | ✅ | Run `buildkit --list`. Verify pipeline names from `buildkit_master.yaml` are listed. |
 | BKT_HLP01 | `--help` shows usage | ✅ | Run `buildkit --help`. Verify usage text displayed. |
 | BKT_CMD01 | Direct command execution (`:versioner`) | ✅ | Run `buildkit :versioner --project _build`. Verify versioner executes. |
 | BKT_PIP01 | Pipeline execution (`build`, `clean`) | ✅ | Run `buildkit clean --project _build`. Verify pipeline steps execute in order. |
@@ -194,7 +194,7 @@ Tests that verify the config merge hierarchy works correctly across all tools.
 
 | ID | Feature | Status | How to Test |
 |----|---------|--------|-------------|
-| CFG_DEF01 | Workspace defaults apply when project has no config | ✅ | Use fixture with workspace-level `versioner:` prefix. Target project without `versioner:` in `bk.yaml`. Verify workspace prefix used. |
+| CFG_DEF01 | Workspace defaults apply when project has no config | ✅ | Use fixture with workspace-level `versioner:` prefix. Target project without `versioner:` in `buildkit.yaml`. Verify workspace prefix used. |
 | CFG_OVR01 | Project config overrides workspace config | ✅ | Use fixture with workspace prefix `testDefault`. Target project with `tomTools`. Verify project prefix used. |
 | CFG_CLI01 | CLI args override both project and workspace config | ✅ | Run with `--variable-prefix myCustom`. Verify `MyCustomVersionInfo`. Bug #12 FIXED. |
 | CFG_MRG01 | Additive merge for list fields (excludes, protected-folders) | ✅ | Configure workspace and project with different exclude patterns. Verify both patterns applied (union). |
@@ -243,7 +243,7 @@ Comprehensive cross-tool tests for all project exclusion features. Tests every t
 | EXCL_PP03 | `**` glob matches nested paths | ✅ | `--exclude-projects '**/tom_core_*'`. No `tom_core_*` at any depth. |
 | EXCL_PP04 | Combined basename + path patterns | ✅ | `--exclude-projects '_build' --exclude-projects 'core/*'`. Both applied. |
 
-### `bk_skip.yaml` Marker File
+### `buildkit_skip.yaml` Marker File
 
 | ID | Feature | Status | How to Test |
 |----|---------|--------|-------------|

@@ -131,7 +131,7 @@ BuildKit supports two types of execution steps that can be freely combined.
 
 ### Pipelines
 
-Pipelines are named sequences of commands defined in `bk.yaml` or `bk_master.yaml`. They are invoked by name:
+Pipelines are named sequences of commands defined in `buildkit.yaml` or `buildkit_master.yaml`. They are invoked by name:
 
 ```bash
 buildkit build          # Run the "build" pipeline
@@ -184,7 +184,7 @@ ________ Running :versioner
 
 ## Pipeline Configuration
 
-Pipelines are defined in `bk_master.yaml` (workspace level) or `bk.yaml` (project level) under the `buildkit:` key:
+Pipelines are defined in `buildkit_master.yaml` (workspace level) or `buildkit.yaml` (project level) under the `buildkit:` key:
 
 ```yaml
 buildkit:
@@ -704,7 +704,7 @@ buildkit build -s . -r --exclude-projects "xternal/tom_module_basics/*"
 buildkit build -s . -r --exclude-projects "zom_*" --exclude-projects "core/*"
 ```
 
-Projects with `bk_skip.yaml` are automatically skipped. Master YAML `navigation.exclude-projects` patterns are merged automatically.
+Projects with `buildkit_skip.yaml` are automatically skipped. Master YAML `navigation.exclude-projects` patterns are merged automatically.
 
 ---
 
@@ -715,8 +715,8 @@ Configuration is loaded in priority order:
 | Priority | Source | Merge Behavior |
 |----------|--------|----------------|
 | 1 (highest) | **Command-line arguments** | Overrides all |
-| 2 | **Project `bk.yaml`** | **Replaces** workspace pipelines for matching names |
-| 3 (lowest) | **Workspace `bk_master.yaml`** | Base pipeline definitions |
+| 2 | **Project `buildkit.yaml`** | **Replaces** workspace pipelines for matching names |
+| 3 (lowest) | **Workspace `buildkit_master.yaml`** | Base pipeline definitions |
 
 **Important:** Project-level pipeline definitions **completely replace** workspace-level definitions for the same pipeline name — there is no merging of pipeline steps across levels.
 
@@ -729,7 +729,7 @@ Configuration is loaded in priority order:
 BuildKit enforces strict command security:
 
 1. **Built-in commands** — Always allowed (`versioner`, `compiler`, etc.)
-2. **Configured pipelines** — Pipeline names from `bk.yaml` / `bk_master.yaml`
+2. **Configured pipelines** — Pipeline names from `buildkit.yaml` / `buildkit_master.yaml`
 3. **Allowed binaries** — Explicitly listed in `buildkit.allowed-binaries`
 4. **Shell commands** — Only via `shell` prefix in pipeline configuration
 5. **Everything else** — **Rejected** with an "Unknown command" error

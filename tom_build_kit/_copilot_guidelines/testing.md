@@ -49,7 +49,7 @@ The `tearDown()` in each test file handles the revert automatically. The `setUpA
 
 ### Core Mechanism
 
-1. **Install fixture**: Copy a test-specific `bk_master.yaml` into the workspace root, overwriting the real one
+1. **Install fixture**: Copy a test-specific `buildkit_master.yaml` into the workspace root, overwriting the real one
 2. **Run tool**: Execute the buildkit command via `dart run <path/to/bin/tool.dart>`
 3. **Verify**: Check exit code, stdout/stderr, generated/modified files
 4. **Revert**: `git checkout -- .` restores everything (fixture, generated files, state files)
@@ -63,13 +63,13 @@ tom_build_kit/
       test_workspace.dart      # Shared utilities: fixture swap, git revert, process runner
     fixtures/
       versioner/
-        bk_master.yaml   # Minimal master config for versioner tests
+        buildkit_master.yaml   # Minimal master config for versioner tests
       exclusion/
-        bk_master.yaml   # Minimal master config for exclusion tests
+        buildkit_master.yaml   # Minimal master config for exclusion tests
       cleanup/
-        bk_master.yaml   # Minimal master config for cleanup tests
+        buildkit_master.yaml   # Minimal master config for cleanup tests
       pipeline/
-        bk_master.yaml   # Pipeline-specific configs
+        buildkit_master.yaml   # Pipeline-specific configs
     versioner_test.dart         # Versioner tool integration tests
     exclusion_test.dart         # Cross-tool project exclusion tests (27 tests)
     cleanup_test.dart           # Cleanup tool integration tests
@@ -78,7 +78,7 @@ tom_build_kit/
 
 ### Fixture Design Principles
 
-- Each fixture `bk_master.yaml` targets **1–2 small projects** to keep tests fast
+- Each fixture `buildkit_master.yaml` targets **1–2 small projects** to keep tests fast
 - Fixtures define only the **minimum config** needed for the specific test
 - The `navigation:` section in fixtures uses explicit `exclude:` patterns to limit scope
 - Target projects must be in the **main repo** (not submodules) for simple git revert
@@ -92,9 +92,9 @@ The shared `TestWorkspace` class provides:
   - `saveHeadRefs()` — records HEAD SHAs for main repo + all submodules (call in `setUpAll`)
   - `verifyHeadRefs()` — post-suite check that no commits leaked (call in `tearDownAll`)
   - `tearDownProtocol()` — combined revert + verify for `tearDownAll`
-- **Skip file support**: `isSkippedRepo(path)` — checks for `bk_skip.yaml` marker; repos with this file are excluded from test git operations (no commit check, no checkout revert)
-- **Skip file placement**: `placeSkipFile(relativeDir)` — creates a temporary `bk_skip.yaml` in a directory; `removeSkipFile(relativeDir)` — removes it. Tests should track placed files and clean them up in `tearDown`.
-- **Fixture installation**: `installFixture(name)` — copies fixture `bk_master.yaml` to workspace root
+- **Skip file support**: `isSkippedRepo(path)` — checks for `buildkit_skip.yaml` marker; repos with this file are excluded from test git operations (no commit check, no checkout revert)
+- **Skip file placement**: `placeSkipFile(relativeDir)` — creates a temporary `buildkit_skip.yaml` in a directory; `removeSkipFile(relativeDir)` — removes it. Tests should track placed files and clean them up in `tearDown`.
+- **Fixture installation**: `installFixture(name)` — copies fixture `buildkit_master.yaml` to workspace root
 - **Git revert**: `revertAll()` — reverts all changes in main repo; `revertSubmodule(path)` — reverts submodule
 - **Tool execution**: `runTool(name, args)` — runs a tool via `dart run <bin/tool.dart>` from workspace root
 - **Pipeline execution**: `runPipeline(name, args)` — runs buildkit with a pipeline name
@@ -130,11 +130,11 @@ The `--exclude-projects` option supports two kinds of glob patterns, auto-detect
 This same logic applies to:
 - `--exclude-projects` CLI flag on all tools (via `ToolBase._filterProjectsByName`)
 - `--exclude-projects` CLI flag on buildkit (via `_filterProjectPaths`)
-- `exclude-projects` list in `bk_master.yaml` navigation section
+- `exclude-projects` list in `buildkit_master.yaml` navigation section
 
-### bk_skip.yaml
+### buildkit_skip.yaml
 
-A marker file `bk_skip.yaml` in a directory root excludes that directory from:
+A marker file `buildkit_skip.yaml` in a directory root excludes that directory from:
 
 - **Tool processing**: ProjectDiscovery skips the directory and all subdirectories
 - **Test git operations**: `saveHeadRefs()` and `tearDownProtocol()` skip repos with this file
@@ -144,7 +144,7 @@ A marker file `bk_skip.yaml` in a directory root excludes that directory from:
 
 After each test (`tearDown`):
 
-1. `git checkout -- .` from workspace root — restores `bk_master.yaml`, generated files, state files
+1. `git checkout -- .` from workspace root — restores `buildkit_master.yaml`, generated files, state files
 2. For submodule targets: `git checkout -- .` from submodule root
 
 The revert restores all tracked files to their committed state. Untracked files created by tests are not automatically cleaned — tests that create new files must delete them explicitly.

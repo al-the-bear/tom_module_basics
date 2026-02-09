@@ -31,9 +31,9 @@ class BuilderFilterConfig {
     return parts.isEmpty ? 'BuilderFilterConfig(none)' : 'BuilderFilterConfig(${parts.join('; ')})';
   }
 
-  /// Load from bk.yaml (build_runner section).
+  /// Load from buildkit.yaml (build_runner section).
   static BuilderFilterConfig? loadFromTomBuildYaml(String dir) {
-    final file = File('$dir/bk.yaml');
+    final file = File('$dir/buildkit.yaml');
     if (!file.existsSync()) return null;
 
     try {
@@ -56,7 +56,7 @@ class BuilderFilterConfig {
   }
 
   /// Get effective filter config with 3-level precedence:
-  /// 1. CLI args, 2. project bk.yaml, 3. workspace bk_master.yaml
+  /// 1. CLI args, 2. project buildkit.yaml, 3. workspace buildkit_master.yaml
   static BuilderFilterConfig getEffective({
     required String projectPath,
     String? rootPath,
@@ -71,15 +71,15 @@ class BuilderFilterConfig {
       );
     }
 
-    // Level 2: project bk.yaml
+    // Level 2: project buildkit.yaml
     final projectConfig = loadFromTomBuildYaml(projectPath);
     if (projectConfig != null && projectConfig.isNotEmpty) {
       return projectConfig;
     }
 
-    // Level 3: workspace bk_master.yaml
+    // Level 3: workspace buildkit_master.yaml
     if (rootPath != null && rootPath != projectPath) {
-      final masterFile = File('$rootPath/bk_master.yaml');
+      final masterFile = File('$rootPath/buildkit_master.yaml');
       if (masterFile.existsSync()) {
         try {
           final content = masterFile.readAsStringSync();
@@ -136,9 +136,9 @@ class BuildRunnerConfig {
     this.cliExcludeBuilders = const [],
   });
 
-  /// Load config from bk.yaml.
+  /// Load config from buildkit.yaml.
   static BuildRunnerConfig? loadFromYaml(String dir) {
-    final file = File('$dir/bk.yaml');
+    final file = File('$dir/buildkit.yaml');
     if (!file.existsSync()) return null;
 
     try {
@@ -198,7 +198,7 @@ class BuildRunnerConfig {
 /// Wraps `dart run build_runner` with:
 /// - Multi-project scanning and discovery
 /// - 4-level builder include/exclude filtering
-/// - Configuration from bk.yaml and build.yaml
+/// - Configuration from buildkit.yaml and build.yaml
 class RunnerTool extends ToolBase {
   @override
   String get toolKey => 'runner';
@@ -341,7 +341,7 @@ class RunnerTool extends ToolBase {
   ) async {
     if (verbose) print('Processing: ${p.basename(projectPath)}');
 
-    // Load project-level BuildRunnerConfig from bk.yaml
+    // Load project-level BuildRunnerConfig from buildkit.yaml
     var projectConfig = config;
     final yamlConfig = BuildRunnerConfig.loadFromYaml(projectPath);
     if (yamlConfig != null) {
@@ -533,10 +533,10 @@ class RunnerTool extends ToolBase {
     print('');
     print('Builder filter precedence:');
     print('  1. CLI --include-builders / --exclude-builders');
-    print('  2. Project bk.yaml (build_runner section)');
-    print('  3. Workspace bk_master.yaml (build_runner section)');
+    print('  2. Project buildkit.yaml (build_runner section)');
+    print('  3. Workspace buildkit_master.yaml (build_runner section)');
     print('');
-    print('Configuration (bk.yaml):');
+    print('Configuration (buildkit.yaml):');
     print('  build_runner:');
     print('    command: build          # build, watch, or clean');
     print('    exclude-builders:');
