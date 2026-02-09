@@ -1,6 +1,6 @@
 /// AST Generator CLI - Converts Dart source files to serialized AST YAML files
 ///
-/// Configuration is read from tom_build.yaml (astgen: section).
+/// Configuration is read from buildkit.yaml (astgen: section).
 ///
 /// Usage:
 ///   dart run tom_d4rt_astgen:astgen [options]
@@ -9,7 +9,7 @@
 ///   -p, --project=`<path>`   Process a specific project directory
 ///   -s, --scan=`<path>`      Scan directory for projects to process
 ///   -r, --recursive        Process subprojects recursively
-///   -c, --config=`<path>`    Path to config file (default: tom_build.yaml)
+///   -c, --config=`<path>`    Path to config file (default: buildkit.yaml)
 ///   -v, --verbose          Enable verbose output
 ///   -n, --dry-run          Show what would be done without doing it
 ///   -h, --help             Show this help message
@@ -45,7 +45,7 @@ void main(List<String> args) async {
         help: 'Project(s) to process (comma-separated, globs: tom_*_builder, ./*)')
     ..addOption('scan', abbr: 's', help: 'Scan directory for projects to process')
     ..addFlag('recursive', abbr: 'r', help: 'Process subprojects recursively')
-    ..addOption('config', abbr: 'c', defaultsTo: 'tom_build.yaml', help: 'Path to config file')
+    ..addOption('config', abbr: 'c', defaultsTo: TomBuildConfig.projectFilename, help: 'Path to config file')
     ..addFlag('verbose', abbr: 'v', help: 'Enable verbose output')
     ..addFlag('dry-run', abbr: 'n', help: 'Show what would be done without doing it')
     ..addFlag('list', abbr: 'l', help: 'List projects that would be processed (no action)')
@@ -356,13 +356,13 @@ void _printVersion() {
   }
 }
 
-/// Print the tom_build.yaml section for a project (--show option).
+/// Print the buildkit.yaml section for a project (--show option).
 void _printBuildYamlSection(String projectPath, String workspaceRoot) {
-  final yamlPath = p.join(projectPath, 'tom_build.yaml');
+  final yamlPath = p.join(projectPath, TomBuildConfig.projectFilename);
   final yamlFile = File(yamlPath);
   
   if (!yamlFile.existsSync()) {
-    print('    (no tom_build.yaml)');
+    print('    (no buildkit.yaml)');
     return;
   }
   
@@ -370,22 +370,22 @@ void _printBuildYamlSection(String projectPath, String workspaceRoot) {
     final content = yamlFile.readAsStringSync();
     final rootYaml = loadYaml(content) as YamlMap?;
     if (rootYaml == null) {
-      print('    (empty tom_build.yaml)');
+      print('    (empty buildkit.yaml)');
       return;
     }
     
     // Navigate to astgen section
     final astgenSection = rootYaml['astgen'] as YamlMap?;
     if (astgenSection == null) {
-      print('    (no astgen section in tom_build.yaml)');
+      print('    (no astgen section in buildkit.yaml)');
       return;
     }
     
     // Print the astgen section as YAML
-    print('    tom_build.yaml:');
+    print('    buildkit.yaml:');
     _printYamlNode(astgenSection, indent: 6);
   } catch (e) {
-    print('    (error reading tom_build.yaml: $e)');
+    print('    (error reading buildkit.yaml: $e)');
   }
 }
 

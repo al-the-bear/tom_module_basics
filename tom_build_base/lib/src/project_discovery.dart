@@ -5,6 +5,8 @@ import 'package:glob/list_local_fs.dart';
 import 'package:path/path.dart' as p;
 import 'package:yaml/yaml.dart';
 
+import 'build_config.dart';
+
 /// Enhanced project discovery with proper scan vs recursive behavior.
 /// 
 /// Behavior:
@@ -392,7 +394,7 @@ class ProjectDiscovery {
     }
   }
 
-  /// Check if a project has recursive override in tom_build.yaml.
+  /// Check if a project has recursive override in buildkit.yaml.
   /// 
   /// Looks for:
   /// - `buildkit.recursive: true/false` (global for all tools)
@@ -400,11 +402,11 @@ class ProjectDiscovery {
   /// 
   /// Returns null if not specified (use default), true/false if explicitly set.
   static bool? getProjectRecursiveSetting(String projectPath, String? toolKey) {
-    final tomBuildYaml = File(p.join(projectPath, 'tom_build.yaml'));
-    if (!tomBuildYaml.existsSync()) return null;
+    final buildkitYamlFile = File(p.join(projectPath, TomBuildConfig.projectFilename));
+    if (!buildkitYamlFile.existsSync()) return null;
 
     try {
-      final content = tomBuildYaml.readAsStringSync();
+      final content = buildkitYamlFile.readAsStringSync();
       final yaml = loadYaml(content) as YamlMap?;
       if (yaml == null) return null;
 
@@ -417,9 +419,9 @@ class ProjectDiscovery {
       }
 
       // Check global buildkit setting
-      final buildkitYaml = yaml['buildkit'] as YamlMap?;
-      if (buildkitYaml != null && buildkitYaml.containsKey('recursive')) {
-        return buildkitYaml['recursive'] as bool?;
+      final buildkitSection = yaml['buildkit'] as YamlMap?;
+      if (buildkitSection != null && buildkitSection.containsKey('recursive')) {
+        return buildkitSection['recursive'] as bool?;
       }
     } catch (_) {
       // Ignore errors

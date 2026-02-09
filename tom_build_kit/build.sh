@@ -17,15 +17,15 @@ cd "$SCRIPT_DIR"
 case "$(uname -s)" in
     Darwin)
         case "$(uname -m)" in
-            arm64) PLATFORM_DIR="darwin_arm64" ;;
-            x86_64) PLATFORM_DIR="darwin_x64" ;;
+            arm64) PLATFORM_DIR="darwin-arm64" ;;
+            x86_64) PLATFORM_DIR="darwin-x64" ;;
             *) echo "Unsupported architecture: $(uname -m)"; exit 1 ;;
         esac
         ;;
     Linux)
         case "$(uname -m)" in
-            x86_64) PLATFORM_DIR="linux_x64" ;;
-            aarch64) PLATFORM_DIR="linux_arm64" ;;
+            x86_64) PLATFORM_DIR="linux-x64" ;;
+            aarch64) PLATFORM_DIR="linux-arm64" ;;
             *) echo "Unsupported architecture: $(uname -m)"; exit 1 ;;
         esac
         ;;
