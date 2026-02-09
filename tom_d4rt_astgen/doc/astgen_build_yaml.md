@@ -1,6 +1,15 @@
 # AST Generator Build Configuration
 
-The `astgen` tool uses a two-tier configuration pattern:
+The `astgen` tool uses a two-tier configuration pattern for project discovery and file conversion.
+
+## Related Documentation
+
+This tool uses the shared CLI infrastructure from **tom_build_base**:
+
+- [CLI Tools Navigation](../../tom_build_base/doc/cli_tools_navigation.md) — Standard CLI commands, execution modes, and navigation options
+- [Build Base User Guide](../../tom_build_base/doc/build_base_user_guide.md) — Configuration loading, project discovery, and workspace mode
+
+For CLI usage details, see [tom_build_configuration_and_cli.md](tom_build_configuration_and_cli.md).
 
 ## 1. Project Discovery - tom_build.yaml
 

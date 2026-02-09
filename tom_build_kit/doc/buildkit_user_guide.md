@@ -4,6 +4,13 @@ BuildKit is the pipeline-based build orchestration tool for the Tom workspace. I
 
 For the individual tool reference, see [tools_user_guide.md](tools_user_guide.md).
 
+## Related Documentation
+
+This package extends the shared infrastructure from **tom_build_base**:
+
+- [CLI Tools Navigation](../../tom_build_base/doc/cli_tools_navigation.md) — Standard CLI commands, execution modes, and navigation options
+- [Build Base User Guide](../../tom_build_base/doc/build_base_user_guide.md) — Configuration loading, project discovery, and workspace mode
+
 ---
 
 ## Table of Contents

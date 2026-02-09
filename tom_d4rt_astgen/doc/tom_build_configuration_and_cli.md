@@ -2,6 +2,13 @@
 
 This document covers both the `tom_build.yaml` configuration file and command-line interface options for the Tom D4rt AST Generator tool.
 
+## Related Documentation
+
+This tool uses the shared CLI infrastructure from **tom_build_base**:
+
+- [CLI Tools Navigation](../../tom_build_base/doc/cli_tools_navigation.md) — Standard CLI commands, execution modes, and navigation options
+- [Build Base User Guide](../../tom_build_base/doc/build_base_user_guide.md) — Configuration loading, project discovery, and workspace mode
+
 ## Configuration File: tom_build.yaml
 
 The `tom_build.yaml` file is an optional configuration file placed in the project root that controls project discovery, default CLI options, and AST generation settings for the astgen tool.
