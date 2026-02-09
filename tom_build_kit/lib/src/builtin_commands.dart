@@ -12,6 +12,59 @@ import 'commands/runner_tool.dart';
 import 'commands/dependencies_tool.dart';
 import 'pubget_command.dart';
 
+/// Parse a command string into parts, respecting quoted strings.
+///
+/// Handles both single and double quotes. Quoted strings preserve their
+/// quote characters (needed for dcli expression detection).
+List<String> _parseCommandArgs(String command) {
+  final result = <String>[];
+  final buffer = StringBuffer();
+  String? quoteChar;
+  var escaped = false;
+
+  for (var i = 0; i < command.length; i++) {
+    final char = command[i];
+
+    if (escaped) {
+      buffer.write(char);
+      escaped = false;
+      continue;
+    }
+
+    if (char == r'\') {
+      escaped = true;
+      buffer.write(char);
+      continue;
+    }
+
+    if (quoteChar != null) {
+      // Inside a quoted string
+      buffer.write(char);
+      if (char == quoteChar) {
+        quoteChar = null;
+      }
+    } else if (char == '"' || char == "'") {
+      // Start of quoted string
+      quoteChar = char;
+      buffer.write(char);
+    } else if (char == ' ' || char == '\t') {
+      // Whitespace separator
+      if (buffer.isNotEmpty) {
+        result.add(buffer.toString());
+        buffer.clear();
+      }
+    } else {
+      buffer.write(char);
+    }
+  }
+
+  if (buffer.isNotEmpty) {
+    result.add(buffer.toString());
+  }
+
+  return result;
+}
+
 /// Registry of built-in commands that can be executed within pipelines.
 ///
 /// Most commands run the respective tools directly using their Dart
@@ -72,7 +125,11 @@ class BuiltinCommands {
   /// when no `--project` or `-p` is already specified in the args.
   /// Supports command shorthands (e.g., 'v' → 'versioner' if unique).
   Future<bool> execute(String command) async {
-    final parts = command.trim().split(RegExp(r'\s+'));
+    final parts = _parseCommandArgs(command.trim());
+    if (parts.isEmpty) {
+      print('  Empty command');
+      return false;
+    }
     final rawCmd = parts.first.toLowerCase();
     final cmd = _resolveShorthand(rawCmd);
     if (cmd == null) {
@@ -281,13 +338,15 @@ class BuiltinCommands {
 
     if (isExpression) {
       // Expression mode — always execute.
+      // Strip the outer quotes since Process.run doesn't do shell parsing.
+      final expression = target.substring(1, target.length - 1);
       if (verbose) print('  [builtin] Running dcli expression...');
       if (dryRun) {
-        print('  [DRY RUN] Would run dcli $target ${dcliArgs.join(' ')}'
+        print('  [DRY RUN] Would run dcli "$expression" ${dcliArgs.join(' ')}'
             .trimRight());
         return true;
       }
-      return _executeDcliProcess([target, ...dcliArgs]);
+      return _executeDcliProcess([expression, ...dcliArgs]);
     }
 
     // File mode — resolve path and check existence.
