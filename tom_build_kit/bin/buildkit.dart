@@ -219,15 +219,15 @@ Future<void> main(List<String> args) async {
     return;
   }
 
-  // Handle: buildkit help :<command>
+  // Handle: buildkit help :<command> or buildkit help <command>
   if (results.rest.isNotEmpty && results.rest.first == 'help') {
     if (results.rest.length >= 2) {
       final target = results.rest[1];
-      if (target.startsWith(':')) {
-        final cmdName = target.substring(1);
-        final helpResult = await _runCommandHelp(cmdName);
-        exit(helpResult ? 0 : 1);
-      }
+      // Handle :command syntax (strip the colon)
+      final cmdName =
+          target.startsWith(':') ? target.substring(1) : target;
+      final helpResult = await _runCommandHelp(cmdName);
+      exit(helpResult ? 0 : 1);
     }
     // Plain 'buildkit help' → show main usage
     _printUsage(parser);
