@@ -15,10 +15,10 @@ For the BuildKit pipeline orchestrator, see [buildkit_user_guide.md](buildkit_us
   - [Project Discovery](#project-discovery)
   - [Exclusion Filtering](#exclusion-filtering)
 - [Configuration Files](#configuration-files)
-  - [tom_build_master.yaml](#tom_build_masteryaml)
-  - [tom_build.yaml](#tom_buildyaml)
+  - [bk_master.yaml](#bk_masteryaml)
+  - [bk.yaml](#bkyaml)
   - [build.yaml](#buildyaml)
-  - [tom_build_skip.yaml](#tom_build_skipyaml)
+  - [bk_skip.yaml](#bk_skipyaml)
 - [Config Merge Precedence](#config-merge-precedence)
 - [Tools](#tools)
   - [Versioner](#versioner)
@@ -163,15 +163,15 @@ Pattern type is auto-detected:
 - Patterns without `/` or `**` → match **folder basename** only
 - Patterns with `/` or `**` → match **workspace-relative path**
 
-**Master YAML exclusion:** Additional `exclude-projects` patterns from the `navigation:` section of `tom_build_master.yaml` are merged automatically.
+**Master YAML exclusion:** Additional `exclude-projects` patterns from the `navigation:` section of `bk_master.yaml` are merged automatically.
 
-**Skip marker file:** Projects containing `tom_build_skip.yaml` are skipped. If a parent directory contains the skip file, all child projects are also skipped.
+**Skip marker file:** Projects containing `bk_skip.yaml` are skipped. If a parent directory contains the skip file, all child projects are also skipped.
 
 ---
 
 ## Configuration Files
 
-### tom_build_master.yaml
+### bk_master.yaml
 
 Workspace-level configuration file at the workspace root. Contains pipeline definitions and global navigation settings:
 
@@ -197,7 +197,7 @@ versioner:
   output: lib/src/version.g.dart
 ```
 
-### tom_build.yaml
+### bk.yaml
 
 Project-level configuration file in each project directory. Overrides workspace defaults:
 
@@ -265,13 +265,13 @@ targets:
             - lib/src/version.g.dart
 ```
 
-### tom_build_skip.yaml
+### bk_skip.yaml
 
 A marker file (contents are ignored). When present in a directory, that directory and all subdirectories are excluded from all tool processing.
 
 ```bash
 # Exclude a submodule from all tools
-touch xternal/tom_module_d4rt/tom_build_skip.yaml
+touch xternal/tom_module_d4rt/bk_skip.yaml
 ```
 
 ---
@@ -283,9 +283,9 @@ Configuration is loaded in layers. Higher-priority layers override lower-priorit
 | Priority | Source | Description |
 |----------|--------|-------------|
 | 1 (highest) | **CLI arguments** | Command-line flags and options |
-| 2 | **Project `tom_build.yaml`** | Per-project overrides |
+| 2 | **Project `bk.yaml`** | Per-project overrides |
 | 3 | **Project `build.yaml`** | Builder-specific options |
-| 4 (lowest) | **Workspace `tom_build.yaml` / `tom_build_master.yaml`** | Workspace-level defaults |
+| 4 (lowest) | **Workspace `bk.yaml` / `bk_master.yaml`** | Workspace-level defaults |
 
 **Merge rules:**
 
@@ -318,7 +318,7 @@ buildkit :versioner [tool-options]
 | `--version <ver>` | — | from pubspec | Override version string |
 | `--variable-prefix <name>` | — | — | Prefix for generated class name |
 
-**tom_build.yaml keys (`versioner:`):**
+**bk.yaml keys (`versioner:`):**
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
@@ -356,14 +356,14 @@ class TomToolsVersionInfo {
 
 **Config merge example:**
 
-With workspace `tom_build_master.yaml`:
+With workspace `bk_master.yaml`:
 
 ```yaml
 versioner:
   variable-prefix: testDefault
 ```
 
-And project `tom_build.yaml`:
+And project `bk.yaml`:
 
 ```yaml
 versioner:
@@ -444,7 +444,7 @@ buildkit :cleanup [tool-options]
 | `--force` | `-f` | `false` | Skip safety check on file count |
 | `--max-files <n>` | `-m` | `100` | Maximum files to delete without `--force` |
 
-**tom_build.yaml keys (`cleanup:`):**
+**bk.yaml keys (`cleanup:`):**
 
 | Key | Type | Description |
 |-----|------|-------------|
@@ -670,7 +670,7 @@ buildkit :runner [tool-options]
 | `--release` | — | `false` | Build in release mode |
 | `--delete-conflicting` | — | `true` | Delete conflicting outputs (negatable) |
 
-**tom_build.yaml keys (`build_runner:`):**
+**bk.yaml keys (`build_runner:`):**
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
@@ -686,8 +686,8 @@ buildkit :runner [tool-options]
 | Priority | Source |
 |----------|--------|
 | 1 (highest) | CLI: `--include-builders` / `--exclude-builders` |
-| 2 | Project `tom_build.yaml` → `build_runner` section |
-| 3 (lowest) | Workspace `tom_build.yaml` → `build_runner` section |
+| 2 | Project `bk.yaml` → `build_runner` section |
+| 3 (lowest) | Workspace `bk.yaml` → `build_runner` section |
 
 The effective filter level is the **first level** with a non-empty include or exclude list.
 
@@ -747,7 +747,7 @@ buildkit :dependencies [tool-options]
 | `--all` | `-a` | Show all dependency types (normal + dev) |
 | `--deep` | `-D` | Show recursive dependency tree |
 
-**No YAML configuration.** This tool has no config keys in `tom_build.yaml` — it works on any project with a `pubspec.yaml`.
+**No YAML configuration.** This tool has no config keys in `bk.yaml` — it works on any project with a `pubspec.yaml`.
 
 **Output format:**
 

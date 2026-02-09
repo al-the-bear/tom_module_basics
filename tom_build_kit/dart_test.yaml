@@ -3,6 +3,6 @@
 reporter: expanded
 
 # Run tests sequentially — integration tests modify the same workspace files
-# (tom_build_master.yaml, version.g.dart, etc.) so parallel execution causes
+# (bk_master.yaml, version.g.dart, etc.) so parallel execution causes
 # revertAll() calls from one test file to interfere with another.
 concurrency: 1

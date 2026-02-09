@@ -6,7 +6,7 @@
 ///
 /// ## Configuration
 ///
-/// Pipelines are defined in `tom_build.yaml`:
+/// Pipelines are defined in `bk.yaml`:
 ///
 /// ```yaml
 /// buildkit:
@@ -41,7 +41,7 @@
 /// - `runner` - Run build_runner wrapper
 /// - `cleanup` - Clean build artifacts
 /// - `dependencies` - Show dependency tree
-/// - `<allowed-binary>` - Run an allowed binary (configured in tom_build.yaml)
+/// - `<allowed-binary>` - Run an allowed binary (configured in bk.yaml)
 /// - `shell <command>` - Run shell command (pipeline config only)
 /// - Pipeline names - Call other pipelines
 ///
@@ -52,7 +52,7 @@
 /// via `:command` syntax or as pipeline step commands. To run arbitrary
 /// shell commands, use the `shell ` prefix in pipeline configuration.
 ///
-/// Allowed binaries are configured in tom_build.yaml:
+/// Allowed binaries are configured in bk.yaml:
 ///
 /// ```yaml
 /// buildkit:
@@ -234,12 +234,15 @@ Future<void> main(List<String> args) async {
     return;
   }
 
-  // Handle define and undefine commands (modify YAML and exit)
+  // Handle define, undefine, and defines commands (modify YAML and exit)
   var restArgs = results.rest.toList();
   if (_handleDefineCommand(restArgs, rootPath)) {
     return;
   }
   if (_handleUndefineCommand(restArgs, rootPath)) {
+    return;
+  }
+  if (_handleDefinesCommand(restArgs, rootPath)) {
     return;
   }
 
@@ -332,8 +335,8 @@ Future<void> main(List<String> args) async {
     }
   } else {
     // No explicit --scan, --project, or git flags: load navigation defaults
-    // from tom_build_master.yaml
-    final masterFile = File(p.join(rootPath, 'tom_build_master.yaml'));
+    // from bk_master.yaml
+    final masterFile = File(p.join(rootPath, 'bk_master.yaml'));
     String? navScan;
     var navRecursive = false;
     if (masterFile.existsSync()) {
@@ -532,7 +535,7 @@ void _printUsage(ArgParser parser) {
   print('       buildkit --version            Show version information');
   print('');
   print('Steps can be:');
-  print('  <pipeline>        Run a pipeline defined in tom_build.yaml');
+  print('  <pipeline>        Run a pipeline defined in bk.yaml');
   print('  :<command> [args] Run a tool command directly');
   print('');
   print('Built-in commands:');
@@ -547,7 +550,7 @@ void _printUsage(ArgParser parser) {
   print('  :git            Run git commands in each project directory');
   print('  :dcli           Execute Dart scripts/expressions via dcli');
   print('');
-  print('Allowed binaries (configured in tom_build.yaml buildkit.allowed-binaries):');
+  print('Allowed binaries (configured in bk.yaml buildkit.allowed-binaries):');
   print('  Additional binaries can be executed via :name syntax.');
   print('  Unknown commands that are not built-in, not a pipeline, and not');
   print('  in the allowed-binaries list will cause an error.');
@@ -557,8 +560,9 @@ void _printUsage(ArgParser parser) {
   print('  Ambiguous shorthands (e.g., :c matches compiler, cleanup) are rejected.');
   print('');
   print('Macros:');
-  print('  define <name>=<commands>    Define a reusable macro (saved to tom_build_master.yaml)');
+  print('  define <name>=<commands>    Define a reusable macro (saved to bk_master.yaml)');
   print('  undefine <name>             Remove a macro');
+  print('  defines                     List all defined macros');
   print(r'  $name [args]                Expand macro, replacing $1-$9 with args, $$ with all');
   print('');
   print('Per-tool option override:');
@@ -570,8 +574,8 @@ void _printUsage(ArgParser parser) {
   print(parser.usage);
   print('');
   print('Configuration:');
-  print('  Pipelines are defined in tom_build_master.yaml (workspace) or');
-  print('  tom_build.yaml (project) under the buildkit: key.');
+  print('  Pipelines are defined in bk_master.yaml (workspace) or');
+  print('  bk.yaml (project) under the buildkit: key.');
   print('  Allowed binaries are defined in buildkit.allowed-binaries.');
   print('  See the project documentation for the full pipeline YAML format.');
   print('');
@@ -632,13 +636,13 @@ void _listPipelines(PipelineConfig config) {
   }
 }
 
-/// Find workspace root by looking for tom_build_master.yaml or tom_workspace.yaml.
+/// Find workspace root by looking for bk_master.yaml or tom_workspace.yaml.
 String _findWorkspaceRoot(String startPath) {
   var current = p.normalize(p.absolute(startPath));
   final root = p.rootPrefix(current);
 
   while (current != root) {
-    if (File(p.join(current, 'tom_build_master.yaml')).existsSync() ||
+    if (File(p.join(current, 'bk_master.yaml')).existsSync() ||
         File(p.join(current, 'tom_workspace.yaml')).existsSync() ||
         File(p.join(current, 'tom.code-workspace')).existsSync()) {
       return current;
@@ -653,9 +657,9 @@ String _findWorkspaceRoot(String startPath) {
 // Macro System
 // ============================================================================
 
-/// Load macros from `defines:` section of `tom_build_master.yaml`.
+/// Load macros from `defines:` section of `bk_master.yaml`.
 Map<String, String> _loadMacros(String rootPath) {
-  final masterFile = File(p.join(rootPath, 'tom_build_master.yaml'));
+  final masterFile = File(p.join(rootPath, 'bk_master.yaml'));
   if (!masterFile.existsSync()) return {};
 
   try {
@@ -679,11 +683,11 @@ Map<String, String> _loadMacros(String rootPath) {
   }
 }
 
-/// Save a macro to `defines:` section of `tom_build_master.yaml`.
+/// Save a macro to `defines:` section of `bk_master.yaml`.
 ///
 /// Uses text-based editing to preserve the file's original formatting.
 bool _saveMacro(String rootPath, String name, String value) {
-  final masterFile = File(p.join(rootPath, 'tom_build_master.yaml'));
+  final masterFile = File(p.join(rootPath, 'bk_master.yaml'));
 
   try {
     String content = '';
@@ -734,13 +738,13 @@ bool _saveMacro(String rootPath, String name, String value) {
   }
 }
 
-/// Remove a macro from `defines:` section of `tom_build_master.yaml`.
+/// Remove a macro from `defines:` section of `bk_master.yaml`.
 ///
 /// Uses text-based editing to preserve the file's original formatting.
 bool _removeMacro(String rootPath, String name) {
-  final masterFile = File(p.join(rootPath, 'tom_build_master.yaml'));
+  final masterFile = File(p.join(rootPath, 'bk_master.yaml'));
   if (!masterFile.existsSync()) {
-    print('No macros defined (tom_build_master.yaml not found)');
+    print('No macros defined (bk_master.yaml not found)');
     return false;
   }
 
@@ -923,6 +927,26 @@ bool _handleUndefineCommand(List<String> args, String rootPath) {
       final name = args[i + 1];
       if (_removeMacro(rootPath, name)) {
         print('Removed macro: $name');
+      }
+      return true;
+    }
+  }
+  return false;
+}
+
+/// Handle `defines` command: list all macros and return true if handled.
+bool _handleDefinesCommand(List<String> args, String rootPath) {
+  for (final arg in args) {
+    if (arg == 'defines') {
+      final macros = _loadMacros(rootPath);
+      if (macros.isEmpty) {
+        print('No macros defined.');
+      } else {
+        print('Defined macros:');
+        final maxLen = macros.keys.map((k) => k.length).reduce((a, b) => a > b ? a : b);
+        for (final entry in macros.entries) {
+          print('  \${${entry.key.padRight(maxLen)}} = ${entry.value}');
+        }
       }
       return true;
     }
@@ -1276,7 +1300,7 @@ Future<bool> _runCommandHelp(String commandName) async {
 }
 
 /// Filter project paths by exclude patterns, exclude-projects patterns,
-/// master YAML exclude-projects, and tom_build_skip.yaml marker files.
+/// master YAML exclude-projects, and bk_skip.yaml marker files.
 List<String> _filterProjectPaths(
   List<String> projects, {
   required List<String> exclude,
@@ -1301,7 +1325,7 @@ List<String> _filterProjectPaths(
 
   // Merge CLI --exclude-projects with master YAML navigation section
   final allExcludeProjects = [...excludeProjects];
-  final masterFile = File(p.join(rootPath, 'tom_build_master.yaml'));
+  final masterFile = File(p.join(rootPath, 'bk_master.yaml'));
   if (masterFile.existsSync()) {
     try {
       final content = masterFile.readAsStringSync();
@@ -1342,7 +1366,7 @@ List<String> _filterProjectPaths(
     }).toList();
   }
 
-  // Remove projects that contain tom_build_skip.yaml
+  // Remove projects that contain bk_skip.yaml
   result = result.where((projectPath) {
     if (ProjectDiscovery.hasSkipFile(projectPath)) {
       if (_verbose) {

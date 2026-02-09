@@ -9,10 +9,10 @@ import 'package:yaml/yaml.dart';
 import '../version.g.dart';
 
 /// Filename for the workspace-level build configuration.
-const kTomBuildMasterYaml = 'tom_build_master.yaml';
+const kBkMasterYaml = 'bk_master.yaml';
 
 /// Filename for the project-level build configuration.
-const kTomBuildYaml = 'tom_build.yaml';
+const kBkYaml = 'bk.yaml';
 
 /// Filename that marks a directory (and all subdirectories) as excluded
 /// from buildkit processing.
@@ -20,14 +20,14 @@ const kTomBuildYaml = 'tom_build.yaml';
 /// When present in a directory, no tool will process that directory or
 /// any of its children. If the directory is a git repository root,
 /// tests will also skip git commit/checkout operations for it.
-const kTomBuildSkipYaml = 'tom_build_skip.yaml';
+const kBkSkipYaml = 'bk_skip.yaml';
 
 /// Base class for all integrated build tools.
 ///
 /// Provides common infrastructure: argument parsing, project discovery,
 /// config loading, verbose/dry-run support, and shared utility methods.
 abstract class ToolBase {
-  /// Tool key used in tom_build.yaml (e.g., 'cleanup', 'versioner').
+  /// Tool key used in bk.yaml (e.g., 'cleanup', 'versioner').
   String get toolKey;
 
   /// Short description for help text.
@@ -102,14 +102,14 @@ abstract class ToolBase {
   /// Find projects based on common config fields.
   ///
   /// The [excludeProjects] patterns are merged with any `exclude-projects`
-  /// defined in the `navigation:` section of `tom_build_master.yaml`.
+  /// defined in the `navigation:` section of `bk_master.yaml`.
   ///
   /// When [project] is specified and is not a glob pattern, validates
   /// that the path exists. Returns an empty list and prints an error
   /// if the path does not exist.
   ///
   /// When neither [project] nor [scan] is provided, loads navigation
-  /// defaults from `tom_build_master.yaml` (`navigation:` section).
+  /// defaults from `bk_master.yaml` (`navigation:` section).
   /// If the master config defines `scan:`, that is used as the default;
   /// otherwise falls back to processing only the current directory.
   Future<List<String>> findProjects({
@@ -190,7 +190,7 @@ abstract class ToolBase {
     final wsRoot = findWorkspaceRoot(basePath);
     results = _filterProjectsByName(results, allExcludeProjects, wsRoot);
 
-    // Remove projects that contain tom_build_skip.yaml
+    // Remove projects that contain bk_skip.yaml
     results = _filterSkippedProjects(results);
 
     return results;
@@ -206,7 +206,7 @@ abstract class ToolBase {
   }
 
   /// Load navigation defaults (scan, recursive, exclude, recursion-exclude)
-  /// from `tom_build_master.yaml`'s `navigation:` section.
+  /// from `bk_master.yaml`'s `navigation:` section.
   ///
   /// Returns null if no master config or no navigation section is found.
   _NavigationDefaults? _loadNavigationDefaults(String basePath) {
@@ -272,7 +272,7 @@ abstract class ToolBase {
     }).toList();
   }
 
-  /// Remove projects that contain a [kTomBuildSkipYaml] file.
+  /// Remove projects that contain a [kBkSkipYaml] file.
   ///
   /// Also checks all parent directories up to (but not above) the workspace
   /// root — if any ancestor has the skip file, the project is excluded.
@@ -280,7 +280,7 @@ abstract class ToolBase {
     return projects.where((projectPath) {
       if (hasSkipFile(projectPath)) {
         if (verbose) {
-          print('  Skipping ($kTomBuildSkipYaml): $projectPath');
+          print('  Skipping ($kBkSkipYaml): $projectPath');
         }
         return false;
       }
@@ -288,9 +288,9 @@ abstract class ToolBase {
     }).toList();
   }
 
-  /// Check if a directory contains a [kTomBuildSkipYaml] file.
+  /// Check if a directory contains a [kBkSkipYaml] file.
   static bool hasSkipFile(String dirPath) {
-    return File(p.join(dirPath, kTomBuildSkipYaml)).existsSync();
+    return File(p.join(dirPath, kBkSkipYaml)).existsSync();
   }
 
   /// Validate path containment and print error if invalid.
@@ -324,7 +324,7 @@ abstract class ToolBase {
   // ---------------------------------------------------------------------------
 
   /// Find the workspace root by traversing upwards looking for
-  /// `tom_build_master.yaml` or `tom_workspace.yaml`.
+  /// `bk_master.yaml` or `tom_workspace.yaml`.
   ///
   /// Returns the directory containing the workspace config, or [startPath]
   /// if none is found.
@@ -333,7 +333,7 @@ abstract class ToolBase {
     final root = p.rootPrefix(current);
 
     while (current != root) {
-      if (File(p.join(current, kTomBuildMasterYaml)).existsSync() ||
+      if (File(p.join(current, kBkMasterYaml)).existsSync() ||
           File(p.join(current, 'tom_workspace.yaml')).existsSync() ||
           File(p.join(current, 'tom.code-workspace')).existsSync()) {
         return current;
@@ -344,14 +344,14 @@ abstract class ToolBase {
     return startPath;
   }
 
-  /// Load the workspace-level master config ([kTomBuildMasterYaml]).
+  /// Load the workspace-level master config ([kBkMasterYaml]).
   ///
   /// Traverses up from [startDir] to find the workspace root,
-  /// then loads `tom_build_master.yaml` from there.
+  /// then loads `bk_master.yaml` from there.
   /// Returns null if not found.
   static YamlMap? loadMasterConfig(String startDir) {
     final wsRoot = findWorkspaceRoot(startDir);
-    final file = File(p.join(wsRoot, kTomBuildMasterYaml));
+    final file = File(p.join(wsRoot, kBkMasterYaml));
     if (!file.existsSync()) return null;
     try {
       final content = file.readAsStringSync();
@@ -365,9 +365,9 @@ abstract class ToolBase {
   // Shared YAML utilities
   // ---------------------------------------------------------------------------
 
-  /// Load tom_build.yaml from a directory, returning the parsed YAML map.
+  /// Load bk.yaml from a directory, returning the parsed YAML map.
   YamlMap? loadTomBuildYaml(String dir) {
-    final file = File('$dir/tom_build.yaml');
+    final file = File('$dir/bk.yaml');
     if (!file.existsSync()) return null;
     try {
       final content = file.readAsStringSync();
@@ -411,11 +411,11 @@ abstract class ToolBase {
     }
   }
 
-  /// Print a tom_build.yaml section for a specific key (for --show).
+  /// Print a bk.yaml section for a specific key (for --show).
   void printTomBuildYamlSection(String projectPath, String sectionKey) {
-    final file = File('$projectPath/tom_build.yaml');
+    final file = File('$projectPath/bk.yaml');
     if (!file.existsSync()) {
-      print('  No tom_build.yaml found');
+      print('  No bk.yaml found');
       return;
     }
     try {
@@ -423,18 +423,18 @@ abstract class ToolBase {
       final yaml = loadYaml(content) as YamlMap?;
       final section = yaml?[sectionKey];
       if (section == null) {
-        print('  No $sectionKey section in tom_build.yaml');
+        print('  No $sectionKey section in bk.yaml');
         return;
       }
-      print('  tom_build.yaml ($sectionKey):');
+      print('  bk.yaml ($sectionKey):');
       printYamlNode(section, indent: 2);
     } catch (e) {
-      print('  Error reading tom_build.yaml: $e');
+      print('  Error reading bk.yaml: $e');
     }
   }
 }
 
-/// Navigation defaults loaded from `tom_build_master.yaml`.
+/// Navigation defaults loaded from `bk_master.yaml`.
 class _NavigationDefaults {
   final String? scan;
   final bool recursive;

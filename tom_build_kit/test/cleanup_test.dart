@@ -12,7 +12,7 @@ import 'helpers/test_workspace.dart';
 /// Integration tests for the cleanup tool.
 ///
 /// Target project: `_build` (has `cleanup: ['**/version.g.dart']` in its
-/// tom_build.yaml, and `_build/lib/src/version.g.dart` exists as a
+/// bk.yaml, and `_build/lib/src/version.g.dart` exists as a
 /// tracked file that gets restored by `git checkout -- .`).
 void main() {
   late TestWorkspace ws;
@@ -120,14 +120,14 @@ void main() {
     return absPath;
   }
 
-  /// Modify _build/tom_build.yaml with custom content.
+  /// Modify _build/bk.yaml with custom content.
   ///
   /// The original file is restored by `revertAll()` (git checkout -- .).
   void setBuildConfig(String yamlContent) {
     final configPath =
-        p.join(ws.workspaceRoot, '_build', 'tom_build.yaml');
+        p.join(ws.workspaceRoot, '_build', 'bk.yaml');
     File(configPath).writeAsStringSync(yamlContent);
-    print('    📝 Modified _build/tom_build.yaml');
+    print('    📝 Modified _build/bk.yaml');
   }
 
   // ---------------------------------------------------------------------------
@@ -160,7 +160,7 @@ void main() {
 
       final stdout = (result.stdout as String);
       expect(result.exitCode, equals(0));
-      // Should show the cleanup glob pattern from _build/tom_build.yaml
+      // Should show the cleanup glob pattern from _build/bk.yaml
       expect(stdout, contains('version.g.dart'),
           reason: 'Should display the cleanup glob pattern');
       log.expectation(
@@ -214,7 +214,7 @@ void main() {
     test('excludes patterns prevent deletion', () async {
       log.start('CLN_EXC01', 'excludes prevent deletion');
 
-      // Modify _build/tom_build.yaml: broad pattern with exclude for
+      // Modify _build/bk.yaml: broad pattern with exclude for
       // version.g.dart — version.g.dart should survive, temp file should not.
       setBuildConfig('''
 # Modified by integration test — CLN_EXC01

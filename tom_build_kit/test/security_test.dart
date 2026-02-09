@@ -134,10 +134,10 @@ void main() {
         () async {
       log.start('SEC_CMD01', 'pipeline rejects unknown commands');
 
-      // Write a minimal tom_build_master.yaml with a pipeline containing
+      // Write a minimal bk_master.yaml with a pipeline containing
       // an unknown/dangerous command (no 'shell ' prefix).
       final masterYaml =
-          p.join(ws.workspaceRoot, 'tom_build_master.yaml');
+          p.join(ws.workspaceRoot, 'bk_master.yaml');
       final yamlContent = '''
 navigation:
   exclude:
@@ -158,7 +158,7 @@ buildkit:
             - "rm -rf /"
 ''';
       File(masterYaml).writeAsStringSync(yamlContent);
-      print('    📝 Wrote tom_build_master.yaml with test-malicious pipeline');
+      print('    📝 Wrote bk_master.yaml with test-malicious pipeline');
 
       // --project BEFORE pipeline name (bug #15: flags after pipeline ignored)
       final result = await ws.runPipeline(

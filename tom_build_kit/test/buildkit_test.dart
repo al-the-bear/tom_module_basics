@@ -5,7 +5,7 @@
 ///
 /// Test IDs: BKT_LST01, BKT_HLP01, BKT_CMD01, BKT_PIP01, BKT_DRY01,
 ///           BKT_DRY02, BKT_OPT01, BKT_SHL01, BKT_XPJ01, BKT_XPJ02,
-///           BKT_ERR01, BKT_ERR02
+///           BKT_ERR01, BKT_ERR02, BKT_MAC01, BKT_MAC02, BKT_MAC03
 @TestOn('!browser')
 @Timeout(Duration(seconds: 180))
 library;
@@ -329,6 +329,66 @@ void main() {
               'Output: ${combined.substring(0, combined.length.clamp(0, 300))}');
 
       log.expectation('reports error', isError);
+    });
+  });
+
+  group('macros', () {
+    test('defines shows no macros when none defined', () async {
+      log.start('BKT_MAC01', 'defines with no macros');
+      final result = await ws.runPipeline('defines', []);
+      log.capture('buildkit defines', result);
+
+      final stdout = (result.stdout as String);
+      expect(result.exitCode, equals(0));
+      expect(stdout, contains('No macros defined'),
+          reason: 'Should show "No macros defined" message');
+      log.expectation('shows no macros', stdout.contains('No macros defined'));
+    });
+
+    test('define creates a macro and defines lists it', () async {
+      log.start('BKT_MAC02', 'define and list macro');
+
+      // Define a macro
+      var result = await ws.runPipeline('define', ['test=:versioner --list']);
+      log.capture('buildkit define test=:versioner --list', result);
+      expect(result.exitCode, equals(0));
+      expect((result.stdout as String), contains('Defined macro: test'),
+          reason: 'Should confirm macro was defined');
+
+      // List macros
+      result = await ws.runPipeline('defines', []);
+      log.capture('buildkit defines', result);
+      final stdout = (result.stdout as String);
+      expect(result.exitCode, equals(0));
+      expect(stdout, contains('test'),
+          reason: 'Should list the test macro');
+      expect(stdout, contains(':versioner'),
+          reason: 'Should show macro value');
+      log.expectation('macro listed', stdout.contains('test'));
+    });
+
+    test('undefine removes a macro', () async {
+      log.start('BKT_MAC03', 'undefine removes macro');
+
+      // Define a macro first
+      var result = await ws.runPipeline('define', ['removeme=:cleanup']);
+      log.capture('buildkit define removeme=:cleanup', result);
+      expect(result.exitCode, equals(0));
+
+      // Undefine it
+      result = await ws.runPipeline('undefine', ['removeme']);
+      log.capture('buildkit undefine removeme', result);
+      expect(result.exitCode, equals(0));
+      expect((result.stdout as String), contains('Removed macro: removeme'),
+          reason: 'Should confirm macro was removed');
+
+      // Verify it's gone
+      result = await ws.runPipeline('defines', []);
+      log.capture('buildkit defines', result);
+      final stdout = (result.stdout as String);
+      expect(stdout, isNot(contains('removeme')),
+          reason: 'Macro should be removed from list');
+      log.expectation('macro removed', !stdout.contains('removeme'));
     });
   });
 }

@@ -40,8 +40,8 @@ Tracked issues from the tool consolidation (5 standalone tools → tom_build_kit
 - Files: `cleanup_tool.dart`, `versioner_tool.dart`, `compiler_tool.dart`, `runner_tool.dart`, `buildkit.dart`
 
 ### 5. Per-project config loading gaps
-- [x] CompilerTool `processProject()` — now loads per-project `tom_build.yaml` before `build.yaml`
-- [x] RunnerTool `processProject()` — now loads per-project `BuildRunnerConfig` from `tom_build.yaml`; uses `projectConfig` throughout
+- [x] CompilerTool `processProject()` — now loads per-project `bk.yaml` before `build.yaml`
+- [x] RunnerTool `processProject()` — now loads per-project `BuildRunnerConfig` from `bk.yaml`; uses `projectConfig` throughout
 - [x] DependenciesTool — loads no config (CLI-only); acceptable since it reads `pubspec.yaml` directly
 - Files: `compiler_tool.dart`, `runner_tool.dart`
 
@@ -64,7 +64,7 @@ Tracked issues from the tool consolidation (5 standalone tools → tom_build_kit
 - [x] `_runCommandSection()`: `${current-platform}` now resolves to `PlatformUtils.vsCodeToDartTarget(currentPlatform)` (Dart target format)
 - Files: `compiler_tool.dart`
 
-### 8. Runner — tom_build.yaml key and builder filtering
+### 8. Runner — bk.yaml key and builder filtering
 - [x] `BuildRunnerConfig.loadFromYaml()` reads `build_runner:` key (was `runner:`)
 - [x] `BuilderFilterConfig.loadFromBuildYaml()` reads `tom_build_kit` top-level key (was `tom_build_runner`)
 - [x] Builder filtering uses fuzzy substring matching (`b.contains(include) || include.contains(b)`)
@@ -74,7 +74,7 @@ Tracked issues from the tool consolidation (5 standalone tools → tom_build_kit
 ### 9. Cleanup — builder behavior and YAML parsing
 - [x] `CleanupBuilder.build()` stays validation-only — actual cleanup is done by CLI tool (CleanupTool). This is correct since build_runner builders should not delete files outside build cache.
 - [x] `CleanupConfig.loadFromYaml()` now handles both `YamlMap` (nested `cleanup:` key) and direct `YamlList` format
-- [x] Global `excludes:` parsing from `tom_build.yaml` already implemented in map format
+- [x] Global `excludes:` parsing from `bk.yaml` already implemented in map format
 - Files: `cleanup_tool.dart`, `builders/cleanup_builder.dart`
 
 ### 10. Dependencies — path resolution
@@ -86,7 +86,7 @@ Tracked issues from the tool consolidation (5 standalone tools → tom_build_kit
 ## Documentation
 
 ### 11. Create tools_user_guide.md
-- [x] Common configuration section (shared CLI options, tom_build.yaml structure, build.yaml structure)
+- [x] Common configuration section (shared CLI options, bk.yaml structure, build.yaml structure)
 - [x] Per-tool sections: cleanup, compiler, dependencies, runner, versioner
 - [x] BuildKit orchestrator section with pipelines, direct commands, per-tool override
 - [x] Table of contents with links

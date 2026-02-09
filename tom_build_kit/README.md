@@ -4,7 +4,7 @@ Pipeline-based build orchestration for the Tom workspace. Run build pipelines an
 
 ## Features
 
-- **Pipeline execution** - Define and run named build pipelines from `tom_build.yaml`
+- **Pipeline execution** - Define and run named build pipelines from `bk.yaml`
 - **Direct commands** - Run build tools directly with `:command` syntax
 - **Sequential execution** - Mix pipelines and commands in a single invocation
 - **Project scanning** - Run pipelines across multiple projects
@@ -76,7 +76,7 @@ buildkit build --project='./*'
 
 ## Pipeline Configuration
 
-Define pipelines in `tom_build.yaml`:
+Define pipelines in `bk.yaml`:
 
 ```yaml
 buildkit:

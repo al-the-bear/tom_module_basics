@@ -5,17 +5,17 @@ import 'package:yaml/yaml.dart';
 
 import 'yaml_utils.dart';
 
-/// Configuration loaded from tom_build.yaml for a specific tool.
+/// Configuration loaded from bk.yaml for a specific tool.
 /// 
 /// This class provides shared CLI configuration options that are common
 /// across Tom build tools. Tool-specific options are accessible via
 /// [toolOptions].
 class TomBuildConfig {
   /// Filename for the workspace-level build configuration.
-  static const masterFilename = 'tom_build_master.yaml';
+  static const masterFilename = 'bk_master.yaml';
 
   /// Filename for the project-level build configuration.
-  static const projectFilename = 'tom_build.yaml';
+  static const projectFilename = 'bk.yaml';
   /// Path to a single project directory.
   final String? project;
   
@@ -63,9 +63,9 @@ class TomBuildConfig {
     this.toolOptions = const {},
   });
 
-  /// Load configuration from tom_build.yaml file for a specific tool.
+  /// Load configuration from bk.yaml file for a specific tool.
   /// 
-  /// [dir] - Directory containing tom_build.yaml
+  /// [dir] - Directory containing bk.yaml
   /// [toolKey] - The tool's section key in the YAML (e.g., 'versioner')
   /// 
   /// Returns null if:
@@ -82,9 +82,9 @@ class TomBuildConfig {
     );
   }
 
-  /// Load configuration from tom_build_master.yaml for a specific tool.
+  /// Load configuration from bk_master.yaml for a specific tool.
   /// 
-  /// [dir] - Directory containing tom_build_master.yaml
+  /// [dir] - Directory containing bk_master.yaml
   /// [toolKey] - The tool's section key in the YAML
   /// 
   /// Returns null if not found or invalid.

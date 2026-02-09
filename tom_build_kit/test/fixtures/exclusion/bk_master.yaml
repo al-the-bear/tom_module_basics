@@ -1,4 +1,4 @@
-# Test fixture: tom_build_master.yaml for project exclusion tests.
+# Test fixture: bk_master.yaml for project exclusion tests.
 #
 # Uses --scan to discover multiple projects so we can test:
 # - --exclude-projects with basename patterns

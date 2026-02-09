@@ -6,7 +6,7 @@ This package provides the common foundation that Tom CLI build tools (like `tom_
 
 ## Features
 
-- **Configuration loading** — Two-tier config from `tom_build_master.yaml` (workspace) and `tom_build.yaml` (project), with automatic merging
+- **Configuration loading** — Two-tier config from `bk_master.yaml` (workspace) and `bk.yaml` (project), with automatic merging
 - **Configuration merging** — `ConfigMerger` with additive, scalar, nullable, section, and map merge strategies
 - **Project scanning** — `ProjectScanner` for directory traversal with custom validators, glob matching, and exclusions
 - **Project discovery** — `ProjectDiscovery` for workspace-wide scanning with proper scan-vs-recursive semantics
@@ -149,7 +149,7 @@ exit(result.hasFailures ? 1 : 0);
 
 Tom build tools use a two-tier configuration pattern:
 
-### tom_build_master.yaml (workspace root)
+### bk_master.yaml (workspace root)
 
 ```yaml
 navigation:                   # shared defaults for all tools
@@ -161,7 +161,7 @@ show_versions:                # tool-specific workspace defaults
   verbose: false
 ```
 
-### tom_build.yaml (inside a project)
+### bk.yaml (inside a project)
 
 ```yaml
 show_versions:
