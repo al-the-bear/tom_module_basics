@@ -229,13 +229,13 @@ class TomBuildConfig {
   }
 }
 
-/// Check if a directory has tom_build.yaml with a specific tool section.
+/// Check if a directory has buildkit.yaml with a specific tool section.
 ///
 /// Returns true if the tool key is present in the YAML, even if the value
 /// is null (bare key like `cleanup:` with no sub-keys). This allows tools
 /// to be activated with just the key present, using workspace or default config.
 bool hasTomBuildConfig(String dirPath, String toolKey) {
-  final yamlPath = p.join(dirPath, 'tom_build.yaml');
+  final yamlPath = p.join(dirPath, TomBuildConfig.projectFilename);
   final yamlFile = File(yamlPath);
   if (!yamlFile.existsSync()) return false;
 
