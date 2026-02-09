@@ -129,6 +129,9 @@ class _ExecutionStep {
 }
 
 Future<void> main(List<String> args) async {
+  // Pre-process args to handle -R without argument (bare root flag)
+  final (processedArgs, bareRootFlag) = _preprocessRootFlag(args);
+
   final parser = ArgParser(allowTrailingOptions: false)
     ..addFlag('help', abbr: 'h', negatable: false, help: 'Show this help')
     ..addFlag('version', abbr: 'V', negatable: false, help: 'Show version')
@@ -147,10 +150,14 @@ Future<void> main(List<String> args) async {
         abbr: 'o',
         negatable: false,
         help: 'Scan git repos, process outermost (shallowest) first (for pull/fetch)')
+    ..addFlag('workspace-recursion',
+        abbr: 'w',
+        negatable: false,
+        help: 'Shell out to sub-workspaces instead of skipping')
     ..addOption('scan',
         abbr: 's', help: 'Scan directory for projects to run pipeline in')
     ..addOption('root',
-        abbr: 'R', help: 'Root directory for configuration lookup')
+        abbr: 'R', help: 'Workspace root (bare: detected, path: specified workspace)')
     ..addOption('project',
         abbr: 'p',
         help: 'Project(s) to run (comma-separated, globs: tom_*_builder, ./*)')
@@ -166,12 +173,19 @@ Future<void> main(List<String> args) async {
 
   ArgResults results;
   try {
-    results = parser.parse(args);
+    results = parser.parse(processedArgs);
   } catch (e) {
     print('Error: $e');
     print('');
     _printUsage(parser);
     exit(1);
+  }
+
+  // Handle 'version' as first argument (like standalone tools)
+  if (processedArgs.isNotEmpty &&
+      (processedArgs.first.toLowerCase() == 'version')) {
+    print('Build Kit $_version');
+    return;
   }
 
   if (results['help'] as bool) {
@@ -187,15 +201,100 @@ Future<void> main(List<String> args) async {
   _verbose = results['verbose'] as bool;
   final dryRun = results['dry-run'] as bool;
   final listPipelines = results['list'] as bool;
-  final recursive = results['recursive'] as bool;
+  var recursive = results['recursive'] as bool;
   final innerFirstGit = results['inner-first-git'] as bool;
   final outerFirstGit = results['outer-first-git'] as bool;
-  final scanPath = results['scan'] as String?;
+  final workspaceRecursion = results['workspace-recursion'] as bool;
+  var scanPath = results['scan'] as String?;
+  final rootArg = results['root'] as String?;
 
   // Validate mutual exclusivity of git scan flags
   if (innerFirstGit && outerFirstGit) {
     print('Error: --inner-first-git and --outer-first-git are mutually exclusive.');
     exit(1);
+  }
+
+  // Determine execution mode: PROJECT or WORKSPACE
+  // Workspace mode triggers:
+  // - bareRootFlag (-R without path)
+  // - rootArg with path that has buildkit_master.yaml
+  // - scanPath that is not "."
+  // - innerFirstGit or outerFirstGit
+  final currentDir = Directory.current.path;
+  String executionRoot;
+  String rootPath;
+  bool isWorkspaceMode = false;
+
+  if (bareRootFlag) {
+    // Bare -R: workspace mode from detected workspace root
+    isWorkspaceMode = true;
+    executionRoot = _findWorkspaceRoot(currentDir);
+    rootPath = executionRoot;
+    if (_verbose) {
+      print('[workspace-mode] Bare -R: executing from $executionRoot');
+    }
+  } else if (rootArg != null) {
+    // -R <path>: workspace mode in specified directory
+    final specifiedPath = p.isAbsolute(rootArg)
+        ? rootArg
+        : p.normalize(p.join(currentDir, rootArg));
+    if (!Directory(specifiedPath).existsSync()) {
+      print('Error: Specified workspace path does not exist: $rootArg');
+      exit(1);
+    }
+    if (!File(p.join(specifiedPath, 'buildkit_master.yaml')).existsSync()) {
+      print('Error: Specified path is not a workspace (no buildkit_master.yaml): $rootArg');
+      exit(1);
+    }
+    isWorkspaceMode = true;
+    executionRoot = specifiedPath;
+    rootPath = specifiedPath;
+    if (_verbose) {
+      print('[workspace-mode] -R $rootArg: executing from $executionRoot');
+    }
+  } else if (innerFirstGit || outerFirstGit) {
+    // Git traversal: workspace mode from detected workspace root
+    isWorkspaceMode = true;
+    executionRoot = _findWorkspaceRoot(currentDir);
+    rootPath = executionRoot;
+    if (_verbose) {
+      print('[workspace-mode] Git traversal: executing from $executionRoot');
+    }
+  } else if (scanPath != null && scanPath != '.') {
+    // Explicit scan path (not "."): workspace mode
+    isWorkspaceMode = true;
+    executionRoot = _findWorkspaceRoot(currentDir);
+    rootPath = executionRoot;
+    if (_verbose) {
+      print('[workspace-mode] Scan path $scanPath: executing from $executionRoot');
+    }
+  } else {
+    // Project mode: current directory
+    isWorkspaceMode = false;
+    executionRoot = currentDir;
+    rootPath = _findWorkspaceRoot(currentDir);
+    if (_verbose) {
+      print('[project-mode] Executing from $executionRoot');
+    }
+  }
+
+  // Apply default flags for project mode (if no explicit scan/project)
+  final projectArg = results['project'] as String?;
+  final buildOrder = results['build-order'] as bool;
+
+  if (!isWorkspaceMode && scanPath == null && projectArg == null &&
+      !innerFirstGit && !outerFirstGit) {
+    // Project mode defaults: --scan . --recursive --build-order
+    scanPath = '.';
+    recursive = true;
+    // Note: build-order is handled separately below
+  }
+
+  // In workspace mode with bare -R, also apply defaults
+  if (isWorkspaceMode && bareRootFlag && scanPath == null && projectArg == null &&
+      !innerFirstGit && !outerFirstGit) {
+    scanPath = '.';
+    recursive = true;
   }
 
   // Warn if known global flags appear after the pipeline/command name.
@@ -204,13 +303,9 @@ Future<void> main(List<String> args) async {
   // results.rest and are silently ignored. (Issue #15)
   _warnOnMisplacedFlags(results.rest);
 
-  // Determine root directory
-  final currentDir = Directory.current.path;
-  final rootPath = results['root'] as String? ?? _findWorkspaceRoot(currentDir);
-
   // Load pipeline configuration from root
   final pipelineConfig = PipelineConfig.load(
-    projectPath: currentDir,
+    projectPath: executionRoot,
     rootPath: rootPath,
   );
 
@@ -270,16 +365,22 @@ Future<void> main(List<String> args) async {
   // Determine projects to run on
   List<String> projectPaths;
   final discovery = ProjectDiscovery(verbose: _verbose);
-  final projectArg = results['project'] as String?;
+
+  // Use executionRoot as base for scanning in workspace mode
+  final scanBase = isWorkspaceMode ? executionRoot : currentDir;
 
   if (scanPath != null) {
     // Scan for projects using shared ProjectDiscovery
-    final scanDir = p.isAbsolute(scanPath) ? scanPath : p.join(currentDir, scanPath);
+    final scanDir = p.isAbsolute(scanPath) ? scanPath : p.join(scanBase, scanPath);
     projectPaths = await discovery.scanForProjects(
       scanDir,
       recursive: recursive,
       toolKey: 'buildkit',
     );
+    // Filter out workspace boundaries (sub-workspaces) unless -w is set  
+    if (!workspaceRecursion) {
+      projectPaths = projectPaths.where((path) => !_isWorkspaceBoundary(path)).toList();
+    }
     if (projectPaths.isEmpty) {
       print('No projects found in: $scanDir');
       exit(1);
@@ -287,7 +388,7 @@ Future<void> main(List<String> args) async {
     print('Found ${projectPaths.length} project(s) to process');
     if (_verbose) {
       for (final path in projectPaths) {
-        print('  - ${p.relative(path, from: currentDir)}');
+        print('  - ${p.relative(path, from: scanBase)}');
       }
     }
   } else if (innerFirstGit || outerFirstGit) {
@@ -409,24 +510,18 @@ Future<void> main(List<String> args) async {
     exit(1);
   }
 
-  // Apply build-order sorting if requested
-  final buildOrder = results['build-order'] as bool;
-  if (buildOrder) {
-    // Build-order requires workspace root context for a complete dependency graph
-    if (currentDir != rootPath) {
-      print('Error: --build-order must be used from the workspace root.');
-      print('  Current directory: $currentDir');
-      print('  Workspace root:    $rootPath');
-      print('');
-      print('Change to the workspace root directory and try again.');
-      exit(1);
-    }
+  // Apply build-order sorting if requested (or default in project mode)
+  var effectiveBuildOrder = buildOrder;
+  // In project mode with defaults, also enable build order
+  if (!isWorkspaceMode && !buildOrder && scanPath == '.' && projectArg == null) {
+    effectiveBuildOrder = true;
+  }
 
-    // Scan ALL workspace projects for the dependency graph — exclusions must
-    // not affect graph construction, otherwise the order could be incorrect
-    // or unresolvable.
+  if (effectiveBuildOrder) {
+    // Build-order now works from execution root (not just workspace root)
+    // Scan ALL projects under execution root for the dependency graph
     final allProjects = await discovery.scanForProjects(
-      rootPath,
+      executionRoot,
       recursive: true,
       toolKey: 'buildkit',
     );
@@ -444,7 +539,21 @@ Future<void> main(List<String> args) async {
     if (_verbose) {
       print('Build order:');
       for (var i = 0; i < projectPaths.length; i++) {
-        print('  ${i + 1}. ${p.relative(projectPaths[i], from: currentDir)}');
+        print('  ${i + 1}. ${p.relative(projectPaths[i], from: scanBase)}');
+      }
+    }
+  }
+
+  // Collect sub-workspaces to process with -w flag
+  final subWorkspaces = <String>[];
+  if (workspaceRecursion) {
+    // Find sub-workspaces that were filtered out earlier
+    for (final dir in Directory(scanBase).listSync(recursive: recursive)) {
+      if (dir is Directory && _isWorkspaceBoundary(dir.path)) {
+        // Don't include the execution root itself
+        if (p.normalize(dir.path) != p.normalize(executionRoot)) {
+          subWorkspaces.add(dir.path);
+        }
       }
     }
   }
@@ -514,6 +623,28 @@ Future<void> main(List<String> args) async {
     processedCount++;
   }
 
+  // Process sub-workspaces if -w flag is set
+  var subWorkspaceCount = 0;
+  var subWorkspaceFailed = 0;
+  if (workspaceRecursion && subWorkspaces.isNotEmpty) {
+    print('');
+    print('Processing ${subWorkspaces.length} sub-workspace(s)...');
+
+    for (final subWs in subWorkspaces) {
+      final result = await _shellOutToSubWorkspace(
+        subWs,
+        steps,
+        verbose: _verbose,
+        dryRun: dryRun,
+      );
+      subWorkspaceCount++;
+      if (!result) {
+        success = false;
+        subWorkspaceFailed++;
+      }
+    }
+  }
+
   print('');
   print('=' * 60);
   print('Build Kit Summary');
@@ -521,6 +652,12 @@ Future<void> main(List<String> args) async {
   print('Projects processed: $processedCount');
   if (failedCount > 0) {
     print('Projects failed: $failedCount');
+  }
+  if (subWorkspaceCount > 0) {
+    print('Sub-workspaces processed: $subWorkspaceCount');
+    if (subWorkspaceFailed > 0) {
+      print('Sub-workspaces failed: $subWorkspaceFailed');
+    }
   }
   print('Status: ${success ? 'SUCCESS' : 'FAILED'}');
 
@@ -532,7 +669,17 @@ void _printUsage(ArgParser parser) {
   print('');
   print('Usage: buildkit [options] <pipeline|:command> [args...] [<pipeline|:command> [args...]]...');
   print('       buildkit help :<command>      Show help for a built-in command');
+  print('       buildkit version              Show version information');
   print('       buildkit --version            Show version information');
+  print('');
+  print('Execution Modes:');
+  print('  Project Mode (default):   Runs from current directory with -s . -r -b defaults');
+  print('  Workspace Mode:           Runs from workspace root (triggered by -R, -s <path>, -i, -o)');
+  print('');
+  print('  -R alone triggers workspace mode from detected workspace root.');
+  print('  -R <path> runs in specified workspace (must have buildkit_master.yaml).');
+  print('  Sub-workspaces (containing buildkit_master.yaml) are skipped by default.');
+  print('  Use -w to shell out and process sub-workspaces recursively.');
   print('');
   print('Steps can be:');
   print('  <pipeline>        Run a pipeline defined in buildkit.yaml');
@@ -582,22 +729,16 @@ void _printUsage(ArgParser parser) {
   print('  See the project documentation for the full pipeline YAML format.');
   print('');
   print('Examples:');
-  print('  buildkit build                      # Run build pipeline');
-  print('  buildkit clean build                # Run clean then build');
-  print('  buildkit :versioner :compiler       # Run versioner then compiler');
-  print('  buildkit build :cleanup --force     # Run build, then cleanup with --force');
-  print('  buildkit :pubgetall                 # Run pub get on all projects');
-  print('  buildkit :pubgetall --errors        # Show only projects with errors');
-  print('  buildkit help :compiler             # Show compiler help');
+  print('  buildkit :versioner :compiler       # Project mode: build current project');
+  print('  buildkit -R :versioner :compiler    # Workspace mode: build from workspace root');
+  print('  buildkit -R xternal/mod :compiler   # Workspace mode: build in sub-workspace');
+  print('  buildkit -w -R :compiler            # Workspace mode: include sub-workspaces');
+  print('  buildkit -p myproj :compiler        # Filter to specific project');
+  print('  buildkit -s devops :compiler        # Workspace mode: scan devops/ folder');
+  print('  buildkit -i :git commit -m "msg"    # Git commit all repos (inner first)');
+  print('  buildkit -o :git pull --rebase      # Git pull all repos (outer first)');
+  print('  buildkit help :compiler             # Show compiler command help');
   print('  buildkit --list                     # List available pipelines');
-  print('  buildkit -v build                   # Run build with verbose output');
-  print('  buildkit -n deploy                  # Dry-run deploy pipeline');
-  print('  buildkit build --scan .             # Run build in projects under current dir');
-  print('  buildkit build -s . -r              # Run build recursively in all projects');
-  print('  buildkit -i :git add -A :git commit -m "msg"  # Commit all repos (inner first)');
-  print('  buildkit -o :git pull --rebase       # Pull all repos (outer first)');
-  print('  buildkit :dcli ~s/build_hook.dart     # Run workspace script (if it exists)');
-  print('  buildkit :dcli "print(DateTime.now())" # Run expression in every project');
 }
 
 void _listPipelines(PipelineConfig config) {
@@ -1443,11 +1584,13 @@ const _knownGlobalFlags = {
   '--recursive', '-r',
   '--inner-first-git', '-i',
   '--outer-first-git', '-o',
+  '--workspace-recursion', '-w',
   '--scan', '-s',
   '--project', '-p',
   '--root', '-R',
   '--exclude', '-x',
   '--exclude-projects',
+  '--build-order', '-b',
   '--list', '-l',
   '--help', '-h',
 };
@@ -1465,4 +1608,135 @@ void _warnOnMisplacedFlags(List<String> rest) {
   print('   Move them BEFORE the pipeline name. Example:');
   print('     buildkit ${misplaced.join(' ')} <pipeline>');
   print('');
+}
+
+/// Pre-process arguments to handle bare -R/--root (without path argument).
+///
+/// When -R or --root appears without a following path argument (or followed
+/// by another flag or command), we set a flag indicating "bare root mode"
+/// and remove the -R/--root so the parser doesn't fail.
+///
+/// Returns a tuple of (processed args, bareRootFlag).
+(List<String>, bool) _preprocessRootFlag(List<String> args) {
+  final processed = <String>[];
+  var bareRoot = false;
+
+  for (var i = 0; i < args.length; i++) {
+    final arg = args[i];
+
+    if (arg == '-R' || arg == '--root') {
+      // Check if next arg exists and is a path (not a flag or command)
+      if (i + 1 < args.length) {
+        final next = args[i + 1];
+        if (!next.startsWith('-') && !next.startsWith(':') && !_isPipelineOrCommand(next)) {
+          // Has path argument, keep both
+          processed.add(arg);
+          processed.add(next);
+          i++; // Skip next arg
+          continue;
+        }
+      }
+      // No path argument - this is bare -R
+      bareRoot = true;
+      // Don't add -R to processed args (skip it)
+      continue;
+    } else if (arg.startsWith('-R') && arg.length > 2) {
+      // Handle -R<path> form (e.g., -R/some/path)
+      processed.add(arg);
+      continue;
+    } else if (arg.startsWith('--root=')) {
+      // Handle --root=<path> form
+      processed.add(arg);
+      continue;
+    }
+
+    processed.add(arg);
+  }
+
+  return (processed, bareRoot);
+}
+
+/// Check if an argument looks like a pipeline name or command.
+bool _isPipelineOrCommand(String arg) {
+  // Commands start with ':'
+  if (arg.startsWith(':')) return true;
+  // Pipelines are typically lowercase words without special chars
+  // If it's a valid path (contains / or \), it's not a pipeline
+  if (arg.contains('/') || arg.contains('\\')) return false;
+  // Check if it matches known builtin command names
+  if (_builtinCommandNames.contains(arg.toLowerCase())) return true;
+  // Otherwise assume it could be a pipeline name if it's a simple word
+  return RegExp(r'^[a-zA-Z][a-zA-Z0-9_-]*$').hasMatch(arg);
+}
+
+/// Check if a directory is a workspace boundary (has buildkit_master.yaml).
+bool _isWorkspaceBoundary(String dirPath) {
+  return File(p.join(dirPath, 'buildkit_master.yaml')).existsSync();
+}
+
+/// Shell out buildkit to a sub-workspace.
+///
+/// Runs `bk <commands>` in the sub-workspace directory with the given
+/// command arguments (without traversal flags).
+Future<bool> _shellOutToSubWorkspace(
+  String subWorkspacePath,
+  List<_ExecutionStep> steps, {
+  bool verbose = false,
+  bool dryRun = false,
+}) async {
+  final relativePath = p.relative(subWorkspacePath, from: Directory.current.path);
+  print('');
+  print('═' * 60);
+  print('Entering sub-workspace: $relativePath');
+  print('═' * 60);
+
+  // Build command args from steps (without traversal flags)
+  final commandArgs = <String>[];
+  if (verbose) commandArgs.add('-v');
+  if (dryRun) commandArgs.add('-n');
+
+  for (final step in steps) {
+    if (step.isCommand) {
+      commandArgs.add(':${step.name}');
+    } else {
+      commandArgs.add(step.name);
+    }
+    commandArgs.addAll(step.args);
+  }
+
+  if (dryRun) {
+    print('[dry-run] Would run: bk ${commandArgs.join(' ')}');
+    print('');
+    print('═' * 60);
+    print('Leaving sub-workspace: $relativePath');
+    print('═' * 60);
+    return true;
+  }
+
+  // Find bk executable
+  final bkPath = Platform.resolvedExecutable.contains('dart')
+      ? 'bk' // Use PATH
+      : Platform.resolvedExecutable; // Use same executable
+
+  final result = await Process.run(
+    bkPath,
+    commandArgs,
+    workingDirectory: subWorkspacePath,
+    runInShell: true,
+  );
+
+  // Print output
+  if (result.stdout.toString().isNotEmpty) {
+    print(result.stdout);
+  }
+  if (result.stderr.toString().isNotEmpty) {
+    stderr.write(result.stderr);
+  }
+
+  print('');
+  print('═' * 60);
+  print('Leaving sub-workspace: $relativePath (exit: ${result.exitCode})');
+  print('═' * 60);
+
+  return result.exitCode == 0;
 }

@@ -13,6 +13,10 @@ For the individual tool reference, see [tools_user_guide.md](tools_user_guide.md
 - [Command Line Usage](#command-line-usage)
   - [Options](#options)
   - [Project Selection](#project-selection)
+- [Execution Modes](#execution-modes)
+  - [Project Mode](#project-mode)
+  - [Workspace Mode](#workspace-mode)
+  - [Sub-Workspace Handling](#sub-workspace-handling)
 - [Execution Steps](#execution-steps)
   - [Pipelines](#pipelines)
   - [Direct Commands](#direct-commands)
@@ -104,9 +108,12 @@ Usage: buildkit [options] <pipeline|:command> [args...] [<pipeline|:command> [ar
 | `--list` | `-l` | List available pipelines |
 | `--scan <dir>` | `-s` | Scan directory for projects |
 | `--recursive` | `-r` | Scan directories recursively |
+| `--build-order` | `-b` | Sort projects in dependency build order |
 | `--project <path>` | `-p` | Project(s) to run on |
-| `--root <dir>` | `-R` | Root directory for configuration lookup |
-| `--git-scan` | `-g` | Scan for git repositories instead of build projects |
+| `--root [dir]` | `-R` | Workspace root (bare: detected, path: specified workspace) |
+| `--workspace-recursion` | `-w` | Shell out to sub-workspaces instead of skipping |
+| `--inner-first-git` | `-i` | Scan git repos, process innermost (deepest) first |
+| `--outer-first-git` | `-o` | Scan git repos, process outermost (shallowest) first |
 | `--exclude <pattern>` | `-x` | Exclude patterns — path-based globs (multi-option) |
 | `--exclude-projects <pattern>` | — | Exclude projects by name or path (multi-option) |
 
@@ -126,6 +133,71 @@ The `--project` option supports multiple specification methods:
 | Recursive from current | `--project='./**/*'` |
 
 Without `--project` or `--scan`, BuildKit operates on the current directory.
+
+---
+
+## Execution Modes
+
+BuildKit has two execution modes that affect default behavior and how projects are discovered.
+
+### Project Mode
+
+**Project Mode** is the default when running BuildKit without traversal options. It operates on the current directory with sensible defaults applied:
+
+```bash
+# These are equivalent in project mode:
+buildkit :versioner :compiler
+buildkit --scan . --recursive --build-order :versioner :compiler
+```
+
+Default behavior in Project Mode:
+- Scans from current directory (`--scan .`)
+- Scans recursively (`--recursive`)
+- Processes projects in dependency order (`--build-order`)
+
+### Workspace Mode
+
+**Workspace Mode** is triggered when using any traversal option:
+
+| Trigger | Description |
+|---------|-------------|
+| `-R` (bare) | Run from detected workspace root |
+| `-R <path>` | Run in specified workspace (must have `buildkit_master.yaml`) |
+| `-s <path>` | Scan from specified directory (when path ≠ "`.`") |
+| `-i` | Scan git repos innermost first |
+| `-o` | Scan git repos outermost first |
+
+In Workspace Mode:
+- No automatic defaults are applied
+- You explicitly control scanning behavior
+- Sub-workspaces are skipped by default
+
+```bash
+# Workspace mode examples:
+buildkit -R :compiler                     # Run from workspace root
+buildkit -R xternal/mod :compiler         # Run in sub-workspace
+buildkit -s devops -r :versioner          # Scan specific folder
+```
+
+### Sub-Workspace Handling
+
+Sub-workspaces are directories containing `buildkit_master.yaml`. They represent separate workspaces that may have their own build configuration.
+
+**Default behavior:** Sub-workspaces are skipped during recursive scans, similar to `buildkit_skip.yaml`.
+
+**To process sub-workspaces:** Use the `-w` / `--workspace-recursion` flag to shell out to each sub-workspace:
+
+```bash
+# Process all workspaces including sub-workspaces
+buildkit -w -R :versioner :compiler
+
+# What happens:
+# 1. BuildKit runs in the main workspace
+# 2. For each sub-workspace, it shells out: bk :versioner :compiler
+# 3. Each sub-workspace uses its own buildkit_master.yaml configuration
+```
+
+This ensures each workspace is processed with its own configuration context.
 
 ---
 
