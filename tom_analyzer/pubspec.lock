@@ -448,6 +448,13 @@ packages:
       relative: true
     source: path
     version: "1.0.0"
+  tom_build_base:
+    dependency: "direct main"
+    description:
+      path: "../tom_build_base"
+      relative: true
+    source: path
+    version: "1.4.0"
   tom_d4rt_ast:
     dependency: "direct main"
     description:

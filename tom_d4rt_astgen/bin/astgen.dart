@@ -4,15 +4,29 @@
 ///
 /// Usage:
 ///   dart run tom_d4rt_astgen:astgen [options]
+///   astgen [options]
+///   buildkit :astgen [options]
 ///
-/// Options:
-///   -p, --project=`<path>`   Process a specific project directory
-///   -s, --scan=`<path>`      Scan directory for projects to process
-///   -r, --recursive        Process subprojects recursively
+/// Tool Options:
 ///   -c, --config=`<path>`    Path to config file (default: buildkit.yaml)
 ///   -v, --verbose          Enable verbose output
 ///   -n, --dry-run          Show what would be done without doing it
+///   -l, --list             List projects that would be processed (no action)
+///   --show                 With --list, show tom_build.yaml configuration
 ///   -h, --help             Show this help message
+///
+/// Navigation Options (common to all Tom build tools):
+///   -s, --scan=`<path>`      Scan directory for projects
+///   -r, --recursive        Scan directories recursively
+///   -b, --build-order      Sort projects in dependency build order
+///   -p, --project=`<pattern>` Project(s) to run (comma-separated, globs supported)
+///   -R, --root             Workspace root (bare: detected, path: specified)
+///   -w, --workspace-recursion  Shell out to sub-workspaces
+///   -i, --inner-first-git  Scan git repos, process innermost first
+///   -o, --outer-first-git  Scan git repos, process outermost first
+///   -x, --exclude          Exclude patterns (path-based globs)
+///   --exclude-projects     Exclude projects by name or path
+///   --recursion-exclude    Exclude patterns during recursive scan
 library;
 
 import 'dart:io';
@@ -30,21 +44,23 @@ import 'package:tom_d4rt_astgen/tom_d4rt_astgen.dart';
 const toolKey = 'astgen';
 
 void main(List<String> args) async {
+  // Check for help command first (before parsing)
+  if (isHelpCommand(args)) {
+    _printUsage(null);
+    exit(0);
+  }
+
   // Check for version command first (before parsing)
-  if (args.isNotEmpty && 
-      (args[0] == 'version' || 
-       args[0] == '-version' || 
-       args[0] == '--version')) {
+  if (isVersionCommand(args)) {
     _printVersion();
     exit(0);
   }
 
+  // Preprocess args for bare -R detection
+  final (processedArgs, bareRoot) = preprocessRootFlag(args);
+
   final parser = ArgParser()
-    ..addOption('project',
-        abbr: 'p',
-        help: 'Project(s) to process (comma-separated, globs: tom_*_builder, ./*)')
-    ..addOption('scan', abbr: 's', help: 'Scan directory for projects to process')
-    ..addFlag('recursive', abbr: 'r', help: 'Process subprojects recursively')
+    // Tool-specific options
     ..addOption('config', abbr: 'c', defaultsTo: TomBuildConfig.projectFilename, help: 'Path to config file')
     ..addFlag('verbose', abbr: 'v', help: 'Enable verbose output')
     ..addFlag('dry-run', abbr: 'n', help: 'Show what would be done without doing it')
@@ -53,10 +69,13 @@ void main(List<String> args) async {
         help: 'With --list, show tom_build.yaml configuration for each project',
         negatable: false)
     ..addFlag('help', abbr: 'h', negatable: false, help: 'Show this help message');
+  
+  // Add standard navigation options
+  addNavigationOptions(parser);
 
   final ArgResults results;
   try {
-    results = parser.parse(args);
+    results = parser.parse(processedArgs);
     
     // Check for unexpected arguments
     if (results.rest.isNotEmpty) {
@@ -75,38 +94,31 @@ void main(List<String> args) async {
     exit(0);
   }
 
-  final basePath = Directory.current.path;
-  final dryRun = results['dry-run'] as bool;
-
-  // Load config from tom_build.yaml
-  var config = TomBuildConfig.load(dir: basePath, toolKey: toolKey);
-
-  // Override with command-line args
-  config = (config ?? const TomBuildConfig()).copyWith(
-    project: results['project'] as String?,
-    scan: results['scan'] as String?,
-    recursive: results['recursive'] as bool,
-    verbose: results['verbose'] as bool,
-  );
-
-  // Validate paths
-  final pathError = validatePathContainment(
-    project: config.project,
-    projects: config.projects,
-    scan: config.scan,
-    basePath: basePath,
-  );
-  if (pathError != null) {
-    print('Error: $pathError');
+  // Parse navigation options
+  final navArgs = parseNavigationArgs(results, bareRoot: bareRoot);
+  final currentDir = Directory.current.path;
+  
+  // Resolve execution root based on navigation mode
+  String executionRoot;
+  try {
+    executionRoot = resolveExecutionRoot(navArgs, currentDir: currentDir);
+  } on ArgumentError catch (e) {
+    print('Error: ${e.message}');
     exit(1);
   }
 
-  // Find projects to process
-  final projects = await _findProjects(config, basePath);
+  final verbose = results['verbose'] as bool;
+  final dryRun = results['dry-run'] as bool;
+
+  // Apply defaults (--scan . --recursive --build-order) if no explicit navigation
+  final effectiveNavArgs = navArgs.withDefaults();
+
+  // Find projects to process using navigation args
+  final projects = await _findProjects(effectiveNavArgs, executionRoot, verbose);
 
   if (projects.isEmpty) {
     print('No projects found to process.');
-    if (config.verbose) {
+    if (verbose) {
       print('Tip: Create a tom_build.yaml with an "astgen:" section or use --project option');
     }
     exit(0);
@@ -116,7 +128,7 @@ void main(List<String> args) async {
   final listOnly = results['list'] as bool;
   final showConfig = results['show'] as bool;
   if (listOnly) {
-    final workspaceRoot = ProjectDiscovery.findWorkspaceRoot(basePath);
+    final workspaceRoot = ProjectDiscovery.findWorkspaceRoot(executionRoot);
     print('Astgen projects (${projects.length}):');
     for (final project in projects) {
       final relativePath = p.relative(project, from: workspaceRoot);
@@ -137,17 +149,17 @@ void main(List<String> args) async {
   final result = ProcessingResult();
   for (final projectPath in projects) {
     // Show project being processed
-    final displayPath = p.relative(projectPath, from: basePath);
+    final displayPath = p.relative(projectPath, from: executionRoot);
     print('  $displayPath');
 
-    if (config.verbose) {
+    if (verbose) {
       print('=' * 60);
     }
 
     final success = await _processProject(
       projectPath,
       results['config'] as String,
-      config.verbose,
+      verbose,
       dryRun,
     );
 
@@ -167,28 +179,32 @@ void main(List<String> args) async {
   }
 }
 
-/// Find projects to process based on configuration
-Future<List<String>> _findProjects(TomBuildConfig config, String basePath) async {
-  final discovery = ProjectDiscovery(verbose: config.verbose);
+/// Find projects to process based on navigation args
+Future<List<String>> _findProjects(
+  WorkspaceNavigationArgs navArgs,
+  String basePath,
+  bool verbose,
+) async {
+  final discovery = ProjectDiscovery(verbose: verbose);
 
   // Project pattern(s) specified (supports comma-separated, globs, ./* etc.)
-  if (config.project != null) {
+  if (navArgs.project != null) {
     return discovery.resolveProjectPatterns(
-      config.project!,
+      navArgs.project!,
       basePath: basePath,
       projectFilter: _isAstgenProject,
     );
   }
 
   // Scan directory for projects
-  if (config.scan != null) {
-    final scanPath = p.isAbsolute(config.scan!)
-        ? config.scan!
-        : p.join(basePath, config.scan!);
+  if (navArgs.scan != null) {
+    final scanPath = p.isAbsolute(navArgs.scan!)
+        ? navArgs.scan!
+        : p.join(basePath, navArgs.scan!);
 
     final allProjects = await discovery.scanForProjects(
       scanPath,
-      recursive: config.recursive,
+      recursive: navArgs.recursive,
       toolKey: toolKey,
     );
 
@@ -441,14 +457,44 @@ void _printYamlNode(dynamic node, {int indent = 0}) {
   }
 }
 
-void _printUsage(ArgParser parser) {
-  print('AST Generator CLI - Converts Dart source files to serialized AST YAML files');
+void _printUsage(ArgParser? parser) {
+  // Print header
+  for (final line in getToolHelpHeader(
+    toolName: 'Astgen',
+    toolDescription: 'Converts Dart source files to serialized AST YAML files',
+    usagePatterns: [
+      'astgen [options]',
+      'dart run tom_d4rt_astgen:astgen [options]',
+      'astgen help',
+      'astgen version',
+    ],
+  )) {
+    print(line);
+  }
+
+  print('Tool Options:');
+  if (parser != null) {
+    // Only print non-navigation options from parser
+    print('  -c, --config=<path>  Path to config file (default: buildkit.yaml)');
+    print('  -v, --verbose        Enable verbose output');
+    print('  -n, --dry-run        Show what would be done without doing it');
+    print('  -l, --list           List projects that would be processed (no action)');
+    print('      --show           With --list, show tom_build.yaml configuration');
+    print('  -h, --help           Show this help message');
+  } else {
+    print('  -c, --config=<path>  Path to config file (default: buildkit.yaml)');
+    print('  -v, --verbose        Enable verbose output');
+    print('  -n, --dry-run        Show what would be done without doing it');
+    print('  -l, --list           List projects that would be processed (no action)');
+    print('      --show           With --list, show tom_build.yaml configuration');
+    print('  -h, --help           Show this help message');
+  }
   print('');
-  print('Usage: dart run tom_d4rt_astgen:astgen [options]');
+
+  // Print navigation options
+  printNavigationOptionsHelp();
   print('');
-  print('Options:');
-  print(parser.usage);
-  print('');
+
   print('Configuration:');
   print('  Reads from tom_build.yaml file with the following structure:');
   print('');
@@ -461,6 +507,12 @@ void _printUsage(ArgParser parser) {
   print('Output:');
   print('  Generated files have the extension .ast.yaml');
   print('  Example: my_tool.dart -> my_tool.ast.yaml');
+  print('');
+
+  // Print footer with examples
+  for (final line in getToolHelpFooter(toolName: 'astgen')) {
+    print(line);
+  }
   print('');
   print('Documentation:');
   print('  See doc/astgen_build_yaml.md for full configuration options');

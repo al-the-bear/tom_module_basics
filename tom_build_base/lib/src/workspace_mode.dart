@@ -420,3 +420,121 @@ String resolveExecutionRoot(
   // Project mode or no -R: use current directory
   return currentDir;
 }
+
+// =============================================================================
+// CLI Commands (help, version)
+// =============================================================================
+
+/// Check if the first argument is a help command.
+///
+/// Returns true if `args[0]` is 'help', '-help', '-h', or '--help'.
+/// Note: ArgParser also handles '-h' and '--help' flags, but this allows
+/// `<tool> help` as a standalone command.
+bool isHelpCommand(List<String> args) {
+  if (args.isEmpty) return false;
+  final first = args.first.toLowerCase();
+  return first == 'help' || first == '-help' || first == '-h' || first == '--help';
+}
+
+/// Check if the first argument is a version command.
+///
+/// Returns true if `args[0]` is 'version', '-version', '-V', or '--version'.
+bool isVersionCommand(List<String> args) {
+  if (args.isEmpty) return false;
+  final first = args.first.toLowerCase();
+  return first == 'version' || first == '-version' || first == '-v' || first == '--version';
+}
+
+// =============================================================================
+// Navigation Options Usage Text
+// =============================================================================
+
+/// Returns the standard navigation options help text.
+///
+/// This is used to generate consistent help output across all Tom build tools.
+/// The text describes the execution modes and all navigation options.
+///
+/// [toolName] is the name of the tool (e.g., 'astgen', 'd4rtgen', 'versioner').
+/// [toolDescription] is a brief description of what the tool does.
+/// [additionalUsageLines] are extra usage patterns specific to the tool.
+List<String> getNavigationOptionsHelpLines() {
+  return [
+    'Execution Modes:',
+    '  Project Mode (default):   Runs from current directory with -s . -r -b defaults',
+    '  Workspace Mode:           Runs from workspace root (triggered by -R, -s <path>, -i, -o)',
+    '',
+    '  -R alone triggers workspace mode from detected workspace root.',
+    '  -R <path> runs in specified workspace (must have buildkit_master.yaml).',
+    '  Sub-workspaces (containing buildkit_master.yaml) are skipped by default.',
+    '  Use -w to shell out and process sub-workspaces recursively.',
+    '',
+    'Navigation Options:',
+    '  -s, --scan=<path>         Scan directory for projects',
+    '  -r, --recursive           Scan directories recursively',
+    '  -b, --build-order         Sort projects in dependency build order',
+    '  -p, --project=<pattern>   Project(s) to run (comma-separated, globs supported)',
+    '  -R, --root[=<path>]       Workspace root (bare: detected, path: specified)',
+    '  -w, --workspace-recursion Shell out to sub-workspaces instead of skipping',
+    '  -i, --inner-first-git     Scan git repos, process innermost (deepest) first',
+    '  -o, --outer-first-git     Scan git repos, process outermost (shallowest) first',
+    '  -x, --exclude=<glob>      Exclude patterns (path-based globs)',
+    '      --exclude-projects=<pattern>  Exclude projects by name or path',
+    '      --recursion-exclude=<glob>    Exclude patterns during recursive scan',
+  ];
+}
+
+/// Prints the navigation options help text to stdout.
+void printNavigationOptionsHelp() {
+  for (final line in getNavigationOptionsHelpLines()) {
+    print(line);
+  }
+}
+
+/// Generates a complete help header for a Tom build tool.
+///
+/// Returns a list of lines that form the standard help output header.
+///
+/// [toolName] is the name of the tool (e.g., 'Astgen', 'D4rtgen').
+/// [toolDescription] is a brief description of what the tool does.
+/// [usagePatterns] are the usage patterns specific to the tool.
+List<String> getToolHelpHeader({
+  required String toolName,
+  required String toolDescription,
+  required List<String> usagePatterns,
+}) {
+  final lines = <String>[
+    '$toolName - $toolDescription',
+    '',
+    'Usage:',
+  ];
+  
+  for (final pattern in usagePatterns) {
+    lines.add('  $pattern');
+  }
+  
+  lines.add('');
+  return lines;
+}
+
+/// Generates the standard footer for help output.
+///
+/// Includes examples and notes common to all Tom build tools.
+List<String> getToolHelpFooter({String? toolName}) {
+  final name = toolName?.toLowerCase() ?? 'tool';
+  return [
+    '',
+    'Default Behavior:',
+    '  When no explicit navigation options are provided, applies:',
+    '    --scan . --recursive --build-order',
+    '',
+    'Examples:',
+    '  $name                        # Process current project tree',
+    '  $name -R                     # Process from workspace root',
+    '  $name -R -l                  # List all projects in workspace',
+    '  $name -p "tom_*" -r          # Process projects matching pattern',
+    '  $name -s packages/ -r        # Scan packages/ recursively',
+    '  $name help                   # Show this help',
+    '  $name version                # Show version information',
+  ];
+}
+

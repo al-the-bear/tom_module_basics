@@ -307,6 +307,110 @@ Display help message with all available options.
 dart run tom_d4rt_astgen:astgen --help
 ```
 
+### Workspace Navigation Options
+
+These options provide consistent workspace traversal behavior across all Tom build tools (astgen, d4rtgen, versioner, compiler, etc.).
+
+#### `-R, --root [path]`
+
+Run from the workspace root. When used without a path argument (bare `-R`), the tool automatically detects the workspace root by looking for `tom_workspace.yaml`, `tom.code-workspace`, or `buildkit_master.yaml`. When used with a path, specifies the workspace root explicitly.
+
+**Examples:**
+```bash
+# Auto-detect workspace root
+dart run tom_d4rt_astgen:astgen -R -l
+
+# Specify workspace root
+dart run tom_d4rt_astgen:astgen -R /path/to/workspace -r
+```
+
+**Use case:** Run the tool from any subdirectory while processing the entire workspace.
+
+#### `-b, --build-order`
+
+Sort projects in dependency build order before processing. Projects that depend on others will be processed after their dependencies.
+
+**Examples:**
+```bash
+dart run tom_d4rt_astgen:astgen --scan=. --recursive --build-order
+dart run tom_d4rt_astgen:astgen -R -b
+```
+
+**Use case:** Ensure dependent projects are processed in the correct order.
+
+#### `-w, --workspace-recursion`
+
+Shell out to sub-workspaces instead of skipping them. Sub-workspaces are directories containing their own `buildkit_master.yaml`.
+
+**Examples:**
+```bash
+dart run tom_d4rt_astgen:astgen -R -w
+```
+
+**Use case:** Process projects across sub-workspaces in a multi-workspace setup.
+
+#### `-i, --inner-first-git`
+
+Scan for git repositories and process the innermost (deepest nested) repository first.
+
+**Examples:**
+```bash
+dart run tom_d4rt_astgen:astgen --scan=. -i
+```
+
+**Use case:** Process nested git repos depth-first.
+
+#### `-o, --outer-first-git`
+
+Scan for git repositories and process the outermost (shallowest) repository first.
+
+**Examples:**
+```bash
+dart run tom_d4rt_astgen:astgen --scan=. -o
+```
+
+**Use case:** Process git repos in breadth-first order.
+
+#### `-x, --exclude <pattern>`
+
+Exclude patterns (path-based globs). Can be specified multiple times.
+
+**Examples:**
+```bash
+dart run tom_d4rt_astgen:astgen -R -x '**/test/**' -x '**/example/**'
+```
+
+#### `--exclude-projects <pattern>`
+
+Exclude projects by name or path. More specific than `--exclude`, matching project names rather than paths.
+
+**Examples:**
+```bash
+dart run tom_d4rt_astgen:astgen -R --exclude-projects='zom_*,test_*'
+dart run tom_d4rt_astgen:astgen --exclude-projects='xternal/tom_module_basics/*'
+```
+
+#### `--recursion-exclude <pattern>`
+
+Glob patterns to exclude during recursive directory traversal.
+
+**Examples:**
+```bash
+dart run tom_d4rt_astgen:astgen --scan=. --recursion-exclude='**/.git/**'
+```
+
+### Default Behavior
+
+When no explicit navigation options are provided, the tool applies these defaults:
+- `--scan .` (scan current directory)
+- `--recursive` (enabled)
+- `--build-order` (enabled)
+
+This means running `astgen` without arguments is equivalent to:
+```bash
+dart run tom_d4rt_astgen:astgen --scan=. --recursive --build-order
+```
+
 ## Configuration Priority
 
 When the same option is specified in multiple places, the priority order is:

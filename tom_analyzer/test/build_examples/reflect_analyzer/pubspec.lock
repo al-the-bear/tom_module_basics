@@ -360,6 +360,13 @@ packages:
       relative: true
     source: path
     version: "1.0.0"
+  tom_analyzer_model:
+    dependency: transitive
+    description:
+      path: "../../../../tom_analyzer_model"
+      relative: true
+    source: path
+    version: "1.0.0"
   tom_d4rt_ast:
     dependency: transitive
     description:

@@ -2,11 +2,9 @@
 // coverage:ignore-file
 import 'package:tom_analyzer/tom_analyzer.dart' as ta;
 import 'package:dart_overview/classes/declarations/run_declarations.dart' as lib0;
-import 'package:dart_overview/dart_overview.dart' as lib1;
-import 'package:dart_overview/enums/basics/run_basics.dart' as lib2;
-import 'package:dart_overview/generics/generic_classes/run_generic_classes.dart' as lib3;
-import 'package:dart_overview/run_dart_overview.dart' as lib4;
-import 'package:reflect_dart_overview/main.dart' as lib5;
+import 'package:dart_overview/enums/basics/run_basics.dart' as lib1;
+import 'package:dart_overview/generics/generic_classes/run_generic_classes.dart' as lib2;
+import 'package:dart_overview/run_dart_overview.dart' as lib3;
 
 final _classes = <String, ta.ClassDescriptor>{
 'package:dart_overview/classes/declarations/run_declarations.dart.BankAccount': ta.ClassDescriptor(
@@ -709,7 +707,7 @@ ta.ParameterDescriptor(name: 'b',typeQualifiedName: 'dart:core.double',isRequire
       invoke: null,
     ),
   },
-  isInstance: (Object instance) => instance is lib2.MathOperation,
+  isInstance: (Object instance) => instance is lib1.MathOperation,
 ),
 'package:dart_overview/generics/generic_classes/run_generic_classes.dart.Box': ta.ClassDescriptor(
   name: 'Box',
@@ -737,7 +735,7 @@ ta.TypeParameterDescriptor(name: 'T',boundQualifiedName: null,variance: null,)
     isConst: false,
     declaringClassQualifiedName: null,
     annotations: const [],
-    getInstance: (Object instance) => (instance as lib3.Box).value,
+    getInstance: (Object instance) => (instance as lib2.Box).value,
     setInstance: null,
     getStatic: null,
     setStatic: null,
@@ -760,10 +758,10 @@ ta.TypeParameterDescriptor(name: 'T',boundQualifiedName: null,variance: null,)
 ta.ParameterDescriptor(name: 'value',typeQualifiedName: 'T',isRequired: true,isNamed: false,isPositional: true,hasDefaultValue: false,defaultValue: null,annotations: const [],)
 ],
       annotations: const [],
-      invoke: (List<dynamic> positional, Map<Symbol, dynamic> named) => Function.apply(lib3.Box.new, positional, named),
+      invoke: (List<dynamic> positional, Map<Symbol, dynamic> named) => Function.apply(lib2.Box.new, positional, named),
     ),
   },
-  isInstance: (Object instance) => instance is lib3.Box,
+  isInstance: (Object instance) => instance is lib2.Box,
 ),
 'package:dart_overview/generics/generic_classes/run_generic_classes.dart.Maybe': ta.ClassDescriptor(
   name: 'Maybe',
@@ -793,7 +791,7 @@ ta.TypeParameterDescriptor(name: 'T',boundQualifiedName: null,variance: null,)
 ta.ParameterDescriptor(name: 'defaultValue',typeQualifiedName: 'T',isRequired: true,isNamed: false,isPositional: true,hasDefaultValue: false,defaultValue: null,annotations: const [],)
 ],
     annotations: const [],
-    invokeOn: (Object instance, List<dynamic> positional, Map<Symbol, dynamic> named) => Function.apply((instance as lib3.Maybe).getOrElse, positional, named),
+    invokeOn: (Object instance, List<dynamic> positional, Map<Symbol, dynamic> named) => Function.apply((instance as lib2.Maybe).getOrElse, positional, named),
     invokeStatic: null,
   ),
   'map': ta.MethodDescriptor(
@@ -810,7 +808,7 @@ ta.TypeParameterDescriptor(name: 'R',boundQualifiedName: null,variance: null,)
 ta.ParameterDescriptor(name: 'f',typeQualifiedName: 'R Function(T)',isRequired: true,isNamed: false,isPositional: true,hasDefaultValue: false,defaultValue: null,annotations: const [],)
 ],
     annotations: const [],
-    invokeOn: (Object instance, List<dynamic> positional, Map<Symbol, dynamic> named) => Function.apply((instance as lib3.Maybe).map, positional, named),
+    invokeOn: (Object instance, List<dynamic> positional, Map<Symbol, dynamic> named) => Function.apply((instance as lib2.Maybe).map, positional, named),
     invokeStatic: null,
   ),
   },
@@ -824,7 +822,7 @@ ta.ParameterDescriptor(name: 'f',typeQualifiedName: 'R Function(T)',isRequired: 
     isConst: false,
     declaringClassQualifiedName: null,
     annotations: const [],
-    getInstance: (Object instance) => (instance as lib3.Maybe).hasValue,
+    getInstance: (Object instance) => (instance as lib2.Maybe).hasValue,
     setInstance: null,
     getStatic: null,
     setStatic: null,
@@ -837,7 +835,7 @@ ta.ParameterDescriptor(name: 'f',typeQualifiedName: 'R Function(T)',isRequired: 
     isConst: false,
     declaringClassQualifiedName: null,
     annotations: const [],
-    getInstance: (Object instance) => (instance as lib3.Maybe).value,
+    getInstance: (Object instance) => (instance as lib2.Maybe).value,
     setInstance: null,
     getStatic: null,
     setStatic: null,
@@ -858,7 +856,7 @@ ta.ParameterDescriptor(name: 'f',typeQualifiedName: 'R Function(T)',isRequired: 
       isFactory: false,
       parameters: const [],
       annotations: const [],
-      invoke: (List<dynamic> positional, Map<Symbol, dynamic> named) => Function.apply(lib3.Maybe.none, positional, named),
+      invoke: (List<dynamic> positional, Map<Symbol, dynamic> named) => Function.apply(lib2.Maybe.none, positional, named),
     ),
     'some': ta.ConstructorDescriptor(
       name: 'some',
@@ -867,10 +865,10 @@ ta.ParameterDescriptor(name: 'f',typeQualifiedName: 'R Function(T)',isRequired: 
 ta.ParameterDescriptor(name: 'value',typeQualifiedName: 'T',isRequired: true,isNamed: false,isPositional: true,hasDefaultValue: false,defaultValue: null,annotations: const [],)
 ],
       annotations: const [],
-      invoke: (List<dynamic> positional, Map<Symbol, dynamic> named) => Function.apply(lib3.Maybe.some, positional, named),
+      invoke: (List<dynamic> positional, Map<Symbol, dynamic> named) => Function.apply(lib2.Maybe.some, positional, named),
     ),
   },
-  isInstance: (Object instance) => instance is lib3.Maybe,
+  isInstance: (Object instance) => instance is lib2.Maybe,
 ),
 'package:dart_overview/generics/generic_classes/run_generic_classes.dart.Pair': ta.ClassDescriptor(
   name: 'Pair',
@@ -899,7 +897,7 @@ ta.TypeParameterDescriptor(name: 'S',boundQualifiedName: null,variance: null,)
     typeParameters: const [],
     parameters: const [],
     annotations: const [],
-    invokeOn: (Object instance, List<dynamic> positional, Map<Symbol, dynamic> named) => Function.apply((instance as lib3.Pair).swap, positional, named),
+    invokeOn: (Object instance, List<dynamic> positional, Map<Symbol, dynamic> named) => Function.apply((instance as lib2.Pair).swap, positional, named),
     invokeStatic: null,
   ),
   'toString': ta.MethodDescriptor(
@@ -914,7 +912,7 @@ ta.TypeParameterDescriptor(name: 'S',boundQualifiedName: null,variance: null,)
     annotations: [
 ta.AnnotationDescriptor(name: 'override',qualifiedName: 'dart:core.override',positionalArguments: <Object?>[],namedArguments: const <String, Object?>{},)
 ],
-    invokeOn: (Object instance, List<dynamic> positional, Map<Symbol, dynamic> named) => Function.apply((instance as lib3.Pair).toString, positional, named),
+    invokeOn: (Object instance, List<dynamic> positional, Map<Symbol, dynamic> named) => Function.apply((instance as lib2.Pair).toString, positional, named),
     invokeStatic: null,
   ),
   },
@@ -928,7 +926,7 @@ ta.AnnotationDescriptor(name: 'override',qualifiedName: 'dart:core.override',pos
     isConst: false,
     declaringClassQualifiedName: null,
     annotations: const [],
-    getInstance: (Object instance) => (instance as lib3.Pair).first,
+    getInstance: (Object instance) => (instance as lib2.Pair).first,
     setInstance: null,
     getStatic: null,
     setStatic: null,
@@ -941,7 +939,7 @@ ta.AnnotationDescriptor(name: 'override',qualifiedName: 'dart:core.override',pos
     isConst: false,
     declaringClassQualifiedName: null,
     annotations: const [],
-    getInstance: (Object instance) => (instance as lib3.Pair).second,
+    getInstance: (Object instance) => (instance as lib2.Pair).second,
     setInstance: null,
     getStatic: null,
     setStatic: null,
@@ -965,10 +963,10 @@ ta.ParameterDescriptor(name: 'first',typeQualifiedName: 'F',isRequired: true,isN
 ta.ParameterDescriptor(name: 'second',typeQualifiedName: 'S',isRequired: true,isNamed: false,isPositional: true,hasDefaultValue: false,defaultValue: null,annotations: const [],)
 ],
       annotations: const [],
-      invoke: (List<dynamic> positional, Map<Symbol, dynamic> named) => Function.apply(lib3.Pair.new, positional, named),
+      invoke: (List<dynamic> positional, Map<Symbol, dynamic> named) => Function.apply(lib2.Pair.new, positional, named),
     ),
   },
-  isInstance: (Object instance) => instance is lib3.Pair,
+  isInstance: (Object instance) => instance is lib2.Pair,
 ),
 'package:dart_overview/generics/generic_classes/run_generic_classes.dart.Queue': ta.ClassDescriptor(
   name: 'Queue',
@@ -998,7 +996,7 @@ ta.TypeParameterDescriptor(name: 'T',boundQualifiedName: null,variance: null,)
 ta.ParameterDescriptor(name: 'item',typeQualifiedName: 'T',isRequired: true,isNamed: false,isPositional: true,hasDefaultValue: false,defaultValue: null,annotations: const [],)
 ],
     annotations: const [],
-    invokeOn: (Object instance, List<dynamic> positional, Map<Symbol, dynamic> named) => Function.apply((instance as lib3.Queue).enqueue, positional, named),
+    invokeOn: (Object instance, List<dynamic> positional, Map<Symbol, dynamic> named) => Function.apply((instance as lib2.Queue).enqueue, positional, named),
     invokeStatic: null,
   ),
   'dequeue': ta.MethodDescriptor(
@@ -1011,7 +1009,7 @@ ta.ParameterDescriptor(name: 'item',typeQualifiedName: 'T',isRequired: true,isNa
     typeParameters: const [],
     parameters: const [],
     annotations: const [],
-    invokeOn: (Object instance, List<dynamic> positional, Map<Symbol, dynamic> named) => Function.apply((instance as lib3.Queue).dequeue, positional, named),
+    invokeOn: (Object instance, List<dynamic> positional, Map<Symbol, dynamic> named) => Function.apply((instance as lib2.Queue).dequeue, positional, named),
     invokeStatic: null,
   ),
   'toString': ta.MethodDescriptor(
@@ -1026,7 +1024,7 @@ ta.ParameterDescriptor(name: 'item',typeQualifiedName: 'T',isRequired: true,isNa
     annotations: [
 ta.AnnotationDescriptor(name: 'override',qualifiedName: 'dart:core.override',positionalArguments: <Object?>[],namedArguments: const <String, Object?>{},)
 ],
-    invokeOn: (Object instance, List<dynamic> positional, Map<Symbol, dynamic> named) => Function.apply((instance as lib3.Queue).toString, positional, named),
+    invokeOn: (Object instance, List<dynamic> positional, Map<Symbol, dynamic> named) => Function.apply((instance as lib2.Queue).toString, positional, named),
     invokeStatic: null,
   ),
   },
@@ -1040,7 +1038,7 @@ ta.AnnotationDescriptor(name: 'override',qualifiedName: 'dart:core.override',pos
     isConst: false,
     declaringClassQualifiedName: null,
     annotations: const [],
-    getInstance: (Object instance) => (instance as lib3.Queue).front,
+    getInstance: (Object instance) => (instance as lib2.Queue).front,
     setInstance: null,
     getStatic: null,
     setStatic: null,
@@ -1053,7 +1051,7 @@ ta.AnnotationDescriptor(name: 'override',qualifiedName: 'dart:core.override',pos
     isConst: false,
     declaringClassQualifiedName: null,
     annotations: const [],
-    getInstance: (Object instance) => (instance as lib3.Queue).isEmpty,
+    getInstance: (Object instance) => (instance as lib2.Queue).isEmpty,
     setInstance: null,
     getStatic: null,
     setStatic: null,
@@ -1066,7 +1064,7 @@ ta.AnnotationDescriptor(name: 'override',qualifiedName: 'dart:core.override',pos
     isConst: false,
     declaringClassQualifiedName: null,
     annotations: const [],
-    getInstance: (Object instance) => (instance as lib3.Queue).length,
+    getInstance: (Object instance) => (instance as lib2.Queue).length,
     setInstance: null,
     getStatic: null,
     setStatic: null,
@@ -1087,10 +1085,10 @@ ta.AnnotationDescriptor(name: 'override',qualifiedName: 'dart:core.override',pos
       isFactory: false,
       parameters: const [],
       annotations: const [],
-      invoke: (List<dynamic> positional, Map<Symbol, dynamic> named) => Function.apply(lib3.Queue.new, positional, named),
+      invoke: (List<dynamic> positional, Map<Symbol, dynamic> named) => Function.apply(lib2.Queue.new, positional, named),
     ),
   },
-  isInstance: (Object instance) => instance is lib3.Queue,
+  isInstance: (Object instance) => instance is lib2.Queue,
 ),
 'package:dart_overview/generics/generic_classes/run_generic_classes.dart.Result': ta.ClassDescriptor(
   name: 'Result',
@@ -1124,7 +1122,7 @@ ta.ParameterDescriptor(name: 'onSuccess',typeQualifiedName: 'R Function(T)',isRe
 ta.ParameterDescriptor(name: 'onFailure',typeQualifiedName: 'R Function(E)',isRequired: true,isNamed: false,isPositional: true,hasDefaultValue: false,defaultValue: null,annotations: const [],)
 ],
     annotations: const [],
-    invokeOn: (Object instance, List<dynamic> positional, Map<Symbol, dynamic> named) => Function.apply((instance as lib3.Result).fold, positional, named),
+    invokeOn: (Object instance, List<dynamic> positional, Map<Symbol, dynamic> named) => Function.apply((instance as lib2.Result).fold, positional, named),
     invokeStatic: null,
   ),
   },
@@ -1138,7 +1136,7 @@ ta.ParameterDescriptor(name: 'onFailure',typeQualifiedName: 'R Function(E)',isRe
     isConst: false,
     declaringClassQualifiedName: null,
     annotations: const [],
-    getInstance: (Object instance) => (instance as lib3.Result).isSuccess,
+    getInstance: (Object instance) => (instance as lib2.Result).isSuccess,
     setInstance: null,
     getStatic: null,
     setStatic: null,
@@ -1161,7 +1159,7 @@ ta.ParameterDescriptor(name: 'onFailure',typeQualifiedName: 'R Function(E)',isRe
 ta.ParameterDescriptor(name: 'error',typeQualifiedName: 'E',isRequired: true,isNamed: false,isPositional: true,hasDefaultValue: false,defaultValue: null,annotations: const [],)
 ],
       annotations: const [],
-      invoke: (List<dynamic> positional, Map<Symbol, dynamic> named) => Function.apply(lib3.Result.failure, positional, named),
+      invoke: (List<dynamic> positional, Map<Symbol, dynamic> named) => Function.apply(lib2.Result.failure, positional, named),
     ),
     'success': ta.ConstructorDescriptor(
       name: 'success',
@@ -1170,10 +1168,10 @@ ta.ParameterDescriptor(name: 'error',typeQualifiedName: 'E',isRequired: true,isN
 ta.ParameterDescriptor(name: 'value',typeQualifiedName: 'T',isRequired: true,isNamed: false,isPositional: true,hasDefaultValue: false,defaultValue: null,annotations: const [],)
 ],
       annotations: const [],
-      invoke: (List<dynamic> positional, Map<Symbol, dynamic> named) => Function.apply(lib3.Result.success, positional, named),
+      invoke: (List<dynamic> positional, Map<Symbol, dynamic> named) => Function.apply(lib2.Result.success, positional, named),
     ),
   },
-  isInstance: (Object instance) => instance is lib3.Result,
+  isInstance: (Object instance) => instance is lib2.Result,
 ),
 'package:dart_overview/generics/generic_classes/run_generic_classes.dart.Stack': ta.ClassDescriptor(
   name: 'Stack',
@@ -1203,7 +1201,7 @@ ta.TypeParameterDescriptor(name: 'T',boundQualifiedName: null,variance: null,)
 ta.ParameterDescriptor(name: 'item',typeQualifiedName: 'T',isRequired: true,isNamed: false,isPositional: true,hasDefaultValue: false,defaultValue: null,annotations: const [],)
 ],
     annotations: const [],
-    invokeOn: (Object instance, List<dynamic> positional, Map<Symbol, dynamic> named) => Function.apply((instance as lib3.Stack).push, positional, named),
+    invokeOn: (Object instance, List<dynamic> positional, Map<Symbol, dynamic> named) => Function.apply((instance as lib2.Stack).push, positional, named),
     invokeStatic: null,
   ),
   'pop': ta.MethodDescriptor(
@@ -1216,7 +1214,7 @@ ta.ParameterDescriptor(name: 'item',typeQualifiedName: 'T',isRequired: true,isNa
     typeParameters: const [],
     parameters: const [],
     annotations: const [],
-    invokeOn: (Object instance, List<dynamic> positional, Map<Symbol, dynamic> named) => Function.apply((instance as lib3.Stack).pop, positional, named),
+    invokeOn: (Object instance, List<dynamic> positional, Map<Symbol, dynamic> named) => Function.apply((instance as lib2.Stack).pop, positional, named),
     invokeStatic: null,
   ),
   'peek': ta.MethodDescriptor(
@@ -1229,7 +1227,7 @@ ta.ParameterDescriptor(name: 'item',typeQualifiedName: 'T',isRequired: true,isNa
     typeParameters: const [],
     parameters: const [],
     annotations: const [],
-    invokeOn: (Object instance, List<dynamic> positional, Map<Symbol, dynamic> named) => Function.apply((instance as lib3.Stack).peek, positional, named),
+    invokeOn: (Object instance, List<dynamic> positional, Map<Symbol, dynamic> named) => Function.apply((instance as lib2.Stack).peek, positional, named),
     invokeStatic: null,
   ),
   'toString': ta.MethodDescriptor(
@@ -1244,7 +1242,7 @@ ta.ParameterDescriptor(name: 'item',typeQualifiedName: 'T',isRequired: true,isNa
     annotations: [
 ta.AnnotationDescriptor(name: 'override',qualifiedName: 'dart:core.override',positionalArguments: <Object?>[],namedArguments: const <String, Object?>{},)
 ],
-    invokeOn: (Object instance, List<dynamic> positional, Map<Symbol, dynamic> named) => Function.apply((instance as lib3.Stack).toString, positional, named),
+    invokeOn: (Object instance, List<dynamic> positional, Map<Symbol, dynamic> named) => Function.apply((instance as lib2.Stack).toString, positional, named),
     invokeStatic: null,
   ),
   },
@@ -1258,7 +1256,7 @@ ta.AnnotationDescriptor(name: 'override',qualifiedName: 'dart:core.override',pos
     isConst: false,
     declaringClassQualifiedName: null,
     annotations: const [],
-    getInstance: (Object instance) => (instance as lib3.Stack).isEmpty,
+    getInstance: (Object instance) => (instance as lib2.Stack).isEmpty,
     setInstance: null,
     getStatic: null,
     setStatic: null,
@@ -1271,7 +1269,7 @@ ta.AnnotationDescriptor(name: 'override',qualifiedName: 'dart:core.override',pos
     isConst: false,
     declaringClassQualifiedName: null,
     annotations: const [],
-    getInstance: (Object instance) => (instance as lib3.Stack).length,
+    getInstance: (Object instance) => (instance as lib2.Stack).length,
     setInstance: null,
     getStatic: null,
     setStatic: null,
@@ -1292,10 +1290,10 @@ ta.AnnotationDescriptor(name: 'override',qualifiedName: 'dart:core.override',pos
       isFactory: false,
       parameters: const [],
       annotations: const [],
-      invoke: (List<dynamic> positional, Map<Symbol, dynamic> named) => Function.apply(lib3.Stack.new, positional, named),
+      invoke: (List<dynamic> positional, Map<Symbol, dynamic> named) => Function.apply(lib2.Stack.new, positional, named),
     ),
   },
-  isInstance: (Object instance) => instance is lib3.Stack,
+  isInstance: (Object instance) => instance is lib2.Stack,
 ),
 'package:dart_overview/generics/generic_classes/run_generic_classes.dart.Wrapper': ta.ClassDescriptor(
   name: 'Wrapper',
@@ -1327,7 +1325,7 @@ ta.TypeParameterDescriptor(name: 'R',boundQualifiedName: null,variance: null,)
 ta.ParameterDescriptor(name: 'f',typeQualifiedName: 'R Function(T)',isRequired: true,isNamed: false,isPositional: true,hasDefaultValue: false,defaultValue: null,annotations: const [],)
 ],
     annotations: const [],
-    invokeOn: (Object instance, List<dynamic> positional, Map<Symbol, dynamic> named) => Function.apply((instance as lib3.Wrapper).transform, positional, named),
+    invokeOn: (Object instance, List<dynamic> positional, Map<Symbol, dynamic> named) => Function.apply((instance as lib2.Wrapper).transform, positional, named),
     invokeStatic: null,
   ),
   },
@@ -1341,8 +1339,8 @@ ta.ParameterDescriptor(name: 'f',typeQualifiedName: 'R Function(T)',isRequired: 
     isConst: false,
     declaringClassQualifiedName: null,
     annotations: const [],
-    getInstance: (Object instance) => (instance as lib3.Wrapper).value,
-    setInstance: (Object instance, Object? value) { (instance as lib3.Wrapper).value = value as dynamic; return null; },
+    getInstance: (Object instance) => (instance as lib2.Wrapper).value,
+    setInstance: (Object instance, Object? value) { (instance as lib2.Wrapper).value = value as dynamic; return null; },
     getStatic: null,
     setStatic: null,
   ),
@@ -1364,10 +1362,10 @@ ta.ParameterDescriptor(name: 'f',typeQualifiedName: 'R Function(T)',isRequired: 
 ta.ParameterDescriptor(name: 'value',typeQualifiedName: 'T',isRequired: true,isNamed: false,isPositional: true,hasDefaultValue: false,defaultValue: null,annotations: const [],)
 ],
       annotations: const [],
-      invoke: (List<dynamic> positional, Map<Symbol, dynamic> named) => Function.apply(lib3.Wrapper.new, positional, named),
+      invoke: (List<dynamic> positional, Map<Symbol, dynamic> named) => Function.apply(lib2.Wrapper.new, positional, named),
     ),
   },
-  isInstance: (Object instance) => instance is lib3.Wrapper,
+  isInstance: (Object instance) => instance is lib2.Wrapper,
 ),
 };
 final _enums = <String, ta.MemberContainerDescriptor>{
@@ -1407,7 +1405,7 @@ final _enums = <String, ta.MemberContainerDescriptor>{
     isConst: false,
     declaringClassQualifiedName: null,
     annotations: const [],
-    getInstance: (Object instance) => (instance as lib2.HttpStatus).code,
+    getInstance: (Object instance) => (instance as lib1.HttpStatus).code,
     setInstance: null,
     getStatic: null,
     setStatic: null,
@@ -1420,7 +1418,7 @@ final _enums = <String, ta.MemberContainerDescriptor>{
     isConst: false,
     declaringClassQualifiedName: null,
     annotations: const [],
-    getInstance: (Object instance) => (instance as lib2.HttpStatus).message,
+    getInstance: (Object instance) => (instance as lib1.HttpStatus).message,
     setInstance: null,
     getStatic: null,
     setStatic: null,
@@ -1433,7 +1431,7 @@ final _enums = <String, ta.MemberContainerDescriptor>{
     isConst: false,
     declaringClassQualifiedName: null,
     annotations: const [],
-    getInstance: (Object instance) => (instance as lib2.HttpStatus).isSuccess,
+    getInstance: (Object instance) => (instance as lib1.HttpStatus).isSuccess,
     setInstance: null,
     getStatic: null,
     setStatic: null,
@@ -1446,7 +1444,7 @@ final _enums = <String, ta.MemberContainerDescriptor>{
     isConst: false,
     declaringClassQualifiedName: null,
     annotations: const [],
-    getInstance: (Object instance) => (instance as lib2.HttpStatus).isError,
+    getInstance: (Object instance) => (instance as lib1.HttpStatus).isError,
     setInstance: null,
     getStatic: null,
     setStatic: null,
@@ -1479,7 +1477,7 @@ final _enums = <String, ta.MemberContainerDescriptor>{
     annotations: [
 ta.AnnotationDescriptor(name: 'override',qualifiedName: 'dart:core.override',positionalArguments: <Object?>[],namedArguments: const <String, Object?>{},)
 ],
-    getInstance: (Object instance) => (instance as lib2.LogLevel).severity,
+    getInstance: (Object instance) => (instance as lib1.LogLevel).severity,
     setInstance: null,
     getStatic: null,
     setStatic: null,
@@ -1515,7 +1513,7 @@ ta.ParameterDescriptor(name: 'b',typeQualifiedName: 'dart:core.double',isRequire
     annotations: [
 ta.AnnotationDescriptor(name: 'override',qualifiedName: 'dart:core.override',positionalArguments: <Object?>[],namedArguments: const <String, Object?>{},)
 ],
-    invokeOn: (Object instance, List<dynamic> positional, Map<Symbol, dynamic> named) => Function.apply((instance as lib2.Operation).execute, positional, named),
+    invokeOn: (Object instance, List<dynamic> positional, Map<Symbol, dynamic> named) => Function.apply((instance as lib1.Operation).execute, positional, named),
     invokeStatic: null,
   ),
   },
@@ -1529,7 +1527,7 @@ ta.AnnotationDescriptor(name: 'override',qualifiedName: 'dart:core.override',pos
     isConst: false,
     declaringClassQualifiedName: null,
     annotations: const [],
-    getInstance: (Object instance) => (instance as lib2.Operation).symbol,
+    getInstance: (Object instance) => (instance as lib1.Operation).symbol,
     setInstance: null,
     getStatic: null,
     setStatic: null,
@@ -1594,7 +1592,7 @@ ta.AnnotationDescriptor(name: 'override',qualifiedName: 'dart:core.override',pos
     isConst: false,
     declaringClassQualifiedName: null,
     annotations: const [],
-    getInstance: (Object instance) => (instance as lib2.Season).months,
+    getInstance: (Object instance) => (instance as lib1.Season).months,
     setInstance: null,
     getStatic: null,
     setStatic: null,
@@ -1607,7 +1605,7 @@ ta.AnnotationDescriptor(name: 'override',qualifiedName: 'dart:core.override',pos
     isConst: false,
     declaringClassQualifiedName: null,
     annotations: const [],
-    getInstance: (Object instance) => (instance as lib2.Season).avgTemperature,
+    getInstance: (Object instance) => (instance as lib1.Season).avgTemperature,
     setInstance: null,
     getStatic: null,
     setStatic: null,
@@ -1642,7 +1640,7 @@ final _mixins = <String, ta.MemberContainerDescriptor>{
 ta.ParameterDescriptor(name: 'minLevel',typeQualifiedName: 'package:dart_overview/enums/basics/run_basics.dart.LogLevel',isRequired: true,isNamed: false,isPositional: true,hasDefaultValue: false,defaultValue: null,annotations: const [],)
 ],
     annotations: const [],
-    invokeOn: (Object instance, List<dynamic> positional, Map<Symbol, dynamic> named) => Function.apply((instance as lib2.LoggableMixin).shouldLog, positional, named),
+    invokeOn: (Object instance, List<dynamic> positional, Map<Symbol, dynamic> named) => Function.apply((instance as lib1.LoggableMixin).shouldLog, positional, named),
     invokeStatic: null,
   ),
   },
@@ -1656,7 +1654,7 @@ ta.ParameterDescriptor(name: 'minLevel',typeQualifiedName: 'package:dart_overvie
     isConst: false,
     declaringClassQualifiedName: null,
     annotations: const [],
-    getInstance: (Object instance) => (instance as lib2.LoggableMixin).severity,
+    getInstance: (Object instance) => (instance as lib1.LoggableMixin).severity,
     setInstance: null,
     getStatic: null,
     setStatic: null,
@@ -1695,7 +1693,7 @@ final _globals = <String, ta.GlobalDescriptor>{
     package: 'dart_overview',
     typeQualifiedName: 'void',
     annotations: const [],
-    invokeFunction: (List<dynamic> positional, Map<Symbol, dynamic> named) => Function.apply(lib2.main, positional, named),
+    invokeFunction: (List<dynamic> positional, Map<Symbol, dynamic> named) => Function.apply(lib1.main, positional, named),
   ),
 
   'package:dart_overview/generics/generic_classes/run_generic_classes.dart.main': ta.GlobalDescriptor(
@@ -1706,7 +1704,7 @@ final _globals = <String, ta.GlobalDescriptor>{
     package: 'dart_overview',
     typeQualifiedName: 'void',
     annotations: const [],
-    invokeFunction: (List<dynamic> positional, Map<Symbol, dynamic> named) => Function.apply(lib3.main, positional, named),
+    invokeFunction: (List<dynamic> positional, Map<Symbol, dynamic> named) => Function.apply(lib2.main, positional, named),
   ),
 
   'package:dart_overview/run_dart_overview.dart.main': ta.GlobalDescriptor(
@@ -1717,7 +1715,7 @@ final _globals = <String, ta.GlobalDescriptor>{
     package: 'dart_overview',
     typeQualifiedName: 'dart:async.Future',
     annotations: const [],
-    invokeFunction: (List<dynamic> positional, Map<Symbol, dynamic> named) => Function.apply(lib4.main, positional, named),
+    invokeFunction: (List<dynamic> positional, Map<Symbol, dynamic> named) => Function.apply(lib3.main, positional, named),
   ),
 
 };

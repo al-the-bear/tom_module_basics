@@ -18,6 +18,8 @@ dependencies:
   build: ^4.0.4
   tom_analyzer_model:
     path: ../tom_analyzer_model
+  tom_build_base:
+    path: ../tom_build_base
   tom_d4rt_ast:
     path: ../tom_d4rt_ast
 
