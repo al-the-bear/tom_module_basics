@@ -1,6 +1,5 @@
 import 'package:analyzer/dart/element/element.dart';
-
-import '../model/model.dart';
+import 'package:tom_analyzer_model/tom_analyzer_model.dart';
 
 /// Parses analyzer annotations into model representations.
 class AnnotationParser {

@@ -4,13 +4,10 @@ export 'src/analyzer/annotation_parser.dart';
 export 'src/analyzer/barrel_analyzer.dart';
 export 'src/analyzer/element_visitor.dart';
 export 'src/analyzer/type_resolver.dart';
-export 'src/config/configuration.dart';
-export 'src/model/model.dart';
-export 'src/serialization/json_serializer.dart';
-export 'src/serialization/json_deserializer.dart';
-export 'src/serialization/yaml_deserializer.dart';
-export 'src/serialization/analysis_result_validator.dart';
-export 'src/serialization/yaml_serializer.dart';
+
+// Re-export model, serialization, and config from tom_analyzer_model
+export 'package:tom_analyzer_model/tom_analyzer_model.dart';
+
 export 'src/reflection/reflection_model.dart';
 export 'src/reflection/reflection_generator.dart';
 export 'src/reflection/runtime_reflection.dart';

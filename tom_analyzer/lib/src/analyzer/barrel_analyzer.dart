@@ -1,4 +1,5 @@
-import '../model/model.dart';
+import 'package:tom_analyzer_model/tom_analyzer_model.dart';
+
 import 'analyzer_runner.dart';
 
 /// Resolves barrel files and delegates to [TomAnalyzer].

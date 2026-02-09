@@ -8,10 +8,10 @@ import 'package:crypto/crypto.dart';
 import 'package:path/path.dart' as p;
 import 'package:yaml/yaml.dart';
 
+import 'package:tom_analyzer_model/tom_analyzer_model.dart';
+
 import 'analyzer_context_builder.dart';
 import 'annotation_parser.dart';
-import '../model/model.dart';
-import '../serialization/id_generator.dart';
 
 /// Runs analyzer-based extraction of model information.
 class TomAnalyzer {

@@ -4,10 +4,9 @@ import 'dart:io';
 import 'package:build/build.dart';
 import 'package:path/path.dart' as p;
 
+import 'package:tom_analyzer_model/tom_analyzer_model.dart';
+
 import '../analyzer/analyzer_runner.dart';
-import '../config/configuration.dart';
-import '../serialization/json_serializer.dart';
-import '../serialization/yaml_serializer.dart';
 
 /// build_runner builder that emits analysis output for Dart sources.
 class AnalyzerBuilder implements Builder {

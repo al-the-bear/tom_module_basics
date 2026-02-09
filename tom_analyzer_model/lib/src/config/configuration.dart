@@ -53,7 +53,21 @@ class TomAnalyzerConfig {
 
   static TomAnalyzerConfig empty() => const TomAnalyzerConfig();
 
-  static TomAnalyzerConfig load({String? path}) {
+  /// Loads configuration from a YAML file.
+  ///
+  /// If [path] is provided, loads from that file. Otherwise falls back to
+  /// `tom_analyzer.yaml` then `buildkit.yaml` in the current directory.
+  ///
+  /// When [section] is provided (e.g., `'tom_analyzer'` or `'tom_reflector'`),
+  /// the loader extracts the matching top-level key from the YAML. This
+  /// supports the `buildkit.yaml` format where each tool has its own section:
+  /// ```yaml
+  /// tom_analyzer:
+  ///   barrels:
+  ///     - lib/main.dart
+  ///   output_format: yaml
+  /// ```
+  static TomAnalyzerConfig load({String? path, String? section}) {
     final configPath = path ?? _defaultConfigPath();
     if (configPath == null) {
       return empty();
@@ -66,7 +80,17 @@ class TomAnalyzerConfig {
     if (yaml is! YamlMap) {
       return empty();
     }
-    return fromMap(Map<String, dynamic>.from(yaml));
+    var map = Map<String, dynamic>.from(yaml);
+
+    // If a section is specified and exists in the map, extract it.
+    // This supports buildkit.yaml format: { tom_analyzer: { barrels: ... } }
+    if (section != null && map.containsKey(section)) {
+      final sectionValue = map[section];
+      if (sectionValue is Map) {
+        map = Map<String, dynamic>.from(sectionValue);
+      }
+    }
+    return fromMap(map);
   }
 
   static TomAnalyzerConfig fromMap(Map<String, dynamic> map) {
@@ -101,6 +125,10 @@ class TomAnalyzerConfig {
     final file = File('tom_analyzer.yaml');
     if (file.existsSync()) {
       return file.path;
+    }
+    final buildkit = File('buildkit.yaml');
+    if (buildkit.existsSync()) {
+      return buildkit.path;
     }
     return null;
   }

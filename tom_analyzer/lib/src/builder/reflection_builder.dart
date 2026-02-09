@@ -3,8 +3,9 @@ import 'dart:io';
 import 'package:build/build.dart';
 import 'package:path/path.dart' as p;
 
+import 'package:tom_analyzer_model/tom_analyzer_model.dart';
+
 import '../analyzer/analyzer_runner.dart';
-import '../config/configuration.dart';
 import '../reflection/reflection_generator.dart';
 import '../reflection/reflection_model.dart';
 

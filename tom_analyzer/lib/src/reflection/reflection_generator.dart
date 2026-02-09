@@ -1,4 +1,5 @@
-import '../model/model.dart';
+import 'package:tom_analyzer_model/tom_analyzer_model.dart';
+
 import 'reflection_model.dart';
 
 /// Generates reflection code from analysis results.
