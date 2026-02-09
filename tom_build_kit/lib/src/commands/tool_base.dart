@@ -71,20 +71,9 @@ abstract class ToolBase {
     final parser = ArgParser(allowTrailingOptions: false)
       ..addFlag('help', abbr: 'h', negatable: false, help: 'Show this help')
       ..addFlag('verbose',
-          abbr: 'v', negatable: false, help: 'Verbose output')
-      ..addOption('project',
-          abbr: 'p', help: 'Project directory or glob pattern')
-      ..addOption('scan',
-          abbr: 's', help: 'Scan directory for projects')
-      ..addFlag('recursive',
-          abbr: 'r', negatable: false, help: 'Scan recursively')
-      ..addMultiOption('exclude',
-          abbr: 'x', help: 'Exclude patterns (path-based globs)')
-      ..addMultiOption('exclude-projects',
-          help:
-              'Exclude projects by name or path (e.g. zom_*, xternal/tom_module_basics/*)')
-      ..addMultiOption('recursion-exclude',
-          help: 'Exclude patterns during recursive scan')
+          abbr: 'v', negatable: false, help: 'Verbose output');
+    addNavigationOptions(parser);
+    parser
       ..addFlag('list',
           abbr: 'l', negatable: false, help: 'List matching projects')
       ..addFlag('show',
@@ -98,6 +87,78 @@ abstract class ToolBase {
 
   /// Override to add tool-specific options to the parser.
   void addToolOptions(ArgParser parser) {}
+
+  /// Parse arguments with execution mode handling.
+  ///
+  /// Returns a tuple containing:
+  /// - [ArgResults] from parsing the processed args
+  /// - [WorkspaceNavigationArgs] with appropriate defaults applied
+  /// - [String] executionRoot - the directory to execute from
+  ///
+  /// Handles:
+  /// - Preprocessing for bare -R detection
+  /// - Parsing navigation options
+  /// - Applying project mode defaults (--scan . --recursive --build-order)
+  /// - Resolving execution root based on -R
+  ///
+  /// Throws [FormatException] if argument parsing fails.
+  /// Throws [ArgumentError] if specified workspace path is invalid.
+  (ArgResults, WorkspaceNavigationArgs, String) parseArgsWithExecutionMode(
+    ArgParser parser,
+    List<String> args,
+  ) {
+    // Step 1: Preprocess args to detect bare -R
+    final (processedArgs, bareRoot) = preprocessRootFlag(args);
+
+    // Step 2: Parse args
+    final results = parser.parse(processedArgs);
+
+    // Step 3: Parse navigation options
+    var navArgs = parseNavigationArgs(results, bareRoot: bareRoot);
+
+    // Step 4: Apply defaults (scan, recursive, build-order)
+    navArgs = navArgs.withDefaults();
+
+    // Step 5: Resolve execution root
+    final currentDir = Directory.current.path;
+    final executionRoot = resolveExecutionRoot(navArgs, currentDir: currentDir);
+
+    // Step 6: If bare -R, change to workspace root directory
+    if (navArgs.bareRoot && executionRoot != currentDir) {
+      if (verbose) {
+        print('[workspace-mode] Bare -R: executing from $executionRoot');
+      }
+    } else if (navArgs.root != null && executionRoot != currentDir) {
+      if (verbose) {
+        print('[workspace-mode] -R ${navArgs.root}: executing from $executionRoot');
+      }
+    } else if (navArgs.isProjectMode) {
+      if (verbose) {
+        print('[project-mode] Executing from $currentDir');
+      }
+    }
+
+    return (results, navArgs, executionRoot);
+  }
+
+  /// Find projects using [WorkspaceNavigationArgs].
+  ///
+  /// This is the preferred method for finding projects as it uses
+  /// the standardized navigation options.
+  Future<List<String>> findProjectsFromNavArgs(
+    WorkspaceNavigationArgs navArgs, {
+    required String basePath,
+  }) async {
+    return findProjects(
+      project: navArgs.project,
+      scan: navArgs.scan,
+      recursive: navArgs.recursive,
+      exclude: navArgs.exclude,
+      excludeProjects: navArgs.excludeProjects,
+      recursionExclude: navArgs.recursionExclude,
+      basePath: basePath,
+    );
+  }
 
   /// Find projects based on common config fields.
   ///

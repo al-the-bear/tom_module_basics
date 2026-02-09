@@ -190,12 +190,17 @@ class CleanupTool extends ToolBase {
 
     final parser = createParser();
     ArgResults results;
+    WorkspaceNavigationArgs navArgs;
+    String executionRoot;
 
     try {
-      results = parser.parse(args);
-    } catch (e) {
+      (results, navArgs, executionRoot) = parseArgsWithExecutionMode(parser, args);
+    } on FormatException catch (e) {
       print('Error: $e');
       _printUsage(parser);
+      return false;
+    } on ArgumentError catch (e) {
+      print('Error: $e');
       return false;
     }
 
@@ -213,16 +218,15 @@ class CleanupTool extends ToolBase {
     final showMode = results['show'] as bool;
 
     // Load workspace-level config
-    final basePath = Directory.current.path;
-    var config = CleanupConfig.loadFromYaml(basePath) ?? CleanupConfig();
+    var config = CleanupConfig.loadFromYaml(executionRoot) ?? CleanupConfig();
 
     // Override with CLI options
     config = config.merge(CleanupConfig(
-      project: results['project'] as String?,
-      scan: results['scan'] as String?,
-      recursive: results['recursive'] as bool,
-      exclude: results['exclude'] as List<String>,
-      recursionExclude: results['recursion-exclude'] as List<String>,
+      project: navArgs.project,
+      scan: navArgs.scan,
+      recursive: navArgs.recursive,
+      exclude: navArgs.exclude,
+      recursionExclude: navArgs.recursionExclude,
       verbose: verbose,
       dryRun: dryRun,
       maxFiles: maxFiles,
@@ -233,20 +237,15 @@ class CleanupTool extends ToolBase {
     if (!validateAndEnforcePaths(
       scan: config.scan,
       project: config.project,
-      basePath: basePath,
+      basePath: executionRoot,
     )) {
       return false;
     }
 
-    // Find projects
-    final projects = await findProjects(
-      project: config.project,
-      scan: config.scan,
-      recursive: config.recursive,
-      exclude: config.exclude,
-      excludeProjects: results['exclude-projects'] as List<String>,
-      recursionExclude: config.recursionExclude,
-      basePath: basePath,
+    // Find projects using navigation args
+    final projects = await findProjectsFromNavArgs(
+      navArgs,
+      basePath: executionRoot,
     );
 
     if (findProjectsError) return false;
@@ -255,7 +254,7 @@ class CleanupTool extends ToolBase {
       print('Projects with cleanup configuration:');
       for (final project in projects) {
         if (isToolProject(project)) {
-          print('  ${p.relative(project, from: basePath)}');
+          print('  ${p.relative(project, from: executionRoot)}');
         }
       }
       return true;
@@ -263,7 +262,7 @@ class CleanupTool extends ToolBase {
 
     if (showMode) {
       for (final project in projects) {
-        print('Project: ${p.relative(project, from: basePath)}');
+        print('Project: ${p.relative(project, from: executionRoot)}');
         printTomBuildYamlSection(project, 'cleanup');
       }
       return true;

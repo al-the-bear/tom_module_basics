@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:args/args.dart';
 import 'package:path/path.dart' as p;
+import 'package:tom_build_base/tom_build_base.dart';
 import 'package:yaml/yaml.dart';
 
 import '../builtin_commands.dart';
@@ -180,12 +181,17 @@ class CompilerTool extends ToolBase {
 
     final parser = createParser();
     ArgResults results;
+    WorkspaceNavigationArgs navArgs;
+    String executionRoot;
 
     try {
-      results = parser.parse(args);
-    } catch (e) {
+      (results, navArgs, executionRoot) = parseArgsWithExecutionMode(parser, args);
+    } on FormatException catch (e) {
       print('Error: $e');
       _printUsage(parser);
+      return false;
+    } on ArgumentError catch (e) {
+      print('Error: $e');
       return false;
     }
 
@@ -207,16 +213,15 @@ class CompilerTool extends ToolBase {
         : <String>[];
 
     // Load workspace-level config
-    final basePath = Directory.current.path;
-    var config = CompilerConfig.loadFromYaml(basePath) ?? CompilerConfig();
+    var config = CompilerConfig.loadFromYaml(executionRoot) ?? CompilerConfig();
 
     // Override with CLI options
     config = config.merge(CompilerConfig(
-      project: results['project'] as String?,
-      scan: results['scan'] as String?,
-      recursive: results['recursive'] as bool,
-      exclude: results['exclude'] as List<String>,
-      recursionExclude: results['recursion-exclude'] as List<String>,
+      project: navArgs.project,
+      scan: navArgs.scan,
+      recursive: navArgs.recursive,
+      exclude: navArgs.exclude,
+      recursionExclude: navArgs.recursionExclude,
       verbose: verbose,
       dryRun: dryRun,
       targetFilter: targetFilter,
@@ -226,20 +231,15 @@ class CompilerTool extends ToolBase {
     if (!validateAndEnforcePaths(
       scan: config.scan,
       project: config.project,
-      basePath: basePath,
+      basePath: executionRoot,
     )) {
       return false;
     }
 
-    // Find projects
-    final projects = await findProjects(
-      project: config.project,
-      scan: config.scan,
-      recursive: config.recursive,
-      exclude: config.exclude,
-      excludeProjects: results['exclude-projects'] as List<String>,
-      recursionExclude: config.recursionExclude,
-      basePath: basePath,
+    // Find projects using navigation args
+    final projects = await findProjectsFromNavArgs(
+      navArgs,
+      basePath: executionRoot,
     );
 
     if (findProjectsError) return false;
@@ -248,7 +248,7 @@ class CompilerTool extends ToolBase {
       print('Projects with compiler configuration:');
       for (final project in projects) {
         if (isToolProject(project)) {
-          print('  ${p.relative(project, from: basePath)}');
+          print('  ${p.relative(project, from: executionRoot)}');
         }
       }
       return true;
@@ -256,7 +256,7 @@ class CompilerTool extends ToolBase {
 
     if (showMode) {
       for (final project in projects) {
-        print('Project: ${p.relative(project, from: basePath)}');
+        print('Project: ${p.relative(project, from: executionRoot)}');
         printTomBuildYamlSection(project, 'compiler');
       }
       return true;

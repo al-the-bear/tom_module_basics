@@ -121,7 +121,6 @@ class VersionerTool extends ToolBase {
   void addToolOptions(ArgParser parser) {
     parser
       ..addOption('output',
-          abbr: 'o',
           defaultsTo: 'lib/src/version.g.dart',
           help: 'Output file path relative to project')
       ..addFlag('no-git',
@@ -146,12 +145,17 @@ class VersionerTool extends ToolBase {
 
     final parser = createParser();
     ArgResults results;
+    WorkspaceNavigationArgs navArgs;
+    String executionRoot;
 
     try {
-      results = parser.parse(args);
-    } catch (e) {
+      (results, navArgs, executionRoot) = parseArgsWithExecutionMode(parser, args);
+    } on FormatException catch (e) {
       print('Error: $e');
       _printUsage(parser);
+      return false;
+    } on ArgumentError catch (e) {
+      print('Error: $e');
       return false;
     }
 
@@ -166,17 +170,16 @@ class VersionerTool extends ToolBase {
     final showMode = results['show'] as bool;
 
     // Load workspace-level config
-    final basePath = Directory.current.path;
-    final wsRoot = ToolBase.findWorkspaceRoot(basePath);
+    final wsRoot = ToolBase.findWorkspaceRoot(executionRoot);
     final wsConfig = VersionerConfig.loadFromMasterYaml(wsRoot) ?? VersionerConfig();
 
-    // Build CLI config (highest priority)
+    // Build CLI config (highest priority) - tool-specific options only
     final cliConfig = VersionerConfig(
-      project: results['project'] as String?,
-      scan: results['scan'] as String?,
-      recursive: results['recursive'] as bool,
-      exclude: results['exclude'] as List<String>,
-      recursionExclude: results['recursion-exclude'] as List<String>,
+      project: navArgs.project,
+      scan: navArgs.scan,
+      recursive: navArgs.recursive,
+      exclude: navArgs.exclude,
+      recursionExclude: navArgs.recursionExclude,
       verbose: verbose,
       output: results['output'] as String,
       includeGitCommit: !(results['no-git'] as bool),
@@ -184,27 +187,19 @@ class VersionerTool extends ToolBase {
       variablePrefix: results['variable-prefix'] as String?,
     );
 
-    // Merge: CLI > workspace (CLI takes precedence)
-    var config = cliConfig.merge(wsConfig);
-
     // Validate paths
     if (!validateAndEnforcePaths(
-      scan: config.scan,
-      project: config.project,
-      basePath: basePath,
+      scan: navArgs.scan,
+      project: navArgs.project,
+      basePath: executionRoot,
     )) {
       return false;
     }
 
-    // Find projects
-    final projects = await findProjects(
-      project: config.project,
-      scan: config.scan,
-      recursive: config.recursive,
-      exclude: config.exclude,
-      excludeProjects: results['exclude-projects'] as List<String>,
-      recursionExclude: config.recursionExclude,
-      basePath: basePath,
+    // Find projects using navigation args
+    final projects = await findProjectsFromNavArgs(
+      navArgs,
+      basePath: executionRoot,
     );
 
     if (findProjectsError) return false;
@@ -213,7 +208,7 @@ class VersionerTool extends ToolBase {
       print('Projects with versioner configuration:');
       for (final project in projects) {
         if (isToolProject(project)) {
-          print('  ${p.relative(project, from: basePath)}');
+          print('  ${p.relative(project, from: executionRoot)}');
         }
       }
       return true;
@@ -221,7 +216,7 @@ class VersionerTool extends ToolBase {
 
     if (showMode) {
       for (final project in projects) {
-        print('Project: ${p.relative(project, from: basePath)}');
+        print('Project: ${p.relative(project, from: executionRoot)}');
         printTomBuildYamlSection(project, 'versioner');
       }
       return true;

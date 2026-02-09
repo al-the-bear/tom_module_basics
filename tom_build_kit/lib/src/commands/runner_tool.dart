@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:args/args.dart';
 import 'package:path/path.dart' as p;
+import 'package:tom_build_base/tom_build_base.dart';
 import 'package:yaml/yaml.dart';
 
 import 'tool_base.dart';
@@ -240,12 +241,17 @@ class RunnerTool extends ToolBase {
 
     final parser = createParser();
     ArgResults results;
+    WorkspaceNavigationArgs navArgs;
+    String executionRoot;
 
     try {
-      results = parser.parse(args);
-    } catch (e) {
+      (results, navArgs, executionRoot) = parseArgsWithExecutionMode(parser, args);
+    } on FormatException catch (e) {
       print('Error: $e');
       _printUsage(parser);
+      return false;
+    } on ArgumentError catch (e) {
+      print('Error: $e');
       return false;
     }
 
@@ -261,17 +267,16 @@ class RunnerTool extends ToolBase {
     final showMode = results['show'] as bool;
 
     // Load workspace-level config
-    final basePath = Directory.current.path;
-    final rootPath = ToolBase.findWorkspaceRoot(basePath);
-    var config = BuildRunnerConfig.loadFromYaml(basePath) ?? BuildRunnerConfig();
+    final rootPath = ToolBase.findWorkspaceRoot(executionRoot);
+    var config = BuildRunnerConfig.loadFromYaml(executionRoot) ?? BuildRunnerConfig();
 
     // Override with CLI options
     config = config.merge(BuildRunnerConfig(
-      project: results['project'] as String?,
-      scan: results['scan'] as String?,
-      recursive: results['recursive'] as bool,
-      exclude: results['exclude'] as List<String>,
-      recursionExclude: results['recursion-exclude'] as List<String>,
+      project: navArgs.project,
+      scan: navArgs.scan,
+      recursive: navArgs.recursive,
+      exclude: navArgs.exclude,
+      recursionExclude: navArgs.recursionExclude,
       verbose: verbose,
       dryRun: dryRun,
       command: results['command'] as String,
@@ -286,20 +291,15 @@ class RunnerTool extends ToolBase {
     if (!validateAndEnforcePaths(
       scan: config.scan,
       project: config.project,
-      basePath: basePath,
+      basePath: executionRoot,
     )) {
       return false;
     }
 
-    // Find projects
-    final projects = await findProjects(
-      project: config.project,
-      scan: config.scan,
-      recursive: config.recursive,
-      exclude: config.exclude,
-      excludeProjects: results['exclude-projects'] as List<String>,
-      recursionExclude: config.recursionExclude,
-      basePath: basePath,
+    // Find projects using navigation args
+    final projects = await findProjectsFromNavArgs(
+      navArgs,
+      basePath: executionRoot,
     );
 
     if (findProjectsError) return false;
@@ -308,7 +308,7 @@ class RunnerTool extends ToolBase {
       print('Projects with build.yaml:');
       for (final project in projects) {
         if (isToolProject(project)) {
-          print('  ${p.relative(project, from: basePath)}');
+          print('  ${p.relative(project, from: executionRoot)}');
         }
       }
       return true;
@@ -316,7 +316,7 @@ class RunnerTool extends ToolBase {
 
     if (showMode) {
       for (final project in projects) {
-        print('Project: ${p.relative(project, from: basePath)}');
+        print('Project: ${p.relative(project, from: executionRoot)}');
         _showProjectConfig(project, rootPath);
       }
       return true;

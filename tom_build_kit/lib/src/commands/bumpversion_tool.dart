@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:args/args.dart';
 import 'package:path/path.dart' as p;
+import 'package:tom_build_base/tom_build_base.dart';
 import 'package:yaml/yaml.dart';
 
 import 'tool_base.dart';
@@ -65,12 +66,17 @@ class BumpVersionTool extends ToolBase {
 
     final parser = createParser();
     ArgResults results;
+    WorkspaceNavigationArgs navArgs;
+    String executionRoot;
 
     try {
-      results = parser.parse(args);
-    } catch (e) {
+      (results, navArgs, executionRoot) = parseArgsWithExecutionMode(parser, args);
+    } on FormatException catch (e) {
       print('Error: $e');
       _printUsage(parser);
+      return false;
+    } on ArgumentError catch (e) {
+      print('Error: $e');
       return false;
     }
 
@@ -89,26 +95,19 @@ class BumpVersionTool extends ToolBase {
     final majorProjects = _expandProjectList(results['major'] as List<String>);
     final runVersioner = results['versioner'] as bool;
 
-    final basePath = Directory.current.path;
-
     // Validate paths
     if (!validateAndEnforcePaths(
-      scan: results['scan'] as String?,
-      project: results['project'] as String?,
-      basePath: basePath,
+      scan: navArgs.scan,
+      project: navArgs.project,
+      basePath: executionRoot,
     )) {
       return false;
     }
 
-    // Find projects
-    final projects = await findProjects(
-      project: results['project'] as String?,
-      scan: results['scan'] as String?,
-      recursive: results['recursive'] as bool,
-      exclude: results['exclude'] as List<String>,
-      excludeProjects: results['exclude-projects'] as List<String>,
-      recursionExclude: results['recursion-exclude'] as List<String>,
-      basePath: basePath,
+    // Find projects using navigation args
+    final projects = await findProjectsFromNavArgs(
+      navArgs,
+      basePath: executionRoot,
     );
 
     if (findProjectsError) return false;
@@ -117,7 +116,7 @@ class BumpVersionTool extends ToolBase {
       print('Projects with pubspec.yaml:');
       for (final project in projects) {
         if (isToolProject(project)) {
-          print('  ${p.relative(project, from: basePath)}');
+          print('  ${p.relative(project, from: executionRoot)}');
         }
       }
       return true;
@@ -130,7 +129,7 @@ class BumpVersionTool extends ToolBase {
           final name = p.basename(project);
           final bumpType = _determineBumpType(
               name, project, minorProjects, majorProjects);
-          print('  ${p.relative(project, from: basePath)}: '
+          print('  ${p.relative(project, from: executionRoot)}: '
               '$version → ${_bumpVersionString(version, bumpType)} ($bumpType)');
         }
       }
@@ -152,7 +151,7 @@ class BumpVersionTool extends ToolBase {
       final bumpType = _determineBumpType(
           projectName, projectPath, minorProjects, majorProjects);
 
-      final result = await _bumpProject(projectPath, bumpType, basePath);
+      final result = await _bumpProject(projectPath, bumpType, executionRoot);
       if (result) {
         bumped++;
       } else {
@@ -177,17 +176,14 @@ class BumpVersionTool extends ToolBase {
 
       // Build versioner args from the same scan/project/recursive options
       final versionerArgs = <String>[];
-      final scan = results['scan'] as String?;
-      final project = results['project'] as String?;
-      final recursive = results['recursive'] as bool;
 
-      if (scan != null) {
-        versionerArgs.addAll(['-s', scan]);
+      if (navArgs.scan != null) {
+        versionerArgs.addAll(['-s', navArgs.scan!]);
       }
-      if (project != null) {
-        versionerArgs.addAll(['-p', project]);
+      if (navArgs.project != null) {
+        versionerArgs.addAll(['-p', navArgs.project!]);
       }
-      if (recursive) {
+      if (navArgs.recursive) {
         versionerArgs.add('-r');
       }
       if (verbose) {
@@ -196,7 +192,7 @@ class BumpVersionTool extends ToolBase {
       if (dryRun) {
         versionerArgs.add('-n');
       }
-      for (final exclude in results['exclude'] as List<String>) {
+      for (final exclude in navArgs.exclude) {
         versionerArgs.addAll(['-x', exclude]);
       }
 

@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:args/args.dart';
 import 'package:path/path.dart' as p;
+import 'package:tom_build_base/tom_build_base.dart';
 import 'package:yaml/yaml.dart';
 
 import 'tool_base.dart';
@@ -62,12 +63,17 @@ class BuildSorterTool extends ToolBase {
 
     final parser = createParser();
     ArgResults results;
+    WorkspaceNavigationArgs navArgs;
+    String executionRoot;
 
     try {
-      results = parser.parse(args);
-    } catch (e) {
+      (results, navArgs, executionRoot) = parseArgsWithExecutionMode(parser, args);
+    } on FormatException catch (e) {
       print('Error: $e');
       _printUsage(parser);
+      return false;
+    } on ArgumentError catch (e) {
+      print('Error: $e');
       return false;
     }
 
@@ -84,26 +90,19 @@ class BuildSorterTool extends ToolBase {
     final showNames = results['names'] as bool;
     final includeDev = results['include-dev'] as bool;
 
-    final basePath = Directory.current.path;
-
     // Validate paths
     if (!validateAndEnforcePaths(
-      scan: results['scan'] as String?,
-      project: results['project'] as String?,
-      basePath: basePath,
+      scan: navArgs.scan,
+      project: navArgs.project,
+      basePath: executionRoot,
     )) {
       return false;
     }
 
-    // Find projects
-    final projects = await findProjects(
-      project: results['project'] as String?,
-      scan: results['scan'] as String?,
-      recursive: results['recursive'] as bool,
-      exclude: results['exclude'] as List<String>,
-      excludeProjects: results['exclude-projects'] as List<String>,
-      recursionExclude: results['recursion-exclude'] as List<String>,
-      basePath: basePath,
+    // Find projects using navigation args
+    final projects = await findProjectsFromNavArgs(
+      navArgs,
+      basePath: executionRoot,
     );
 
     if (findProjectsError) return false;
@@ -112,7 +111,7 @@ class BuildSorterTool extends ToolBase {
       print('Dart projects:');
       for (final project in projects) {
         if (isToolProject(project)) {
-          print('  ${p.relative(project, from: basePath)}');
+          print('  ${p.relative(project, from: executionRoot)}');
         }
       }
       return true;
@@ -121,7 +120,7 @@ class BuildSorterTool extends ToolBase {
     if (showMode) {
       for (final projectPath in projects) {
         if (!isToolProject(projectPath)) continue;
-        print('Project: ${p.relative(projectPath, from: basePath)}');
+        print('Project: ${p.relative(projectPath, from: executionRoot)}');
         final info = _parseProjectInfo(projectPath);
         if (info != null) {
           print('  Name: ${info.name}');
@@ -142,7 +141,7 @@ class BuildSorterTool extends ToolBase {
         final info = _parseProjectInfo(projectPath);
         print(info?.name ?? p.basename(projectPath));
       } else {
-        print(p.relative(projectPath, from: basePath));
+        print(p.relative(projectPath, from: executionRoot));
       }
     }
 

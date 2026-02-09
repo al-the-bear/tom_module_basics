@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:args/args.dart';
 import 'package:path/path.dart' as p;
+import 'package:tom_build_base/tom_build_base.dart';
 import 'package:yaml/yaml.dart';
 
 import 'tool_base.dart';
@@ -105,12 +106,17 @@ class DependenciesTool extends ToolBase {
 
     final parser = createParser();
     ArgResults results;
+    WorkspaceNavigationArgs navArgs;
+    String executionRoot;
 
     try {
-      results = parser.parse(args);
-    } catch (e) {
+      (results, navArgs, executionRoot) = parseArgsWithExecutionMode(parser, args);
+    } on FormatException catch (e) {
       print('Error: $e');
       _printUsage(parser);
+      return false;
+    } on ArgumentError catch (e) {
+      print('Error: $e');
       return false;
     }
 
@@ -125,37 +131,30 @@ class DependenciesTool extends ToolBase {
     final showMode = results['show'] as bool;
 
     final config = DependenciesConfig(
-      project: results['project'] as String?,
-      scan: results['scan'] as String?,
-      recursive: results['recursive'] as bool,
-      exclude: results['exclude'] as List<String>,
-      recursionExclude: results['recursion-exclude'] as List<String>,
+      project: navArgs.project,
+      scan: navArgs.scan,
+      recursive: navArgs.recursive,
+      exclude: navArgs.exclude,
+      recursionExclude: navArgs.recursionExclude,
       verbose: verbose,
       showDev: results['dev'] as bool,
       showAll: results['all'] as bool,
       deep: results['deep'] as bool,
     );
 
-    final basePath = Directory.current.path;
-
     // Validate paths
     if (!validateAndEnforcePaths(
       scan: config.scan,
       project: config.project,
-      basePath: basePath,
+      basePath: executionRoot,
     )) {
       return false;
     }
 
-    // Find projects
-    final projects = await findProjects(
-      project: config.project,
-      scan: config.scan,
-      recursive: config.recursive,
-      exclude: config.exclude,
-      excludeProjects: results['exclude-projects'] as List<String>,
-      recursionExclude: config.recursionExclude,
-      basePath: basePath,
+    // Find projects using navigation args
+    final projects = await findProjectsFromNavArgs(
+      navArgs,
+      basePath: executionRoot,
     );
 
     if (findProjectsError) return false;
@@ -164,7 +163,7 @@ class DependenciesTool extends ToolBase {
       print('Dart projects:');
       for (final project in projects) {
         if (isToolProject(project)) {
-          print('  ${p.relative(project, from: basePath)}');
+          print('  ${p.relative(project, from: executionRoot)}');
         }
       }
       return true;
@@ -172,7 +171,7 @@ class DependenciesTool extends ToolBase {
 
     if (showMode) {
       for (final projectPath in projects) {
-        print('Project: ${p.relative(projectPath, from: basePath)}');
+        print('Project: ${p.relative(projectPath, from: executionRoot)}');
         print('  Tool: $toolKey');
         print('  Has pubspec.yaml: ${File('$projectPath/pubspec.yaml').existsSync()}');
         print('  Has pubspec_overrides.yaml: ${File('$projectPath/pubspec_overrides.yaml').existsSync()}');
