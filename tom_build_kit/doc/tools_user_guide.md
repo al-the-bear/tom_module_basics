@@ -34,7 +34,7 @@ For the BuildKit pipeline orchestrator, see [buildkit_user_guide.md](buildkit_us
 
 ## Overview
 
-Tom Build Kit provides seven CLI tools and two additional built-in commands that share a common infrastructure for project discovery, argument parsing, and configuration loading:
+Tom Build Kit provides seven CLI tools and three additional built-in commands that share a common infrastructure for project discovery, argument parsing, and configuration loading:
 
 | Tool | Binary | Purpose |
 |------|--------|---------|
@@ -45,6 +45,7 @@ Tom Build Kit provides seven CLI tools and two additional built-in commands that
 | **Runner** | `runner` | `build_runner` wrapper with builder filtering |
 | **Dependencies** | `dependencies` | Dependency tree visualization |
 | **Pub Get** | via `:pubget` | Run `dart pub get` across projects with output filtering |
+| **Pub Update** | via `:pubupdate` | Run `dart pub upgrade` across projects with output filtering |
 | **DCli** | via `:dcli` | Execute Dart scripts/expressions via dcli with path resolution |
 
 All tools (except Pub Get) inherit from `ToolBase`, sharing project discovery, exclusion filtering, and configuration loading. They can be invoked standalone or through the [BuildKit orchestrator](buildkit_user_guide.md).
@@ -835,6 +836,55 @@ buildkit :pubgetall --errors
 
 # Run pub get on specific project
 buildkit :pubget --project _build
+```
+
+---
+
+### Pub Update
+
+Runs `dart pub upgrade` across multiple projects with filtered output and summary reporting.
+
+> **Note:** Pub Update is not a `ToolBase` subclass. It has its own argument parser and is only available as a BuildKit command (`:pubupdate` / `:pubupdateall`), not as a standalone binary.
+
+**Usage:**
+
+```bash
+buildkit :pubupdate [options]
+buildkit :pubupdateall [options]    # Shortcut for :pubupdate --scan . --recursive
+```
+
+**Options:**
+
+| Flag | Short | Description |
+|------|-------|-------------|
+| `--help` | `-h` | Show help |
+| `--errors` | `-e` | Only show projects with errors |
+| `--changes` | `-c` | Only show projects with changed packages |
+| `--major-versions` | | Allow upgrading to latest resolvable versions (major versions) |
+| `--verbose` | `-v` | Show detailed output |
+| `--recursive` | `-R` | Scan directories recursively (uppercase R) |
+| `--scan <dir>` | `-s` | Scan directory for projects |
+| `--project <path>` | `-p` | Project(s) to process |
+
+**Output:** Shows per-project results with `📦` headers and a summary with total, succeeded, failed, and with-package-changes counts. Filters (`--errors`, `--changes`) are OR-combined.
+
+**Examples:**
+
+```bash
+# Upgrade all workspace projects
+buildkit :pubupdateall
+
+# Show only projects with errors
+buildkit :pubupdateall --errors
+
+# Show only projects with changed packages
+buildkit :pubupdateall --changes
+
+# Upgrade to major versions
+buildkit :pubupdateall --major-versions
+
+# Upgrade specific project
+buildkit :pubupdate --project _build
 ```
 
 ---

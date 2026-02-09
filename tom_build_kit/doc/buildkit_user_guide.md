@@ -23,6 +23,10 @@ For the individual tool reference, see [tools_user_guide.md](tools_user_guide.md
   - [Pipeline Phases](#pipeline-phases)
 - [Built-in Commands](#built-in-commands)
   - [DCli Command](#dcli-command)
+- [Macros](#macros)
+  - [Defining Macros](#defining-macros)
+  - [Using Macros](#using-macros)
+  - [Managing Macros](#managing-macros)
 - [Allowed Binaries](#allowed-binaries)
 - [Git Operations](#git-operations)
 - [Shell Commands](#shell-commands)
@@ -280,6 +284,8 @@ Built-in commands run the respective tools directly via their Dart implementatio
 | `dependencies` | Dependency tree visualization |
 | `pubget` | Run `dart pub get` on projects |
 | `pubgetall` | Shortcut for `pubget --scan . --recursive` |
+| `pubupdate` | Run `dart pub upgrade` on projects |
+| `pubupdateall` | Shortcut for `pubupdate --scan . --recursive` |
 | `git` | Run git commands across all workspace repositories |
 | `dcli` | Execute Dart scripts/expressions via dcli |
 
@@ -373,6 +379,85 @@ compiler:
     - command: dcli ~s/pre_compile.dart
   postcompile:
     - command: dcli ~s/post_compile.dart -no-init-source
+```
+
+---
+
+## Macros
+
+Macros are reusable command sequences that can be defined, expanded, and managed. They are stored in `buildkit_master.yaml` in the workspace root.
+
+### Defining Macros
+
+Use the `define` command to create a macro:
+
+```bash
+bk define cv=:versioner :compiler
+bk define cvc=:cleanup :versioner :compiler
+bk define test=:runner --command build
+```
+
+Macros support argument placeholders:
+
+| Placeholder | Description |
+|-------------|-------------|
+| `$1` - `$9` | Positional arguments |
+| `$$` | All arguments |
+
+Example with placeholders:
+
+```bash
+bk define run=:runner --command $$
+bk $run build          # Expands to: :runner --command build
+bk $run clean build    # Expands to: :runner --command clean build
+```
+
+### Using Macros
+
+Invoke a macro with the `$` prefix:
+
+```bash
+bk $cv                 # Expands to: :versioner :compiler
+bk $cvc                # Expands to: :cleanup :versioner :compiler
+bk $test               # Expands to: :runner --command build
+```
+
+Macros can be combined with other commands:
+
+```bash
+bk :cleanup $cv        # Run cleanup, then expand cv macro
+bk $cv :compiler       # Expand macro, then run compiler again
+```
+
+### Managing Macros
+
+**List all macros:**
+
+```bash
+bk defines
+```
+
+Output:
+
+```text
+Defined macros:
+  cv=:versioner :compiler
+  cvc=:cleanup :versioner :compiler
+  test=:runner --command build
+```
+
+**Remove a macro:**
+
+```bash
+bk undefine cv
+```
+
+**Get help:**
+
+```bash
+bk help :define
+bk help :undefine
+bk help :defines
 ```
 
 ---

@@ -1182,6 +1182,9 @@ const _builtinCommandNames = {
   'pubupdateall',
   'git',
   'dcli',
+  'define',
+  'undefine',
+  'defines',
 };
 
 /// Resolve a command shorthand to full command name.
@@ -1225,8 +1228,11 @@ Future<bool> _runCommandHelp(String commandName) async {
     }
     print('Unknown command: $commandName');
     print('');
-    print(
-        'Available commands: buildsorter, versioner, bumpversion, compiler, runner, cleanup, dependencies, pubget, pubupdate, git, dcli');
+    print('Available commands:');
+    print('  Tools: buildsorter, versioner, bumpversion, compiler, runner,');
+    print('         cleanup, dependencies, pubget, pubupdate');
+    print('  Other: git, dcli');
+    print('  Macros: define, undefine, defines');
     return false;
   }
 
@@ -1301,6 +1307,53 @@ Future<bool> _runCommandHelp(String commandName) async {
       print('  bk :dcli build_step.dart                 # Run per-project script (optional)');
       print('  bk :dcli "print(DateTime.now())"         # Run expression in every project');
       print('  bk :dcli ~s/init.dart -no-init-source    # Skip init source');
+      return true;
+    case 'define':
+      print('Define Command — create a reusable macro');
+      print('');
+      print('Usage: buildkit define <name>=<commands>');
+      print('       bk define <name>=<commands>');
+      print('');
+      print('Creates a named macro that expands to the given commands.');
+      print('Macros are saved to buildkit_master.yaml in the workspace root.');
+      print('');
+      print('Macro expansion:');
+      print(r'  $1-$9    Replaced with positional arguments');
+      print(r'  $$       Replaced with all arguments');
+      print('');
+      print('Examples:');
+      print('  bk define cv=:versioner :compiler     # Create macro');
+      print(r'  bk $cv                                # Expands to: :versioner :compiler');
+      print(r'  bk define test=:runner --command $$   # With all-args placeholder');
+      print(r'  bk $test build                        # Expands to: :runner --command build');
+      print('');
+      print('See also: undefine, defines');
+      return true;
+    case 'undefine':
+      print('Undefine Command — remove a macro');
+      print('');
+      print('Usage: buildkit undefine <name>');
+      print('       bk undefine <name>');
+      print('');
+      print('Removes a named macro from buildkit_master.yaml.');
+      print('');
+      print('Examples:');
+      print('  bk undefine cv    # Remove the cv macro');
+      print('');
+      print('See also: define, defines');
+      return true;
+    case 'defines':
+      print('Defines Command — list all defined macros');
+      print('');
+      print('Usage: buildkit defines');
+      print('       bk defines');
+      print('');
+      print('Lists all macros defined in buildkit_master.yaml.');
+      print('');
+      print('Output format:');
+      print('  <name>=<commands>');
+      print('');
+      print('See also: define, undefine');
       return true;
   }
   // Unreachable — all cases covered after early validation
