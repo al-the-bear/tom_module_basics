@@ -680,46 +680,53 @@ Map<String, String> _loadMacros(String rootPath) {
 }
 
 /// Save a macro to `defines:` section of `tom_build_master.yaml`.
+///
+/// Uses text-based editing to preserve the file's original formatting.
 bool _saveMacro(String rootPath, String name, String value) {
   final masterFile = File(p.join(rootPath, 'tom_build_master.yaml'));
 
   try {
-    String content;
-    Map<dynamic, dynamic> yaml;
+    String content = '';
+    Map<String, String> defines = {};
 
     if (masterFile.existsSync()) {
       content = masterFile.readAsStringSync();
       final parsed = loadYaml(content);
-      yaml = parsed is Map ? Map<dynamic, dynamic>.from(parsed) : {};
-    } else {
-      content = '';
-      yaml = {};
-    }
-
-    // Get or create defines section
-    final defines = yaml['defines'] is Map
-        ? Map<String, String>.from(yaml['defines'] as Map)
-        : <String, String>{};
-    defines[name] = value;
-    yaml['defines'] = defines;
-
-    // Write back as formatted YAML (simple format)
-    final buffer = StringBuffer();
-
-    // Write non-defines sections first (preserve order)
-    for (final key in yaml.keys) {
-      if (key != 'defines') {
-        _writeYamlSection(buffer, key, yaml[key]);
+      if (parsed is Map && parsed['defines'] is Map) {
+        defines = Map<String, String>.from(parsed['defines'] as Map);
       }
     }
 
-    // Write defines section
-    buffer.writeln('defines:');
+    // Add/update the macro
+    defines[name] = value;
+
+    // Build the new defines section text
+    final definesBuffer = StringBuffer();
+    definesBuffer.writeln('defines:');
     for (final entry in defines.entries) {
-      buffer.writeln('  ${entry.key}: "${_escapeYamlString(entry.value)}"');
+      definesBuffer.writeln('  ${entry.key}: "${_escapeYamlString(entry.value)}"');
+    }
+    final newDefinesSection = definesBuffer.toString().trimRight();
+
+    // Find and replace the existing defines section, or append
+    final definesRegex = RegExp(
+      r'^defines:\s*\n(  [^\n]+\n)*',
+      multiLine: true,
+    );
+
+    String newContent;
+    if (definesRegex.hasMatch(content)) {
+      // Replace existing defines section
+      newContent = content.replaceFirst(definesRegex, '$newDefinesSection\n');
+    } else if (content.isNotEmpty) {
+      // Append defines section to end
+      newContent = '${content.trimRight()}\n\n$newDefinesSection\n';
+    } else {
+      // New file
+      newContent = '$newDefinesSection\n';
     }
 
-    masterFile.writeAsStringSync(buffer.toString());
+    masterFile.writeAsStringSync(newContent);
     return true;
   } catch (e) {
     print('Error saving macro: $e');
@@ -728,6 +735,8 @@ bool _saveMacro(String rootPath, String name, String value) {
 }
 
 /// Remove a macro from `defines:` section of `tom_build_master.yaml`.
+///
+/// Uses text-based editing to preserve the file's original formatting.
 bool _removeMacro(String rootPath, String name) {
   final masterFile = File(p.join(rootPath, 'tom_build_master.yaml'));
   if (!masterFile.existsSync()) {
@@ -743,65 +752,44 @@ bool _removeMacro(String rootPath, String name) {
       return false;
     }
 
-    final yaml = Map<dynamic, dynamic>.from(parsed);
-    final defines = yaml['defines'];
-    if (defines is! Map || !defines.containsKey(name)) {
+    final definesRaw = parsed['defines'];
+    if (definesRaw is! Map || !definesRaw.containsKey(name)) {
       print('Macro not found: $name');
       return false;
     }
 
-    final updatedDefines = Map<String, String>.from(defines);
-    updatedDefines.remove(name);
+    final defines = Map<String, String>.from(definesRaw);
+    defines.remove(name);
 
-    if (updatedDefines.isEmpty) {
-      yaml.remove('defines');
+    // Find the defines section in text
+    final definesRegex = RegExp(
+      r'^defines:\s*\n(  [^\n]+\n)*',
+      multiLine: true,
+    );
+
+    String newContent;
+    if (defines.isEmpty) {
+      // Remove the entire defines section
+      newContent = content.replaceFirst(definesRegex, '');
+      // Clean up extra blank lines
+      newContent = newContent.replaceAll(RegExp(r'\n{3,}'), '\n\n').trimRight();
+      if (newContent.isNotEmpty) newContent += '\n';
     } else {
-      yaml['defines'] = updatedDefines;
-    }
-
-    // Write back as formatted YAML
-    final buffer = StringBuffer();
-    for (final key in yaml.keys) {
-      if (key == 'defines') {
-        if (updatedDefines.isNotEmpty) {
-          buffer.writeln('defines:');
-          for (final entry in updatedDefines.entries) {
-            buffer.writeln(
-                '  ${entry.key}: "${_escapeYamlString(entry.value)}"');
-          }
-        }
-      } else {
-        _writeYamlSection(buffer, key, yaml[key]);
+      // Build new defines section
+      final definesBuffer = StringBuffer();
+      definesBuffer.writeln('defines:');
+      for (final entry in defines.entries) {
+        definesBuffer.writeln('  ${entry.key}: "${_escapeYamlString(entry.value)}"');
       }
+      final newDefinesSection = definesBuffer.toString().trimRight();
+      newContent = content.replaceFirst(definesRegex, '$newDefinesSection\n');
     }
 
-    masterFile.writeAsStringSync(buffer.toString());
+    masterFile.writeAsStringSync(newContent);
     return true;
   } catch (e) {
     print('Error removing macro: $e');
     return false;
-  }
-}
-
-/// Helper to write a YAML section (simple key-value or nested).
-void _writeYamlSection(StringBuffer buffer, dynamic key, dynamic value) {
-  if (value == null) {
-    buffer.writeln('$key:');
-  } else if (value is String) {
-    buffer.writeln('$key: "$value"');
-  } else if (value is num || value is bool) {
-    buffer.writeln('$key: $value');
-  } else if (value is List) {
-    buffer.writeln('$key:');
-    for (final item in value) {
-      buffer.writeln('  - $item');
-    }
-  } else if (value is Map) {
-    buffer.writeln('$key:');
-    for (final entry in value.entries) {
-      _writeYamlSection(
-          buffer, '  ${entry.key}', entry.value);
-    }
   }
 }
 
