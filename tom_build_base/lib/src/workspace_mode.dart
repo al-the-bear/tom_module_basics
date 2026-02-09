@@ -449,6 +449,30 @@ bool isVersionCommand(List<String> args) {
 // Navigation Options Usage Text
 // =============================================================================
 
+/// Returns just the execution modes explanation.
+///
+/// Use this when the navigation options are already printed via ArgParser.usage
+/// and you only need to add the execution modes explanation.
+List<String> getExecutionModesHelpLines() {
+  return [
+    'Execution Modes:',
+    '  Project Mode (default):   Runs from current directory with -s . -r -b defaults',
+    '  Workspace Mode:           Runs from workspace root (triggered by -R, -s <path>, -i, -o)',
+    '',
+    '  -R alone triggers workspace mode from detected workspace root.',
+    '  -R <path> runs in specified workspace (must have buildkit_master.yaml).',
+    '  Sub-workspaces (containing buildkit_master.yaml) are skipped by default.',
+    '  Use -w to shell out and process sub-workspaces recursively.',
+  ];
+}
+
+/// Prints just the execution modes explanation to stdout.
+void printExecutionModesHelp() {
+  for (final line in getExecutionModesHelpLines()) {
+    print(line);
+  }
+}
+
 /// Returns the standard navigation options help text.
 ///
 /// This is used to generate consistent help output across all Tom build tools.

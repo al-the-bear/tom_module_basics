@@ -51,17 +51,64 @@ abstract class ToolBase {
 
   /// Check if the first argument is a version request.
   ///
-  /// Supports `version`, `--version`, and `-version` as first argument.
+  /// Supports `version`, `--version`, `-version`, and `-V` as first argument.
   /// Returns true if version was printed (caller should return).
   bool checkVersionArg(List<String> args) {
-    if (args.isNotEmpty) {
-      final first = args.first.toLowerCase();
-      if (first == 'version' || first == '--version' || first == '-version') {
-        print('$toolKey ${BuildkitVersionInfo.versionLong}');
-        return true;
-      }
+    if (isVersionCommand(args)) {
+      print('$toolKey ${BuildkitVersionInfo.versionLong}');
+      return true;
     }
     return false;
+  }
+
+  /// Check if the first argument is a help request.
+  ///
+  /// Supports `help`, `--help`, `-help`, and `-h` as first argument.
+  /// Returns true if help was requested (caller should print usage and return).
+  bool checkHelpArg(List<String> args) {
+    return isHelpCommand(args);
+  }
+
+  /// Print the tool usage header in standardized format.
+  ///
+  /// Prints: tool name, description, usage patterns, help/version commands.
+  /// Call before printing tool-specific options.
+  void printUsageHeader() {
+    final header = getToolHelpHeader(
+      toolName: toolKey,
+      toolDescription: toolDescription,
+      usagePatterns: [
+        '$toolKey [options]',
+        'buildkit :$toolKey [options]',
+        'dart run tom_build_kit:$toolKey [options]',
+      ],
+    );
+    for (final line in header) {
+      print(line);
+    }
+  }
+
+  /// Print the standardized navigation options help.
+  void printNavigationHelp() {
+    printNavigationOptionsHelp();
+  }
+
+  /// Print just the execution modes explanation.
+  ///
+  /// Use this when the navigation options are already printed via parser.usage
+  /// and you only need to add the execution modes explanation.
+  void printExecutionModesExplanation() {
+    printExecutionModesHelp();
+  }
+
+  /// Print the tool usage footer with examples.
+  ///
+  /// Prints common examples using the tool's name.
+  void printUsageFooter() {
+    final footer = getToolHelpFooter(toolName: toolKey);
+    for (final line in footer) {
+      print(line);
+    }
   }
 
   /// Create the argument parser with common options.
