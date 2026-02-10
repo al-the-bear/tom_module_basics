@@ -570,6 +570,13 @@ Future<void> main(List<String> args) async {
     'gitcheckout',
     'gitreset',
     'gitsync',
+    'gitprune',
+    'gitstash',
+    'gitunstash',
+    'gitcompare',
+    'gitmerge',
+    'gitsquash',
+    'gitrebase',
     'publisher',
   };
 
@@ -587,6 +594,13 @@ Future<void> main(List<String> args) async {
     'gitcheckout': 'outer', // fixed: checkout outer repos first
     'gitreset': 'outer', // fixed: reset outer repos first
     'gitsync': 'outer', // fixed: sync outer repos first
+    'gitprune': 'outer', // fixed: prune outer repos first
+    'gitstash': 'inner', // fixed: stash inner repos first
+    'gitunstash': 'outer', // fixed: unstash outer repos first (reverse)
+    'gitcompare': 'inner', // fixed: compare inner repos first
+    'gitmerge': 'inner', // fixed: merge inner repos first
+    'gitsquash': 'inner', // fixed: squash inner repos first
+    'gitrebase': 'inner', // fixed: rebase inner repos first
     'publisher': null, // not a traversal tool
   };
 
@@ -760,6 +774,20 @@ Future<void> main(List<String> args) async {
         result = await GitResetTool().run(toolArgs);
       case 'gitsync':
         result = await GitSyncTool().run(toolArgs);
+      case 'gitprune':
+        result = await GitPruneTool().run(toolArgs);
+      case 'gitstash':
+        result = await GitStashTool().run(toolArgs);
+      case 'gitunstash':
+        result = await GitUnstashTool().run(toolArgs);
+      case 'gitcompare':
+        result = await GitCompareTool().run(toolArgs);
+      case 'gitmerge':
+        result = await GitMergeTool().run(toolArgs);
+      case 'gitsquash':
+        result = await GitSquashTool().run(toolArgs);
+      case 'gitrebase':
+        result = await GitRebaseTool().run(toolArgs);
       case 'publisher':
         result = await PublisherTool().run(toolArgs);
       default:
@@ -930,6 +958,9 @@ void _printUsage(ArgParser parser) {
   print('  :gitcheckout    Checkout branches/tags across repositories');
   print('  :gitreset       Reset repositories to specific state');
   print('  :gitsync        Sync (fetch + merge/rebase) all repositories');
+  print('  :gitprune       Remove stale remote-tracking branches');
+  print('  :gitstash       Stash uncommitted changes across repositories');
+  print('  :gitunstash     Restore stashed changes across repositories');
   print('  :dcli           Execute Dart scripts/expressions via dcli');
   print('');
   print('Allowed binaries (configured in buildkit.yaml buildkit.allowed-binaries):');
@@ -1558,6 +1589,13 @@ const _builtinCommandNames = {
   'gitcheckout',
   'gitreset',
   'gitsync',
+  'gitprune',
+  'gitstash',
+  'gitunstash',
+  'gitcompare',
+  'gitmerge',
+  'gitsquash',
+  'gitrebase',
   'dcli',
   'define',
   'undefine',
@@ -1608,8 +1646,8 @@ Future<bool> _runCommandHelp(String commandName) async {
     print('Available commands:');
     print('  Tools: buildsorter, versioner, bumpversion, compiler, runner,');
     print('         cleanup, dependencies, publisher, pubget, pubupdate');
-    print('  Git:   gitstatus, gitcommit, gitpull, gitbranch, gittag,');
-    print('         gitclean, gitcheckout, gitreset, gitsync, git');
+    print('  Git:   gitstatus, gitcommit, gitpull, gitbranch, gittag, gitclean,');
+    print('         gitcheckout, gitreset, gitsync, gitprune, gitstash, gitunstash, git');
     print('  Other: dcli');
     print('  Macros: define, undefine, defines');
     return false;
@@ -1650,6 +1688,20 @@ Future<bool> _runCommandHelp(String commandName) async {
       return GitResetTool().run(['--help']);
     case 'gitsync':
       return GitSyncTool().run(['--help']);
+    case 'gitprune':
+      return GitPruneTool().run(['--help']);
+    case 'gitstash':
+      return GitStashTool().run(['--help']);
+    case 'gitunstash':
+      return GitUnstashTool().run(['--help']);
+    case 'gitcompare':
+      return GitCompareTool().run(['--help']);
+    case 'gitmerge':
+      return GitMergeTool().run(['--help']);
+    case 'gitsquash':
+      return GitSquashTool().run(['--help']);
+    case 'gitrebase':
+      return GitRebaseTool().run(['--help']);
     case 'pubget' || 'pubgetall':
       PubGetCommand.printUsage();
       return true;
@@ -1851,7 +1903,8 @@ const _gitToolFlags = {
 /// Commands that accept git traversal flags (-i, -o) as arguments.
 const _gitToolCommandNames = {
   'git', 'gitstatus', 'gitcommit', 'gitpull', 'gitbranch', 'gittag',
-  'gitclean', 'gitcheckout', 'gitreset', 'gitsync',
+  'gitclean', 'gitcheckout', 'gitreset', 'gitsync', 'gitprune', 'gitstash', 'gitunstash',
+  'gitcompare', 'gitmerge', 'gitsquash', 'gitrebase',
 };
 
 /// Warn if known global flags appear in the rest args (i.e., after the

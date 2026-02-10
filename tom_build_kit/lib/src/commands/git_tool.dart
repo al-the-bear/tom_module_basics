@@ -22,7 +22,10 @@ class GitTool extends ToolBase {
 
   @override
   void addToolOptions(ArgParser parser) {
-    // No tool-specific options - all args after -- are passed to git
+    parser.addFlag('guide',
+        abbr: 'g',
+        negatable: false,
+        help: 'Guided mode - step-by-step prompts');
   }
 
   @override
@@ -221,25 +224,42 @@ class GitTool extends ToolBase {
   void _printUsage(ArgParser parser) {
     printUsageHeader();
     print('');
-    print('Runs any git command across all repositories in the workspace.');
-    print('Requires -i (inner-first) or -o (outer-first) traversal flag.');
+    print('WHAT IT DOES:');
+    print('  Runs ANY git command across all repositories.');
+    print('  For operations not covered by specific git* tools.');
     print('');
-    print('Options:');
+    print('COMMANDS EXECUTED:');
+    print('  git <your-command>            (in each repository)');
+    print('');
+    print('WHEN TO USE:');
+    print('  - One-off git operations not worth a dedicated tool');
+    print('  - Exploring: git log, git show, git diff');
+    print('  - Advanced operations: git reflog, git bisect');
+    print('  - Querying: git remote -v, git config --list');
+    print('');
+    print('Traversal: REQUIRES -i or -o flag (no default).');
+    print('  -i (inner-first): Deepest repos first (for bottom-up operations)');
+    print('  -o (outer-first): Shallowest repos first (for top-down operations)');
+    print('');
+    print('USAGE:');
+    print('  git -i|-o [options] -- <git-command> [git-args...]');
+    print('');
+    print('  Everything after -- is passed directly to git.');
+    print('');
+    print('STANDARD OPTIONS:');
     print(parser.usage);
     print('');
-    print('Git Command:');
-    print('  Everything after -- is passed to git as the command.');
+    print('EXAMPLES:');
+    print('  git -i -- log --oneline -5      # Last 5 commits per repo');
+    print('  git -o -- stash list            # List stashes');
+    print('  git -i -- remote -v             # Show remotes');
+    print('  git -i -- diff --stat HEAD~1    # Diff from last commit');
+    print('  git -i -- reflog -5             # Last 5 reflog entries');
+    print('  git -i --list                   # Just list repos');
+    print('  git -i -n -- fetch              # Dry-run fetch');
     print('');
-    print('Examples:');
-    print('  git -i -- log --oneline -5        # Last 5 commits per repo');
-    print('  git -o -- stash list              # List stashes in each repo');
-    print('  git -i -- remote -v               # Show remotes');
-    print('  git -i --list                     # List repos without running command');
-    print('  git -i -n -- fetch                # Dry-run fetch');
-    print('');
-    print('Via buildkit:');
+    print('VIA BUILDKIT:');
     print('  bk :git -i -- log --oneline -5');
     print('  bk :git -o -- branch -a');
-    printUsageFooter();
   }
 }

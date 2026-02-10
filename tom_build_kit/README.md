@@ -74,6 +74,47 @@ buildkit build --project='./*'
 | `:d4rtgen` | Generate D4rt bridge code |
 | `:cleanup` | Clean build artifacts |
 
+## Git Commands
+
+Manage git repositories across the entire workspace with a single command:
+
+| Command | Description | Traversal |
+|---------|-------------|-----------|
+| `:gitstatus` | Show status of all repositories | inner-first (default) |
+| `:gitcommit` | Commit and push all repos with same message | inner-first (fixed) |
+| `:gitpull` | Pull latest from all repositories | outer-first (fixed) |
+| `:gitsync` | Full sync: stash, fetch, merge, push | outer-first (fixed) |
+| `:gitbranch` | Manage branches across repos | inner-first (fixed) |
+| `:gittag` | Manage tags across repos | inner-first (fixed) |
+| `:gitcheckout` | Checkout branch/tag/commit | outer-first (fixed) |
+| `:gitreset` | Reset repos to specific state | outer-first (fixed) |
+| `:gitclean` | Remove untracked files | inner-first (fixed) |
+| `:gitprune` | Remove stale remote-tracking branches | outer-first (fixed) |
+| `:gitstash` | Stash uncommitted changes | inner-first (fixed) |
+| `:gitunstash` | Restore stashed changes | outer-first (fixed) |
+| `:gitcompare` | Compare current branch with another | inner-first (fixed) |
+| `:gitmerge` | Merge branch into current branch | inner-first (fixed) |
+| `:gitsquash` | Squash merge branch into current | inner-first (fixed) |
+| `:gitrebase` | Rebase current branch onto another | inner-first (fixed) |
+| `:git` | Run arbitrary git commands | requires -i/-o |
+
+```bash
+# Check status of all repos
+bk :gitstatus
+
+# Commit all repos with same message
+bk :gitcommit -m "Add feature X"
+
+# Full sync (stash, pull, push)
+bk :gitsync
+
+# Create branch in all repos
+bk :gitbranch -c feature/new
+
+# Run arbitrary git command
+bk :git -i -- log --oneline -5
+```
+
 ## Pipeline Configuration
 
 Define pipelines in `buildkit.yaml`:

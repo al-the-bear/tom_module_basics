@@ -34,12 +34,16 @@ class GitStatusTool extends ToolBase {
           abbr: 'd',
           negatable: false,
           help: 'Show detailed output (files, commits)')
-      ..addFlag('fetch',
+      ..addFlag('no-fetch',
           negatable: false,
-          help: 'Fetch from remote before checking status')
+          help: 'Skip fetching from remote (fetch is default)')
       ..addFlag('stash',
           negatable: false,
-          help: 'Include stash information');
+          help: 'Include stash information')
+      ..addFlag('guide',
+          abbr: 'g',
+          negatable: false,
+          help: 'Guided mode - step-by-step prompts');
   }
 
   @override
@@ -97,7 +101,7 @@ class GitStatusTool extends ToolBase {
     verbose = results['verbose'] as bool;
     dryRun = results['dry-run'] as bool;
     final showDetails = results['details'] as bool;
-    final doFetch = results['fetch'] as bool;
+    final doFetch = !(results['no-fetch'] as bool);
     final showStash = results['stash'] as bool;
     final listMode = results['list'] as bool;
 
@@ -368,20 +372,39 @@ class GitStatusTool extends ToolBase {
   void _printUsage(ArgParser parser) {
     printUsageHeader();
     print('');
+    print('WHAT IT DOES:');
+    print('  Checks the git status of all repositories in the workspace.');
+    print('  For each repo shows: branch, uncommitted changes, unpushed commits.');
+    print('');
+    print('COMMANDS EXECUTED:');
+    print('  git fetch origin              (default, skip with --no-fetch)');
+    print('  git status --porcelain        (check for uncommitted changes)');
+    print('  git rev-list @{u}..HEAD       (check for unpushed commits)');
+    print('');
+    print('WHEN TO USE:');
+    print('  - Before starting work to see remote changes');
+    print('  - Before committing to verify what will be committed');
+    print('  - To get an overview of all repo states at once');
+    print('');
     print('Traversal: Defaults to inner-first (-i). Can override with -o.');
     print('');
-    print('Options:');
+    print('COMMAND OPTIONS:');
+    print('  -d, --details     Show file-level details (staged/unstaged/untracked files)');
+    print('  --no-fetch        Skip fetching from remote (faster, but may miss remote changes)');
+    print('  --stash           Include count of stashed changes');
+    print('');
+    print('STANDARD OPTIONS:');
     print(parser.usage);
     print('');
-    print('Examples:');
-    print('  gitstatus -i              # Check all repos, innermost first');
-    print('  gitstatus -o              # Check all repos, outermost first');
-    print('  gitstatus -i --details    # Show file-level details');
-    print('  gitstatus -i --fetch      # Fetch before checking');
+    print('EXAMPLES:');
+    print('  gitstatus                     # Check all repos (fetches first)');
+    print('  gitstatus --no-fetch          # Quick check without fetching');
+    print('  gitstatus -d                  # Show file-by-file details');
+    print('  gitstatus --stash             # Also show stash counts');
     print('');
-    print('Via buildkit (defaults to -i, omit flag or specify -o):');
-    print('  bk :gitstatus             # Uses default inner-first');
-    print('  bk :gitstatus -o          # Override to outer-first');
+    print('VIA BUILDKIT:');
+    print('  bk :gitstatus                 # Uses default inner-first');
+    print('  bk :gitstatus -o              # Override to outer-first');
   }
 }
 

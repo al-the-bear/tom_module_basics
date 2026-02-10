@@ -32,10 +32,10 @@ class GitCommitTool extends ToolBase {
       ..addFlag('no-push',
           negatable: false,
           help: 'Skip pushing to remote')
-      ..addFlag('add-all',
-          abbr: 'A',
+      ..addFlag('tracked-only',
+          abbr: 'u',
           negatable: false,
-          help: 'Stage ALL changes including untracked (git add -A)')
+          help: 'Only stage modified/deleted tracked files (git add -u)')
       ..addFlag('staged-only',
           negatable: false,
           help: 'Only commit already-staged changes (skip auto-staging)')
@@ -47,7 +47,11 @@ class GitCommitTool extends ToolBase {
           help: 'Force push (use with caution)')
       ..addFlag('status-only',
           negatable: false,
-          help: 'Only show status, do not commit');
+          help: 'Only show status, do not commit')
+      ..addFlag('guide',
+          abbr: 'g',
+          negatable: false,
+          help: 'Guided mode - step-by-step prompts');
   }
 
   @override
@@ -108,7 +112,7 @@ class GitCommitTool extends ToolBase {
     
     final message = results['message'] as String?;
     final noPush = results['no-push'] as bool;
-    final addAll = results['add-all'] as bool;
+    final trackedOnly = results['tracked-only'] as bool;
     final stagedOnly = results['staged-only'] as bool;
     final amend = results['amend'] as bool;
     final pushForce = results['push-force'] as bool;
@@ -116,10 +120,11 @@ class GitCommitTool extends ToolBase {
     final listMode = results['list'] as bool;
 
     // Determine staging mode:
-    // - addAll: stage everything including untracked (git add -A)
+    // - default: stage everything including untracked (git add -A)
+    // - trackedOnly: stage modified/deleted files (git add -u)
     // - stagedOnly: only commit what's already staged
-    // - default: stage modified/deleted files (git add -u)
-    final addUpdated = !addAll && !stagedOnly;
+    final addAll = !trackedOnly && !stagedOnly;
+    final addUpdated = trackedOnly && !stagedOnly;
 
     // Validate message requirement
     if (!statusOnly && !listMode && message == null && !amend) {
@@ -366,25 +371,45 @@ class GitCommitTool extends ToolBase {
   void _printUsage(ArgParser parser) {
     printUsageHeader();
     print('');
+    print('WHAT IT DOES:');
+    print('  Commits all changes in all repositories with the same message,');
+    print('  then pushes to remote. Stages ALL files including new ones by default.');
+    print('');
+    print('COMMANDS EXECUTED:');
+    print('  git add -A                    (stage all changes, default)');
+    print('  git add -u                    (with --tracked-only, only modified/deleted)');
+    print('  git commit -m "message"       (commit with message)');
+    print('  git push origin <branch>      (push to remote, skip with --no-push)');
+    print('');
+    print('WHEN TO USE:');
+    print('  - After completing a feature or fix across multiple repos');
+    print('  - For consistent commit messages across the workspace');
+    print('  - Quick commit-and-push workflow');
+    print('');
     print('Traversal: Fixed to inner-first (sub-repos committed before parents).');
     print('           Do NOT specify -i/-o flags via buildkit.');
     print('');
-    print('Default behavior:');
-    print('  - Stages modified/deleted tracked files (git add -u)');
-    print('  - Commits with provided message');
-    print('  - Pushes to remote');
+    print('COMMAND OPTIONS:');
+    print('  -m, --message <msg>   Commit message (required)');
+    print('  -u, --tracked-only    Only stage modified/deleted files (git add -u)');
+    print('                        Skips new untracked files');
+    print('  --staged-only         Skip auto-staging, only commit what\'s already staged');
+    print('  --no-push             Commit without pushing to remote');
+    print('  --amend               Amend the last commit instead of new commit');
+    print('  --push-force          Force push (use with caution, for amended commits)');
+    print('  --status-only         Just show status, don\'t commit');
     print('');
-    print('Options:');
+    print('STANDARD OPTIONS:');
     print(parser.usage);
     print('');
-    print('Common workflows:');
-    print('  gitcommit -m "message"            # Stage modified + commit + push');
-    print('  gitcommit -A -m "message"         # Stage ALL (incl. untracked) + commit');
-    print('  gitcommit -m "msg" --no-push      # Commit without pushing');
-    print('  gitcommit --staged-only -m "msg"  # Only commit pre-staged changes');
-    print('  gitcommit --status-only           # Just show status');
+    print('EXAMPLES:');
+    print('  gitcommit -m "Add feature"         # Stage all, commit, push');
+    print('  gitcommit -m "Fix bug" -u          # Only stage modified files');
+    print('  gitcommit -m "msg" --no-push       # Commit but don\'t push yet');
+    print('  gitcommit -m "msg" --staged-only   # Only commit pre-staged changes');
+    print('  gitcommit --status-only            # Preview what would be committed');
     print('');
-    print('Via buildkit:');
+    print('VIA BUILDKIT:');
     print('  bk :gitcommit -m "message"');
   }
 }

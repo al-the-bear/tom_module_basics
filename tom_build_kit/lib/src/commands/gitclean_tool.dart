@@ -41,7 +41,11 @@ class GitCleanTool extends ToolBase {
           help: 'Interactive mode')
       ..addMultiOption('exclude',
           abbr: 'e',
-          help: 'Exclude patterns');
+          help: 'Exclude patterns')
+      ..addFlag('guide',
+          abbr: 'g',
+          negatable: false,
+          help: 'Guided mode - step-by-step prompts');
   }
 
   @override
@@ -213,20 +217,48 @@ class GitCleanTool extends ToolBase {
   void _printUsage(ArgParser parser) {
     printUsageHeader();
     print('');
+    print('WHAT IT DOES:');
+    print('  Removes untracked files from all repositories.');
+    print('  Default: DRY RUN showing what would be removed. Requires -f to actually delete.');
+    print('');
+    print('COMMANDS EXECUTED:');
+    print('  git clean -n                 (default, dry run preview)');
+    print('  git clean -f                 (with -f, remove untracked files)');
+    print('  git clean -f -d              (with -d, also remove directories)');
+    print('  git clean -f -d -x           (with -x, also remove ignored files)');
+    print('');
+    print('WHEN TO USE:');
+    print('  - Remove build artifacts and generated files');
+    print('  - Clean up after experiments');
+    print('  - Reset to pristine state (with -x)');
+    print('');
     print('Traversal: Fixed to inner-first (sub-repos cleaned before parents).');
     print('           Do NOT specify -i/-o flags via buildkit.');
     print('');
-    print('Options:');
+    print('COMMAND OPTIONS:');
+    print('  -f, --force            Actually remove files (REQUIRED to delete).');
+    print('                         Without -f, only shows what would be removed.');
+    print('  -d, --directories      Also remove untracked directories.');
+    print('  -x, --ignored          Also remove files ignored by .gitignore.');
+    print('                         Includes build/, .dart_tool/, etc.');
+    print('  -i, --interactive      Interactive mode: confirm each deletion.');
+    print('  -e, --exclude <pat>    Exclude files matching pattern from removal.');
+    print('');
+    print('SAFETY:');
+    print('  - Always run WITHOUT -f first to see what will be removed');
+    print('  - Removed files are PERMANENTLY DELETED (not in git, not in trash)');
+    print('');
+    print('STANDARD OPTIONS:');
     print(parser.usage);
     print('');
-    print('Examples:');
-    print('  gitclean -i                # Preview what would be cleaned');
-    print('  gitclean -i -f             # Clean untracked files');
-    print('  gitclean -i -f -d          # Clean files and directories');
-    print('  gitclean -i -f -d -x       # Clean everything including ignored');
-    print('  gitclean -i -f -e "*.log"  # Clean but exclude *.log');
+    print('EXAMPLES:');
+    print('  gitclean                       # Preview what would be removed');
+    print('  gitclean -f                    # Remove untracked files');
+    print('  gitclean -f -d                 # Remove files and directories');
+    print('  gitclean -f -d -x              # Remove everything including ignored');
+    print('  gitclean -f -e "*.log"         # Remove but keep .log files');
     print('');
-    print('Via buildkit (do NOT specify -i/-o):');
+    print('VIA BUILDKIT:');
     print('  bk :gitclean');
     print('  bk :gitclean -f -d');
   }

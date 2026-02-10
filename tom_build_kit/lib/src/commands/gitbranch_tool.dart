@@ -43,7 +43,11 @@ class GitBranchTool extends ToolBase {
           help: 'Force delete or force create')
       ..addFlag('list-branches',
           negatable: false,
-          help: 'List branches in each repo');
+          help: 'List branches in each repo')
+      ..addFlag('guide',
+          abbr: 'g',
+          negatable: false,
+          help: 'Guided mode - step-by-step prompts');
   }
 
   @override
@@ -267,21 +271,48 @@ class GitBranchTool extends ToolBase {
   void _printUsage(ArgParser parser) {
     printUsageHeader();
     print('');
+    print('WHAT IT DOES:');
+    print('  Manages branches across all repositories: create, switch, delete, or list.');
+    print('  With no action specified, shows current branch of each repo.');
+    print('');
+    print('COMMANDS EXECUTED:');
+    print('  git rev-parse --abbrev-ref HEAD   (show current branch, default)');
+    print('  git checkout -b <name>            (with -c, create and switch)');
+    print('  git checkout <name>               (with -s, switch to existing)');
+    print('  git branch -d <name>              (with -d, delete branch)');
+    print('  git branch                        (with --list-branches)');
+    print('');
+    print('WHEN TO USE:');
+    print('  - Starting new feature: create branch in all repos at once');
+    print('  - Switching context: switch all repos to same branch');
+    print('  - Cleanup: delete old branches across workspace');
+    print('');
     print('Traversal: Fixed to inner-first (sub-repos processed before parents).');
     print('           Do NOT specify -i/-o flags via buildkit.');
     print('');
-    print('Options:');
+    print('COMMAND OPTIONS:');
+    print('  -c, --create <name>     Create new branch and switch to it.');
+    print('  -s, --switch <name>     Switch to existing branch.');
+    print('  -d, --delete            Delete branch (requires -b <name>).');
+    print('  -b, --branch <name>     Branch name for delete operation.');
+    print('  -f, --force             Force create (overwrite) or force delete.');
+    print('  --list-branches         Show all branches in each repo.');
+    print('');
+    print('DEFAULT BEHAVIOR:');
+    print('  With no options, shows current branch name for each repository.');
+    print('');
+    print('STANDARD OPTIONS:');
     print(parser.usage);
     print('');
-    print('Examples:');
-    print('  gitbranch -i                      # Show current branches');
-    print('  gitbranch -i -c feature/new       # Create and switch');
-    print('  gitbranch -i -s main              # Switch to main');
-    print('  gitbranch -i -d -b old-branch     # Delete branch');
-    print('  gitbranch -i --list-branches      # List all branches');
+    print('EXAMPLES:');
+    print('  gitbranch                         # Show current branch per repo');
+    print('  gitbranch -c feature/new          # Create and switch to new branch');
+    print('  gitbranch -s main                 # Switch all repos to main');
+    print('  gitbranch -d -b old-feature       # Delete old-feature branch');
+    print('  gitbranch --list-branches         # List all branches per repo');
     print('');
-    print('Via buildkit (do NOT specify -i/-o):');
+    print('VIA BUILDKIT:');
     print('  bk :gitbranch');
-    print('  bk :gitbranch -c feature/new');
+    print('  bk :gitbranch -c feature/xyz');
   }
 }

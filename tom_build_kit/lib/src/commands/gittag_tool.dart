@@ -41,7 +41,11 @@ class GitTagTool extends ToolBase {
           help: 'List tags in each repo')
       ..addOption('remote',
           defaultsTo: 'origin',
-          help: 'Remote name for push');
+          help: 'Remote name for push')
+      ..addFlag('guide',
+          abbr: 'g',
+          negatable: false,
+          help: 'Guided mode - step-by-step prompts');
   }
 
   @override
@@ -269,21 +273,49 @@ class GitTagTool extends ToolBase {
   void _printUsage(ArgParser parser) {
     printUsageHeader();
     print('');
+    print('WHAT IT DOES:');
+    print('  Manages tags across all repositories: create, delete, list, or push.');
+    print('  With no action specified, shows latest tag of each repo.');
+    print('');
+    print('COMMANDS EXECUTED:');
+    print('  git describe --tags --abbrev=0    (show latest tag, default)');
+    print('  git tag <name>                    (with -c, create lightweight tag)');
+    print('  git tag -a <name> -m <msg>        (with -c -m, annotated tag)');
+    print('  git tag -d <name>                 (with -d, delete tag)');
+    print('  git push origin <name>            (with --push, push tag)');
+    print('  git tag                           (with --list-tags)');
+    print('');
+    print('WHEN TO USE:');
+    print('  - Release: tag all repos with version number');
+    print('  - Milestone: mark a consistent state across repos');
+    print('  - Cleanup: delete obsolete tags');
+    print('');
     print('Traversal: Fixed to inner-first (submodules tagged before parents).');
     print('           Do NOT specify -i/-o flags via buildkit.');
     print('');
-    print('Options:');
+    print('COMMAND OPTIONS:');
+    print('  -c, --create <name>    Create a new tag with given name.');
+    print('  -m, --message <msg>    Tag message (creates annotated tag with author/date).');
+    print('  -d, --delete <name>    Delete the specified tag.');
+    print('  --push                 Push tags to remote after creating/deleting.');
+    print('  --list-tags            List all tags in each repository.');
+    print('  --remote <name>        Remote for push (default: origin).');
+    print('');
+    print('DEFAULT BEHAVIOR:');
+    print('  With no options, shows the latest tag name for each repository.');
+    print('');
+    print('STANDARD OPTIONS:');
     print(parser.usage);
     print('');
-    print('Examples:');
-    print('  gittag -i                         # Show latest tag per repo');
-    print('  gittag -i -c v1.0.0               # Create lightweight tag');
-    print('  gittag -i -c v1.0.0 -m "Release"  # Create annotated tag');
-    print('  gittag -i -c v1.0.0 --push        # Create and push');
-    print('  gittag -i -d v1.0.0               # Delete tag');
-    print('  gittag -i --list-tags             # List all tags');
+    print('EXAMPLES:');
+    print('  gittag                            # Show latest tag per repo');
+    print('  gittag -c v1.0.0                  # Create lightweight tag');
+    print('  gittag -c v1.0.0 -m "Release 1.0" # Create annotated tag');
+    print('  gittag -c v1.0.0 --push           # Create and push tag');
+    print('  gittag -d v0.9.0 --push           # Delete tag locally and remotely');
+    print('  gittag --list-tags                # List all tags per repo');
     print('');
-    print('Via buildkit (do NOT specify -i/-o):');
+    print('VIA BUILDKIT:');
     print('  bk :gittag');
     print('  bk :gittag -c v1.0.0 --push');
   }

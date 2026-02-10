@@ -26,13 +26,17 @@ class GitPullTool extends ToolBase {
     parser
       ..addFlag('rebase',
           negatable: false,
-          help: 'Rebase instead of merge')
-      ..addFlag('ff-only',
+          help: 'Rebase instead of fast-forward only')
+      ..addFlag('allow-merge',
           negatable: false,
-          help: 'Only fast-forward merges')
+          help: 'Allow merge commits (overrides default --ff-only)')
       ..addOption('remote',
           defaultsTo: 'origin',
-          help: 'Remote name to pull from');
+          help: 'Remote name to pull from')
+      ..addFlag('guide',
+          abbr: 'g',
+          negatable: false,
+          help: 'Guided mode - step-by-step prompts');
   }
 
   @override
@@ -88,7 +92,8 @@ class GitPullTool extends ToolBase {
     verbose = results['verbose'] as bool;
     dryRun = results['dry-run'] as bool;
     final useRebase = results['rebase'] as bool;
-    final ffOnly = results['ff-only'] as bool;
+    final allowMerge = results['allow-merge'] as bool;
+    final ffOnly = !useRebase && !allowMerge;  // Default is ff-only
     final remote = results['remote'] as String;
     final listMode = results['list'] as bool;
 
@@ -221,19 +226,45 @@ class GitPullTool extends ToolBase {
   void _printUsage(ArgParser parser) {
     printUsageHeader();
     print('');
+    print('WHAT IT DOES:');
+    print('  Pulls latest changes from remote for all repositories.');
+    print('  Uses --ff-only by default to prevent accidental merge commits.');
+    print('');
+    print('COMMANDS EXECUTED:');
+    print('  git pull origin <branch> --ff-only   (default, fail if merge needed)');
+    print('  git pull origin <branch> --rebase    (with --rebase)');
+    print('  git pull origin <branch>             (with --allow-merge)');
+    print('');
+    print('WHEN TO USE:');
+    print('  - At start of work session to get latest changes');
+    print('  - After someone else pushed changes you need');
+    print('  - Regular sync during collaborative work');
+    print('');
     print('Traversal: Fixed to outer-first (parent repos pulled before sub-repos).');
     print('           Do NOT specify -i/-o flags via buildkit.');
     print('');
-    print('Options:');
+    print('COMMAND OPTIONS:');
+    print('  --rebase          Rebase local commits on top of remote changes.');
+    print('                    Creates linear history, good for feature branches.');
+    print('                    May require conflict resolution.');
+    print('  --allow-merge     Allow merge commits when branches diverged.');
+    print('                    Creates merge commit, preserves branch history.');
+    print('  --remote <name>   Remote to pull from (default: origin)');
+    print('');
+    print('DEFAULT BEHAVIOR (--ff-only):');
+    print('  - Fast-forward only: fails if local has commits not in remote');
+    print('  - Safest option: no accidental merges or rebases');
+    print('  - If it fails, decide explicitly: --rebase or --allow-merge');
+    print('');
+    print('STANDARD OPTIONS:');
     print(parser.usage);
     print('');
-    print('Examples:');
-    print('  gitpull -o                # Pull all repos, outer first');
-    print('  gitpull -o --rebase       # Pull with rebase');
-    print('  gitpull -o --ff-only      # Fast-forward only');
+    print('EXAMPLES:');
+    print('  gitpull                    # Pull with --ff-only (default, safe)');
+    print('  gitpull --rebase           # Pull and rebase local commits');
+    print('  gitpull --allow-merge      # Pull and allow merge commits');
     print('');
-    print('Via buildkit (do NOT specify -i/-o):');
-    print('  bk :gitpull               # Uses fixed outer-first');
-    print('  bk :gitpull --rebase      # With rebase');
+    print('VIA BUILDKIT:');
+    print('  bk :gitpull                # Uses fixed outer-first traversal');
   }
 }

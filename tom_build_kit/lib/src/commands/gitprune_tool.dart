@@ -6,18 +6,17 @@ import 'package:tom_build_base/tom_build_base.dart';
 
 import 'tool_base.dart';
 
-/// Git checkout tool - checkout branches or tags across all repositories.
+/// Git prune tool - removes stale remote-tracking branches.
 ///
-/// Uses outer-first traversal because when checking out a specific state,
-/// the parent repo should be checked out first to determine which submodule
-/// commits are expected.
-class GitCheckoutTool extends ToolBase {
+/// Cleans up local references to branches that have been deleted on the remote.
+/// Safe operation: only removes local tracking refs, not actual branches.
+class GitPruneTool extends ToolBase {
   @override
-  String get toolKey => 'gitcheckout';
+  String get toolKey => 'gitprune';
 
   @override
   String get toolDescription =>
-      'Checkout branches or tags across all repositories';
+      'Remove stale remote-tracking branches';
 
   /// If true, auto-inject --outer-first-git when running standalone.
   bool autoOuterFirst = false;
@@ -25,23 +24,12 @@ class GitCheckoutTool extends ToolBase {
   @override
   void addToolOptions(ArgParser parser) {
     parser
-      ..addOption('branch',
-          abbr: 'b',
-          help: 'Branch to checkout')
-      ..addOption('tag',
-          abbr: 't',
-          help: 'Tag to checkout')
-      ..addOption('commit',
-          abbr: 'c',
-          help: 'Commit hash to checkout')
-      ..addFlag('create',
-          abbr: 'B',
+      ..addFlag('dry-run-git',
           negatable: false,
-          help: 'Create branch if it does not exist')
-      ..addFlag('force',
-          abbr: 'f',
-          negatable: false,
-          help: 'Force checkout (discard changes)')
+          help: 'Show what would be pruned without removing')
+      ..addOption('remote',
+          defaultsTo: 'origin',
+          help: 'Remote name to prune')
       ..addFlag('guide',
           abbr: 'g',
           negatable: false,
@@ -89,32 +77,18 @@ class GitCheckoutTool extends ToolBase {
     }
 
     if (!navArgs.innerFirstGit && !navArgs.outerFirstGit) {
-      print('Error: gitcheckout requires --outer-first-git (-o) or --inner-first-git (-i)');
+      print('Error: gitprune requires --outer-first-git (-o) or --inner-first-git (-i)');
       print('');
       print('Recommended: --outer-first-git (-o)');
-      print('  Checkout parent first to get correct submodule references.');
+      print('  Prune parent repos first.');
       return false;
     }
 
     verbose = results['verbose'] as bool;
     dryRun = results['dry-run'] as bool;
-    final branch = results['branch'] as String?;
-    final tag = results['tag'] as String?;
-    final commit = results['commit'] as String?;
-    final create = results['create'] as bool;
-    final force = results['force'] as bool;
+    final dryRunGit = results['dry-run-git'] as bool;
+    final remote = results['remote'] as String;
     final listMode = results['list'] as bool;
-
-    // Require a target
-    final targetCount = [branch, tag, commit].where((t) => t != null).length;
-    if (targetCount == 0 && !listMode) {
-      print('Error: Specify --branch, --tag, or --commit');
-      return false;
-    }
-    if (targetCount > 1) {
-      print('Error: Specify only one of --branch, --tag, or --commit');
-      return false;
-    }
 
     final repos = _findGitRepositories(executionRoot);
     
@@ -142,37 +116,53 @@ class GitCheckoutTool extends ToolBase {
       return true;
     }
 
-    // Build checkout command
-    final gitArgs = ['checkout'];
-    if (force) gitArgs.add('-f');
-    if (create && branch != null) {
-      gitArgs.add('-B');
-      gitArgs.add(branch);
-    } else if (branch != null) {
-      gitArgs.add(branch);
-    } else if (tag != null) {
-      gitArgs.add(tag);
-    } else if (commit != null) {
-      gitArgs.add(commit);
-    }
-
-    final target = branch ?? tag ?? commit;
-
     var allSuccess = true;
-    var successCount = 0;
+    var prunedCount = 0;
+    var totalPruned = 0;
 
     for (final repoPath in repos) {
       final relPath = p.relative(repoPath, from: executionRoot);
       
-      if (!await _runGit(repoPath, gitArgs, relPath)) {
+      // First check what would be pruned
+      final staleBranches = await _getStaleBranches(repoPath, remote);
+      
+      if (staleBranches.isEmpty) {
+        if (verbose) {
+          print('$relPath: no stale branches');
+        }
+        continue;
+      }
+
+      if (dryRun || dryRunGit) {
+        print('$relPath: would prune ${staleBranches.length} stale branch(es):');
+        for (final branch in staleBranches) {
+          print('  - $branch');
+        }
+        totalPruned += staleBranches.length;
+        prunedCount++;
+        continue;
+      }
+
+      // Actually prune
+      print('$relPath: pruning ${staleBranches.length} stale branch(es)...');
+      if (!await _runGit(repoPath, ['remote', 'prune', remote], relPath)) {
         allSuccess = false;
         continue;
       }
-      successCount++;
+      
+      for (final branch in staleBranches) {
+        print('  - pruned: $branch');
+      }
+      totalPruned += staleBranches.length;
+      prunedCount++;
     }
 
     print('');
-    print('Checked out $target: $successCount repository(ies)');
+    if (dryRun || dryRunGit) {
+      print('Would prune $totalPruned stale branch(es) from $prunedCount repo(s)');
+    } else {
+      print('Pruned $totalPruned stale branch(es) from $prunedCount repo(s)');
+    }
 
     return allSuccess;
   }
@@ -180,6 +170,33 @@ class GitCheckoutTool extends ToolBase {
   bool _hasGitTraversalFlag(List<String> args) {
     return args.contains('-i') || args.contains('--inner-first-git') ||
            args.contains('-o') || args.contains('--outer-first-git');
+  }
+
+  Future<List<String>> _getStaleBranches(String repoPath, String remote) async {
+    try {
+      // git remote prune --dry-run shows what would be pruned
+      final result = await Process.run(
+        'git', ['remote', 'prune', remote, '--dry-run'],
+        workingDirectory: repoPath,
+      );
+      
+      if (result.exitCode != 0) return [];
+      
+      final output = result.stdout.toString();
+      final lines = output.split('\n')
+          .where((line) => line.contains('[would prune]') || line.contains('* [would prune]'))
+          .map((line) {
+            // Parse "* [would prune] origin/branch-name" or " * [would prune] origin/branch"
+            final match = RegExp(r'\[would prune\]\s+(.+)').firstMatch(line);
+            return match?.group(1)?.trim() ?? '';
+          })
+          .where((s) => s.isNotEmpty)
+          .toList();
+      
+      return lines;
+    } catch (_) {
+      return [];
+    }
   }
 
   List<String> _findGitRepositories(String rootPath) {
@@ -204,11 +221,18 @@ class GitCheckoutTool extends ToolBase {
       try {
         for (final entity in Directory(searchDir).listSync()) {
           if (entity is Directory && entity.path != rootPath) {
+            final name = p.basename(entity.path);
+            if (name.startsWith('.')) continue;
+            
+            final skipFile = File(p.join(entity.path, kBuildkitSkipYaml));
+            if (skipFile.existsSync()) continue;
+            
             if (isGitRepo(entity.path)) repos.add(entity.path);
           }
         }
       } catch (_) {}
     }
+
     return repos;
   }
 
@@ -217,12 +241,14 @@ class GitCheckoutTool extends ToolBase {
       print('[DRY RUN] $relPath: git ${args.join(' ')}');
       return true;
     }
-    print('$relPath: git ${args.join(' ')}');
+    if (verbose) {
+      print('$relPath: git ${args.join(' ')}');
+    }
     try {
       final result = await Process.run('git', args, workingDirectory: repoPath);
       if (result.exitCode != 0) {
         final stderr = result.stderr.toString().trim();
-        if (stderr.isNotEmpty) print('  Error: $stderr');
+        if (stderr.isNotEmpty) print('$relPath: $stderr');
         return false;
       }
       return true;
@@ -236,46 +262,48 @@ class GitCheckoutTool extends ToolBase {
     printUsageHeader();
     print('');
     print('WHAT IT DOES:');
-    print('  Checks out a branch, tag, or commit across all repositories.');
-    print('  Ensures all repos are on the same version.');
+    print('  Removes stale remote-tracking branches from all repositories.');
+    print('  These are local references to branches that no longer exist on the remote.');
     print('');
     print('COMMANDS EXECUTED:');
-    print('  git checkout <branch>         (with -b, checkout branch)');
-    print('  git checkout <tag>            (with -t, checkout tag)');
-    print('  git checkout <commit>         (with -c, checkout commit)');
-    print('  git checkout -b <branch>      (with -B, create branch if missing)');
+    print('  git remote prune origin --dry-run   (first, to see what will be pruned)');
+    print('  git remote prune origin             (then, to actually prune)');
+    print('');
+    print('WHAT GETS REMOVED:');
+    print('  - Remote-tracking refs like origin/deleted-branch');
+    print('  - Only refs to branches deleted on remote');
+    print('  - Does NOT delete local branches');
+    print('  - Does NOT affect any committed code');
     print('');
     print('WHEN TO USE:');
-    print('  - Switch to release tag across all repos');
-    print('  - Check out specific branch for review');
-    print('  - Return to known good state via tag or commit');
+    print('  - After team members delete merged branches on GitHub/GitLab');
+    print('  - To clean up clutter from "git branch -r"');
+    print('  - Periodically for workspace hygiene');
     print('');
-    print('Traversal: Fixed to outer-first (parent repos checked out before sub-repos).');
+    print('Traversal: Fixed to outer-first.');
     print('           Do NOT specify -i/-o flags via buildkit.');
     print('');
     print('COMMAND OPTIONS:');
-    print('  -b, --branch <name>    Checkout specified branch.');
-    print('  -t, --tag <name>       Checkout specified tag (detached HEAD).');
-    print('  -c, --commit <hash>    Checkout specific commit (detached HEAD).');
-    print('  -B, --create           Create branch if it doesn\'t exist.');
-    print('  -f, --force            Force checkout (discard uncommitted changes).');
+    print('  --dry-run-git       Show what would be pruned without removing.');
+    print('                      Different from -n which affects the tool itself.');
+    print('  --remote <name>     Remote to prune (default: origin).');
     print('');
-    print('NOTES:');
-    print('  - Checking out tag/commit creates detached HEAD state');
-    print('  - Use -B to create branch if it may not exist in all repos');
-    print('  - --force discards uncommitted changes (use carefully)');
+    print('SAFETY:');
+    print('  This is a SAFE operation:');
+    print('  - Only removes local tracking references');
+    print('  - The actual branches on remote are already gone');
+    print('  - Your local branches are NOT affected');
+    print('  - Use --dry-run-git first to see what will be removed');
     print('');
     print('STANDARD OPTIONS:');
     print(parser.usage);
     print('');
     print('EXAMPLES:');
-    print('  gitcheckout -b main           # Checkout main branch');
-    print('  gitcheckout -t v1.0.0         # Checkout release tag');
-    print('  gitcheckout -b feature -B     # Checkout/create feature branch');
-    print('  gitcheckout -b main -f        # Force checkout, discard changes');
+    print('  gitprune                      # Prune all stale remote branches');
+    print('  gitprune --dry-run-git        # Preview what would be pruned');
+    print('  gitprune --remote upstream    # Prune from upstream remote');
     print('');
     print('VIA BUILDKIT:');
-    print('  bk :gitcheckout -b main');
-    print('  bk :gitcheckout -t v1.0.0');
+    print('  bk :gitprune');
   }
 }

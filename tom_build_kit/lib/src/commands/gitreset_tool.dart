@@ -38,7 +38,11 @@ class GitResetTool extends ToolBase {
       ..addFlag('upstream',
           abbr: 'u',
           negatable: false,
-          help: 'Reset to upstream tracking branch');
+          help: 'Reset to upstream tracking branch')
+      ..addFlag('guide',
+          abbr: 'g',
+          negatable: false,
+          help: 'Guided mode - step-by-step prompts');
   }
 
   @override
@@ -242,20 +246,50 @@ class GitResetTool extends ToolBase {
   void _printUsage(ArgParser parser) {
     printUsageHeader();
     print('');
+    print('WHAT IT DOES:');
+    print('  Resets all repositories to a specific state.');
+    print('  Default: --mixed reset to HEAD (unstage changes, keep files).');
+    print('');
+    print('COMMANDS EXECUTED:');
+    print('  git reset --mixed HEAD            (default, unstage but keep changes)');
+    print('  git reset --soft HEAD             (with --soft, keep staged)');
+    print('  git reset --hard HEAD             (with --hard, discard everything)');
+    print('  git reset --mixed origin/<branch> (with -u, reset to upstream)');
+    print('');
+    print('RESET MODES EXPLAINED:');
+    print('  --soft    Keep changes staged. Useful to squash commits.');
+    print('  --mixed   Unstage changes, keep working tree. (DEFAULT)');
+    print('            Useful to redo staging decisions.');
+    print('  --hard    Discard ALL changes. Working tree matches target.');
+    print('            DESTRUCTIVE: Uncommitted work is LOST.');
+    print('');
+    print('WHEN TO USE:');
+    print('  - Undo accidental staging (default --mixed)');
+    print('  - Discard all local changes (--hard)');
+    print('  - Sync with remote, discarding local work (--hard -u)');
+    print('');
     print('Traversal: Fixed to outer-first (parent repos reset before sub-repos).');
     print('           Do NOT specify -i/-o flags via buildkit.');
     print('');
-    print('Options:');
+    print('COMMAND OPTIONS:');
+    print('  --soft              Keep changes staged.');
+    print('  --mixed             Unstage changes, keep working tree. (default)');
+    print('  --hard              Discard all changes. DESTRUCTIVE.');
+    print('  --to <ref>          Reset to specific commit/branch/tag (default: HEAD).');
+    print('  -u, --upstream      Reset to upstream tracking branch.');
+    print('');
+    print('STANDARD OPTIONS:');
     print(parser.usage);
     print('');
-    print('Examples:');
-    print('  gitreset -o                   # Reset to HEAD (mixed)');
-    print('  gitreset -o --hard            # Hard reset to HEAD');
-    print('  gitreset -o --hard -u         # Hard reset to upstream');
-    print('  gitreset -o --soft --to HEAD~1  # Soft reset to previous commit');
+    print('EXAMPLES:');
+    print('  gitreset                      # Unstage all changes (--mixed HEAD)');
+    print('  gitreset --soft               # Keep changes staged');
+    print('  gitreset --hard               # Discard all local changes');
+    print('  gitreset --hard -u            # Reset to upstream (discard local)');
+    print('  gitreset --soft --to HEAD~1   # Undo last commit, keep changes staged');
     print('');
-    print('Via buildkit (do NOT specify -i/-o):');
+    print('VIA BUILDKIT:');
     print('  bk :gitreset');
-    print('  bk :gitreset --hard');
+    print('  bk :gitreset --hard -u');
   }
 }

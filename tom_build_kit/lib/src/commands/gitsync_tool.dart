@@ -27,18 +27,22 @@ class GitSyncTool extends ToolBase {
       ..addFlag('rebase',
           negatable: false,
           help: 'Rebase instead of merge')
-      ..addFlag('stash',
+      ..addFlag('no-stash',
           negatable: false,
-          help: 'Stash changes before sync, pop after')
-      ..addFlag('push',
+          help: 'Skip stashing uncommitted changes (stash is default)')
+      ..addFlag('no-push',
           negatable: false,
-          help: 'Push after syncing')
+          help: 'Skip pushing after sync (push is default)')
       ..addFlag('prune',
           negatable: false,
-          help: 'Prune remote tracking branches')
+          help: 'Prune stale remote tracking branches')
       ..addOption('remote',
           defaultsTo: 'origin',
-          help: 'Remote name');
+          help: 'Remote name')
+      ..addFlag('guide',
+          abbr: 'g',
+          negatable: false,
+          help: 'Guided mode - step-by-step prompts');
   }
 
   @override
@@ -92,8 +96,8 @@ class GitSyncTool extends ToolBase {
     verbose = results['verbose'] as bool;
     dryRun = results['dry-run'] as bool;
     final useRebase = results['rebase'] as bool;
-    final useStash = results['stash'] as bool;
-    final doPush = results['push'] as bool;
+    final useStash = !(results['no-stash'] as bool);
+    final doPush = !(results['no-push'] as bool);
     final doPrune = results['prune'] as bool;
     final remote = results['remote'] as String;
     final listMode = results['list'] as bool;
@@ -264,21 +268,51 @@ class GitSyncTool extends ToolBase {
   void _printUsage(ArgParser parser) {
     printUsageHeader();
     print('');
+    print('WHAT IT DOES:');
+    print('  Full sync: stash local changes, fetch+merge from remote, push, pop stash.');
+    print('  A complete round-trip sync of all repositories in one command.');
+    print('');
+    print('COMMANDS EXECUTED:');
+    print('  git stash push -m "gitsync auto-stash"  (if uncommitted changes exist)');
+    print('  git fetch origin                         (get remote changes)');
+    print('  git merge origin/<branch>                (or --rebase for rebase)');
+    print('  git push origin <branch>                 (push local commits)');
+    print('  git stash pop                            (restore stashed changes)');
+    print('');
+    print('WHEN TO USE:');
+    print('  - At start of work session (sync with team)');
+    print('  - Before ending work (push your changes)');
+    print('  - Periodic sync during long work sessions');
+    print('');
     print('Traversal: Fixed to outer-first (parent repos synced before sub-repos).');
     print('           Do NOT specify -i/-o flags via buildkit.');
     print('');
-    print('Options:');
+    print('COMMAND OPTIONS:');
+    print('  --rebase        Rebase local commits instead of merge.');
+    print('                  Creates linear history, but may require conflict resolution.');
+    print('  --no-stash      Don\'t stash uncommitted changes before sync.');
+    print('                  Sync will fail if you have uncommitted changes.');
+    print('  --no-push       Skip pushing after pulling. Just get remote changes.');
+    print('  --prune         Remove stale remote-tracking branches.');
+    print('                  Cleans up local refs to branches deleted on remote.');
+    print('  --remote <name> Remote to sync with (default: origin)');
+    print('');
+    print('DEFAULT BEHAVIOR:');
+    print('  - Stashes uncommitted changes (auto-restored after sync)');
+    print('  - Fetches and merges remote changes');
+    print('  - Pushes local commits to remote');
+    print('  - Does NOT prune (keeps local backup of deleted remote branches)');
+    print('');
+    print('STANDARD OPTIONS:');
     print(parser.usage);
     print('');
-    print('Examples:');
-    print('  gitsync -o                # Fetch + merge (ff-only)');
-    print('  gitsync -o --rebase       # Fetch + rebase');
-    print('  gitsync -o --stash        # Stash, sync, pop');
-    print('  gitsync -o --push         # Sync and push');
-    print('  gitsync -o --prune        # Prune stale remote branches');
+    print('EXAMPLES:');
+    print('  gitsync                    # Full sync (stash, fetch, merge, push, pop)');
+    print('  gitsync --rebase           # Sync with rebase instead of merge');
+    print('  gitsync --no-push          # Just pull, don\'t push yet');
+    print('  gitsync --prune            # Also clean up stale remote branches');
     print('');
-    print('Via buildkit (do NOT specify -i/-o):');
+    print('VIA BUILDKIT:');
     print('  bk :gitsync');
-    print('  bk :gitsync --rebase --push');
   }
 }

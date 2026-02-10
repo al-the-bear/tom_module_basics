@@ -35,6 +35,13 @@ export 'src/commands/gitclean_tool.dart';
 export 'src/commands/gitcheckout_tool.dart';
 export 'src/commands/gitreset_tool.dart';
 export 'src/commands/gitsync_tool.dart';
+export 'src/commands/gitprune_tool.dart';
+export 'src/commands/gitstash_tool.dart';
+export 'src/commands/gitunstash_tool.dart';
+export 'src/commands/gitcompare_tool.dart';
+export 'src/commands/gitmerge_tool.dart';
+export 'src/commands/gitsquash_tool.dart';
+export 'src/commands/gitrebase_tool.dart';
 export 'src/compiler_config.dart';
 
 // Utilities
