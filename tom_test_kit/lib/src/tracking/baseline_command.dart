@@ -24,6 +24,7 @@ class BaselineCommand {
     String? outputPath,
     List<String> testArgs = const [],
     bool verbose = false,
+    String? comment,
   }) async {
     // Run dart test
     final results = await DartTestParser.runAndParse(
@@ -44,6 +45,7 @@ class BaselineCommand {
     final baselineRun = TestRun(
       timestamp: results.run.timestamp,
       isBaseline: true,
+      comment: comment,
       results: Map.of(results.run.results),
     );
 

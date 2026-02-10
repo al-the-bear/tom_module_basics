@@ -39,7 +39,8 @@ void main(List<String> args) async {
   if (subcommand == null) {
     stderr.writeln('Error: No subcommand specified.');
     stderr.writeln('');
-    stderr.writeln('Available subcommands: :baseline, :test');
+    stderr.writeln('Available subcommands: :baseline, :test, :runs, :status, '
+        ':basediff, :lastdiff, :diff, :crossreference, :reset');
     stderr.writeln('Or use --tui for interactive mode.');
     stderr.writeln('Run "$_toolName help" for usage information.');
     exitCode = 1;
@@ -52,13 +53,25 @@ void main(List<String> args) async {
   final parser = ArgParser()
     // Tool-specific options
     ..addOption('output',
-        help: 'Output file path (overrides default)')
+        help: 'Output format/file: <format>[:<filename>] '
+            '(plain, csv, json, md)')
     ..addOption('file',
         help: 'Tracking file to update (:test only)')
+    ..addOption('baseline-file',
+        help: 'Specific baseline file (instead of most recent)')
     ..addOption('test-args',
         help: 'Additional arguments passed to dart test')
+    ..addOption('comment',
+        abbr: 'c',
+        help: 'Short description shown in the run column header')
+    ..addOption('report',
+        help: 'Generate detailed Markdown report (filename optional)')
     ..addFlag('baseline',
         help: 'Create baseline if no tracking file exists (:test only)')
+    ..addFlag('full',
+        help: 'Include full details from last_testrun.json (diff commands)')
+    ..addFlag('force',
+        help: 'Skip confirmation prompts (:reset)')
     ..addFlag('verbose', abbr: 'v', help: 'Enable verbose output')
     ..addFlag('list',
         abbr: 'l', help: 'List projects that would be processed (no action)')
@@ -71,8 +84,8 @@ void main(List<String> args) async {
   try {
     results = parser.parse(processedArgs);
 
-    // Check for unexpected arguments
-    if (results.rest.isNotEmpty) {
+    // :diff accepts positional timestamp args; others do not
+    if (results.rest.isNotEmpty && subcommand != 'diff') {
       stderr.writeln('Error: Unknown arguments: ${results.rest.join(' ')}\n');
       _printUsage(parser);
       exitCode = 1;
@@ -107,8 +120,33 @@ void main(List<String> args) async {
   final verbose = results['verbose'] as bool;
   final outputPath = results['output'] as String?;
   final trackingFile = results['file'] as String?;
+  final baselineFile = results['baseline-file'] as String?;
   final testArgsStr = results['test-args'] as String?;
   final testArgs = testArgsStr != null ? testArgsStr.split(' ') : <String>[];
+  final comment = results['comment'] as String?;
+  final fullFlag = results['full'] as bool;
+  final forceFlag = results['force'] as bool;
+  final reportPath = results['report'] as String?;
+
+  // Validate --output and --report are not both specified
+  if (outputPath != null && reportPath != null) {
+    stderr.writeln('Error: --output and --report cannot be used together.');
+    exitCode = 1;
+    return;
+  }
+
+  // Parse --output spec
+  OutputSpec? outputSpec;
+  if (outputPath != null) {
+    outputSpec = OutputSpec.tryParse(outputPath);
+    if (outputSpec == null) {
+      stderr.writeln(
+          'Error: Invalid --output format. Use: plain, csv, json, md '
+          'or <format>:<filename>');
+      exitCode = 1;
+      return;
+    }
+  }
 
   // Apply defaults (--scan . --build-order) if no explicit navigation.
   // Unlike other build tools, testkit does NOT default to --recursive.
@@ -158,9 +196,10 @@ void main(List<String> args) async {
       case 'baseline':
         success = await BaselineCommand.run(
           projectPath: projectPath,
-          outputPath: outputPath,
+          outputPath: trackingFile,
           testArgs: testArgs,
           verbose: verbose,
+          comment: comment,
         );
       case 'test':
         success = await TestCommand.run(
@@ -169,6 +208,61 @@ void main(List<String> args) async {
           testArgs: testArgs,
           verbose: verbose,
           createBaseline: results['baseline'] as bool,
+          comment: comment,
+        );
+      case 'runs':
+        success = await RunsCommand.run(
+          projectPath: projectPath,
+          baselineFile: baselineFile,
+          output: outputSpec,
+          verbose: verbose,
+        );
+      case 'status':
+        success = await StatusCommand.run(
+          projectPath: projectPath,
+          baselineFile: baselineFile,
+          verbose: verbose,
+        );
+      case 'basediff':
+        success = await BaseDiffCommand.run(
+          projectPath: projectPath,
+          baselineFile: baselineFile,
+          output: outputSpec,
+          full: fullFlag,
+          reportPath: reportPath,
+          verbose: verbose,
+        );
+      case 'lastdiff':
+        success = await LastDiffCommand.run(
+          projectPath: projectPath,
+          baselineFile: baselineFile,
+          output: outputSpec,
+          full: fullFlag,
+          reportPath: reportPath,
+          verbose: verbose,
+        );
+      case 'diff':
+        success = await DiffCommand.run(
+          projectPath: projectPath,
+          timestamps: results.rest,
+          baselineFile: baselineFile,
+          output: outputSpec,
+          full: fullFlag,
+          reportPath: reportPath,
+          verbose: verbose,
+        );
+      case 'crossreference' || 'crossref' || 'xref':
+        success = await CrossReferenceCommand.run(
+          projectPath: projectPath,
+          baselineFile: baselineFile,
+          output: outputSpec,
+          verbose: verbose,
+        );
+      case 'reset':
+        success = await ResetCommand.run(
+          projectPath: projectPath,
+          force: forceFlag,
+          verbose: verbose,
         );
       default:
         stderr.writeln('Unknown subcommand: :$subcommand');
@@ -207,7 +301,11 @@ void main(List<String> args) async {
   }
 
   // Also support without colon prefix
-  if (first == 'baseline' || first == 'test') {
+  const knownCommands = {
+    'baseline', 'test', 'runs', 'status', 'basediff', 'lastdiff', 'diff',
+    'crossreference', 'crossref', 'xref', 'reset',
+  };
+  if (knownCommands.contains(first)) {
     return (first, args.sublist(1));
   }
 
@@ -267,44 +365,65 @@ void _printUsage(ArgParser? parser) {
     toolName: 'Test Kit',
     toolDescription: 'Test result tracking for Dart projects',
     usagePatterns: [
-      'testkit :baseline [options]',
-      'testkit :test [options]',
+      'testkit :<command> [options]',
       'testkit --tui [--root <path>]',
-      'buildkit :testkit :baseline [options]',
-      'testkit help',
-      'testkit version',
+      'testkit help | version',
     ],
   )) {
     print(line);
   }
 
-  // Subcommands
+  // ── Subcommands ──────────────────────────────────────────
   print('Subcommands:');
-  print('  :baseline            Run dart test, create new baseline tracking file');
-  print('  :test                Run dart test, append results to existing tracking file');
+  print('');
+  print('  Run commands (execute dart test):');
+  print('  :baseline            Run tests, create new baseline tracking file');
+  print('  :test                Run tests, append results to existing tracking file');
+  print('');
+  print('  Analysis commands (read-only):');
+  print('  :runs                List all run timestamps in the tracking file');
+  print('  :status              Quick summary — pass/fail counts + regressions/fixes');
+  print('  :basediff            Diff baseline vs latest run');
+  print('  :lastdiff            Diff previous run vs latest run');
+  print('  :diff <ts> [<ts2>]   Diff two arbitrary runs by timestamp');
+  print('  :crossreference      Map tests to source files (aliases: :crossref, :xref)');
+  print('');
+  print('  Maintenance commands:');
+  print('  :reset               Delete all tracking files (with confirmation)');
   print('');
 
-  // Tool-specific options
+  // ── Tool Options ─────────────────────────────────────────
   print('Tool Options:');
-  print('      --tui            Launch interactive TUI dashboard');
-  print('      --output=<path>  Output file path (overrides default)');
-  print('      --file=<path>    Tracking file to update (:test only)');
-  print('      --baseline       Create baseline if none exists (:test only)');
-  print('      --test-args=<args>  Additional arguments passed to dart test');
-  print('  -v, --verbose        Enable verbose output');
-  print('  -l, --list           List projects that would be processed (no action)');
-  print('  -h, --help           Show this help message');
+  print('      --tui                Launch interactive TUI dashboard');
+  print('  -c, --comment=<text>     Short label for the run column header');
+  print('      --baseline-file=<path>  Use a specific baseline file');
+  print('      --file=<path>        Tracking file to update (:test only)');
+  print('      --baseline           Create baseline if none exists (:test only)');
+  print('      --test-args=<args>   Additional arguments passed to dart test');
+  print('');
+  print('  Diff / report options:');
+  print('      --output=<spec>      Output format: plain, csv, json, md');
+  print('                           or <format>:<filename> to write to file');
+  print('      --full               Include error details from last_testrun.json');
+  print('      --report=<file>      Generate detailed Markdown report to file');
+  print('      --force              Skip confirmation prompts (:reset)');
+  print('');
+  print('  General options:');
+  print('  -v, --verbose            Enable verbose output');
+  print('  -l, --list               List projects that would be processed (no action)');
+  print('  -h, --help               Show this help message');
   print('');
 
   // Standard navigation options from tom_build_base
   printNavigationOptionsHelp();
   print('');
 
-  // Tracking info
+  // ── Tracking File ────────────────────────────────────────
   print('Tracking File:');
-  print('  Baseline creates doc/baseline_<MMDD_HHMM>.csv in each project.');
+  print('  :baseline creates doc/baseline_<MMDD_HHMM>.csv in each project.');
   print('  :test appends a result column to the most recent baseline file.');
   print('  Use :test --baseline to auto-create baseline when none exists.');
+  print('  Raw JSON output is saved to doc/last_testrun.json.');
   print('');
   print('CSV Format:');
   print('  Pure data CSV — header row followed by data rows.');
@@ -319,6 +438,28 @@ void _printUsage(ArgParser? parser) {
   print('    -/OK     — Skipped (needs attention)');
   print('    --/OK    — Not present in this run');
   print('');
+
+  // ── Diff Commands ────────────────────────────────────────
+  print('Diff Commands:');
+  print('  Compare two runs and show changes. Use timestamps from :runs output.');
+  print('');
+  print('  :basediff              Compare the baseline (first) run with the latest run');
+  print('  :lastdiff              Compare the previous run with the latest run');
+  print('  :diff 0614 1430        Compare run at 06-14 14:30 with the latest run');
+  print('  :diff 0614_1430 0615_0900  Compare two specific runs');
+  print('');
+  print('  Timestamp formats: MMDD_HHMM, MM-DD_HHMM, or "MM-DD HH:MM"');
+  print('');
+  print('  Change labels in diff output:');
+  print('    REGRESSION  — was passing, now failing');
+  print('    FIX         — was failing, now passing');
+  print('    NEW FAIL    — test appeared and is failing');
+  print('    NEW PASS    — test appeared and is passing');
+  print('    REMOVED     — test no longer present');
+  print('    changed     — other status change');
+  print('');
+
+  // ── Test Args ────────────────────────────────────────────
   print('Test Args (--test-args):');
   print('  Additional arguments passed through to "dart test".');
   print('  testkit always adds --reporter json internally.');

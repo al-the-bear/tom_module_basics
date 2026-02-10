@@ -149,12 +149,12 @@ class TrackingFile {
     final runs = <TestRun>[];
     for (var i = 3; i < headerCells.length; i++) {
       final cell = headerCells[i].trim();
-      final isBaseline = cell.startsWith('Baseline');
-      final timestamp = parseColumnTimestamp(cell);
-      if (timestamp != null) {
+      final parsed = parseColumnHeader(cell);
+      if (parsed != null) {
         runs.add(TestRun(
-          timestamp: timestamp,
-          isBaseline: isBaseline,
+          timestamp: parsed.timestamp,
+          isBaseline: parsed.isBaseline,
+          comment: parsed.comment,
         ));
       }
     }

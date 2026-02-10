@@ -33,22 +33,59 @@ List<String> splitTableRow(String row) {
 
 /// Parses a column timestamp from a header cell.
 ///
-/// Recognises `[MM-DD HH:MM]` format, with optional `Baseline ` prefix.
+/// Recognises `[MM-DD HH:MM]` format, with optional `Baseline ` prefix
+/// and optional trailing comment text.
 /// Uses the current year since tracking files don't store years in headers.
 ///
 /// Returns null if the header doesn't contain a valid timestamp.
 DateTime? parseColumnTimestamp(String header) {
+  return parseColumnHeader(header)?.timestamp;
+}
+
+/// Parsed column header with timestamp, baseline flag, and optional comment.
+class ColumnHeader {
+  final DateTime timestamp;
+  final bool isBaseline;
+  final String? comment;
+
+  ColumnHeader({
+    required this.timestamp,
+    required this.isBaseline,
+    this.comment,
+  });
+}
+
+/// Parses a column header into its components.
+///
+/// Recognises `[MM-DD HH:MM]` format with optional `Baseline ` prefix
+/// and optional trailing comment text after the closing bracket.
+///
+/// Returns null if the header doesn't contain a valid timestamp.
+ColumnHeader? parseColumnHeader(String header) {
+  final trimmed = header.trim();
+  final isBaseline = trimmed.startsWith('Baseline');
+
   final match =
-      RegExp(r'\[(\d{2})-(\d{2})\s+(\d{2}):(\d{2})\]').firstMatch(header);
+      RegExp(r'\[(\d{2})-(\d{2})\s+(\d{2}):(\d{2})\]').firstMatch(trimmed);
   if (match == null) return null;
 
   final now = DateTime.now();
-  return DateTime(
+  final timestamp = DateTime(
     now.year,
     int.parse(match.group(1)!),
     int.parse(match.group(2)!),
     int.parse(match.group(3)!),
     int.parse(match.group(4)!),
+  );
+
+  // Extract comment: everything after the closing bracket
+  final afterBracket = trimmed.substring(match.end).trim();
+  final comment = afterBracket.isNotEmpty ? afterBracket : null;
+
+  return ColumnHeader(
+    timestamp: timestamp,
+    isBaseline: isBaseline,
+    comment: comment,
   );
 }
 

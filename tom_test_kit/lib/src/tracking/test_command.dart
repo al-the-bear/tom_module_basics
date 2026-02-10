@@ -27,6 +27,7 @@ class TestCommand {
     List<String> testArgs = const [],
     bool verbose = false,
     bool createBaseline = false,
+    String? comment,
   }) async {
     // Find the tracking file
     final filePath =
@@ -41,6 +42,7 @@ class TestCommand {
           projectPath: projectPath,
           testArgs: testArgs,
           verbose: verbose,
+          comment: comment,
         );
       }
       stderr.writeln('[$projectPath] No tracking file found. '
@@ -73,6 +75,11 @@ class TestCommand {
 
     // Save raw JSON output for inspection
     await saveLastTestRunJson(projectPath, results.rawJsonLines);
+
+    // Add comment to the run if specified
+    if (comment != null) {
+      results.run.comment = comment;
+    }
 
     // Add new run
     tracking.addRun(results.run, results.entries);

@@ -30,20 +30,26 @@ class TestRun {
   /// Whether this is the baseline run.
   final bool isBaseline;
 
+  /// Optional short comment describing this run.
+  String? comment;
+
   /// Results keyed by test full description.
   final Map<String, TestResult> results;
 
   TestRun({
     required this.timestamp,
     this.isBaseline = false,
+    this.comment,
     Map<String, TestResult>? results,
   }) : results = results ?? {};
 
-  /// Column header in compact format: `MM-DD HH:MM`.
+  /// Column header in compact format: `[MM-DD HH:MM]` or `[MM-DD HH:MM] comment`.
   String get columnHeader {
     final prefix = isBaseline ? 'Baseline ' : '';
-    return '$prefix[${padTwo(timestamp.month)}-${padTwo(timestamp.day)} '
+    final ts = '[${padTwo(timestamp.month)}-${padTwo(timestamp.day)} '
         '${padTwo(timestamp.hour)}:${padTwo(timestamp.minute)}]';
+    final suffix = comment != null && comment!.isNotEmpty ? ' $comment' : '';
+    return '$prefix$ts$suffix';
   }
 
   /// Sets the result for a test.

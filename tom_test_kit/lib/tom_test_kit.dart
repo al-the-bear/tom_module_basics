@@ -9,10 +9,19 @@ export 'src/model/tracking_file.dart';
 export 'src/parser/dart_test_parser.dart';
 export 'src/parser/test_description_parser.dart';
 export 'src/tracking/baseline_command.dart';
+export 'src/tracking/basediff_command.dart';
+export 'src/tracking/crossref_command.dart';
+export 'src/tracking/diff_command.dart';
+export 'src/tracking/diff_helper.dart';
+export 'src/tracking/lastdiff_command.dart';
+export 'src/tracking/reset_command.dart';
+export 'src/tracking/runs_command.dart';
+export 'src/tracking/status_command.dart';
 export 'src/tracking/test_command.dart';
 export 'src/util/file_helpers.dart';
 export 'src/util/format_helpers.dart';
 export 'src/util/markdown_table.dart';
+export 'src/util/output_formatter.dart';
 
 // TUI framework
 export 'src/tui/tui_command.dart';
