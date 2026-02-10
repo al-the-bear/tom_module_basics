@@ -1,0 +1,316 @@
+{"protocolVersion":"0.1.1","runnerVersion":"1.29.0","pid":65901,"type":"start","time":0}
+{"suite":{"id":0,"platform":"vm","path":"test/runner_test.dart"},"type":"suite","time":0}
+{"test":{"id":1,"name":"loading test/runner_test.dart","suiteID":0,"groupIDs":[],"metadata":{"skip":false,"skipReason":null},"line":null,"column":null,"url":null},"type":"testStart","time":1}
+{"count":13,"time":9,"type":"allSuites"}
+{"testID":1,"result":"success","skipped":false,"hidden":true,"type":"testDone","time":713}
+{"group":{"id":2,"suiteID":0,"parentID":null,"name":"","metadata":{"skip":false,"skipReason":null},"testCount":5,"line":null,"column":null,"url":null},"type":"group","time":715}
+{"test":{"id":3,"name":"(setUpAll)","suiteID":0,"groupIDs":[2],"metadata":{"skip":false,"skipReason":null},"line":19,"column":3,"url":"file:///Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_build_kit/test/runner_test.dart"},"type":"testStart","time":716}
+{"testID":3,"messageType":"print","message":"","type":"print","time":727}
+{"testID":3,"messageType":"print","message":"╔══════════════════════════════════════════════════════╗","type":"print","time":728}
+{"testID":3,"messageType":"print","message":"║          Runner Integration Tests                    ║","type":"print","time":728}
+{"testID":3,"messageType":"print","message":"╚══════════════════════════════════════════════════════╝","type":"print","time":728}
+{"testID":3,"messageType":"print","message":"Workspace root:  /Users/alexiskyaw/Desktop/Code/tom2","type":"print","time":728}
+{"testID":3,"messageType":"print","message":"Buildkit root:   /Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_build_kit","type":"print","time":728}
+{"testID":3,"messageType":"print","message":"    🔍 Checking workspace cleanliness...","type":"print","time":728}
+{"testID":3,"error":"\n╔══════════════════════════════════════════════════════╗\n║  WORKSPACE IS DIRTY — TESTS CANNOT RUN              ║\n╠══════════════════════════════════════════════════════╣\n║  Uncommitted changes detected:                      ║\n╚══════════════════════════════════════════════════════╝\n  M _ai/prompts/bot.chat.md\n\nIntegration tests require a clean workspace to guarantee\nsafe revert after each test. Commit or stash all changes\nbefore running tests.\n","stackTrace":"package:matcher                         fail\ntest/helpers/test_workspace.dart 218:7  TestWorkspace.requireCleanWorkspace\n===== asynchronous gap ===========================\ntest/runner_test.dart 27:5              main.<fn>\n","isFailure":true,"type":"error","time":1179}
+{"testID":3,"result":"failure","skipped":false,"hidden":false,"type":"testDone","time":1180}
+{"test":{"id":4,"name":"(tearDownAll)","suiteID":0,"groupIDs":[2],"metadata":{"skip":false,"skipReason":null},"line":41,"column":3,"url":"file:///Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_build_kit/test/runner_test.dart"},"type":"testStart","time":1182}
+{"testID":4,"messageType":"print","message":"","type":"print","time":1183}
+{"testID":4,"messageType":"print","message":"  ── Runner Tests: Tear-down ──","type":"print","time":1183}
+{"testID":4,"messageType":"print","message":"    🔒 Verifying HEAD refs (leak detection)...","type":"print","time":1183}
+{"testID":4,"messageType":"print","message":"    ⚠️  No saved HEAD refs to verify. Was saveHeadRefs called?","type":"print","time":1183}
+{"testID":4,"messageType":"print","message":"  ── Runner Tests: Complete ──","type":"print","time":1183}
+{"testID":4,"result":"success","skipped":false,"hidden":true,"type":"testDone","time":1184}
+{"suite":{"id":5,"platform":"vm","path":"test/security_test.dart"},"type":"suite","time":1191}
+{"test":{"id":6,"name":"loading test/security_test.dart","suiteID":5,"groupIDs":[],"metadata":{"skip":false,"skipReason":null},"line":null,"column":null,"url":null},"type":"testStart","time":1191}
+{"testID":6,"result":"success","skipped":false,"hidden":true,"type":"testDone","time":1347}
+{"group":{"id":7,"suiteID":5,"parentID":null,"name":"","metadata":{"skip":false,"skipReason":null},"testCount":4,"line":null,"column":null,"url":null},"type":"group","time":1347}
+{"test":{"id":8,"name":"(setUpAll)","suiteID":5,"groupIDs":[7],"metadata":{"skip":false,"skipReason":null},"line":22,"column":3,"url":"file:///Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_build_kit/test/security_test.dart"},"type":"testStart","time":1348}
+{"testID":8,"messageType":"print","message":"","type":"print","time":1383}
+{"testID":8,"messageType":"print","message":"╔══════════════════════════════════════════════════════╗","type":"print","time":1384}
+{"testID":8,"messageType":"print","message":"║          Security Integration Tests                  ║","type":"print","time":1384}
+{"testID":8,"messageType":"print","message":"╚══════════════════════════════════════════════════════╝","type":"print","time":1384}
+{"testID":8,"messageType":"print","message":"Workspace root:  /Users/alexiskyaw/Desktop/Code/tom2","type":"print","time":1385}
+{"testID":8,"messageType":"print","message":"Buildkit root:   /Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_build_kit","type":"print","time":1385}
+{"testID":8,"messageType":"print","message":"    🔍 Checking workspace cleanliness...","type":"print","time":1385}
+{"testID":8,"error":"\n╔══════════════════════════════════════════════════════╗\n║  WORKSPACE IS DIRTY — TESTS CANNOT RUN              ║\n╠══════════════════════════════════════════════════════╣\n║  Uncommitted changes detected:                      ║\n╚══════════════════════════════════════════════════════╝\n  M _ai/prompts/bot.chat.md\n\nIntegration tests require a clean workspace to guarantee\nsafe revert after each test. Commit or stash all changes\nbefore running tests.\n","stackTrace":"package:matcher                         fail\ntest/helpers/test_workspace.dart 218:7  TestWorkspace.requireCleanWorkspace\n===== asynchronous gap ===========================\ntest/security_test.dart 30:5            main.<fn>\n","isFailure":true,"type":"error","time":1887}
+{"testID":8,"result":"failure","skipped":false,"hidden":false,"type":"testDone","time":1887}
+{"test":{"id":9,"name":"(tearDownAll)","suiteID":5,"groupIDs":[7],"metadata":{"skip":false,"skipReason":null},"line":44,"column":3,"url":"file:///Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_build_kit/test/security_test.dart"},"type":"testStart","time":1888}
+{"testID":9,"messageType":"print","message":"","type":"print","time":1891}
+{"testID":9,"messageType":"print","message":"  ── Security Tests: Tear-down ──","type":"print","time":1891}
+{"testID":9,"messageType":"print","message":"    🔒 Verifying HEAD refs (leak detection)...","type":"print","time":1891}
+{"testID":9,"messageType":"print","message":"    ⚠️  No saved HEAD refs to verify. Was saveHeadRefs called?","type":"print","time":1891}
+{"testID":9,"messageType":"print","message":"  ── Security Tests: Complete ──","type":"print","time":1891}
+{"testID":9,"result":"success","skipped":false,"hidden":true,"type":"testDone","time":1892}
+{"suite":{"id":10,"platform":"vm","path":"test/dependencies_test.dart"},"type":"suite","time":1893}
+{"test":{"id":11,"name":"loading test/dependencies_test.dart","suiteID":10,"groupIDs":[],"metadata":{"skip":false,"skipReason":null},"line":null,"column":null,"url":null},"type":"testStart","time":1893}
+{"testID":11,"result":"success","skipped":false,"hidden":true,"type":"testDone","time":2037}
+{"group":{"id":12,"suiteID":10,"parentID":null,"name":"","metadata":{"skip":false,"skipReason":null},"testCount":7,"line":null,"column":null,"url":null},"type":"group","time":2037}
+{"test":{"id":13,"name":"(setUpAll)","suiteID":10,"groupIDs":[12],"metadata":{"skip":false,"skipReason":null},"line":17,"column":3,"url":"file:///Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_build_kit/test/dependencies_test.dart"},"type":"testStart","time":2037}
+{"testID":13,"messageType":"print","message":"","type":"print","time":2053}
+{"testID":13,"messageType":"print","message":"╔══════════════════════════════════════════════════════╗","type":"print","time":2053}
+{"testID":13,"messageType":"print","message":"║          Dependencies Integration Tests              ║","type":"print","time":2053}
+{"testID":13,"messageType":"print","message":"╚══════════════════════════════════════════════════════╝","type":"print","time":2053}
+{"testID":13,"messageType":"print","message":"Workspace root:  /Users/alexiskyaw/Desktop/Code/tom2","type":"print","time":2053}
+{"testID":13,"messageType":"print","message":"Buildkit root:   /Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_build_kit","type":"print","time":2053}
+{"testID":13,"messageType":"print","message":"    🔍 Checking workspace cleanliness...","type":"print","time":2053}
+{"testID":13,"error":"\n╔══════════════════════════════════════════════════════╗\n║  WORKSPACE IS DIRTY — TESTS CANNOT RUN              ║\n╠══════════════════════════════════════════════════════╣\n║  Uncommitted changes detected:                      ║\n╚══════════════════════════════════════════════════════╝\n  M _ai/prompts/bot.chat.md\n\nIntegration tests require a clean workspace to guarantee\nsafe revert after each test. Commit or stash all changes\nbefore running tests.\n","stackTrace":"package:matcher                         fail\ntest/helpers/test_workspace.dart 218:7  TestWorkspace.requireCleanWorkspace\n===== asynchronous gap ===========================\ntest/dependencies_test.dart 27:5        main.<fn>\n","isFailure":true,"type":"error","time":2710}
+{"testID":13,"result":"failure","skipped":false,"hidden":false,"type":"testDone","time":2710}
+{"test":{"id":14,"name":"(tearDownAll)","suiteID":10,"groupIDs":[12],"metadata":{"skip":false,"skipReason":null},"line":41,"column":3,"url":"file:///Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_build_kit/test/dependencies_test.dart"},"type":"testStart","time":2711}
+{"testID":14,"messageType":"print","message":"","type":"print","time":2712}
+{"testID":14,"messageType":"print","message":"  ── Dependencies Tests: Tear-down ──","type":"print","time":2712}
+{"testID":14,"messageType":"print","message":"    🔒 Verifying HEAD refs (leak detection)...","type":"print","time":2712}
+{"testID":14,"messageType":"print","message":"    ⚠️  No saved HEAD refs to verify. Was saveHeadRefs called?","type":"print","time":2712}
+{"testID":14,"messageType":"print","message":"  ── Dependencies Tests: Complete ──","type":"print","time":2712}
+{"testID":14,"result":"success","skipped":false,"hidden":true,"type":"testDone","time":2712}
+{"suite":{"id":15,"platform":"vm","path":"test/toolbase_test.dart"},"type":"suite","time":2713}
+{"test":{"id":16,"name":"loading test/toolbase_test.dart","suiteID":15,"groupIDs":[],"metadata":{"skip":false,"skipReason":null},"line":null,"column":null,"url":null},"type":"testStart","time":2713}
+{"testID":16,"result":"success","skipped":false,"hidden":true,"type":"testDone","time":2837}
+{"group":{"id":17,"suiteID":15,"parentID":null,"name":"","metadata":{"skip":false,"skipReason":null},"testCount":7,"line":null,"column":null,"url":null},"type":"group","time":2837}
+{"test":{"id":18,"name":"(setUpAll)","suiteID":15,"groupIDs":[17],"metadata":{"skip":false,"skipReason":null},"line":19,"column":3,"url":"file:///Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_build_kit/test/toolbase_test.dart"},"type":"testStart","time":2837}
+{"testID":18,"messageType":"print","message":"","type":"print","time":2855}
+{"testID":18,"messageType":"print","message":"╔══════════════════════════════════════════════════════╗","type":"print","time":2855}
+{"testID":18,"messageType":"print","message":"║          ToolBase Integration Tests                  ║","type":"print","time":2855}
+{"testID":18,"messageType":"print","message":"╚══════════════════════════════════════════════════════╝","type":"print","time":2855}
+{"testID":18,"messageType":"print","message":"Workspace root:  /Users/alexiskyaw/Desktop/Code/tom2","type":"print","time":2855}
+{"testID":18,"messageType":"print","message":"Buildkit root:   /Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_build_kit","type":"print","time":2855}
+{"testID":18,"messageType":"print","message":"    🔍 Checking workspace cleanliness...","type":"print","time":2855}
+{"testID":18,"error":"\n╔══════════════════════════════════════════════════════╗\n║  WORKSPACE IS DIRTY — TESTS CANNOT RUN              ║\n╠══════════════════════════════════════════════════════╣\n║  Uncommitted changes detected:                      ║\n╚══════════════════════════════════════════════════════╝\n  M _ai/prompts/bot.chat.md\n\nIntegration tests require a clean workspace to guarantee\nsafe revert after each test. Commit or stash all changes\nbefore running tests.\n","stackTrace":"package:matcher                         fail\ntest/helpers/test_workspace.dart 218:7  TestWorkspace.requireCleanWorkspace\n===== asynchronous gap ===========================\ntest/toolbase_test.dart 29:5            main.<fn>\n","isFailure":true,"type":"error","time":3321}
+{"testID":18,"result":"failure","skipped":false,"hidden":false,"type":"testDone","time":3322}
+{"test":{"id":19,"name":"(tearDownAll)","suiteID":15,"groupIDs":[17],"metadata":{"skip":false,"skipReason":null},"line":43,"column":3,"url":"file:///Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_build_kit/test/toolbase_test.dart"},"type":"testStart","time":3323}
+{"testID":19,"messageType":"print","message":"","type":"print","time":3324}
+{"testID":19,"messageType":"print","message":"  ── ToolBase Tests: Tear-down ──","type":"print","time":3324}
+{"testID":19,"messageType":"print","message":"    🔒 Verifying HEAD refs (leak detection)...","type":"print","time":3324}
+{"testID":19,"messageType":"print","message":"    ⚠️  No saved HEAD refs to verify. Was saveHeadRefs called?","type":"print","time":3324}
+{"testID":19,"messageType":"print","message":"  ── ToolBase Tests: Complete ──","type":"print","time":3324}
+{"testID":19,"result":"success","skipped":false,"hidden":true,"type":"testDone","time":3324}
+{"suite":{"id":20,"platform":"vm","path":"test/exclusion_test.dart"},"type":"suite","time":3325}
+{"test":{"id":21,"name":"loading test/exclusion_test.dart","suiteID":20,"groupIDs":[],"metadata":{"skip":false,"skipReason":null},"line":null,"column":null,"url":null},"type":"testStart","time":3325}
+{"testID":21,"result":"success","skipped":false,"hidden":true,"type":"testDone","time":3530}
+{"group":{"id":22,"suiteID":20,"parentID":null,"name":"","metadata":{"skip":false,"skipReason":null},"testCount":27,"line":null,"column":null,"url":null},"type":"group","time":3530}
+{"test":{"id":23,"name":"(setUpAll)","suiteID":20,"groupIDs":[22],"metadata":{"skip":false,"skipReason":null},"line":29,"column":3,"url":"file:///Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_build_kit/test/exclusion_test.dart"},"type":"testStart","time":3530}
+{"testID":23,"messageType":"print","message":"","type":"print","time":3543}
+{"testID":23,"messageType":"print","message":"╔══════════════════════════════════════════════════════╗","type":"print","time":3543}
+{"testID":23,"messageType":"print","message":"║          Exclusion Integration Tests                 ║","type":"print","time":3543}
+{"testID":23,"messageType":"print","message":"╚══════════════════════════════════════════════════════╝","type":"print","time":3543}
+{"testID":23,"messageType":"print","message":"Workspace root:  /Users/alexiskyaw/Desktop/Code/tom2","type":"print","time":3543}
+{"testID":23,"messageType":"print","message":"Buildkit root:   /Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_build_kit","type":"print","time":3543}
+{"testID":23,"messageType":"print","message":"    🔍 Checking workspace cleanliness...","type":"print","time":3543}
+{"testID":23,"error":"\n╔══════════════════════════════════════════════════════╗\n║  WORKSPACE IS DIRTY — TESTS CANNOT RUN              ║\n╠══════════════════════════════════════════════════════╣\n║  Uncommitted changes detected:                      ║\n╚══════════════════════════════════════════════════════╝\n  M _ai/prompts/bot.chat.md\n\nIntegration tests require a clean workspace to guarantee\nsafe revert after each test. Commit or stash all changes\nbefore running tests.\n","stackTrace":"package:matcher                         fail\ntest/helpers/test_workspace.dart 218:7  TestWorkspace.requireCleanWorkspace\n===== asynchronous gap ===========================\ntest/exclusion_test.dart 39:5           main.<fn>\n","isFailure":true,"type":"error","time":4005}
+{"testID":23,"result":"failure","skipped":false,"hidden":false,"type":"testDone","time":4007}
+{"test":{"id":24,"name":"(tearDownAll)","suiteID":20,"groupIDs":[22],"metadata":{"skip":false,"skipReason":null},"line":70,"column":3,"url":"file:///Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_build_kit/test/exclusion_test.dart"},"type":"testStart","time":4009}
+{"testID":24,"messageType":"print","message":"","type":"print","time":4011}
+{"testID":24,"messageType":"print","message":"  ── Exclusion Tests: Tear-down ──","type":"print","time":4011}
+{"testID":24,"messageType":"print","message":"    🔒 Verifying HEAD refs (leak detection)...","type":"print","time":4011}
+{"testID":24,"messageType":"print","message":"    ⚠️  No saved HEAD refs to verify. Was saveHeadRefs called?","type":"print","time":4011}
+{"testID":24,"messageType":"print","message":"  ── Exclusion Tests: Complete ──","type":"print","time":4011}
+{"testID":24,"result":"success","skipped":false,"hidden":true,"type":"testDone","time":4011}
+{"suite":{"id":25,"platform":"vm","path":"test/cleanup_test.dart"},"type":"suite","time":4013}
+{"test":{"id":26,"name":"loading test/cleanup_test.dart","suiteID":25,"groupIDs":[],"metadata":{"skip":false,"skipReason":null},"line":null,"column":null,"url":null},"type":"testStart","time":4013}
+{"testID":26,"result":"success","skipped":false,"hidden":true,"type":"testDone","time":4146}
+{"group":{"id":27,"suiteID":25,"parentID":null,"name":"","metadata":{"skip":false,"skipReason":null},"testCount":9,"line":null,"column":null,"url":null},"type":"group","time":4146}
+{"test":{"id":28,"name":"(setUpAll)","suiteID":25,"groupIDs":[27],"metadata":{"skip":false,"skipReason":null},"line":27,"column":3,"url":"file:///Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_build_kit/test/cleanup_test.dart"},"type":"testStart","time":4146}
+{"testID":28,"messageType":"print","message":"","type":"print","time":4160}
+{"testID":28,"messageType":"print","message":"╔══════════════════════════════════════════════════════╗","type":"print","time":4160}
+{"testID":28,"messageType":"print","message":"║          Cleanup Integration Tests                   ║","type":"print","time":4160}
+{"testID":28,"messageType":"print","message":"╚══════════════════════════════════════════════════════╝","type":"print","time":4160}
+{"testID":28,"messageType":"print","message":"Workspace root:  /Users/alexiskyaw/Desktop/Code/tom2","type":"print","time":4160}
+{"testID":28,"messageType":"print","message":"Buildkit root:   /Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_build_kit","type":"print","time":4160}
+{"testID":28,"messageType":"print","message":"    🔍 Checking workspace cleanliness...","type":"print","time":4160}
+{"testID":28,"error":"\n╔══════════════════════════════════════════════════════╗\n║  WORKSPACE IS DIRTY — TESTS CANNOT RUN              ║\n╠══════════════════════════════════════════════════════╣\n║  Uncommitted changes detected:                      ║\n╚══════════════════════════════════════════════════════╝\n  M _ai/prompts/bot.chat.md\n\nIntegration tests require a clean workspace to guarantee\nsafe revert after each test. Commit or stash all changes\nbefore running tests.\n","stackTrace":"package:matcher                         fail\ntest/helpers/test_workspace.dart 218:7  TestWorkspace.requireCleanWorkspace\n===== asynchronous gap ===========================\ntest/cleanup_test.dart 37:5             main.<fn>\n","isFailure":true,"type":"error","time":4626}
+{"testID":28,"result":"failure","skipped":false,"hidden":false,"type":"testDone","time":4633}
+{"test":{"id":29,"name":"(tearDownAll)","suiteID":25,"groupIDs":[27],"metadata":{"skip":false,"skipReason":null},"line":87,"column":3,"url":"file:///Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_build_kit/test/cleanup_test.dart"},"type":"testStart","time":4633}
+{"testID":29,"messageType":"print","message":"","type":"print","time":4635}
+{"testID":29,"messageType":"print","message":"  ── Cleanup Tests: Tear-down ──","type":"print","time":4635}
+{"testID":29,"messageType":"print","message":"    🔒 Verifying HEAD refs (leak detection)...","type":"print","time":4636}
+{"testID":29,"messageType":"print","message":"    ⚠️  No saved HEAD refs to verify. Was saveHeadRefs called?","type":"print","time":4636}
+{"testID":29,"messageType":"print","message":"  ── Cleanup Tests: Complete ──","type":"print","time":4636}
+{"testID":29,"result":"success","skipped":false,"hidden":true,"type":"testDone","time":4636}
+{"suite":{"id":30,"platform":"vm","path":"test/versioner_test.dart"},"type":"suite","time":4639}
+{"test":{"id":31,"name":"loading test/versioner_test.dart","suiteID":30,"groupIDs":[],"metadata":{"skip":false,"skipReason":null},"line":null,"column":null,"url":null},"type":"testStart","time":4639}
+{"testID":31,"result":"success","skipped":false,"hidden":true,"type":"testDone","time":4768}
+{"group":{"id":32,"suiteID":30,"parentID":null,"name":"","metadata":{"skip":false,"skipReason":null},"testCount":7,"line":null,"column":null,"url":null},"type":"group","time":4768}
+{"test":{"id":33,"name":"(setUpAll)","suiteID":30,"groupIDs":[32],"metadata":{"skip":false,"skipReason":null},"line":29,"column":3,"url":"file:///Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_build_kit/test/versioner_test.dart"},"type":"testStart","time":4768}
+{"testID":33,"messageType":"print","message":"","type":"print","time":4782}
+{"testID":33,"messageType":"print","message":"╔══════════════════════════════════════════════════════╗","type":"print","time":4782}
+{"testID":33,"messageType":"print","message":"║          Versioner Integration Tests                 ║","type":"print","time":4782}
+{"testID":33,"messageType":"print","message":"╚══════════════════════════════════════════════════════╝","type":"print","time":4782}
+{"testID":33,"messageType":"print","message":"Workspace root:  /Users/alexiskyaw/Desktop/Code/tom2","type":"print","time":4782}
+{"testID":33,"messageType":"print","message":"Buildkit root:   /Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_build_kit","type":"print","time":4782}
+{"testID":33,"messageType":"print","message":"Target project:  /Users/alexiskyaw/Desktop/Code/tom2/_build","type":"print","time":4782}
+{"testID":33,"messageType":"print","message":"    🔍 Checking workspace cleanliness...","type":"print","time":4782}
+{"testID":33,"error":"\n╔══════════════════════════════════════════════════════╗\n║  WORKSPACE IS DIRTY — TESTS CANNOT RUN              ║\n╠══════════════════════════════════════════════════════╣\n║  Uncommitted changes detected:                      ║\n╚══════════════════════════════════════════════════════╝\n  M _ai/prompts/bot.chat.md\n\nIntegration tests require a clean workspace to guarantee\nsafe revert after each test. Commit or stash all changes\nbefore running tests.\n","stackTrace":"package:matcher                         fail\ntest/helpers/test_workspace.dart 218:7  TestWorkspace.requireCleanWorkspace\n===== asynchronous gap ===========================\ntest/versioner_test.dart 42:5           main.<fn>\n","isFailure":true,"type":"error","time":5325}
+{"testID":33,"result":"failure","skipped":false,"hidden":false,"type":"testDone","time":5326}
+{"test":{"id":34,"name":"(tearDownAll)","suiteID":30,"groupIDs":[32],"metadata":{"skip":false,"skipReason":null},"line":57,"column":3,"url":"file:///Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_build_kit/test/versioner_test.dart"},"type":"testStart","time":5327}
+{"testID":34,"messageType":"print","message":"","type":"print","time":5329}
+{"testID":34,"messageType":"print","message":"  ── Versioner Tests: Tear-down ──","type":"print","time":5330}
+{"testID":34,"messageType":"print","message":"    🔒 Verifying HEAD refs (leak detection)...","type":"print","time":5330}
+{"testID":34,"messageType":"print","message":"    ⚠️  No saved HEAD refs to verify. Was saveHeadRefs called?","type":"print","time":5330}
+{"testID":34,"messageType":"print","message":"  ── Versioner Tests: Complete ──","type":"print","time":5330}
+{"testID":34,"result":"success","skipped":false,"hidden":true,"type":"testDone","time":5330}
+{"suite":{"id":35,"platform":"vm","path":"test/buildkit_test.dart"},"type":"suite","time":5331}
+{"test":{"id":36,"name":"loading test/buildkit_test.dart","suiteID":35,"groupIDs":[],"metadata":{"skip":false,"skipReason":null},"line":null,"column":null,"url":null},"type":"testStart","time":5331}
+{"testID":36,"result":"success","skipped":false,"hidden":true,"type":"testDone","time":5492}
+{"group":{"id":37,"suiteID":35,"parentID":null,"name":"","metadata":{"skip":false,"skipReason":null},"testCount":15,"line":null,"column":null,"url":null},"type":"group","time":5492}
+{"test":{"id":38,"name":"(setUpAll)","suiteID":35,"groupIDs":[37],"metadata":{"skip":false,"skipReason":null},"line":21,"column":3,"url":"file:///Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_build_kit/test/buildkit_test.dart"},"type":"testStart","time":5492}
+{"testID":38,"messageType":"print","message":"","type":"print","time":5503}
+{"testID":38,"messageType":"print","message":"╔══════════════════════════════════════════════════════╗","type":"print","time":5503}
+{"testID":38,"messageType":"print","message":"║          BuildKit Integration Tests                  ║","type":"print","time":5503}
+{"testID":38,"messageType":"print","message":"╚══════════════════════════════════════════════════════╝","type":"print","time":5503}
+{"testID":38,"messageType":"print","message":"Workspace root:  /Users/alexiskyaw/Desktop/Code/tom2","type":"print","time":5503}
+{"testID":38,"messageType":"print","message":"Buildkit root:   /Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_build_kit","type":"print","time":5503}
+{"testID":38,"messageType":"print","message":"    🔍 Checking workspace cleanliness...","type":"print","time":5503}
+{"testID":38,"error":"\n╔══════════════════════════════════════════════════════╗\n║  WORKSPACE IS DIRTY — TESTS CANNOT RUN              ║\n╠══════════════════════════════════════════════════════╣\n║  Uncommitted changes detected:                      ║\n╚══════════════════════════════════════════════════════╝\n  M _ai/prompts/bot.chat.md\n\nIntegration tests require a clean workspace to guarantee\nsafe revert after each test. Commit or stash all changes\nbefore running tests.\n","stackTrace":"package:matcher                         fail\ntest/helpers/test_workspace.dart 218:7  TestWorkspace.requireCleanWorkspace\n===== asynchronous gap ===========================\ntest/buildkit_test.dart 29:5            main.<fn>\n","isFailure":true,"type":"error","time":5907}
+{"testID":38,"result":"failure","skipped":false,"hidden":false,"type":"testDone","time":5910}
+{"test":{"id":39,"name":"(tearDownAll)","suiteID":35,"groupIDs":[37],"metadata":{"skip":false,"skipReason":null},"line":43,"column":3,"url":"file:///Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_build_kit/test/buildkit_test.dart"},"type":"testStart","time":5911}
+{"testID":39,"messageType":"print","message":"","type":"print","time":5912}
+{"testID":39,"messageType":"print","message":"  ── BuildKit Tests: Tear-down ──","type":"print","time":5912}
+{"testID":39,"messageType":"print","message":"    🔒 Verifying HEAD refs (leak detection)...","type":"print","time":5912}
+{"testID":39,"messageType":"print","message":"    ⚠️  No saved HEAD refs to verify. Was saveHeadRefs called?","type":"print","time":5912}
+{"testID":39,"messageType":"print","message":"  ── BuildKit Tests: Complete ──","type":"print","time":5912}
+{"testID":39,"result":"success","skipped":false,"hidden":true,"type":"testDone","time":5912}
+{"suite":{"id":40,"platform":"vm","path":"test/config_merge_test.dart"},"type":"suite","time":5913}
+{"test":{"id":41,"name":"loading test/config_merge_test.dart","suiteID":40,"groupIDs":[],"metadata":{"skip":false,"skipReason":null},"line":null,"column":null,"url":null},"type":"testStart","time":5913}
+{"testID":41,"result":"success","skipped":false,"hidden":true,"type":"testDone","time":6026}
+{"group":{"id":42,"suiteID":40,"parentID":null,"name":"","metadata":{"skip":false,"skipReason":null},"testCount":4,"line":null,"column":null,"url":null},"type":"group","time":6026}
+{"test":{"id":43,"name":"(setUpAll)","suiteID":40,"groupIDs":[42],"metadata":{"skip":false,"skipReason":null},"line":23,"column":3,"url":"file:///Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_build_kit/test/config_merge_test.dart"},"type":"testStart","time":6026}
+{"testID":43,"messageType":"print","message":"","type":"print","time":6040}
+{"testID":43,"messageType":"print","message":"╔══════════════════════════════════════════════════════╗","type":"print","time":6040}
+{"testID":43,"messageType":"print","message":"║          Config Merge Integration Tests              ║","type":"print","time":6040}
+{"testID":43,"messageType":"print","message":"╚══════════════════════════════════════════════════════╝","type":"print","time":6040}
+{"testID":43,"messageType":"print","message":"Workspace root:  /Users/alexiskyaw/Desktop/Code/tom2","type":"print","time":6040}
+{"testID":43,"messageType":"print","message":"Buildkit root:   /Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_build_kit","type":"print","time":6040}
+{"testID":43,"messageType":"print","message":"    🔍 Checking workspace cleanliness...","type":"print","time":6040}
+{"testID":43,"error":"\n╔══════════════════════════════════════════════════════╗\n║  WORKSPACE IS DIRTY — TESTS CANNOT RUN              ║\n╠══════════════════════════════════════════════════════╣\n║  Uncommitted changes detected:                      ║\n╚══════════════════════════════════════════════════════╝\n  M _ai/prompts/bot.chat.md\n\nIntegration tests require a clean workspace to guarantee\nsafe revert after each test. Commit or stash all changes\nbefore running tests.\n","stackTrace":"package:matcher                         fail\ntest/helpers/test_workspace.dart 218:7  TestWorkspace.requireCleanWorkspace\n===== asynchronous gap ===========================\ntest/config_merge_test.dart 31:5        main.<fn>\n","isFailure":true,"type":"error","time":6481}
+{"testID":43,"result":"failure","skipped":false,"hidden":false,"type":"testDone","time":6482}
+{"test":{"id":44,"name":"(tearDownAll)","suiteID":40,"groupIDs":[42],"metadata":{"skip":false,"skipReason":null},"line":45,"column":3,"url":"file:///Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_build_kit/test/config_merge_test.dart"},"type":"testStart","time":6488}
+{"testID":44,"messageType":"print","message":"","type":"print","time":6497}
+{"testID":44,"messageType":"print","message":"  ── Config Merge Tests: Tear-down ──","type":"print","time":6497}
+{"testID":44,"messageType":"print","message":"    🔒 Verifying HEAD refs (leak detection)...","type":"print","time":6497}
+{"testID":44,"messageType":"print","message":"    ⚠️  No saved HEAD refs to verify. Was saveHeadRefs called?","type":"print","time":6497}
+{"testID":44,"messageType":"print","message":"  ── Config Merge Tests: Complete ──","type":"print","time":6497}
+{"testID":44,"result":"success","skipped":false,"hidden":true,"type":"testDone","time":6497}
+{"suite":{"id":45,"platform":"vm","path":"test/versionbump_test.dart"},"type":"suite","time":6499}
+{"test":{"id":46,"name":"loading test/versionbump_test.dart","suiteID":45,"groupIDs":[],"metadata":{"skip":false,"skipReason":null},"line":null,"column":null,"url":null},"type":"testStart","time":6500}
+{"testID":46,"result":"success","skipped":false,"hidden":true,"type":"testDone","time":6657}
+{"group":{"id":47,"suiteID":45,"parentID":null,"name":"","metadata":{"skip":false,"skipReason":null},"testCount":6,"line":null,"column":null,"url":null},"type":"group","time":6657}
+{"test":{"id":48,"name":"(setUpAll)","suiteID":45,"groupIDs":[47],"metadata":{"skip":false,"skipReason":null},"line":23,"column":3,"url":"file:///Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_build_kit/test/versionbump_test.dart"},"type":"testStart","time":6658}
+{"testID":48,"messageType":"print","message":"","type":"print","time":6699}
+{"testID":48,"messageType":"print","message":"╔══════════════════════════════════════════════════════╗","type":"print","time":6699}
+{"testID":48,"messageType":"print","message":"║          VersionBump Integration Tests               ║","type":"print","time":6699}
+{"testID":48,"messageType":"print","message":"╚══════════════════════════════════════════════════════╝","type":"print","time":6699}
+{"testID":48,"messageType":"print","message":"Workspace root:  /Users/alexiskyaw/Desktop/Code/tom2","type":"print","time":6699}
+{"testID":48,"messageType":"print","message":"Buildkit root:   /Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_build_kit","type":"print","time":6699}
+{"testID":48,"messageType":"print","message":"","type":"print","time":6699}
+{"testID":48,"messageType":"print","message":"    🔍 Checking workspace cleanliness...","type":"print","time":6699}
+{"testID":48,"error":"\n╔══════════════════════════════════════════════════════╗\n║  WORKSPACE IS DIRTY — TESTS CANNOT RUN              ║\n╠══════════════════════════════════════════════════════╣\n║  Uncommitted changes detected:                      ║\n╚══════════════════════════════════════════════════════╝\n  M _ai/prompts/bot.chat.md\n\nIntegration tests require a clean workspace to guarantee\nsafe revert after each test. Commit or stash all changes\nbefore running tests.\n","stackTrace":"package:matcher                         fail\ntest/helpers/test_workspace.dart 218:7  TestWorkspace.requireCleanWorkspace\n===== asynchronous gap ===========================\ntest/versionbump_test.dart 32:5         main.<fn>\n","isFailure":true,"type":"error","time":7263}
+{"testID":48,"result":"failure","skipped":false,"hidden":false,"type":"testDone","time":7266}
+{"test":{"id":49,"name":"(tearDownAll)","suiteID":45,"groupIDs":[47],"metadata":{"skip":false,"skipReason":null},"line":45,"column":3,"url":"file:///Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_build_kit/test/versionbump_test.dart"},"type":"testStart","time":7271}
+{"testID":49,"messageType":"print","message":"","type":"print","time":7273}
+{"testID":49,"messageType":"print","message":"  ── VersionBump Tests: Tear-down ──","type":"print","time":7273}
+{"testID":49,"messageType":"print","message":"    🔒 Verifying HEAD refs (leak detection)...","type":"print","time":7273}
+{"testID":49,"messageType":"print","message":"    ⚠️  No saved HEAD refs to verify. Was saveHeadRefs called?","type":"print","time":7273}
+{"testID":49,"messageType":"print","message":"  ── VersionBump Tests: Complete ──","type":"print","time":7273}
+{"testID":49,"result":"success","skipped":false,"hidden":true,"type":"testDone","time":7274}
+{"suite":{"id":50,"platform":"vm","path":"test/script_utils_test.dart"},"type":"suite","time":7275}
+{"test":{"id":51,"name":"loading test/script_utils_test.dart","suiteID":50,"groupIDs":[],"metadata":{"skip":false,"skipReason":null},"line":null,"column":null,"url":null},"type":"testStart","time":7275}
+{"testID":51,"result":"success","skipped":false,"hidden":true,"type":"testDone","time":7427}
+{"group":{"id":52,"suiteID":50,"parentID":null,"name":"","metadata":{"skip":false,"skipReason":null},"testCount":12,"line":null,"column":null,"url":null},"type":"group","time":7428}
+{"group":{"id":53,"suiteID":50,"parentID":52,"name":"script_utils parsing","metadata":{"skip":false,"skipReason":null},"testCount":6,"line":27,"column":3,"url":"file:///Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_build_kit/test/script_utils_test.dart"},"type":"group","time":7428}
+{"test":{"id":54,"name":"script_utils parsing isMultiLineShellScript detects shell\\n prefix","suiteID":50,"groupIDs":[52,53],"metadata":{"skip":false,"skipReason":null},"line":28,"column":5,"url":"file:///Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_build_kit/test/script_utils_test.dart"},"type":"testStart","time":7428}
+{"testID":54,"result":"success","skipped":false,"hidden":false,"type":"testDone","time":7441}
+{"test":{"id":55,"name":"script_utils parsing isMultiLineShellScript rejects non-multiline","suiteID":50,"groupIDs":[52,53],"metadata":{"skip":false,"skipReason":null},"line":35,"column":5,"url":"file:///Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_build_kit/test/script_utils_test.dart"},"type":"testStart","time":7442}
+{"testID":55,"result":"success","skipped":false,"hidden":false,"type":"testDone","time":7443}
+{"test":{"id":56,"name":"script_utils parsing extractScriptBody extracts content after shell\\n","suiteID":50,"groupIDs":[52,53],"metadata":{"skip":false,"skipReason":null},"line":42,"column":5,"url":"file:///Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_build_kit/test/script_utils_test.dart"},"type":"testStart","time":7443}
+{"testID":56,"result":"success","skipped":false,"hidden":false,"type":"testDone","time":7444}
+{"test":{"id":57,"name":"script_utils parsing isStdinCommand detects stdin prefix with newline","suiteID":50,"groupIDs":[52,53],"metadata":{"skip":false,"skipReason":null},"line":54,"column":5,"url":"file:///Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_build_kit/test/script_utils_test.dart"},"type":"testStart","time":7445}
+{"testID":57,"result":"success","skipped":false,"hidden":false,"type":"testDone","time":7445}
+{"test":{"id":58,"name":"script_utils parsing isStdinCommand rejects invalid formats","suiteID":50,"groupIDs":[52,53],"metadata":{"skip":false,"skipReason":null},"line":61,"column":5,"url":"file:///Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_build_kit/test/script_utils_test.dart"},"type":"testStart","time":7446}
+{"testID":58,"result":"success","skipped":false,"hidden":false,"type":"testDone","time":7446}
+{"test":{"id":59,"name":"script_utils parsing parseStdinCommand extracts command and content","suiteID":50,"groupIDs":[52,53],"metadata":{"skip":false,"skipReason":null},"line":68,"column":5,"url":"file:///Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_build_kit/test/script_utils_test.dart"},"type":"testStart","time":7447}
+{"testID":59,"result":"success","skipped":false,"hidden":false,"type":"testDone","time":7447}
+{"group":{"id":60,"suiteID":50,"parentID":52,"name":"multi-line pipeline execution","metadata":{"skip":false,"skipReason":null},"testCount":6,"line":93,"column":3,"url":"file:///Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_build_kit/test/script_utils_test.dart"},"type":"group","time":7447}
+{"test":{"id":61,"name":"multi-line pipeline execution (setUpAll)","suiteID":50,"groupIDs":[52,60],"metadata":{"skip":false,"skipReason":null},"line":97,"column":5,"url":"file:///Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_build_kit/test/script_utils_test.dart"},"type":"testStart","time":7447}
+{"testID":61,"messageType":"print","message":"","type":"print","time":7452}
+{"testID":61,"messageType":"print","message":"╔══════════════════════════════════════════════════════╗","type":"print","time":7452}
+{"testID":61,"messageType":"print","message":"║       Multi-Line Script Integration Tests            ║","type":"print","time":7452}
+{"testID":61,"messageType":"print","message":"╚══════════════════════════════════════════════════════╝","type":"print","time":7452}
+{"testID":61,"messageType":"print","message":"Workspace root:  /Users/alexiskyaw/Desktop/Code/tom2","type":"print","time":7452}
+{"testID":61,"messageType":"print","message":"Buildkit root:   /Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_build_kit","type":"print","time":7452}
+{"testID":61,"messageType":"print","message":"    🔍 Checking workspace cleanliness...","type":"print","time":7452}
+{"testID":61,"error":"\n╔══════════════════════════════════════════════════════╗\n║  WORKSPACE IS DIRTY — TESTS CANNOT RUN              ║\n╠══════════════════════════════════════════════════════╣\n║  Uncommitted changes detected:                      ║\n╚══════════════════════════════════════════════════════╝\n  M _ai/prompts/bot.chat.md\n\nIntegration tests require a clean workspace to guarantee\nsafe revert after each test. Commit or stash all changes\nbefore running tests.\n","stackTrace":"package:matcher                         fail\ntest/helpers/test_workspace.dart 218:7  TestWorkspace.requireCleanWorkspace\n===== asynchronous gap ===========================\ntest/script_utils_test.dart 105:7       main.<fn>.<fn>\n","isFailure":true,"type":"error","time":8166}
+{"testID":61,"result":"failure","skipped":false,"hidden":false,"type":"testDone","time":8166}
+{"test":{"id":62,"name":"multi-line pipeline execution (tearDownAll)","suiteID":50,"groupIDs":[52,60],"metadata":{"skip":false,"skipReason":null},"line":119,"column":5,"url":"file:///Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_build_kit/test/script_utils_test.dart"},"type":"testStart","time":8166}
+{"testID":62,"messageType":"print","message":"","type":"print","time":8192}
+{"testID":62,"messageType":"print","message":"  ── Multi-Line Script Tests: Tear-down ──","type":"print","time":8192}
+{"testID":62,"messageType":"print","message":"    🔒 Verifying HEAD refs (leak detection)...","type":"print","time":8192}
+{"testID":62,"messageType":"print","message":"    ⚠️  No saved HEAD refs to verify. Was saveHeadRefs called?","type":"print","time":8192}
+{"testID":62,"messageType":"print","message":"  ── Multi-Line Script Tests: Complete ──","type":"print","time":8192}
+{"testID":62,"result":"success","skipped":false,"hidden":true,"type":"testDone","time":8192}
+{"suite":{"id":63,"platform":"vm","path":"test/compiler_test.dart"},"type":"suite","time":8196}
+{"test":{"id":64,"name":"loading test/compiler_test.dart","suiteID":63,"groupIDs":[],"metadata":{"skip":false,"skipReason":null},"line":null,"column":null,"url":null},"type":"testStart","time":8202}
+{"testID":64,"result":"success","skipped":false,"hidden":true,"type":"testDone","time":8490}
+{"group":{"id":65,"suiteID":63,"parentID":null,"name":"","metadata":{"skip":false,"skipReason":null},"testCount":6,"line":null,"column":null,"url":null},"type":"group","time":8490}
+{"test":{"id":66,"name":"(setUpAll)","suiteID":63,"groupIDs":[65],"metadata":{"skip":false,"skipReason":null},"line":19,"column":3,"url":"file:///Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_build_kit/test/compiler_test.dart"},"type":"testStart","time":8490}
+{"testID":66,"messageType":"print","message":"","type":"print","time":8529}
+{"testID":66,"messageType":"print","message":"╔══════════════════════════════════════════════════════╗","type":"print","time":8529}
+{"testID":66,"messageType":"print","message":"║          Compiler Integration Tests                  ║","type":"print","time":8530}
+{"testID":66,"messageType":"print","message":"╚══════════════════════════════════════════════════════╝","type":"print","time":8530}
+{"testID":66,"messageType":"print","message":"Workspace root:  /Users/alexiskyaw/Desktop/Code/tom2","type":"print","time":8530}
+{"testID":66,"messageType":"print","message":"Buildkit root:   /Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_build_kit","type":"print","time":8530}
+{"testID":66,"messageType":"print","message":"    🔍 Checking workspace cleanliness...","type":"print","time":8530}
+{"testID":66,"error":"\n╔══════════════════════════════════════════════════════╗\n║  WORKSPACE IS DIRTY — TESTS CANNOT RUN              ║\n╠══════════════════════════════════════════════════════╣\n║  Uncommitted changes detected:                      ║\n╚══════════════════════════════════════════════════════╝\n  M _ai/prompts/bot.chat.md\n\nIntegration tests require a clean workspace to guarantee\nsafe revert after each test. Commit or stash all changes\nbefore running tests.\n","stackTrace":"package:matcher                         fail\ntest/helpers/test_workspace.dart 218:7  TestWorkspace.requireCleanWorkspace\n===== asynchronous gap ===========================\ntest/compiler_test.dart 27:5            main.<fn>\n","isFailure":true,"type":"error","time":9235}
+{"testID":66,"result":"failure","skipped":false,"hidden":false,"type":"testDone","time":9236}
+{"test":{"id":67,"name":"(tearDownAll)","suiteID":63,"groupIDs":[65],"metadata":{"skip":false,"skipReason":null},"line":41,"column":3,"url":"file:///Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_build_kit/test/compiler_test.dart"},"type":"testStart","time":9236}
+{"testID":67,"messageType":"print","message":"","type":"print","time":9240}
+{"testID":67,"messageType":"print","message":"  ── Compiler Tests: Tear-down ──","type":"print","time":9240}
+{"testID":67,"messageType":"print","message":"    🔒 Verifying HEAD refs (leak detection)...","type":"print","time":9240}
+{"testID":67,"messageType":"print","message":"    ⚠️  No saved HEAD refs to verify. Was saveHeadRefs called?","type":"print","time":9240}
+{"testID":67,"messageType":"print","message":"  ── Compiler Tests: Complete ──","type":"print","time":9240}
+{"testID":67,"result":"success","skipped":false,"hidden":true,"type":"testDone","time":9240}
+{"suite":{"id":68,"platform":"vm","path":"test/builtin_commands_test.dart"},"type":"suite","time":9241}
+{"test":{"id":69,"name":"loading test/builtin_commands_test.dart","suiteID":68,"groupIDs":[],"metadata":{"skip":false,"skipReason":null},"line":null,"column":null,"url":null},"type":"testStart","time":9241}
+{"testID":69,"result":"success","skipped":false,"hidden":true,"type":"testDone","time":9600}
+{"group":{"id":70,"suiteID":68,"parentID":null,"name":"","metadata":{"skip":false,"skipReason":null},"testCount":19,"line":null,"column":null,"url":null},"type":"group","time":9600}
+{"group":{"id":71,"suiteID":68,"parentID":70,"name":"parseCommandArgs","metadata":{"skip":false,"skipReason":null},"testCount":9,"line":13,"column":3,"url":"file:///Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_build_kit/test/builtin_commands_test.dart"},"type":"group","time":9600}
+{"test":{"id":72,"name":"parseCommandArgs parses simple command with no arguments","suiteID":68,"groupIDs":[70,71],"metadata":{"skip":false,"skipReason":null},"line":14,"column":5,"url":"file:///Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_build_kit/test/builtin_commands_test.dart"},"type":"testStart","time":9600}
+{"testID":72,"result":"success","skipped":false,"hidden":false,"type":"testDone","time":9614}
+{"test":{"id":73,"name":"parseCommandArgs parses command with unquoted arguments","suiteID":68,"groupIDs":[70,71],"metadata":{"skip":false,"skipReason":null},"line":19,"column":5,"url":"file:///Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_build_kit/test/builtin_commands_test.dart"},"type":"testStart","time":9614}
+{"testID":73,"result":"success","skipped":false,"hidden":false,"type":"testDone","time":9615}
+{"test":{"id":74,"name":"parseCommandArgs parses double-quoted strings as single argument","suiteID":68,"groupIDs":[70,71],"metadata":{"skip":false,"skipReason":null},"line":27,"column":5,"url":"file:///Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_build_kit/test/builtin_commands_test.dart"},"type":"testStart","time":9615}
+{"testID":74,"result":"success","skipped":false,"hidden":false,"type":"testDone","time":9616}
+{"test":{"id":75,"name":"parseCommandArgs parses single-quoted strings as single argument","suiteID":68,"groupIDs":[70,71],"metadata":{"skip":false,"skipReason":null},"line":35,"column":5,"url":"file:///Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_build_kit/test/builtin_commands_test.dart"},"type":"testStart","time":9616}
+{"testID":75,"result":"success","skipped":false,"hidden":false,"type":"testDone","time":9616}
+{"test":{"id":76,"name":"parseCommandArgs parses mixed quoted and unquoted arguments","suiteID":68,"groupIDs":[70,71],"metadata":{"skip":false,"skipReason":null},"line":43,"column":5,"url":"file:///Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_build_kit/test/builtin_commands_test.dart"},"type":"testStart","time":9616}
+{"testID":76,"result":"success","skipped":false,"hidden":false,"type":"testDone","time":9617}
+{"test":{"id":77,"name":"parseCommandArgs handles multiple spaces between arguments","suiteID":68,"groupIDs":[70,71],"metadata":{"skip":false,"skipReason":null},"line":51,"column":5,"url":"file:///Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_build_kit/test/builtin_commands_test.dart"},"type":"testStart","time":9617}
+{"testID":77,"result":"success","skipped":false,"hidden":false,"type":"testDone","time":9617}
+{"test":{"id":78,"name":"parseCommandArgs handles empty string","suiteID":68,"groupIDs":[70,71],"metadata":{"skip":false,"skipReason":null},"line":59,"column":5,"url":"file:///Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_build_kit/test/builtin_commands_test.dart"},"type":"testStart","time":9617}
+{"testID":78,"result":"success","skipped":false,"hidden":false,"type":"testDone","time":9618}
+{"test":{"id":79,"name":"parseCommandArgs handles string with only whitespace","suiteID":68,"groupIDs":[70,71],"metadata":{"skip":false,"skipReason":null},"line":64,"column":5,"url":"file:///Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_build_kit/test/builtin_commands_test.dart"},"type":"testStart","time":9619}
+{"testID":79,"result":"success","skipped":false,"hidden":false,"type":"testDone","time":9621}
+{"test":{"id":80,"name":"parseCommandArgs preserves backslash escapes in quoted strings","suiteID":68,"groupIDs":[70,71],"metadata":{"skip":false,"skipReason":null},"line":69,"column":5,"url":"file:///Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_build_kit/test/builtin_commands_test.dart"},"type":"testStart","time":9622}
+{"testID":80,"result":"success","skipped":false,"hidden":false,"type":"testDone","time":9623}
+{"group":{"id":81,"suiteID":68,"parentID":70,"name":"resolveShorthand","metadata":{"skip":false,"skipReason":null},"testCount":6,"line":78,"column":3,"url":"file:///Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_build_kit/test/builtin_commands_test.dart"},"type":"group","time":9623}
+{"test":{"id":82,"name":"resolveShorthand returns exact match for full command name","suiteID":68,"groupIDs":[70,81],"metadata":{"skip":false,"skipReason":null},"line":79,"column":5,"url":"file:///Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_build_kit/test/builtin_commands_test.dart"},"type":"testStart","time":9623}
+{"testID":82,"result":"success","skipped":false,"hidden":false,"type":"testDone","time":9625}
+{"test":{"id":83,"name":"resolveShorthand is case-insensitive","suiteID":68,"groupIDs":[70,81],"metadata":{"skip":false,"skipReason":null},"line":86,"column":5,"url":"file:///Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_build_kit/test/builtin_commands_test.dart"},"type":"testStart","time":9626}
+{"testID":83,"result":"success","skipped":false,"hidden":false,"type":"testDone","time":9626}
+{"test":{"id":84,"name":"resolveShorthand resolves unique prefix to full command","suiteID":68,"groupIDs":[70,81],"metadata":{"skip":false,"skipReason":null},"line":92,"column":5,"url":"file:///Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_build_kit/test/builtin_commands_test.dart"},"type":"testStart","time":9627}
+{"testID":84,"result":"success","skipped":false,"hidden":false,"type":"testDone","time":9628}
+{"test":{"id":85,"name":"resolveShorthand returns null for ambiguous prefix","suiteID":68,"groupIDs":[70,81],"metadata":{"skip":false,"skipReason":null},"line":99,"column":5,"url":"file:///Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_build_kit/test/builtin_commands_test.dart"},"type":"testStart","time":9628}
+{"testID":85,"result":"success","skipped":false,"hidden":false,"type":"testDone","time":9629}
+{"test":{"id":86,"name":"resolveShorthand returns null for no match","suiteID":68,"groupIDs":[70,81],"metadata":{"skip":false,"skipReason":null},"line":107,"column":5,"url":"file:///Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_build_kit/test/builtin_commands_test.dart"},"type":"testStart","time":9630}
+{"testID":86,"result":"success","skipped":false,"hidden":false,"type":"testDone","time":9630}
+{"test":{"id":87,"name":"resolveShorthand resolves all full command names","suiteID":68,"groupIDs":[70,81],"metadata":{"skip":false,"skipReason":null},"line":113,"column":5,"url":"file:///Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_build_kit/test/builtin_commands_test.dart"},"type":"testStart","time":9631}
+{"testID":87,"result":"success","skipped":false,"hidden":false,"type":"testDone","time":9631}
+{"group":{"id":88,"suiteID":68,"parentID":70,"name":"BuiltinCommands.isBuiltin","metadata":{"skip":false,"skipReason":null},"testCount":4,"line":137,"column":3,"url":"file:///Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_build_kit/test/builtin_commands_test.dart"},"type":"group","time":9631}
+{"test":{"id":89,"name":"BuiltinCommands.isBuiltin returns true for full command names","suiteID":68,"groupIDs":[70,88],"metadata":{"skip":false,"skipReason":null},"line":149,"column":5,"url":"file:///Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_build_kit/test/builtin_commands_test.dart"},"type":"testStart","time":9631}
+{"testID":89,"result":"success","skipped":false,"hidden":false,"type":"testDone","time":9632}
+{"test":{"id":90,"name":"BuiltinCommands.isBuiltin returns true for command with arguments","suiteID":68,"groupIDs":[70,88],"metadata":{"skip":false,"skipReason":null},"line":156,"column":5,"url":"file:///Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_build_kit/test/builtin_commands_test.dart"},"type":"testStart","time":9633}
+{"testID":90,"result":"success","skipped":false,"hidden":false,"type":"testDone","time":9633}
+{"test":{"id":91,"name":"BuiltinCommands.isBuiltin returns true for unique shorthand","suiteID":68,"groupIDs":[70,88],"metadata":{"skip":false,"skipReason":null},"line":162,"column":5,"url":"file:///Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_build_kit/test/builtin_commands_test.dart"},"type":"testStart","time":9634}
+{"testID":91,"result":"success","skipped":false,"hidden":false,"type":"testDone","time":9634}
+{"test":{"id":92,"name":"BuiltinCommands.isBuiltin returns false for ambiguous or unknown commands","suiteID":68,"groupIDs":[70,88],"metadata":{"skip":false,"skipReason":null},"line":168,"column":5,"url":"file:///Users/alexiskyaw/Desktop/Code/tom2/xternal/tom_module_basics/tom_build_kit/test/builtin_commands_test.dart"},"type":"testStart","time":9635}
+{"testID":92,"result":"success","skipped":false,"hidden":false,"type":"testDone","time":9635}
+{"success":false,"type":"done","time":9637}
