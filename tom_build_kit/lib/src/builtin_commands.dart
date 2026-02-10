@@ -6,6 +6,16 @@ import 'package:path/path.dart' as p;
 
 import 'commands/buildsorter_tool.dart';
 import 'commands/cleanup_tool.dart';
+import 'commands/gitbranch_tool.dart';
+import 'commands/gitcheckout_tool.dart';
+import 'commands/gitclean_tool.dart';
+import 'commands/gitcommit_tool.dart';
+import 'commands/gitpull_tool.dart';
+import 'commands/gitreset_tool.dart';
+import 'commands/gitstatus_tool.dart';
+import 'commands/gitsync_tool.dart';
+import 'commands/gittag_tool.dart';
+import 'commands/publisher_tool.dart';
 import 'commands/versioner_tool.dart';
 import 'commands/bumpversion_tool.dart';
 import 'commands/compiler_tool.dart';
@@ -100,6 +110,16 @@ class BuiltinCommands {
     'runner',
     'cleanup',
     'dependencies',
+    'publisher',
+    'gitstatus',
+    'gitcommit',
+    'gitpull',
+    'gitbranch',
+    'gittag',
+    'gitclean',
+    'gitcheckout',
+    'gitreset',
+    'gitsync',
     'pubget',
     'pubgetall',
     'pubupdate',
@@ -177,6 +197,26 @@ class BuiltinCommands {
         return _runPubUpdate(args);
       case 'pubupdateall':
         return _runPubUpdateAll(args);
+      case 'publisher':
+        return _runPublisher(args);
+      case 'gitstatus':
+        return _runGitStatus(args);
+      case 'gitcommit':
+        return _runGitCommit(args);
+      case 'gitpull':
+        return _runGitPull(args);
+      case 'gitbranch':
+        return _runGitBranch(args);
+      case 'gittag':
+        return _runGitTag(args);
+      case 'gitclean':
+        return _runGitClean(args);
+      case 'gitcheckout':
+        return _runGitCheckout(args);
+      case 'gitreset':
+        return _runGitReset(args);
+      case 'gitsync':
+        return _runGitSync(args);
       case 'dcli':
         return _runDcli(args);
       default:
@@ -248,6 +288,86 @@ class BuiltinCommands {
   Future<bool> _runBuildSorter(List<String> args) async {
     if (verbose) print('  [builtin] Running buildsorter...');
     final tool = BuildSorterTool()
+      ..verbose = verbose
+      ..dryRun = dryRun;
+    return tool.run(args);
+  }
+
+  Future<bool> _runPublisher(List<String> args) async {
+    if (verbose) print('  [builtin] Running publisher...');
+    final tool = PublisherTool()
+      ..verbose = verbose
+      ..dryRun = dryRun;
+    return tool.run(args);
+  }
+
+  Future<bool> _runGitStatus(List<String> args) async {
+    if (verbose) print('  [builtin] Running gitstatus...');
+    final tool = GitStatusTool()
+      ..verbose = verbose
+      ..dryRun = dryRun;
+    return tool.run(args);
+  }
+
+  Future<bool> _runGitCommit(List<String> args) async {
+    if (verbose) print('  [builtin] Running gitcommit...');
+    final tool = GitCommitTool()
+      ..verbose = verbose
+      ..dryRun = dryRun;
+    return tool.run(args);
+  }
+
+  Future<bool> _runGitPull(List<String> args) async {
+    if (verbose) print('  [builtin] Running gitpull...');
+    final tool = GitPullTool()
+      ..verbose = verbose
+      ..dryRun = dryRun;
+    return tool.run(args);
+  }
+
+  Future<bool> _runGitBranch(List<String> args) async {
+    if (verbose) print('  [builtin] Running gitbranch...');
+    final tool = GitBranchTool()
+      ..verbose = verbose
+      ..dryRun = dryRun;
+    return tool.run(args);
+  }
+
+  Future<bool> _runGitTag(List<String> args) async {
+    if (verbose) print('  [builtin] Running gittag...');
+    final tool = GitTagTool()
+      ..verbose = verbose
+      ..dryRun = dryRun;
+    return tool.run(args);
+  }
+
+  Future<bool> _runGitClean(List<String> args) async {
+    if (verbose) print('  [builtin] Running gitclean...');
+    final tool = GitCleanTool()
+      ..verbose = verbose
+      ..dryRun = dryRun;
+    return tool.run(args);
+  }
+
+  Future<bool> _runGitCheckout(List<String> args) async {
+    if (verbose) print('  [builtin] Running gitcheckout...');
+    final tool = GitCheckoutTool()
+      ..verbose = verbose
+      ..dryRun = dryRun;
+    return tool.run(args);
+  }
+
+  Future<bool> _runGitReset(List<String> args) async {
+    if (verbose) print('  [builtin] Running gitreset...');
+    final tool = GitResetTool()
+      ..verbose = verbose
+      ..dryRun = dryRun;
+    return tool.run(args);
+  }
+
+  Future<bool> _runGitSync(List<String> args) async {
+    if (verbose) print('  [builtin] Running gitsync...');
+    final tool = GitSyncTool()
       ..verbose = verbose
       ..dryRun = dryRun;
     return tool.run(args);

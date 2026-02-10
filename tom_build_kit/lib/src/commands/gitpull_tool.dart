@@ -1,0 +1,239 @@
+import 'dart:io';
+
+import 'package:args/args.dart';
+import 'package:path/path.dart' as p;
+import 'package:tom_build_base/tom_build_base.dart';
+
+import 'tool_base.dart';
+
+/// Git pull tool - pulls latest from all repositories.
+///
+/// Uses outer-first traversal because parent repos should be pulled first
+/// to get updated submodule references, then submodules are updated.
+class GitPullTool extends ToolBase {
+  @override
+  String get toolKey => 'gitpull';
+
+  @override
+  String get toolDescription =>
+      'Pull latest from all repositories';
+
+  /// If true, auto-inject --outer-first-git when running standalone.
+  bool autoOuterFirst = false;
+
+  @override
+  void addToolOptions(ArgParser parser) {
+    parser
+      ..addFlag('rebase',
+          negatable: false,
+          help: 'Rebase instead of merge')
+      ..addFlag('ff-only',
+          negatable: false,
+          help: 'Only fast-forward merges')
+      ..addOption('remote',
+          defaultsTo: 'origin',
+          help: 'Remote name to pull from');
+  }
+
+  @override
+  bool isToolProject(String dirPath) {
+    final gitPath = p.join(dirPath, '.git');
+    return Directory(gitPath).existsSync() || File(gitPath).existsSync();
+  }
+
+  @override
+  Future<bool> run(List<String> args) async {
+    if (checkVersionArg(args)) return true;
+    if (checkHelpArg(args)) {
+      _printUsage(createParser());
+      return true;
+    }
+
+    // Auto-inject --outer-first-git for standalone binary
+    var effectiveArgs = args;
+    if (autoOuterFirst && !_hasGitTraversalFlag(args)) {
+      effectiveArgs = ['--outer-first-git', ...args];
+    }
+
+    final parser = createParser();
+    ArgResults results;
+    WorkspaceNavigationArgs navArgs;
+    String executionRoot;
+
+    try {
+      (results, navArgs, executionRoot) = parseArgsWithExecutionMode(parser, effectiveArgs);
+    } on FormatException catch (e) {
+      print('Error: $e');
+      _printUsage(parser);
+      return false;
+    } on ArgumentError catch (e) {
+      print('Error: $e');
+      return false;
+    }
+
+    if (results['help'] as bool) {
+      _printUsage(parser);
+      return true;
+    }
+
+    // Require git traversal flag
+    if (!navArgs.innerFirstGit && !navArgs.outerFirstGit) {
+      print('Error: gitpull requires --outer-first-git (-o) or --inner-first-git (-i)');
+      print('');
+      print('Recommended: --outer-first-git (-o)');
+      print('  Pull parent repos first to get updated submodule references.');
+      return false;
+    }
+
+    verbose = results['verbose'] as bool;
+    dryRun = results['dry-run'] as bool;
+    final useRebase = results['rebase'] as bool;
+    final ffOnly = results['ff-only'] as bool;
+    final remote = results['remote'] as String;
+    final listMode = results['list'] as bool;
+
+    // Find git repositories
+    final repos = _findGitRepositories(executionRoot);
+    
+    if (repos.isEmpty) {
+      print('No git repositories found in: $executionRoot');
+      return true;
+    }
+
+    // Sort by depth
+    repos.sort((a, b) {
+      final depthA = p.split(a).length;
+      final depthB = p.split(b).length;
+      if (depthA != depthB) {
+        return navArgs.innerFirstGit
+            ? depthB.compareTo(depthA)
+            : depthA.compareTo(depthB);
+      }
+      return p.basename(a).compareTo(p.basename(b));
+    });
+
+    if (listMode) {
+      print('Git repositories (${navArgs.outerFirstGit ? 'outer-first' : 'inner-first'}):');
+      for (final repo in repos) {
+        print('  ${p.relative(repo, from: executionRoot)}');
+      }
+      return true;
+    }
+
+    // Pull each repository
+    var allSuccess = true;
+    var pullCount = 0;
+
+    for (final repoPath in repos) {
+      final relPath = p.relative(repoPath, from: executionRoot);
+      
+      // Build pull command
+      final pullArgs = ['pull', remote];
+      if (useRebase) pullArgs.add('--rebase');
+      if (ffOnly) pullArgs.add('--ff-only');
+
+      if (!await _runGit(repoPath, pullArgs, relPath)) {
+        allSuccess = false;
+        continue;
+      }
+      pullCount++;
+    }
+
+    print('');
+    print('Pulled $pullCount repository(ies)');
+
+    return allSuccess;
+  }
+
+  bool _hasGitTraversalFlag(List<String> args) {
+    return args.contains('-i') ||
+           args.contains('--inner-first-git') ||
+           args.contains('-o') ||
+           args.contains('--outer-first-git');
+  }
+
+  List<String> _findGitRepositories(String rootPath) {
+    final repos = <String>[];
+    final rootDir = Directory(rootPath);
+
+    if (!rootDir.existsSync()) return repos;
+
+    bool isGitRepo(String dirPath) {
+      final gitPath = p.join(dirPath, '.git');
+      return Directory(gitPath).existsSync() || File(gitPath).existsSync();
+    }
+
+    if (isGitRepo(rootPath)) {
+      repos.add(rootPath);
+    }
+
+    final searchDirs = <String>[rootPath];
+    for (final subdir in ['xternal', 'xternal_apps']) {
+      final dir = Directory(p.join(rootPath, subdir));
+      if (dir.existsSync()) searchDirs.add(dir.path);
+    }
+
+    for (final searchDir in searchDirs) {
+      try {
+        for (final entity in Directory(searchDir).listSync()) {
+          if (entity is Directory && entity.path != rootPath) {
+            if (isGitRepo(entity.path)) {
+              repos.add(entity.path);
+            }
+          }
+        }
+      } catch (_) {}
+    }
+
+    return repos;
+  }
+
+  Future<bool> _runGit(String repoPath, List<String> args, String relPath) async {
+    if (dryRun) {
+      print('[DRY RUN] $relPath: git ${args.join(' ')}');
+      return true;
+    }
+
+    print('$relPath: git ${args.join(' ')}');
+
+    try {
+      final result = await Process.run('git', args, workingDirectory: repoPath);
+      
+      if (result.exitCode != 0) {
+        final stderr = result.stderr.toString().trim();
+        if (stderr.isNotEmpty) {
+          print('  Error: $stderr');
+        }
+        return false;
+      }
+      
+      if (verbose) {
+        final stdout = result.stdout.toString().trim();
+        if (stdout.isNotEmpty) print('  $stdout');
+      }
+      return true;
+    } catch (e) {
+      print('$relPath: git error - $e');
+      return false;
+    }
+  }
+
+  void _printUsage(ArgParser parser) {
+    printUsageHeader();
+    print('');
+    print('Traversal: Fixed to outer-first (parent repos pulled before sub-repos).');
+    print('           Do NOT specify -i/-o flags via buildkit.');
+    print('');
+    print('Options:');
+    print(parser.usage);
+    print('');
+    print('Examples:');
+    print('  gitpull -o                # Pull all repos, outer first');
+    print('  gitpull -o --rebase       # Pull with rebase');
+    print('  gitpull -o --ff-only      # Fast-forward only');
+    print('');
+    print('Via buildkit (do NOT specify -i/-o):');
+    print('  bk :gitpull               # Uses fixed outer-first');
+    print('  bk :gitpull --rebase      # With rebase');
+  }
+}

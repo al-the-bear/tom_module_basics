@@ -19,6 +19,16 @@ compiler:
         - bin/runner.dart
         - bin/bumpversion.dart
         - bin/versioner.dart
+        - bin/publisher.dart
+        - bin/gitstatus.dart
+        - bin/gitcommit.dart
+        - bin/gitpull.dart
+        - bin/gitbranch.dart
+        - bin/gittag.dart
+        - bin/gitclean.dart
+        - bin/gitcheckout.dart
+        - bin/gitreset.dart
+        - bin/gitsync.dart
       targets: [darwin-arm64, linux-x64, linux-arm64, linux-armhf]
       platforms: [darwin-arm64]
     
@@ -35,6 +45,16 @@ compiler:
         - bin/runner.dart
         - bin/bumpversion.dart
         - bin/versioner.dart
+        - bin/publisher.dart
+        - bin/gitstatus.dart
+        - bin/gitcommit.dart
+        - bin/gitpull.dart
+        - bin/gitbranch.dart
+        - bin/gittag.dart
+        - bin/gitclean.dart
+        - bin/gitcheckout.dart
+        - bin/gitreset.dart
+        - bin/gitsync.dart
       platforms: [darwin-x64, linux-*, win32-*]
 
   postcompile:

@@ -558,8 +558,231 @@ Future<void> main(List<String> args) async {
     }
   }
 
-  // Execute steps in each project
+  // Git tool commands that should run once at workspace level, not per-project
+  const gitToolCommands = {
+    'git',
+    'gitstatus',
+    'gitcommit',
+    'gitpull',
+    'gitbranch',
+    'gittag',
+    'gitclean',
+    'gitcheckout',
+    'gitreset',
+    'gitsync',
+    'publisher',
+  };
+
+  // Fixed traversal order for git tools (null = user must specify or has default)
+  // 'inner' = inner-first (deepest repos first)
+  // 'outer' = outer-first (shallowest repos first)
+  const gitToolTraversalOrder = <String, String?>{
+    'git': null, // user must specify -i or -o
+    'gitstatus': null, // defaults to inner-first, user can override
+    'gitcommit': 'inner', // fixed: commit inner repos first
+    'gitpull': 'outer', // fixed: pull outer repos first
+    'gitbranch': 'inner', // fixed: branch inner repos first
+    'gittag': 'inner', // fixed: tag inner repos first
+    'gitclean': 'inner', // fixed: clean inner repos first
+    'gitcheckout': 'outer', // fixed: checkout outer repos first
+    'gitreset': 'outer', // fixed: reset outer repos first
+    'gitsync': 'outer', // fixed: sync outer repos first
+    'publisher': null, // not a traversal tool
+  };
+
+  // Separate out git tool commands (run once) vs regular commands (run per-project)
+  final gitToolSteps = steps.where((s) => 
+      s.isCommand && gitToolCommands.contains(s.name)).toList();
+  final regularSteps = steps.where((s) =>
+      !s.isCommand || !gitToolCommands.contains(s.name)).toList();
+
+  // Helper to check if args contain traversal flags
+  bool hasTraversalFlag(List<String> args) {
+    return args.any((a) =>
+        a == '-i' ||
+        a == '-o' ||
+        a == '--inner-first-git' ||
+        a == '--outer-first-git');
+  }
+
+  // Helper to get traversal direction from args
+  String? getTraversalFromArgs(List<String> args) {
+    if (args.any((a) => a == '-i' || a == '--inner-first-git')) return 'inner';
+    if (args.any((a) => a == '-o' || a == '--outer-first-git')) return 'outer';
+    return null;
+  }
+
+  // ============================================================
+  // VALIDATION: Check git command combinations before execution
+  // ============================================================
+
+  // Rule 1: Git commands cannot be mixed with non-git commands or pipelines
+  if (gitToolSteps.isNotEmpty && regularSteps.isNotEmpty) {
+    final gitNames = gitToolSteps.map((s) => ':${s.name}').join(', ');
+    final otherNames = regularSteps
+        .map((s) => s.isCommand ? ':${s.name}' : s.name)
+        .join(', ');
+    print('Error: Git commands cannot be mixed with other commands or pipelines.');
+    print('');
+    print('  Git commands:   $gitNames');
+    print('  Other steps:    $otherNames');
+    print('');
+    print('Run git commands separately from build pipelines.');
+    exit(1);
+  }
+
+  // Rule 2: If :git is used, explicit -i/-o must be provided
+  // Rule 3: Validate traversal order consistency across git commands
+  if (gitToolSteps.isNotEmpty) {
+    // First pass: Find the defining traversal order
+    // Priority: fixed order commands > explicit user flags > gitstatus default
+    String? effectiveTraversal;
+    String? traversalSource;
+
+    // Check for :git without explicit traversal first
+    for (final step in gitToolSteps) {
+      if (step.name == 'git' && getTraversalFromArgs(step.args) == null) {
+        print('Error: :git requires explicit traversal flag (-i or -o).');
+        print('');
+        print('Examples:');
+        print('  bk :git -i -- log --oneline -5   # Inner repos first');
+        print('  bk :git -o -- stash list         # Outer repos first');
+        exit(1);
+      }
+    }
+
+    // Find the defining traversal from fixed-order commands
+    for (final step in gitToolSteps) {
+      final fixedOrder = gitToolTraversalOrder[step.name];
+      if (fixedOrder != null) {
+        if (effectiveTraversal == null) {
+          effectiveTraversal = fixedOrder;
+          traversalSource = ':${step.name} (fixed $fixedOrder-first)';
+        } else if (fixedOrder != effectiveTraversal) {
+          // Conflict between fixed-order commands
+          print('Error: Conflicting traversal orders in git commands.');
+          print('');
+          print('  $traversalSource requires $effectiveTraversal-first');
+          print('  :${step.name} (fixed $fixedOrder-first) requires $fixedOrder-first');
+          print('');
+          print('These commands cannot be run together. Run them separately.');
+          exit(1);
+        }
+      }
+    }
+
+    // Check explicit user-specified traversal flags for conflicts
+    for (final step in gitToolSteps) {
+      final userTraversal = getTraversalFromArgs(step.args);
+      if (userTraversal != null) {
+        if (effectiveTraversal == null) {
+          effectiveTraversal = userTraversal;
+          traversalSource = ':${step.name} with -${userTraversal == 'inner' ? 'i' : 'o'}';
+        } else if (userTraversal != effectiveTraversal) {
+          // Conflict with established order
+          print('Error: Conflicting traversal orders in git commands.');
+          print('');
+          print('  $traversalSource requires $effectiveTraversal-first');
+          print('  :${step.name} with -${userTraversal == 'inner' ? 'i' : 'o'} requires $userTraversal-first');
+          print('');
+          print('These commands cannot be run together. Run them separately.');
+          exit(1);
+        }
+      }
+    }
+
+    // If no fixed or explicit traversal, default based on gitstatus
+    if (effectiveTraversal == null) {
+      // Only gitstatus and/or publisher present - default to inner
+      effectiveTraversal = 'inner';
+    }
+  }
+
+  // Execute git tool commands once at workspace level
   var success = true;
+  for (final step in gitToolSteps) {
+    _printStepSeparator(step);
+    
+    final stepVerbose =
+        step.suppressedOptions.contains('v') ? false : _verbose;
+    final stepDryRun =
+        step.suppressedOptions.contains('n') ? false : dryRun;
+
+    // Check fixed traversal order and enforce/inject as needed
+    final fixedOrder = gitToolTraversalOrder[step.name];
+    final userProvidedTraversal = hasTraversalFlag(step.args);
+
+    if (fixedOrder != null && userProvidedTraversal) {
+      // User tried to override fixed traversal order
+      print('Error: :${step.name} has a fixed $fixedOrder-first traversal order.');
+      print('       Do not specify -i/-o or --inner-first-git/--outer-first-git.');
+      success = false;
+      continue;
+    }
+
+    // Build args for the git tool - run from workspace root
+    final toolArgs = <String>[
+      '--root', rootPath,
+      ...step.args,
+    ];
+    if (stepVerbose) toolArgs.insert(0, '--verbose');
+    if (stepDryRun) toolArgs.insert(0, '--dry-run');
+
+    // Inject traversal flag for tools with fixed or default order
+    if (fixedOrder == 'inner') {
+      toolArgs.insert(0, '--inner-first-git');
+    } else if (fixedOrder == 'outer') {
+      toolArgs.insert(0, '--outer-first-git');
+    } else if (step.name == 'gitstatus' && !userProvidedTraversal) {
+      // gitstatus defaults to inner-first when not specified
+      toolArgs.insert(0, '--inner-first-git');
+    }
+
+    bool result;
+    switch (step.name) {
+      case 'git':
+        result = await GitTool().run(toolArgs);
+      case 'gitstatus':
+        result = await GitStatusTool().run(toolArgs);
+      case 'gitcommit':
+        result = await GitCommitTool().run(toolArgs);
+      case 'gitpull':
+        result = await GitPullTool().run(toolArgs);
+      case 'gitbranch':
+        result = await GitBranchTool().run(toolArgs);
+      case 'gittag':
+        result = await GitTagTool().run(toolArgs);
+      case 'gitclean':
+        result = await GitCleanTool().run(toolArgs);
+      case 'gitcheckout':
+        result = await GitCheckoutTool().run(toolArgs);
+      case 'gitreset':
+        result = await GitResetTool().run(toolArgs);
+      case 'gitsync':
+        result = await GitSyncTool().run(toolArgs);
+      case 'publisher':
+        result = await PublisherTool().run(toolArgs);
+      default:
+        result = false;
+    }
+
+    if (!result) {
+      success = false;
+    }
+  }
+
+  // If only git tool steps were provided, we're done
+  if (regularSteps.isEmpty) {
+    print('');
+    print('=' * 60);
+    print('Build Kit Summary');
+    print('=' * 60);
+    print('Git tool commands executed: ${gitToolSteps.length}');
+    print('Status: ${success ? 'SUCCESS' : 'FAILED'}');
+    exit(success ? 0 : 1);
+  }
+
+  // Execute regular steps in each project
   var processedCount = 0;
   var failedCount = 0;
 
@@ -570,7 +793,7 @@ Future<void> main(List<String> args) async {
       rootPath: rootPath,
     );
 
-    for (final step in steps) {
+    for (final step in regularSteps) {
       // Print separator before each step
       _printStepSeparator(step);
 
@@ -692,11 +915,21 @@ void _printUsage(ArgParser parser) {
   print('  :runner         Build_runner wrapper with builder filtering');
   print('  :cleanup        Clean generated and temporary files');
   print('  :dependencies   Dependency tree visualization');
+  print('  :publisher      Show publishing status for all projects');
   print('  :pubget         Run dart pub get on projects');
   print('  :pubgetall      Shortcut for :pubget --scan . --recursive');
   print('  :pubupdate      Run dart pub upgrade on projects');
   print('  :pubupdateall   Shortcut for :pubupdate --scan . --recursive');
   print('  :git            Run git commands in each project directory');
+  print('  :gitstatus      Show git status for all repositories');
+  print('  :gitcommit      Commit and push all repositories');
+  print('  :gitpull        Pull latest from all repositories');
+  print('  :gitbranch      Branch management across repositories');
+  print('  :gittag         Tag management across repositories');
+  print('  :gitclean       Clean untracked files from repositories');
+  print('  :gitcheckout    Checkout branches/tags across repositories');
+  print('  :gitreset       Reset repositories to specific state');
+  print('  :gitsync        Sync (fetch + merge/rebase) all repositories');
   print('  :dcli           Execute Dart scripts/expressions via dcli');
   print('');
   print('Allowed binaries (configured in buildkit.yaml buildkit.allowed-binaries):');
@@ -1310,11 +1543,21 @@ const _builtinCommandNames = {
   'runner',
   'cleanup',
   'dependencies',
+  'publisher',
   'pubget',
   'pubgetall',
   'pubupdate',
   'pubupdateall',
   'git',
+  'gitstatus',
+  'gitcommit',
+  'gitpull',
+  'gitbranch',
+  'gittag',
+  'gitclean',
+  'gitcheckout',
+  'gitreset',
+  'gitsync',
   'dcli',
   'define',
   'undefine',
@@ -1364,8 +1607,10 @@ Future<bool> _runCommandHelp(String commandName) async {
     print('');
     print('Available commands:');
     print('  Tools: buildsorter, versioner, bumpversion, compiler, runner,');
-    print('         cleanup, dependencies, pubget, pubupdate');
-    print('  Other: git, dcli');
+    print('         cleanup, dependencies, publisher, pubget, pubupdate');
+    print('  Git:   gitstatus, gitcommit, gitpull, gitbranch, gittag,');
+    print('         gitclean, gitcheckout, gitreset, gitsync, git');
+    print('  Other: dcli');
     print('  Macros: define, undefine, defines');
     return false;
   }
@@ -1385,6 +1630,26 @@ Future<bool> _runCommandHelp(String commandName) async {
       return DependenciesTool().run(['--help']);
     case 'buildsorter':
       return BuildSorterTool().run(['--help']);
+    case 'publisher':
+      return PublisherTool().run(['--help']);
+    case 'gitstatus':
+      return GitStatusTool().run(['--help']);
+    case 'gitcommit':
+      return GitCommitTool().run(['--help']);
+    case 'gitpull':
+      return GitPullTool().run(['--help']);
+    case 'gitbranch':
+      return GitBranchTool().run(['--help']);
+    case 'gittag':
+      return GitTagTool().run(['--help']);
+    case 'gitclean':
+      return GitCleanTool().run(['--help']);
+    case 'gitcheckout':
+      return GitCheckoutTool().run(['--help']);
+    case 'gitreset':
+      return GitResetTool().run(['--help']);
+    case 'gitsync':
+      return GitSyncTool().run(['--help']);
     case 'pubget' || 'pubgetall':
       PubGetCommand.printUsage();
       return true;
@@ -1392,25 +1657,7 @@ Future<bool> _runCommandHelp(String commandName) async {
       PubUpdateCommand.printUsage();
       return true;
     case 'git':
-      print('Git Command — run git in each project directory');
-      print('');
-      print('Usage: buildkit --inner-first-git :git <args...>');
-      print('       buildkit -i :git <args...>');
-      print('       buildkit --outer-first-git :git <args...>');
-      print('       buildkit -o :git <args...>');
-      print('');
-      print('Executes git with the given arguments in each discovered');
-      print('git repository root, ordered by nesting depth.');
-      print('');
-      print('  --inner-first-git / -i  Deepest repos first (for commit, push, tag, stash)');
-      print('  --outer-first-git / -o  Shallowest repos first (for pull, fetch, checkout)');
-      print('');
-      print('Examples:');
-      print('  buildkit -i :git add -A :git commit -m "msg"  # Commit all (inner first)');
-      print('  buildkit -i :git push                         # Push all (inner first)');
-      print('  buildkit -o :git pull --rebase                # Pull all (outer first)');
-      print('  buildkit -i :git status                       # Status of all repos');
-      return true;
+      return GitTool().run(['--help']);
     case 'dcli':
       print('DCli Command — execute Dart scripts via dcli');
       print('');
@@ -1595,11 +1842,45 @@ const _knownGlobalFlags = {
   '--help', '-h',
 };
 
+/// Flags that are valid arguments for git tool commands (not misplaced).
+const _gitToolFlags = {
+  '--inner-first-git', '-i',
+  '--outer-first-git', '-o',
+};
+
+/// Commands that accept git traversal flags (-i, -o) as arguments.
+const _gitToolCommandNames = {
+  'git', 'gitstatus', 'gitcommit', 'gitpull', 'gitbranch', 'gittag',
+  'gitclean', 'gitcheckout', 'gitreset', 'gitsync',
+};
+
 /// Warn if known global flags appear in the rest args (i.e., after the
 /// pipeline/command name). These flags are silently ignored by ArgParser
 /// due to `allowTrailingOptions: false`.
+///
+/// Does not warn about git traversal flags (-i, -o) when the command is a
+/// git tool command, since those flags are valid arguments for those tools.
 void _warnOnMisplacedFlags(List<String> rest) {
-  final misplaced = rest.where((arg) => _knownGlobalFlags.contains(arg)).toList();
+  if (rest.isEmpty) return;
+
+  // Check if the first command is a git tool command
+  var excludeGitFlags = false;
+  for (final item in rest) {
+    if (item.startsWith(':')) {
+      final cmdName = item.substring(1).toLowerCase();
+      if (_gitToolCommandNames.contains(cmdName)) {
+        excludeGitFlags = true;
+        break;
+      }
+    }
+    // Stop at first non-flag
+    if (!item.startsWith('-')) break;
+  }
+
+  final flagsToCheck = excludeGitFlags
+      ? _knownGlobalFlags.difference(_gitToolFlags)
+      : _knownGlobalFlags;
+  final misplaced = rest.where((arg) => flagsToCheck.contains(arg)).toList();
   if (misplaced.isEmpty) return;
 
   print('⚠️  Warning: The following global flag(s) appear AFTER the '

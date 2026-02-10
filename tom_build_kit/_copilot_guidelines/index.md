@@ -6,6 +6,7 @@ This folder contains project-specific guidelines for the `tom_build_kit` package
 
 | File | Description |
 |------|-------------|
+| [build_base_projects.md](build_base_projects.md) | List of all projects depending on tom_build_base |
 | [implementation_hints.md](implementation_hints.md) | tom_build_base integration and CLI infrastructure |
 | [testing.md](testing.md) | Testing guidelines |
 

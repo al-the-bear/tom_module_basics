@@ -24,6 +24,17 @@ export 'src/commands/compiler_tool.dart';
 export 'src/commands/runner_tool.dart';
 export 'src/commands/dependencies_tool.dart';
 export 'src/commands/buildsorter_tool.dart';
+export 'src/commands/publisher_tool.dart';
+export 'src/commands/git_tool.dart';
+export 'src/commands/gitstatus_tool.dart';
+export 'src/commands/gitcommit_tool.dart';
+export 'src/commands/gitpull_tool.dart';
+export 'src/commands/gitbranch_tool.dart';
+export 'src/commands/gittag_tool.dart';
+export 'src/commands/gitclean_tool.dart';
+export 'src/commands/gitcheckout_tool.dart';
+export 'src/commands/gitreset_tool.dart';
+export 'src/commands/gitsync_tool.dart';
 export 'src/compiler_config.dart';
 
 // Utilities

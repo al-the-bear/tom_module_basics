@@ -365,7 +365,17 @@ Built-in commands run the respective tools directly via their Dart implementatio
 | `pubgetall` | Shortcut for `pubget --scan . --recursive` |
 | `pubupdate` | Run `dart pub upgrade` on projects |
 | `pubupdateall` | Shortcut for `pubupdate --scan . --recursive` |
+| `publisher` | Show publishing status for all projects |
 | `git` | Run git commands across all workspace repositories |
+| `gitstatus` | Show git status for all repositories |
+| `gitcommit` | Commit and push all repositories |
+| `gitpull` | Pull latest from all repositories |
+| `gitbranch` | Branch management across repositories |
+| `gittag` | Tag management across repositories |
+| `gitclean` | Clean untracked files from repositories |
+| `gitcheckout` | Checkout branches/tags across repositories |
+| `gitreset` | Reset repositories to specific state |
+| `gitsync` | Sync (fetch + merge/rebase) all repositories |
 | `dcli` | Execute Dart scripts/expressions via dcli |
 
 Commands can include arguments in pipeline definitions:
@@ -574,7 +584,63 @@ The `allowed-binaries` lists from workspace and project configs are merged addit
 
 ## Git Operations
 
-BuildKit can scan the workspace for git repositories and run git commands across all of them in a single invocation.
+BuildKit provides comprehensive git repository management through both a low-level `:git` command and high-level specialized git tools.
+
+### Git Traversal Modes
+
+Git tools require explicit traversal order for correct operation with nested repositories:
+
+| Flag | Short | Order |
+|------|-------|-------|
+| `--inner-first-git` | `-i` | Deepest (innermost) repositories first |
+| `--outer-first-git` | `-o` | Shallowest (outermost) repositories first |
+
+**Choosing traversal mode:**
+
+| Operation | Mode | Reasoning |
+|-----------|------|-----------|  
+| Commit/Push | Inner-first (`-i`) | Commit submodules first so parent records updated hashes |
+| Pull/Sync | Outer-first (`-o`) | Pull parent first to get correct submodule refs |
+| Checkout/Reset | Outer-first (`-o`) | Parent determines which submodule versions to use |
+
+### Specialized Git Tools
+
+These standalone tools provide purpose-built git operations:
+
+| Tool | Default Mode | Purpose |
+|------|-------------|--------|
+| `gitstatus` | Either | Show status for all repositories |
+| `gitcommit` | Inner-first | Commit and push all repositories |
+| `gitpull` | Outer-first | Pull latest from all repositories |
+| `gitbranch` | Inner-first | Branch management |
+| `gittag` | Inner-first | Tag management |
+| `gitclean` | Inner-first | Clean untracked files |
+| `gitcheckout` | Outer-first | Checkout branches/tags |
+| `gitreset` | Outer-first | Reset to specific state |
+| `gitsync` | Outer-first | Fetch + merge/rebase |
+
+**Standalone binaries auto-inject the recommended traversal flag** when not specified.
+
+**Examples:**
+
+```bash
+# Check status of all repos
+gitstatus
+buildkit :gitstatus -i
+
+# Commit all repos
+gitcommit -m "Fix bug"
+buildkit :gitcommit -i -m "Fix bug"
+
+# Pull all repos
+gitpull
+buildkit :gitpull -o
+
+# Create feature branch everywhere
+gitbranch --create feature/new-ui
+```
+
+> See [tools_user_guide.md — Git Tools](tools_user_guide.md#git-tools) for complete documentation.
 
 ### Git Scan Flag
 

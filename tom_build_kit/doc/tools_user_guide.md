@@ -35,7 +35,19 @@ This package extends the shared infrastructure from **tom_build_base**:
   - [Runner](#runner)
   - [Dependencies](#dependencies)
   - [Pub Get](#pub-get)
+  - [Publisher](#publisher)
   - [DCli](#dcli)
+- [Git Tools](#git-tools)
+  - [Git Traversal Modes](#git-traversal-modes)
+  - [GitStatus](#gitstatus)
+  - [GitCommit](#gitcommit)
+  - [GitPull](#gitpull)
+  - [GitBranch](#gitbranch)
+  - [GitTag](#gittag)
+  - [GitClean](#gitclean)
+  - [GitCheckout](#gitcheckout)
+  - [GitReset](#gitreset)
+  - [GitSync](#gitsync)
 
 ---
 
@@ -53,7 +65,17 @@ Tom Build Kit provides seven CLI tools and three additional built-in commands th
 | **Dependencies** | `dependencies` | Dependency tree visualization |
 | **Pub Get** | via `:pubget` | Run `dart pub get` across projects with output filtering |
 | **Pub Update** | via `:pubupdate` | Run `dart pub upgrade` across projects with output filtering |
+| **Publisher** | `publisher` | Show publishing status for all projects |
 | **DCli** | via `:dcli` | Execute Dart scripts/expressions via dcli with path resolution |
+| **GitStatus** | `gitstatus` | Show git status for all repositories |
+| **GitCommit** | `gitcommit` | Commit and push all repositories |
+| **GitPull** | `gitpull` | Pull latest from all repositories |
+| **GitBranch** | `gitbranch` | Branch management across repositories |
+| **GitTag** | `gittag` | Tag management across repositories |
+| **GitClean** | `gitclean` | Clean untracked files from repositories |
+| **GitCheckout** | `gitcheckout` | Checkout branches/tags across repositories |
+| **GitReset** | `gitreset` | Reset repositories to specific state |
+| **GitSync** | `gitsync` | Sync (fetch + merge/rebase) all repositories |
 
 All tools (except Pub Get) inherit from `ToolBase`, sharing project discovery, exclusion filtering, and configuration loading. They can be invoked standalone or through the [BuildKit orchestrator](buildkit_user_guide.md).
 
@@ -896,6 +918,49 @@ buildkit :pubupdate --project _build
 
 ---
 
+### Publisher
+
+Shows publishing status for all Dart projects in the workspace, including version synchronization status across the dependency tree.
+
+**Usage:**
+
+```bash
+publisher [common-options]    # Standalone
+buildkit :publisher           # Via buildkit
+```
+
+**Tool-specific options:**
+
+| Flag | Short | Description |
+|------|-------|-------------|
+| `--show-unpublished` | — | Also show unpublished projects |
+| `--check-pub-dev` | — | Check against pub.dev versions |
+
+**Output includes:**
+
+- Current version from `pubspec.yaml`
+- Whether project is publishable (`publish_to: none`)
+- Dependencies on workspace projects
+- Version sync status with dependencies
+
+**Examples:**
+
+```bash
+# Show publishing status for all projects
+publisher --scan . -r
+
+# Check specific project
+publisher --project my_package
+
+# Include unpublished projects
+publisher --show-unpublished
+
+# Via buildkit
+buildkit :publisher
+```
+
+---
+
 ### DCli
 
 Executes Dart scripts or expressions via the dcli runtime. Unlike other built-in commands, dcli spawns an external process.
@@ -982,4 +1047,390 @@ core:
       - |
         stdin dcli --stdin
         print("Hello from inline Dart!");
+```
+
+---
+
+## Git Tools
+
+Tom Build Kit includes a suite of git management tools for multi-repository workspaces. These tools scan for git repositories (including submodules) and execute git operations across all of them.
+
+All git tools share common characteristics:
+
+- **Repository discovery:** Automatically finds `.git` directories and `.git` files (submodules)
+- **Traversal order:** Requires explicit traversal direction via `-i` or `-o` flags
+- **Consistent output:** Repository names prefixed to output for identification
+- **BuildKit integration:** Available as both standalone binaries and buildkit commands
+
+### Git Traversal Modes
+
+Git tools require explicit traversal order to ensure correct operation with nested repositories (parent repos and submodules):
+
+| Flag | Short | Name | Order |
+|------|-------|------|-------|
+| `--inner-first-git` | `-i` | Inner-first | Deepest (innermost) repositories processed first |
+| `--outer-first-git` | `-o` | Outer-first | Shallowest (outermost) repositories processed first |
+
+**Choosing the correct traversal mode:**
+
+| Tool | Recommended | Reasoning |
+|------|-------------|-----------|
+| `gitstatus` | Either | Read-only operation, order doesn't affect outcome |
+| `gitcommit` | Inner-first (`-i`) | Commit submodules first so parent records updated hashes |
+| `gitpull` | Outer-first (`-o`) | Pull parent first to get correct submodule references |
+| `gitbranch` | Inner-first (`-i`) | Create branches in submodules first for consistency |
+| `gittag` | Inner-first (`-i`) | Tag submodules first so parent can reference tagged versions |
+| `gitclean` | Inner-first (`-i`) | Clean innermost repos first (safer cleanup order) |
+| `gitcheckout` | Outer-first (`-o`) | Checkout parent first to get correct submodule refs |
+| `gitreset` | Outer-first (`-o`) | Reset parent first to get authoritative refs |
+| `gitsync` | Outer-first (`-o`) | Sync parent first before syncing submodules |
+
+**Standalone binaries auto-inject the recommended flag** when run without explicit traversal mode.
+
+---
+
+### GitStatus
+
+Shows git status for all repositories in the workspace, including uncommitted changes, unpushed commits, current branch, and stash count.
+
+**Usage:**
+
+```bash
+gitstatus -i [options]        # Inner-first (standalone auto-injects -i)
+gitstatus -o [options]        # Outer-first
+buildkit :gitstatus -i        # Via buildkit
+```
+
+**Tool-specific options:**
+
+| Flag | Short | Description |
+|------|-------|-------------|
+| `--details` | `-d` | Show file-level details (changed files, unpushed commits) |
+| `--fetch` | — | Fetch from remote before checking status |
+| `--stash` | — | Include stash information |
+
+**Examples:**
+
+```bash
+# Check all repos with default inner-first ordering
+gitstatus
+
+# Show detailed file changes
+gitstatus --details
+
+# Fetch and check status
+gitstatus --fetch
+
+# Via buildkit with outer-first ordering
+buildkit :gitstatus -o --details
+```
+
+---
+
+### GitCommit
+
+Commits and pushes all repositories with pending changes. Uses inner-first traversal to ensure submodules are committed before their parent repositories.
+
+**Usage:**
+
+```bash
+gitcommit [options]           # Standalone (auto-injects -i)
+buildkit :gitcommit -i        # Via buildkit (requires -i)
+```
+
+**Tool-specific options:**
+
+| Flag | Short | Description |
+|------|-------|-------------|
+| `--message <msg>` | `-m` | Commit message (required or prompts) |
+| `--push` | — | Push after committing (default: true) |
+| `--no-push` | — | Commit without pushing |
+| `--add-all` | `-a` | Stage all changes before commit |
+
+**Examples:**
+
+```bash
+# Commit all repos with message
+gitcommit -m "Fix bug in parser"
+
+# Commit and add all changes
+gitcommit -a -m "Update dependencies"
+
+# Commit without pushing
+gitcommit --no-push -m "WIP changes"
+
+# Via buildkit
+buildkit :gitcommit -i -m "Release v1.0.0"
+```
+
+---
+
+### GitPull
+
+Pulls latest changes from remote for all repositories. Uses outer-first traversal to pull parent repositories first, ensuring submodule references are updated correctly.
+
+**Usage:**
+
+```bash
+gitpull [options]             # Standalone (auto-injects -o)
+buildkit :gitpull -o          # Via buildkit (requires -o)
+```
+
+**Tool-specific options:**
+
+| Flag | Short | Description |
+|------|-------|-------------|
+| `--rebase` | `-r` | Rebase instead of merge |
+| `--ff-only` | — | Only fast-forward merges |
+| `--remote <name>` | — | Remote name (default: origin) |
+
+**Examples:**
+
+```bash
+# Pull all repos
+gitpull
+
+# Pull with rebase
+gitpull --rebase
+
+# Fast-forward only
+gitpull --ff-only
+
+# Via buildkit
+buildkit :gitpull -o --rebase
+```
+
+---
+
+### GitBranch
+
+Manages branches across all repositories: list, create, switch, and delete branches.
+
+**Usage:**
+
+```bash
+gitbranch -i [options]        # Standalone (auto-injects -i)
+buildkit :gitbranch -i        # Via buildkit
+```
+
+**Tool-specific options:**
+
+| Flag | Short | Description |
+|------|-------|-------------|
+| `--create <name>` | `-c` | Create and switch to new branch |
+| `--switch <name>` | `-s` | Switch to existing branch |
+| `--delete` | `-d` | Delete the branch specified by `--branch` |
+| `--branch <name>` | `-b` | Branch name for delete operation |
+| `--list-branches` | — | List all branches in each repo |
+
+**Examples:**
+
+```bash
+# Show current branch in all repos
+gitbranch
+
+# Create and switch to feature branch
+gitbranch --create feature/new-ui
+
+# Switch to main branch
+gitbranch --switch main
+
+# Delete a branch
+gitbranch --delete --branch old-feature
+
+# List all branches
+gitbranch --list-branches
+```
+
+---
+
+### GitTag
+
+Manages tags across all repositories: list, create, and delete tags.
+
+**Usage:**
+
+```bash
+gittag -i [options]           # Standalone (auto-injects -i)
+buildkit :gittag -i           # Via buildkit
+```
+
+**Tool-specific options:**
+
+| Flag | Short | Description |
+|------|-------|-------------|
+| `--create <name>` | `-c` | Create a new tag |
+| `--delete <name>` | `-d` | Delete a tag |
+| `--message <msg>` | `-m` | Annotated tag message (creates annotated tag) |
+| `--push` | — | Push tags to remote |
+| `--list-tags` | — | List all tags |
+
+**Examples:**
+
+```bash
+# List tags in all repos
+gittag --list-tags
+
+# Create lightweight tag
+gittag --create v1.0.0
+
+# Create annotated tag with message
+gittag --create v1.0.0 --message "Release version 1.0.0"
+
+# Create and push tag
+gittag --create v1.0.0 --push
+
+# Delete a tag
+gittag --delete v0.9.0
+```
+
+---
+
+### GitClean
+
+Cleans untracked files from all repositories. Uses inner-first traversal for safer cleanup order.
+
+**Usage:**
+
+```bash
+gitclean -i [options]         # Standalone (auto-injects -i)
+buildkit :gitclean -i         # Via buildkit
+```
+
+**Tool-specific options:**
+
+| Flag | Short | Description |
+|------|-------|-------------|
+| `--directories` | `-d` | Also remove untracked directories |
+| `--force` | `-f` | Force removal (required for actual deletion) |
+| `--ignored` | `-x` | Also remove ignored files |
+
+**Dry-run by default:** Without `--force`, shows what would be removed without deleting.
+
+**Examples:**
+
+```bash
+# Preview what would be cleaned
+gitclean
+
+# Actually remove untracked files
+gitclean --force
+
+# Remove untracked files and directories
+gitclean --force --directories
+
+# Also remove ignored files
+gitclean --force --ignored
+```
+
+---
+
+### GitCheckout
+
+Checks out branches or tags across all repositories. Uses outer-first traversal to checkout parent repos first, ensuring submodule references match.
+
+**Usage:**
+
+```bash
+gitcheckout -o <ref> [options]   # Standalone (auto-injects -o)
+buildkit :gitcheckout -o <ref>   # Via buildkit
+```
+
+**Tool-specific options:**
+
+| Flag | Short | Description |
+|------|-------|-------------|
+| `--branch <name>` | `-b` | Branch to checkout |
+| `--tag <name>` | `-t` | Tag to checkout |
+| `--create` | `-c` | Create branch if it doesn't exist |
+
+**Examples:**
+
+```bash
+# Checkout main branch
+gitcheckout --branch main
+
+# Checkout a tag
+gitcheckout --tag v1.0.0
+
+# Checkout or create branch
+gitcheckout --branch feature/new --create
+
+# Via buildkit
+buildkit :gitcheckout -o --branch develop
+```
+
+---
+
+### GitReset
+
+Resets repositories to a specific state. Uses outer-first traversal to reset parent repos first.
+
+**Usage:**
+
+```bash
+gitreset -o [options]         # Standalone (auto-injects -o)
+buildkit :gitreset -o         # Via buildkit
+```
+
+**Tool-specific options:**
+
+| Flag | Description |
+|------|-------------|
+| `--soft` | Soft reset (keep changes staged) |
+| `--mixed` | Mixed reset (unstage changes, keep in working tree) — default |
+| `--hard` | Hard reset (discard all changes) |
+| `--commit <ref>` | Commit/ref to reset to (default: HEAD) |
+
+**Examples:**
+
+```bash
+# Soft reset to HEAD
+gitreset --soft
+
+# Hard reset all repos
+gitreset --hard
+
+# Reset to specific commit
+gitreset --hard --commit HEAD~3
+
+# Reset to a tag
+gitreset --hard --commit v1.0.0
+```
+
+---
+
+### GitSync
+
+Syncs (fetch + merge/rebase) all repositories with their remotes. Uses outer-first traversal to sync parent repos before submodules.
+
+**Usage:**
+
+```bash
+gitsync -o [options]          # Standalone (auto-injects -o)
+buildkit :gitsync -o          # Via buildkit
+```
+
+**Tool-specific options:**
+
+| Flag | Short | Description |
+|------|-------|-------------|
+| `--rebase` | `-r` | Rebase instead of merge after fetch |
+| `--prune` | — | Prune deleted remote branches |
+| `--remote <name>` | — | Remote name (default: origin) |
+
+**Examples:**
+
+```bash
+# Sync all repos (fetch + merge)
+gitsync
+
+# Sync with rebase
+gitsync --rebase
+
+# Sync and prune deleted branches
+gitsync --prune
+
+# Via buildkit
+buildkit :gitsync -o --rebase --prune
 ```
