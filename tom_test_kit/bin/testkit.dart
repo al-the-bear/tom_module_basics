@@ -310,8 +310,8 @@ void _printUsage(ArgParser? parser) {
   print('  Each cell shows <result>/<expectation>:');
   print('    OK/OK    — Passed as expected');
   print('    X/OK     — Failed unexpectedly (regression)');
-  print('    X/FAIL   — Failed as expected (known issue)');
-  print('    OK/FAIL  — Passed unexpectedly (progress)');
+  print('    X/X      — Failed as expected (known issue)');
+  print('    OK/X     — Passed unexpectedly (progress)');
   print('    SKIP/OK  — Skipped (needs attention)');
   print('    -/OK     — Not present in this run');
   print('');

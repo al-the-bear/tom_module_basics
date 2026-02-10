@@ -158,7 +158,7 @@ The tracking file (`baseline_<timestamp>.md`) is a markdown table with the follo
 | ID / Description | Baseline [02-10 14:30] | [02-10 15:45] | [02-11 09:00] |
 |------------------|------------------------|---------------|---------------|
 | I-BUG-1: Some test [2026-02-10 08:00] | OK/OK | OK/OK | X/OK |
-| I-LIM-3: Known limitation [2026-02-10 08:00] | X/FAIL | X/FAIL | X/FAIL |
+| I-LIM-3: Known limitation [2026-02-10 08:00] | X/X | X/X | X/X |
 ```
 
 ### Result Format
@@ -174,7 +174,7 @@ Each cell uses the format: `<result>/<expectation>`
 | Expectation | Source | Meaning |
 |-------------|--------|---------|
 | `OK` | No annotation or `(PASS)` | Test is expected to pass |
-| `FAIL` | `(FAIL)` in description | Test is a known failure |
+| `X` | `(FAIL)` in description | Test is a known failure |
 
 ### Result/Expectation Combinations
 
@@ -182,18 +182,18 @@ Each cell uses the format: `<result>/<expectation>`
 |------|----------------|
 | `OK/OK` | Passed as expected — healthy |
 | `X/OK` | Failed unexpectedly — **regression** |
-| `X/FAIL` | Failed as expected — known issue |
-| `OK/FAIL` | Passed unexpectedly — **progress** (bug may be fixed) |
+| `X/X` | Failed as expected — known issue |
+| `OK/X` | Passed unexpectedly — **progress** (bug may be fixed) |
 | `SKIP/OK` | Skipped — needs attention |
-| `SKIP/FAIL` | Skipped known failure — acceptable |
+| `SKIP/X` | Skipped known failure — acceptable |
 
 ### Sorting Order
 
 Rows in the tracking file are sorted by priority based on the **latest run**:
 
 1. **Failed (unexpected)** — `X/OK` — Regressions come first
-2. **Failed (expected)** — `X/FAIL` — Known issues
-3. **Passed (unexpected)** — `OK/FAIL` — Potential fixes to verify
+2. **Failed (expected)** — `X/X` — Known issues
+3. **Passed (unexpected)** — `OK/X` — Potential fixes to verify
 4. **Passed (expected)** — `OK/OK` — Healthy tests
 5. **Skipped** — `SKIP/*` — Last
 

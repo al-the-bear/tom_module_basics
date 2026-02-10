@@ -73,8 +73,12 @@ int resultSortPriority(TestResult result, String expectation) {
 }
 
 /// Formats a result cell: `<result>/<expectation>`.
+///
+/// Expectation is mapped to match result labels: `OK` stays `OK`,
+/// `FAIL` becomes `X`.
 String formatResultCell(TestResult result, String expectation) {
-  return '${result.label}/$expectation';
+  final expectLabel = expectation == 'FAIL' ? 'X' : expectation;
+  return '${result.label}/$expectLabel';
 }
 
 /// Represents a sorted test entry with its latest result for sorting.

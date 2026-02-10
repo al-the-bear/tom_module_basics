@@ -61,11 +61,11 @@ void main() {
       expect(resultSortPriority(TestResult.fail, 'OK'), equals(0));
     });
 
-    test('TK-RUN-8: expected failure (X/FAIL) should be priority 1', () {
+    test('TK-RUN-8: expected failure (X/X) should be priority 1', () {
       expect(resultSortPriority(TestResult.fail, 'FAIL'), equals(1));
     });
 
-    test('TK-RUN-9: progress (OK/FAIL) should be priority 2', () {
+    test('TK-RUN-9: progress (OK/X) should be priority 2', () {
       expect(resultSortPriority(TestResult.ok, 'FAIL'), equals(2));
     });
 
@@ -85,7 +85,8 @@ void main() {
   group('formatResultCell', () {
     test('TK-RUN-13: should format as result/expectation', () {
       expect(formatResultCell(TestResult.ok, 'OK'), equals('OK/OK'));
-      expect(formatResultCell(TestResult.fail, 'FAIL'), equals('X/FAIL'));
+      expect(formatResultCell(TestResult.fail, 'FAIL'), equals('X/X'));
+      expect(formatResultCell(TestResult.ok, 'FAIL'), equals('OK/X'));
       expect(formatResultCell(TestResult.skip, 'OK'), equals('SKIP/OK'));
     });
   });
