@@ -34,6 +34,7 @@ This package extends the shared infrastructure from **tom_build_base**:
   - [Pipeline Phases](#pipeline-phases)
 - [Built-in Commands](#built-in-commands)
   - [DCli Command](#dcli-command)
+  - [Status Command](#status-command)
 - [Macros](#macros)
   - [Defining Macros](#defining-macros)
   - [Using Macros](#using-macros)
@@ -376,6 +377,7 @@ Built-in commands run the respective tools directly via their Dart implementatio
 | `gitcheckout` | Checkout branches/tags across repositories |
 | `gitreset` | Reset repositories to specific state |
 | `gitsync` | Sync (fetch + merge/rebase) all repositories |
+| `status` | Show buildkit version, binary status, and git state |
 | `dcli` | Execute Dart scripts/expressions via dcli |
 
 Commands can include arguments in pipeline definitions:
@@ -468,6 +470,82 @@ compiler:
     - command: dcli ~s/pre_compile.dart
   postcompile:
     - command: dcli ~s/post_compile.dart -no-init-source
+```
+
+### Status Command
+
+The `status` command shows the current buildkit version, binary installation status, and git repository state. This is an internal command (no standalone executable).
+
+**Syntax:**
+
+```bash
+bk :status [options]
+```
+
+**Options:**
+
+| Option | Description |
+|--------|-------------|
+| `--json` | Output in JSON format |
+| `-v`, `--verbose` | Show detailed file and commit information |
+| `--skip-binaries` | Skip binary version checks |
+| `--skip-git` | Skip git status checks |
+
+**Output Sections:**
+
+1. **Source Version** — Version, build number, git commit, build time, Dart SDK from `version.g.dart`
+2. **Binary Status** — Checks each tool by running `<tool> --version`:
+   - ✓ Current — Matches source version
+   - ⚠ Outdated — Different version/build/commit
+   - ✗ Unavailable — Not found in PATH
+   - ? Non-conformant — Version format not recognized
+3. **Git Status** — Pending changes and unpushed commits
+
+**Examples:**
+
+```bash
+# Quick status check
+bk :status
+
+# Verbose with file and commit details
+bk :status -v
+
+# JSON output for scripting
+bk :status --json
+
+# Only check git status (faster)
+bk :status --skip-binaries
+
+# Scan all git repos in workspace
+bk :status -i
+```
+
+**Example Output:**
+
+```
+╔═══════════════════════════════════════════════════════════════╗
+║                     BUILDKIT STATUS                           ║
+╚═══════════════════════════════════════════════════════════════╝
+
+Source Version
+──────────────
+  Version:      1.6.0+11
+  Git Commit:   abc1234
+  Build Time:   2026-02-10T14:30:00.000Z
+  Dart SDK:     3.10.4
+
+Binary Status
+─────────────
+  ✓ Current (18): buildkit, buildsorter, bumpversion, ...
+  ✗ Unavailable (7): gitcompare, gitmerge, ...
+
+Git Status
+──────────
+  Pending Changes: 1 repo(s), 5 file(s)
+    (Specify --verbose to see the 5 modified files)
+
+  Unpushed Commits: 1 repo(s), 3 commit(s)
+    (Specify --verbose to see the 3 unpushed commits)
 ```
 
 ---

@@ -21,6 +21,7 @@ import 'commands/bumpversion_tool.dart';
 import 'commands/compiler_tool.dart';
 import 'commands/runner_tool.dart';
 import 'commands/dependencies_tool.dart';
+import 'commands/status_tool.dart';
 import 'pubget_command.dart';
 import 'pubupdate_command.dart';
 
@@ -124,6 +125,7 @@ class BuiltinCommands {
     'pubgetall',
     'pubupdate',
     'pubupdateall',
+    'status',
     'dcli',
   };
 
@@ -217,6 +219,8 @@ class BuiltinCommands {
         return _runGitReset(args);
       case 'gitsync':
         return _runGitSync(args);
+      case 'status':
+        return _runStatus(args);
       case 'dcli':
         return _runDcli(args);
       default:
@@ -368,6 +372,14 @@ class BuiltinCommands {
   Future<bool> _runGitSync(List<String> args) async {
     if (verbose) print('  [builtin] Running gitsync...');
     final tool = GitSyncTool()
+      ..verbose = verbose
+      ..dryRun = dryRun;
+    return tool.run(args);
+  }
+
+  Future<bool> _runStatus(List<String> args) async {
+    if (verbose) print('  [builtin] Running status...');
+    final tool = StatusTool()
       ..verbose = verbose
       ..dryRun = dryRun;
     return tool.run(args);

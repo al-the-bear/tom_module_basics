@@ -37,6 +37,7 @@ export 'src/commands/gitreset_tool.dart';
 export 'src/commands/gitsync_tool.dart';
 export 'src/commands/gitprune_tool.dart';
 export 'src/commands/gitstash_tool.dart';
+export 'src/commands/status_tool.dart';
 export 'src/commands/gitunstash_tool.dart';
 export 'src/commands/gitcompare_tool.dart';
 export 'src/commands/gitmerge_tool.dart';

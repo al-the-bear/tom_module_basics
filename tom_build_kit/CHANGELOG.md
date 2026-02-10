@@ -1,3 +1,17 @@
+## 1.6.0
+
+### Features
+
+- **`:status` command** — New internal command showing buildkit version, binary status, and git state.
+  - Source version display (version, build number, git commit, build time, Dart SDK)
+  - Binary currency check for all 25 buildkit tools (runs `<tool> --version`)
+  - Categorizes tools as current, outdated, unavailable, or non-conformant
+  - Git status with pending changes and unpushed commits
+  - Supports `--json` for structured output
+  - Supports `--verbose` to show individual file/commit details
+  - Supports `--skip-binaries` and `--skip-git` flags
+  - Uses standard navigation options for git repo traversal
+
 ## 1.5.0
 
 ### Bug Fixes
