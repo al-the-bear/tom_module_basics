@@ -1981,6 +1981,8 @@ const _gitToolCommandNames = {
 ///
 /// Does not warn about git traversal flags (-i, -o) when the command is a
 /// git tool command, since those flags are valid arguments for those tools.
+///
+/// Exits with code 64 (usage error) if misplaced flags are found.
 void _warnOnMisplacedFlags(List<String> rest) {
   if (rest.isEmpty) return;
 
@@ -2004,12 +2006,14 @@ void _warnOnMisplacedFlags(List<String> rest) {
   final misplaced = rest.where((arg) => flagsToCheck.contains(arg)).toList();
   if (misplaced.isEmpty) return;
 
-  print('⚠️  Warning: The following global flag(s) appear AFTER the '
-      'pipeline/command name and will be ignored:');
-  print('   ${misplaced.join(', ')}');
-  print('   Move them BEFORE the pipeline name. Example:');
-  print('     buildkit ${misplaced.join(' ')} <pipeline>');
-  print('');
+  stderr.writeln('⚠️  Error: The following global flag(s) appear AFTER the '
+      'pipeline/command name and would be ignored:');
+  stderr.writeln('   ${misplaced.join(', ')}');
+  stderr.writeln('   Move them BEFORE the pipeline name. Example:');
+  stderr.writeln('     buildkit ${misplaced.join(' ')} <pipeline>');
+  stderr.writeln('');
+  stderr.writeln('Run "buildkit --help" for usage information.');
+  exit(64);
 }
 
 /// Pre-process arguments to handle bare -R/--root (without path argument).

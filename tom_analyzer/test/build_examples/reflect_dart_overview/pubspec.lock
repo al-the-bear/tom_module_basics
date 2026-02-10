@@ -380,7 +380,7 @@ packages:
       path: "../../../../tom_build_base"
       relative: true
     source: path
-    version: "1.5.0"
+    version: "1.6.0"
   tom_d4rt:
     dependency: transitive
     description:
