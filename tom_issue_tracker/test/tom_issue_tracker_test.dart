@@ -1,8 +1,0 @@
-import 'package:tom_issue_tracker/tom_issue_tracker.dart';
-import 'package:test/test.dart';
-
-void main() {
-  test('calculate', () {
-    expect(calculate(), 42);
-  });
-}
