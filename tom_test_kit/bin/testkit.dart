@@ -315,6 +315,26 @@ void _printUsage(ArgParser? parser) {
   print('    -/OK     — Skipped (needs attention)');
   print('    --/OK    — Not present in this run');
   print('');
+  print('Test Args (--test-args):');
+  print('  Additional arguments passed through to "dart test".');
+  print('  testkit always adds --reporter json internally.');
+  print('');
+  print('  Commonly used dart test options:');
+  print('    -n, --name=<regex>        Filter tests by name (regex)');
+  print('    -N, --plain-name=<text>   Filter tests by plain-text name');
+  print('    -t, --tags=<tags>         Run only tests with specified tags');
+  print('    -x, --exclude-tags=<tags> Exclude tests with specified tags');
+  print('    -j, --concurrency=<n>     Concurrent test suites (default: 5)');
+  print('    --timeout=<duration>      Test timeout (e.g. 15s, 2x, none)');
+  print('    --[no-]fail-fast          Stop after first failure');
+  print('    --[no-]run-skipped        Run skipped tests');
+  print('    --coverage=<dir>          Gather coverage to directory');
+  print('');
+  print('  Examples:');
+  print('    testkit :test --test-args="--name parser"');
+  print('    testkit :test --test-args="--fail-fast --timeout 60s"');
+  print('    testkit :test --test-args="--tags integration"');
+  print('');
 
   // Standard footer
   for (final line in getToolHelpFooter(toolName: 'testkit')) {
