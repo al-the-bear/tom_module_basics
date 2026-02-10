@@ -340,8 +340,7 @@ void _printVersion() {
 /// Runs the TUI mode — full-screen interactive dashboard.
 Future<void> _runTuiMode(List<String> args) async {
   // Parse minimal args for project path
-  final tuiParser = ArgParser()
-    ..addOption('root', abbr: 'R', help: 'Project root directory');
+  final tuiParser = ArgParser();
   addNavigationOptions(tuiParser);
 
   final (processedArgs, bareRoot) = preprocessRootFlag(args);
