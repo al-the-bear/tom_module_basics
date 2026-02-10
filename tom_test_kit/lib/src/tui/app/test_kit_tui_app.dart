@@ -302,7 +302,7 @@ class TestKitTuiApp extends TuiApp {
     // Right: key hints
     final hints = _commandRunning
         ? 'Tab: switch | Esc: menu | Ctrl+C: quit'
-        : 'Enter: run | Tab: switch | q/Ctrl+C: quit';
+        : 'Enter: run | Tab: switch | Ctrl+C: quit';
     final hintsX = width - hints.length - 1;
     if (hintsX > 0) {
       surface.putText(hintsX, height - 1, hints, style: sbStyle);
