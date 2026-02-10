@@ -376,4 +376,9 @@ Future<void> _runTuiMode(List<String> args) async {
     projectPath: projectPath,
   );
   await TuiRunner(app).run();
+
+  // Restore terminal line discipline after TUI exits.
+  // The TUI's key reader puts the terminal in raw mode but doesn't restore it.
+  // Without this, newlines lack carriage returns and output drifts right.
+  await Process.run('stty', ['sane'], runInShell: true);
 }
