@@ -1,0 +1,13 @@
+ID,Groups,Description,Baseline [02-10 10:11]
+,RetryConfig,default config has correct delays,OK/OK
+,RetryConfig,custom config accepts custom delays,OK/OK
+,RetryExhaustedException,toString includes attempts,OK/OK
+,withRetry,succeeds on first attempt,OK/OK
+,withRetry,retries on retryable errors,OK/OK
+,withRetry,throws RetryExhaustedException when all retries fail,OK/OK
+,ServerDiscovery,getLocalIpAddresses returns list,OK/OK
+,ServerDiscovery,getSubnetAddresses returns 253 addresses,OK/OK
+,ServerDiscovery,DiscoveryOptions has sensible defaults,OK/OK
+,ServerDiscovery,DiscoveryOptions copyWith works,OK/OK
+,ServerDiscovery,DiscoveredServer properties work,OK/OK
+,ServerDiscovery,DiscoveryFailedException message,OK/OK

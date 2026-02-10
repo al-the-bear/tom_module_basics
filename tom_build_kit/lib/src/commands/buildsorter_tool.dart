@@ -307,8 +307,9 @@ class BuildSorterTool extends ToolBase {
 
     // Filter to target projects if specified
     if (targetProjectPaths != null) {
-      final targetSet = targetProjectPaths.toSet();
-      result.retainWhere(targetSet.contains);
+      // Normalize paths before comparison to handle different path formats
+      final targetSet = targetProjectPaths.map((path) => p.normalize(path)).toSet();
+      result.retainWhere((path) => targetSet.contains(p.normalize(path)));
     }
 
     return result;

@@ -25,6 +25,9 @@ class DartTestResults {
   /// Number of skipped tests.
   final int skippedTests;
 
+  /// Raw JSON lines from `dart test --reporter json` output.
+  final List<String> rawJsonLines;
+
   DartTestResults({
     required this.entries,
     required this.run,
@@ -32,7 +35,8 @@ class DartTestResults {
     required this.passedTests,
     required this.failedTests,
     required this.skippedTests,
-  });
+    List<String>? rawJsonLines,
+  }) : rawJsonLines = rawJsonLines ?? [];
 }
 
 /// Parses `dart test --reporter json` output into structured results.
@@ -176,7 +180,16 @@ class DartTestParser {
       return null;
     }
 
-    return parseJsonOutput(stdoutLines, verbose: verbose);
+    final result = parseJsonOutput(stdoutLines, verbose: verbose);
+    return DartTestResults(
+      entries: result.entries,
+      run: result.run,
+      totalTests: result.totalTests,
+      passedTests: result.passedTests,
+      failedTests: result.failedTests,
+      skippedTests: result.skippedTests,
+      rawJsonLines: stdoutLines,
+    );
   }
 
   /// Parses `dart test --reporter json` output lines.

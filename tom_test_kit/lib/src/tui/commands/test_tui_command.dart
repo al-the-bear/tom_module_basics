@@ -111,12 +111,14 @@ class TestTuiCommand extends TuiCommand {
     var skipCount = 0;
     var totalExpected = 0;
     var processed = 0;
+    final rawJsonLines = <String>[];
 
     // Parse JSON output line by line
     await process.stdout
         .transform(utf8.decoder)
         .transform(const LineSplitter())
         .forEach((line) {
+      rawJsonLines.add(line);
       if (line.trim().isEmpty) return;
 
       Map<String, dynamic> json;
@@ -227,6 +229,9 @@ class TestTuiCommand extends TuiCommand {
         elapsed: stopwatch.elapsed,
       );
     }
+
+    // Save raw JSON output
+    await saveLastTestRunJson(projectPath, rawJsonLines);
 
     // Update tracking file
     sink.phaseStarted('Updating tracking file');

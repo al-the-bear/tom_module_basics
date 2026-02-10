@@ -1,0 +1,27 @@
+ID,Groups,Description,Baseline [02-10 10:11]
+,,(setUpAll),X/OK
+,script_utils parsing,isMultiLineShellScript detects shell\n prefix,OK/OK
+,script_utils parsing,isMultiLineShellScript rejects non-multiline,OK/OK
+,script_utils parsing,extractScriptBody extracts content after shell\n,OK/OK
+,script_utils parsing,isStdinCommand detects stdin prefix with newline,OK/OK
+,script_utils parsing,isStdinCommand rejects invalid formats,OK/OK
+,script_utils parsing,parseStdinCommand extracts command and content,OK/OK
+,parseCommandArgs,parses simple command with no arguments,OK/OK
+,parseCommandArgs,parses command with unquoted arguments,OK/OK
+,parseCommandArgs,parses double-quoted strings as single argument,OK/OK
+,parseCommandArgs,parses single-quoted strings as single argument,OK/OK
+,parseCommandArgs,parses mixed quoted and unquoted arguments,OK/OK
+,parseCommandArgs,handles multiple spaces between arguments,OK/OK
+,parseCommandArgs,handles empty string,OK/OK
+,parseCommandArgs,handles string with only whitespace,OK/OK
+,parseCommandArgs,preserves backslash escapes in quoted strings,OK/OK
+,resolveShorthand,returns exact match for full command name,OK/OK
+,resolveShorthand,is case-insensitive,OK/OK
+,resolveShorthand,resolves unique prefix to full command,OK/OK
+,resolveShorthand,returns null for ambiguous prefix,OK/OK
+,resolveShorthand,returns null for no match,OK/OK
+,resolveShorthand,resolves all full command names,OK/OK
+,BuiltinCommands.isBuiltin,returns true for full command names,OK/OK
+,BuiltinCommands.isBuiltin,returns true for command with arguments,OK/OK
+,BuiltinCommands.isBuiltin,returns true for unique shorthand,OK/OK
+,BuiltinCommands.isBuiltin,returns false for ambiguous or unknown commands,OK/OK

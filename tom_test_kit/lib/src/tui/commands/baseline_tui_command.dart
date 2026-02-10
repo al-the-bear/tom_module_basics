@@ -76,12 +76,14 @@ class BaselineTuiCommand extends TuiCommand {
     var skipCount = 0;
     var totalExpected = 0;
     var processed = 0;
+    final rawJsonLines = <String>[];
 
     // Parse JSON output line by line
     await process.stdout
         .transform(utf8.decoder)
         .transform(const LineSplitter())
         .forEach((line) {
+      rawJsonLines.add(line);
       if (line.trim().isEmpty) return;
 
       Map<String, dynamic> json;
@@ -201,6 +203,9 @@ class BaselineTuiCommand extends TuiCommand {
 
     // Create and write the tracking file
     sink.phaseStarted('Writing baseline');
+
+    // Save raw JSON output for inspection
+    await saveLastTestRunJson(projectPath, rawJsonLines);
 
     final tracking = TrackingFile.fromBaseline(entries, run);
     final outputPath = args['output'] ?? defaultBaselinePath(projectPath);

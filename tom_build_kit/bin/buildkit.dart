@@ -172,7 +172,8 @@ Future<void> main(List<String> args) async {
             'Include only projects within specified git modules (comma-separated, use "root" or "tom" for main repo)')
     ..addFlag('build-order',
         abbr: 'b',
-        negatable: false,
+        negatable: true,
+        defaultsTo: false,
         help: 'Sort projects in dependency build order');
 
   ArgResults results;
@@ -521,7 +522,10 @@ Future<void> main(List<String> args) async {
   // Apply build-order sorting if requested (or default in project mode)
   var effectiveBuildOrder = buildOrder;
   // In project mode with defaults, also enable build order
-  if (!isWorkspaceMode && !buildOrder && scanPath == '.' && projectArg == null) {
+  // But only if user didn't explicitly disable with --no-build-order
+  final buildOrderExplicitlySet = results.wasParsed('build-order');
+  if (!isWorkspaceMode && !buildOrder && !buildOrderExplicitlySet && 
+      scanPath == '.' && projectArg == null) {
     effectiveBuildOrder = true;
   }
 
@@ -588,6 +592,13 @@ Future<void> main(List<String> args) async {
     'publisher',
   };
 
+  // Commands that do their own project discovery (should run once, not per-project)
+  // Only the *all versions that add --scan . --recursive internally
+  const ownDiscoveryCommands = {
+    'pubgetall',
+    'pubupdateall',
+  };
+
   // Fixed traversal order for git tools (null = user must specify or has default)
   // 'inner' = inner-first (deepest repos first)
   // 'outer' = outer-first (shallowest repos first)
@@ -615,8 +626,12 @@ Future<void> main(List<String> args) async {
   // Separate out git tool commands (run once) vs regular commands (run per-project)
   final gitToolSteps = steps.where((s) => 
       s.isCommand && gitToolCommands.contains(s.name)).toList();
+  // Separate out own-discovery commands (run once, do their own project discovery)
+  final ownDiscoverySteps = steps.where((s) =>
+      s.isCommand && ownDiscoveryCommands.contains(s.name)).toList();
   final regularSteps = steps.where((s) =>
-      !s.isCommand || !gitToolCommands.contains(s.name)).toList();
+      !s.isCommand || 
+      (!gitToolCommands.contains(s.name) && !ownDiscoveryCommands.contains(s.name))).toList();
 
   // Helper to check if args contain traversal flags
   bool hasTraversalFlag(List<String> args) {
@@ -807,13 +822,36 @@ Future<void> main(List<String> args) async {
     }
   }
 
-  // If only git tool steps were provided, we're done
+  // Execute own-discovery commands (pubget, pubgetall, etc.)
+  // These do their own project discovery, so run once at workspace level
+  for (final step in ownDiscoverySteps) {
+    // Create a step executor for the workspace root
+    final stepExecutor = BuiltinCommands(
+      projectPath: rootPath,
+      rootPath: rootPath,
+      verbose: _verbose && !step.suppressedOptions.contains('v'),
+      dryRun: dryRun && !step.suppressedOptions.contains('n'),
+    );
+    
+    final commandStr = [step.name, ...step.args].join(' ');
+    final result = await stepExecutor.execute(commandStr);
+    if (!result) {
+      success = false;
+    }
+  }
+
+  // If only git tool and own-discovery steps were provided, we're done
   if (regularSteps.isEmpty) {
     print('');
     print('=' * 60);
     print('Build Kit Summary');
     print('=' * 60);
-    print('Git tool commands executed: ${gitToolSteps.length}');
+    if (gitToolSteps.isNotEmpty) {
+      print('Git tool commands executed: ${gitToolSteps.length}');
+    }
+    if (ownDiscoverySteps.isNotEmpty) {
+      print('Own-discovery commands executed: ${ownDiscoverySteps.length}');
+    }
     print('Status: ${success ? 'SUCCESS' : 'FAILED'}');
     exit(success ? 0 : 1);
   }

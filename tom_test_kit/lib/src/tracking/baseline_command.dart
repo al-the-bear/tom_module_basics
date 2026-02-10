@@ -37,6 +37,9 @@ class BaselineCommand {
       return false;
     }
 
+    // Save raw JSON output for inspection
+    await saveLastTestRunJson(projectPath, results.rawJsonLines);
+
     // Create baseline run (copy results into a run marked as baseline)
     final baselineRun = TestRun(
       timestamp: results.run.timestamp,

@@ -71,6 +71,9 @@ class TestCommand {
       return false;
     }
 
+    // Save raw JSON output for inspection
+    await saveLastTestRunJson(projectPath, results.rawJsonLines);
+
     // Add new run
     tracking.addRun(results.run, results.entries);
 
