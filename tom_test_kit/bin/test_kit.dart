@@ -294,7 +294,7 @@ void _printUsage(ArgParser? parser) {
 
   // Tracking info
   print('Tracking File:');
-  print('  Baseline creates doc/baseline_<MMDD_HHMM>.md in each project.');
+  print('  Baseline creates doc/baseline_<MMDD_HHMM>.csv in each project.');
   print('  :test appends a result column to the most recent baseline file.');
   print('');
   print('Result Format:');

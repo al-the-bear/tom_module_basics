@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'test_entry.dart';
 import 'test_run.dart';
-import '../util/format_helpers.dart';
 import '../util/markdown_table.dart';
 
 /// Manages the tracking file: reading, writing, and appending runs.
@@ -73,16 +72,37 @@ class TrackingFile {
     return sortable.map((s) => s.entry).toList();
   }
 
-  /// Writes the tracking file to disk as markdown.
+  /// Writes the tracking file to disk as CSV.
+  ///
+  /// The main results table comes first (header row + data rows), followed
+  /// by an empty line separator and a summary section.
   Future<void> write(String filePath) async {
     final sorted = sortedEntries();
     final buf = StringBuffer();
 
-    // Header
-    buf.writeln('# Test Result Tracking');
+    // --- Results table (header row first for tool compatibility) ---
+
+    // Header row
+    buf.write('ID,Groups,Description');
+    for (final run in runs) {
+      buf.write(',${_escapeCsv(run.columnHeader)}');
+    }
     buf.writeln();
 
-    // Summary
+    // Data rows
+    for (final entry in sorted) {
+      buf.write('${_escapeCsv(entry.id ?? '')},');
+      buf.write('${_escapeCsv(entry.groups ?? '')},');
+      buf.write(_escapeCsv(entry.descriptionLabel));
+      for (final run in runs) {
+        final result = run.getResult(entry.fullDescription);
+        buf.write(',${formatResultCell(result, entry.expectation)}');
+      }
+      buf.writeln();
+    }
+
+    // --- Summary section (below, after empty line) ---
+
     if (runs.isNotEmpty) {
       final latestRun = runs.last;
       var passCount = 0;
@@ -101,62 +121,41 @@ class TrackingFile {
             break;
         }
       }
-      buf.writeln('## Summary');
       buf.writeln();
-      buf.writeln('| Metric | Count |');
-      buf.writeln('|--------|-------|');
-      buf.writeln('| Total | ${sorted.length} |');
-      buf.writeln('| Passed | $passCount |');
-      buf.writeln('| Failed | $failCount |');
-      if (skipCount > 0) buf.writeln('| Skipped | $skipCount |');
+      buf.writeln('Summary');
+      buf.writeln('Metric,Count');
+      buf.writeln('Total,${sorted.length}');
+      buf.writeln('Passed,$passCount');
+      buf.writeln('Failed,$failCount');
+      if (skipCount > 0) buf.writeln('Skipped,$skipCount');
       buf.writeln();
+      buf.writeln('Legend');
+      buf.writeln('Cell,Meaning');
+      buf.writeln('OK/OK,Passed as expected');
+      buf.writeln('X/OK,Regression — failed unexpectedly');
+      buf.writeln('X/FAIL,Known failure — expected');
+      buf.writeln('OK/FAIL,Progress — passed unexpectedly');
+      buf.writeln('SKIP/OK,Skipped — needs attention');
+      buf.writeln('-/OK,Not present in this run');
     }
-
-    // Table
-    buf.writeln('## Results');
-    buf.writeln();
-
-    // Table header
-    buf.write('| ID | Groups | Description |');
-    for (final run in runs) {
-      buf.write(' ${run.columnHeader} |');
-    }
-    buf.writeln();
-
-    // Separator
-    buf.write('|---|---|---|');
-    for (var i = 0; i < runs.length; i++) {
-      buf.write('---|');
-    }
-    buf.writeln();
-
-    // Rows
-    for (final entry in sorted) {
-      buf.write('| ${escapeMarkdownCell(entry.id ?? '')} |');
-      buf.write(' ${escapeMarkdownCell(entry.groups ?? '')} |');
-      buf.write(' ${escapeMarkdownCell(entry.descriptionLabel)} |');
-      for (final run in runs) {
-        final result = run.getResult(entry.fullDescription);
-        buf.write(' ${formatResultCell(result, entry.expectation)} |');
-      }
-      buf.writeln();
-    }
-
-    buf.writeln();
-    buf.writeln('## Legend');
-    buf.writeln();
-    buf.writeln('| Cell | Meaning |');
-    buf.writeln('|------|---------|');
-    buf.writeln('| OK/OK | Passed as expected |');
-    buf.writeln('| X/OK | **Regression** — failed unexpectedly |');
-    buf.writeln('| X/FAIL | Known failure — expected |');
-    buf.writeln('| OK/FAIL | **Progress** — passed unexpectedly |');
-    buf.writeln('| SKIP/OK | Skipped — needs attention |');
-    buf.writeln('| -/OK | Not present in this run |');
 
     final file = File(filePath);
     await file.parent.create(recursive: true);
     await file.writeAsString(buf.toString());
+  }
+
+  /// Escapes a value for CSV output.
+  ///
+  /// Wraps in double-quotes if the value contains commas, double-quotes,
+  /// or newlines. Internal double-quotes are doubled.
+  static String _escapeCsv(String value) {
+    if (value.contains(',') ||
+        value.contains('"') ||
+        value.contains('\n') ||
+        value.contains('\r')) {
+      return '"${value.replaceAll('"', '""')}"';
+    }
+    return value;
   }
 
   /// Loads a tracking file from disk.
@@ -170,34 +169,21 @@ class TrackingFile {
     return _parse(content);
   }
 
-  /// Parses a tracking file from its markdown content.
+  /// Parses a tracking file from its CSV content.
   static TrackingFile? _parse(String content) {
     final lines = content.split('\n');
+    if (lines.isEmpty) return null;
 
-    // Find the results table — support both new 3-column and old 1-column format
-    var headerIdx =
-        lines.indexWhere((l) => l.startsWith('| ID | Groups | Description |'));
-    final isNewFormat = headerIdx != -1;
-
-    if (!isNewFormat) {
-      headerIdx =
-          lines.indexWhere((l) => l.startsWith('| ID / Description |'));
-    }
-    if (headerIdx == -1) return null;
-
-    final headerLine = lines[headerIdx];
-    final separatorIdx = headerIdx + 1;
-    if (separatorIdx >= lines.length) return null;
+    // The first line must be the header row starting with ID,Groups,Description
+    final headerLine = lines[0].trim();
+    if (!headerLine.startsWith('ID,Groups,Description')) return null;
 
     // Parse column headers to extract run timestamps
-    final headerCells = splitTableRow(headerLine);
-    if (headerCells.length < 2) return null;
-
-    // Fixed columns: 3 for new format (ID, Groups, Description), 1 for old
-    final fixedColumns = isNewFormat ? 3 : 1;
+    final headerCells = _splitCsvRow(headerLine);
+    if (headerCells.length < 3) return null;
 
     final runs = <TestRun>[];
-    for (var i = fixedColumns; i < headerCells.length; i++) {
+    for (var i = 3; i < headerCells.length; i++) {
       final cell = headerCells[i].trim();
       final isBaseline = cell.startsWith('Baseline');
       final timestamp = parseColumnTimestamp(cell);
@@ -209,44 +195,65 @@ class TrackingFile {
       }
     }
 
-    // Parse data rows
+    // Parse data rows (stop at empty line or end)
     final entries = <String, TestEntry>{};
-    for (var i = separatorIdx + 1; i < lines.length; i++) {
-      final line = lines[i];
-      if (!line.startsWith('|') || line.trim().isEmpty) break;
+    for (var i = 1; i < lines.length; i++) {
+      final line = lines[i].trim();
+      if (line.isEmpty) break; // Empty line = end of results table
 
-      final cells = splitTableRow(line);
-      if (cells.isEmpty) continue;
+      final cells = _splitCsvRow(line);
+      if (cells.length < 3) continue;
 
-      TestEntry entry;
-      int resultStartCol;
-
-      if (isNewFormat) {
-        if (cells.length < 3) continue;
-        entry = parseEntryFromColumns(
-          id: cells[0].trim().replaceAll('\\|', '|'),
-          groups: cells[1].trim().replaceAll('\\|', '|'),
-          description: cells[2].trim().replaceAll('\\|', '|'),
-        );
-        resultStartCol = 3;
-      } else {
-        final label = cells[0].trim().replaceAll('\\|', '|');
-        entry = parseEntryFromLabel(label);
-        resultStartCol = 1;
-      }
-
+      final entry = parseEntryFromColumns(
+        id: cells[0],
+        groups: cells[1],
+        description: cells[2],
+      );
       entries[entry.fullDescription] = entry;
 
       // Parse result cells
-      for (var j = resultStartCol;
-          j < cells.length && j - resultStartCol < runs.length;
-          j++) {
+      for (var j = 3; j < cells.length && j - 3 < runs.length; j++) {
         final resultStr = cells[j].trim();
         final result = parseResultCell(resultStr);
-        runs[j - resultStartCol].setResult(entry.fullDescription, result);
+        runs[j - 3].setResult(entry.fullDescription, result);
       }
     }
 
     return TrackingFile(entries: entries, runs: runs);
+  }
+
+  /// Splits a CSV row into cells, handling quoted fields.
+  static List<String> _splitCsvRow(String row) {
+    final cells = <String>[];
+    final buf = StringBuffer();
+    var inQuotes = false;
+
+    for (var i = 0; i < row.length; i++) {
+      final ch = row[i];
+      if (inQuotes) {
+        if (ch == '"') {
+          // Check for escaped quote ""
+          if (i + 1 < row.length && row[i + 1] == '"') {
+            buf.write('"');
+            i++; // Skip next quote
+          } else {
+            inQuotes = false;
+          }
+        } else {
+          buf.write(ch);
+        }
+      } else {
+        if (ch == '"') {
+          inQuotes = true;
+        } else if (ch == ',') {
+          cells.add(buf.toString());
+          buf.clear();
+        } else {
+          buf.write(ch);
+        }
+      }
+    }
+    cells.add(buf.toString());
+    return cells;
   }
 }

@@ -9,13 +9,13 @@ import 'format_helpers.dart';
 
 /// Returns the default output path for a baseline file.
 ///
-/// Creates a path like `<projectPath>/doc/baseline_<MMDD_HHMM>.md`.
+/// Creates a path like `<projectPath>/doc/baseline_<MMDD_HHMM>.csv`.
 String defaultBaselinePath(String projectPath, {DateTime? now}) {
   final ts = now ?? DateTime.now();
-  return p.join(projectPath, 'doc', 'baseline_${baselineTimestamp(ts)}.md');
+  return p.join(projectPath, 'doc', 'baseline_${baselineTimestamp(ts)}.csv');
 }
 
-/// Finds the most recent `baseline_*.md` file in a project's `doc/` folder.
+/// Finds the most recent `baseline_*.csv` file in a project's `doc/` folder.
 ///
 /// Returns the absolute path of the latest file, or null if no tracking
 /// files exist.
@@ -28,7 +28,7 @@ String? findLatestTrackingFile(String projectPath) {
       .whereType<File>()
       .where((f) =>
           p.basename(f.path).startsWith('baseline_') &&
-          f.path.endsWith('.md'))
+          f.path.endsWith('.csv'))
       .toList();
 
   if (files.isEmpty) return null;

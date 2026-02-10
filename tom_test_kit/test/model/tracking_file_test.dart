@@ -158,7 +158,7 @@ void main() {
         );
         final tracking = TrackingFile.fromBaseline(entries, run);
 
-        final filePath = p.join(tempDir.path, 'doc', 'baseline_test.md');
+        final filePath = p.join(tempDir.path, 'doc', 'baseline_test.csv');
         await tracking.write(filePath);
 
         final loaded = TrackingFile.load(filePath);
@@ -194,7 +194,7 @@ void main() {
         );
         final tracking = TrackingFile.fromBaseline(entries, run);
 
-        final filePath = p.join(tempDir.path, 'doc', 'tracking.md');
+        final filePath = p.join(tempDir.path, 'doc', 'tracking.csv');
         await tracking.write(filePath);
 
         final loaded = TrackingFile.load(filePath)!;
@@ -225,7 +225,7 @@ void main() {
         );
         tracking.addRun(secondRun, []);
 
-        final filePath = p.join(tempDir.path, 'doc', 'multi_run.md');
+        final filePath = p.join(tempDir.path, 'doc', 'multi_run.csv');
         await tracking.write(filePath);
 
         final loaded = TrackingFile.load(filePath)!;
@@ -237,7 +237,7 @@ void main() {
 
     group('load', () {
       test('TK-TRK-9: should return null for non-existent file', () {
-        expect(TrackingFile.load('/nonexistent/path.md'), isNull);
+        expect(TrackingFile.load('/nonexistent/path.csv'), isNull);
       });
     });
   });

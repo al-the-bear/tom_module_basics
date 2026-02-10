@@ -10,13 +10,13 @@ void main() {
     test('TK-FIL-1: should create path with MMDD_HHMM timestamp', () {
       final fixed = DateTime(2026, 2, 10, 14, 30);
       final result = defaultBaselinePath('/project', now: fixed);
-      expect(result, equals(p.join('/project', 'doc', 'baseline_0210_1430.md')));
+      expect(result, equals(p.join('/project', 'doc', 'baseline_0210_1430.csv')));
     });
 
     test('TK-FIL-2: should zero-pad month and day', () {
       final fixed = DateTime(2026, 1, 5, 9, 7);
       final result = defaultBaselinePath('/project', now: fixed);
-      expect(result, contains('baseline_0105_0907.md'));
+      expect(result, contains('baseline_0105_0907.csv'));
     });
   });
 
@@ -43,16 +43,16 @@ void main() {
 
     test('TK-FIL-5: should return the latest baseline file by name sort', () {
       final docDir = Directory(p.join(tempDir.path, 'doc'))..createSync();
-      File(p.join(docDir.path, 'baseline_0210_0900.md'))
+      File(p.join(docDir.path, 'baseline_0210_0900.csv'))
           .writeAsStringSync('old');
-      File(p.join(docDir.path, 'baseline_0210_1400.md'))
+      File(p.join(docDir.path, 'baseline_0210_1400.csv'))
           .writeAsStringSync('new');
-      File(p.join(docDir.path, 'baseline_0209_2300.md'))
+      File(p.join(docDir.path, 'baseline_0209_2300.csv'))
           .writeAsStringSync('oldest');
 
       final result = findLatestTrackingFile(tempDir.path);
       expect(result, isNotNull);
-      expect(p.basename(result!), equals('baseline_0210_1400.md'));
+      expect(p.basename(result!), equals('baseline_0210_1400.csv'));
     });
   });
 }
