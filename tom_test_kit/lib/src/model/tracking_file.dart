@@ -101,7 +101,7 @@ class TrackingFile {
       buf.writeln();
     }
 
-    // --- Summary section (below, after empty line) ---
+    // --- Summary section (below, after comma separator) ---
 
     if (runs.isNotEmpty) {
       final latestRun = runs.last;
@@ -121,6 +121,10 @@ class TrackingFile {
             break;
         }
       }
+
+      // Comma-only separator line (same column count as data rows)
+      final sep = List.filled(2 + runs.length, ',').join();
+      buf.writeln(sep);
       buf.writeln();
       buf.writeln('Summary');
       buf.writeln('Metric,Count');
@@ -128,6 +132,7 @@ class TrackingFile {
       buf.writeln('Passed,$passCount');
       buf.writeln('Failed,$failCount');
       if (skipCount > 0) buf.writeln('Skipped,$skipCount');
+      buf.writeln(sep);
       buf.writeln();
       buf.writeln('Legend');
       buf.writeln('Cell,Meaning');
@@ -199,7 +204,7 @@ class TrackingFile {
     final entries = <String, TestEntry>{};
     for (var i = 1; i < lines.length; i++) {
       final line = lines[i].trim();
-      if (line.isEmpty) break; // Empty line = end of results table
+      if (line.isEmpty || _isCommaSeparator(line)) break; // End of results table
 
       final cells = _splitCsvRow(line);
       if (cells.length < 3) continue;
@@ -220,6 +225,11 @@ class TrackingFile {
     }
 
     return TrackingFile(entries: entries, runs: runs);
+  }
+
+  /// Returns true if the line is a comma-only separator (all fields empty).
+  static bool _isCommaSeparator(String line) {
+    return line.isNotEmpty && line.split(',').every((c) => c.trim().isEmpty);
   }
 
   /// Splits a CSV row into cells, handling quoted fields.
