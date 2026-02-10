@@ -285,6 +285,7 @@ void _printUsage(ArgParser? parser) {
   print('      --tui            Launch interactive TUI dashboard');
   print('      --output=<path>  Output file path (overrides default)');
   print('      --file=<path>    Tracking file to update (:test only)');
+  print('      --baseline       Create baseline if none exists (:test only)');
   print('      --test-args=<args>  Additional arguments passed to dart test');
   print('  -v, --verbose        Enable verbose output');
   print('  -l, --list           List projects that would be processed (no action)');
@@ -299,6 +300,11 @@ void _printUsage(ArgParser? parser) {
   print('Tracking File:');
   print('  Baseline creates doc/baseline_<MMDD_HHMM>.csv in each project.');
   print('  :test appends a result column to the most recent baseline file.');
+  print('  Use :test --baseline to auto-create baseline when none exists.');
+  print('');
+  print('CSV Format:');
+  print('  Pure data CSV — header row followed by data rows.');
+  print('  Columns: ID, Groups, Description, then one column per run.');
   print('');
   print('Result Format:');
   print('  Each cell shows <result>/<expectation>:');
@@ -306,6 +312,8 @@ void _printUsage(ArgParser? parser) {
   print('    X/OK     — Failed unexpectedly (regression)');
   print('    X/FAIL   — Failed as expected (known issue)');
   print('    OK/FAIL  — Passed unexpectedly (progress)');
+  print('    SKIP/OK  — Skipped (needs attention)');
+  print('    -/OK     — Not present in this run');
   print('');
 
   // Standard footer
