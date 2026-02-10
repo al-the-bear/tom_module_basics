@@ -12,17 +12,24 @@ import '../util/output_formatter.dart';
 ///
 /// Shows all results for a specific test across all runs, making it easy
 /// to track regressions and fixes over time.
+///
+/// Search matches against test ID, description, group path, and the full
+/// test path (groups + description). If the search string matches a test ID
+/// exactly, only that test is returned. Otherwise all substring matches are
+/// shown.
 class HistoryCommand {
   /// Runs the command for a single project.
   ///
-  /// [testName] is a search string matched against test full descriptions.
-  /// It can be a substring, test ID, or exact description. If multiple tests
-  /// match, all are shown.
+  /// [searchTerm] is matched case-insensitively against:
+  /// - Test ID (e.g., "TK-RUN-5") — exact match returns only that test
+  /// - Test description text
+  /// - Group path
+  /// - Full test path (group + description combined)
   ///
   /// Returns true on success, false on failure.
   static Future<bool> run({
     required String projectPath,
-    required String testName,
+    required String searchTerm,
     String? baselineFile,
     OutputSpec? output,
     bool verbose = false,
@@ -44,17 +51,37 @@ class HistoryCommand {
       print('  File: $rel');
     }
 
-    // Find matching tests (case-insensitive substring match)
-    final query = testName.toLowerCase();
-    final matches = tracking.entries.entries.where((e) {
-      final key = e.key.toLowerCase();
-      final entry = e.value;
-      return key.contains(query) ||
-          (entry.id != null && entry.id!.toLowerCase().contains(query));
+    // Search priority:
+    // 1. Exact ID match (case-insensitive) → single result
+    // 2. Substring match on ID, description, groups, or full path
+    final query = searchTerm.toLowerCase();
+
+    // Check for exact ID match first
+    final exactIdMatch = tracking.entries.entries.where((e) {
+      final id = e.value.id;
+      return id != null && id.toLowerCase() == query;
     }).toList();
 
+    final matches = exactIdMatch.isNotEmpty
+        ? exactIdMatch
+        : tracking.entries.entries.where((e) {
+            final entry = e.value;
+            // Match against full path (group + description), ID, description,
+            // and groups individually
+            return e.key.toLowerCase().contains(query) ||
+                (entry.id != null &&
+                    entry.id!.toLowerCase().contains(query)) ||
+                entry.description.toLowerCase().contains(query) ||
+                (entry.groups != null &&
+                    entry.groups!.toLowerCase().contains(query));
+          }).toList();
+
     if (matches.isEmpty) {
-      stderr.writeln('  No tests matching "$testName".');
+      stderr.writeln('  No tests matching "$searchTerm".');
+      if (verbose) {
+        stderr.writeln('  Search matches against test ID, description, '
+            'group path, and full test path.');
+      }
       return false;
     }
 
@@ -88,7 +115,7 @@ class HistoryCommand {
 
     final matchLabel = matches.length == 1
         ? matches.first.value.description
-        : '${matches.length} tests matching "$testName"';
+        : '${matches.length} tests matching "$searchTerm"';
     final title = 'History: $matchLabel';
 
     await OutputWriter(spec).writeTable(
