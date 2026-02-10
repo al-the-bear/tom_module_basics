@@ -5,6 +5,7 @@ import 'package:path/path.dart' as p;
 import '../model/test_run.dart';
 import '../model/tracking_file.dart';
 import '../parser/dart_test_parser.dart';
+import '../util/file_helpers.dart';
 
 /// Implements the `:baseline` subcommand.
 ///
@@ -47,7 +48,7 @@ class BaselineCommand {
     final tracking = TrackingFile.fromBaseline(results.entries, baselineRun);
 
     // Determine output path
-    final resolvedOutput = outputPath ?? _defaultOutputPath(projectPath);
+    final resolvedOutput = outputPath ?? defaultBaselinePath(projectPath);
 
     // Write the file
     await tracking.write(resolvedOutput);
@@ -62,14 +63,4 @@ class BaselineCommand {
 
     return true;
   }
-
-  /// Returns the default output path for a baseline file.
-  static String _defaultOutputPath(String projectPath) {
-    final now = DateTime.now();
-    final timestamp = '${_pad(now.month)}${_pad(now.day)}_'
-        '${_pad(now.hour)}${_pad(now.minute)}';
-    return p.join(projectPath, 'doc', 'baseline_$timestamp.md');
-  }
-
-  static String _pad(int n) => n.toString().padLeft(2, '0');
 }

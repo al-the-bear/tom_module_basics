@@ -4,6 +4,7 @@ import 'package:path/path.dart' as p;
 
 import '../model/tracking_file.dart';
 import '../parser/dart_test_parser.dart';
+import '../util/file_helpers.dart';
 
 /// Implements the `:test` subcommand.
 ///
@@ -26,7 +27,7 @@ class TestCommand {
   }) async {
     // Find the tracking file
     final filePath =
-        trackingFilePath ?? _findLatestTrackingFile(projectPath);
+        trackingFilePath ?? findLatestTrackingFile(projectPath);
 
     if (filePath == null) {
       stderr.writeln('[$projectPath] No tracking file found. '
@@ -72,24 +73,5 @@ class TestCommand {
         '${results.skippedTests > 0 ? ', ${results.skippedTests} skipped' : ''})');
 
     return true;
-  }
-
-  /// Finds the most recent `baseline_*.md` file in the project's doc/ directory.
-  static String? _findLatestTrackingFile(String projectPath) {
-    final docDir = Directory(p.join(projectPath, 'doc'));
-    if (!docDir.existsSync()) return null;
-
-    final files = docDir
-        .listSync()
-        .whereType<File>()
-        .where((f) => p.basename(f.path).startsWith('baseline_') &&
-            f.path.endsWith('.md'))
-        .toList();
-
-    if (files.isEmpty) return null;
-
-    // Sort by name (timestamp in filename) — latest first
-    files.sort((a, b) => p.basename(b.path).compareTo(p.basename(a.path)));
-    return files.first.path;
   }
 }

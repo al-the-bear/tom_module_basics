@@ -4,6 +4,7 @@ import 'package:args/args.dart';
 import 'package:path/path.dart' as p;
 import 'package:tom_build_base/tom_build_base.dart';
 
+import '../guided/guided.dart';
 import 'tool_base.dart';
 
 /// Git commit tool - commits and pushes all repositories with the same message.
@@ -118,6 +119,12 @@ class GitCommitTool extends ToolBase {
     final pushForce = results['push-force'] as bool;
     final statusOnly = results['status-only'] as bool;
     final listMode = results['list'] as bool;
+    final guide = results['guide'] as bool;
+
+    // Handle guided mode
+    if (guide) {
+      return await _runGuided(executionRoot, navArgs);
+    }
 
     // Determine staging mode:
     // - default: stage everything including untracked (git add -A)
@@ -411,5 +418,225 @@ class GitCommitTool extends ToolBase {
     print('');
     print('VIA BUILDKIT:');
     print('  bk :gitcommit -m "message"');
+  }
+
+  /// Run gitcommit in guided mode.
+  Future<bool> _runGuided(
+    String executionRoot,
+    WorkspaceNavigationArgs navArgs,
+  ) async {
+    final guide = GuidedMode();
+
+    guide.header('Git Commit - Guided Mode');
+
+    // Find repositories with changes
+    final repos = _findGitRepositories(executionRoot);
+    if (repos.isEmpty) {
+      guide.info('No git repositories found.');
+      return true;
+    }
+
+    // Get status of each repo
+    final reposWithChanges = <String>[];
+    for (final repo in repos) {
+      if (await _hasChanges(repo, addAll: true, addUpdated: false)) {
+        reposWithChanges.add(repo);
+      }
+    }
+
+    if (reposWithChanges.isEmpty) {
+      guide.info('All repositories are clean - nothing to commit.');
+      return true;
+    }
+
+    // Show repos with changes
+    print('Repositories with changes:');
+    for (final repo in reposWithChanges) {
+      final relPath = p.relative(repo, from: executionRoot);
+      print('  • $relPath');
+    }
+    print('');
+
+    // Step 1: What to stage
+    final stageChoice = guide.menu(
+      'What files to stage?',
+      [
+        'All files (git add -A) [default]',
+        'Tracked files only (git add -u)',
+        'Already staged only (skip staging)',
+        'Select by project scope',
+      ],
+    );
+
+    if (stageChoice == -1) return true; // Cancelled
+
+    bool addUpdated = false;
+    bool stagedOnly = false;
+    ProjectGroupSelection? scopeSelection;
+
+    switch (stageChoice) {
+      case 0:
+        // addAll is default (neither addUpdated nor stagedOnly)
+        break;
+      case 1:
+        addUpdated = true;
+      case 2:
+        stagedOnly = true;
+      case 3:
+        // Project scope selection
+        final picker = ProjectGroupPicker(
+          workspaceRoot: executionRoot,
+          changedProjects: reposWithChanges,
+        );
+        scopeSelection = picker.pick();
+        if (scopeSelection == null || scopeSelection.isEmpty) {
+          guide.info('Cancelled.');
+          return true;
+        }
+        // Will stage selected paths only
+    }
+
+    // Step 2: Commit message
+    print('');
+    final message = guide.input(
+      'Commit message',
+      validator: (s) => s.trim().isNotEmpty,
+      validationError: 'Message cannot be empty',
+    );
+
+    if (message.trim().isEmpty) {
+      guide.error('Commit message cannot be empty.');
+      return false;
+    }
+
+    // Step 3: Push options
+    print('');
+    final pushChoice = guide.menu(
+      'Push to remote?',
+      [
+        'Yes, push after commit [default]',
+        'No, commit only (--no-push)',
+      ],
+    );
+
+    if (pushChoice == -1) return true;
+
+    final noPush = pushChoice == 1;
+
+    // Build command preview
+    final stageCmd = stagedOnly
+        ? '(skip staging)'
+        : addUpdated
+            ? 'git add -u'
+            : 'git add -A';
+    final commitCmd = 'git commit -m "$message"';
+    final pushCmd = noPush ? '(skip push)' : 'git push';
+
+    guide.showPreview(
+      command: '$stageCmd && $commitCmd && $pushCmd',
+      repositories: scopeSelection != null
+          ? scopeSelection.projects.map((p) => p.split('/').last).toList()
+          : reposWithChanges
+              .map((r) => p.relative(r, from: executionRoot))
+              .toList(),
+    );
+
+    // Confirm
+    if (!guide.confirm('Proceed?')) {
+      guide.info('Cancelled.');
+      return true;
+    }
+
+    // Execute
+    print('');
+    final targetRepos =
+        scopeSelection?.projects ?? reposWithChanges;
+
+    // Sort by depth (inner first)
+    targetRepos.sort((a, b) {
+      final depthA = p.split(a).length;
+      final depthB = p.split(b).length;
+      if (depthA != depthB) {
+        return depthB.compareTo(depthA);
+      }
+      return p.basename(a).compareTo(p.basename(b));
+    });
+
+    var commitCount = 0;
+    var pushCount = 0;
+    var allSuccess = true;
+
+    for (final repoPath in targetRepos) {
+      final relPath = p.relative(repoPath, from: executionRoot);
+
+      // Stage
+      if (!stagedOnly) {
+        List<String> addArgs;
+
+        if (scopeSelection != null) {
+          // Stage specific paths based on scope
+          final scopes =
+              scopeSelection.scopes[repoPath] ?? [ProjectScope.complete];
+          final paths = <String>[];
+          for (final scope in scopes) {
+            for (final folder in scope.folders) {
+              final folderPath =
+                  folder == '.' ? repoPath : p.join(repoPath, folder);
+              if (Directory(folderPath).existsSync()) {
+                paths.add(folder == '.' ? '.' : folder);
+              }
+            }
+          }
+          addArgs = ['add', ...paths];
+        } else {
+          addArgs = addUpdated ? ['add', '-u'] : ['add', '-A'];
+        }
+
+        if (!await _runGit(repoPath, addArgs, relPath)) {
+          allSuccess = false;
+          continue;
+        }
+      }
+
+      // Commit
+      if (!await _runGit(repoPath, ['commit', '-m', message], relPath)) {
+        final status = await Process.run(
+          'git',
+          ['status', '--porcelain'],
+          workingDirectory: repoPath,
+        );
+        if (status.stdout.toString().trim().isEmpty) {
+          if (verbose) {
+            print('$relPath: nothing to commit');
+          }
+          continue;
+        }
+        allSuccess = false;
+        continue;
+      }
+
+      commitCount++;
+      guide.success('$relPath: committed');
+
+      // Push
+      if (!noPush) {
+        if (!await _runGit(repoPath, ['push'], relPath)) {
+          guide.warning('$relPath: push failed');
+        } else {
+          pushCount++;
+        }
+      }
+    }
+
+    // Summary
+    print('');
+    if (noPush) {
+      guide.success('Committed $commitCount repository(ies)');
+    } else {
+      guide.success(
+          'Committed $commitCount, pushed $pushCount repository(ies)');
+    }
+
+    return allSuccess;
   }
 }

@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'test_entry.dart';
 import 'test_run.dart';
+import '../util/format_helpers.dart';
+import '../util/markdown_table.dart';
 
 /// Manages the tracking file: reading, writing, and appending runs.
 class TrackingFile {
@@ -130,7 +132,7 @@ class TrackingFile {
 
     // Rows
     for (final entry in sorted) {
-      buf.write('| ${_escapeMarkdown(entry.displayLabel)} |');
+      buf.write('| ${escapeMarkdownCell(entry.displayLabel)} |');
       for (final run in runs) {
         final result = run.getResult(entry.fullDescription);
         buf.write(' ${formatResultCell(result, entry.expectation)} |');
@@ -155,11 +157,6 @@ class TrackingFile {
     await file.writeAsString(buf.toString());
   }
 
-  /// Escapes pipe characters in markdown table cells.
-  static String _escapeMarkdown(String text) {
-    return text.replaceAll('|', '\\|');
-  }
-
   /// Loads a tracking file from disk.
   ///
   /// Returns null if the file doesn't exist or can't be parsed.
@@ -176,7 +173,8 @@ class TrackingFile {
     final lines = content.split('\n');
 
     // Find the results table
-    final headerIdx = lines.indexWhere((l) => l.startsWith('| ID / Description |'));
+    final headerIdx =
+        lines.indexWhere((l) => l.startsWith('| ID / Description |'));
     if (headerIdx == -1) return null;
 
     final headerLine = lines[headerIdx];
@@ -184,14 +182,14 @@ class TrackingFile {
     if (separatorIdx >= lines.length) return null;
 
     // Parse column headers to extract run timestamps
-    final headerCells = _splitTableRow(headerLine);
+    final headerCells = splitTableRow(headerLine);
     if (headerCells.length < 2) return null;
 
     final runs = <TestRun>[];
     for (var i = 1; i < headerCells.length; i++) {
       final cell = headerCells[i].trim();
       final isBaseline = cell.startsWith('Baseline');
-      final timestamp = _parseColumnTimestamp(cell);
+      final timestamp = parseColumnTimestamp(cell);
       if (timestamp != null) {
         runs.add(TestRun(
           timestamp: timestamp,
@@ -206,112 +204,22 @@ class TrackingFile {
       final line = lines[i];
       if (!line.startsWith('|') || line.trim().isEmpty) break;
 
-      final cells = _splitTableRow(line);
+      final cells = splitTableRow(line);
       if (cells.isEmpty) continue;
 
       final label = cells[0].trim().replaceAll('\\|', '|');
       // Re-parse the label to extract test entry metadata
-      final entry = _parseEntryFromLabel(label);
+      final entry = parseEntryFromLabel(label);
       entries[entry.fullDescription] = entry;
 
       // Parse result cells
       for (var j = 1; j < cells.length && j - 1 < runs.length; j++) {
         final resultStr = cells[j].trim();
-        final result = _parseResultCell(resultStr);
+        final result = parseResultCell(resultStr);
         runs[j - 1].setResult(entry.fullDescription, result);
       }
     }
 
     return TrackingFile(entries: entries, runs: runs);
-  }
-
-  /// Splits a markdown table row into cells.
-  static List<String> _splitTableRow(String row) {
-    // Handle escaped pipes
-    final cleaned = row.trim();
-    if (!cleaned.startsWith('|') || !cleaned.endsWith('|')) return [];
-
-    final inner = cleaned.substring(1, cleaned.length - 1);
-    final cells = <String>[];
-    final buf = StringBuffer();
-    for (var i = 0; i < inner.length; i++) {
-      if (inner[i] == '|' && (i == 0 || inner[i - 1] != '\\')) {
-        cells.add(buf.toString());
-        buf.clear();
-      } else {
-        buf.write(inner[i]);
-      }
-    }
-    cells.add(buf.toString());
-    return cells;
-  }
-
-  /// Parses `[MM-DD HH:MM]` from a column header.
-  static DateTime? _parseColumnTimestamp(String header) {
-    final match = RegExp(r'\[(\d{2})-(\d{2})\s+(\d{2}):(\d{2})\]').firstMatch(header);
-    if (match == null) return null;
-
-    final now = DateTime.now();
-    return DateTime(
-      now.year,
-      int.parse(match.group(1)!),
-      int.parse(match.group(2)!),
-      int.parse(match.group(3)!),
-      int.parse(match.group(4)!),
-    );
-  }
-
-  /// Parses a result cell back into a [TestResult].
-  static TestResult _parseResultCell(String cell) {
-    if (cell.startsWith('OK')) return TestResult.ok;
-    if (cell.startsWith('X')) return TestResult.fail;
-    if (cell.startsWith('SKIP')) return TestResult.skip;
-    if (cell.startsWith('-')) return TestResult.absent;
-    return TestResult.absent;
-  }
-
-  /// Parses a test entry from a display label.
-  static TestEntry _parseEntryFromLabel(String label) {
-    // Try to parse ID, description, date, expectation
-    String? id;
-    var description = label;
-    DateTime? creationDate;
-    var expectation = 'OK';
-
-    // Extract ID (text before first colon)
-    final colonIdx = label.indexOf(':');
-    if (colonIdx > 0 && colonIdx < 20) {
-      id = label.substring(0, colonIdx).trim();
-      description = label.substring(colonIdx + 1).trim();
-    }
-
-    // Extract creation date [YYYY-MM-DD HH:MM]
-    final dateMatch =
-        RegExp(r'\[(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2})\]').firstMatch(description);
-    if (dateMatch != null) {
-      creationDate = DateTime(
-        int.parse(dateMatch.group(1)!),
-        int.parse(dateMatch.group(2)!),
-        int.parse(dateMatch.group(3)!),
-        int.parse(dateMatch.group(4)!),
-        int.parse(dateMatch.group(5)!),
-      );
-      description = description.replaceFirst(dateMatch.group(0)!, '').trim();
-    }
-
-    // Extract expected result (PASS)/(FAIL) from remaining description
-    final expectMatch = RegExp(r'\((PASS|FAIL)\)\s*$').firstMatch(description);
-    if (expectMatch != null) {
-      expectation = expectMatch.group(1) == 'FAIL' ? 'FAIL' : 'OK';
-      description = description.replaceFirst(expectMatch.group(0)!, '').trim();
-    }
-
-    return TestEntry(
-      id: id,
-      fullDescription: label,
-      description: description,
-      creationDate: creationDate,
-      expectation: expectation,
-    );
   }
 }

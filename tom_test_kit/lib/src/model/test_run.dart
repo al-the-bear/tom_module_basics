@@ -1,4 +1,5 @@
 import 'test_entry.dart';
+import '../util/format_helpers.dart';
 
 /// The result of a single test in a run.
 enum TestResult {
@@ -41,8 +42,8 @@ class TestRun {
   /// Column header in compact format: `MM-DD HH:MM`.
   String get columnHeader {
     final prefix = isBaseline ? 'Baseline ' : '';
-    return '$prefix[${_pad(timestamp.month)}-${_pad(timestamp.day)} '
-        '${_pad(timestamp.hour)}:${_pad(timestamp.minute)}]';
+    return '$prefix[${padTwo(timestamp.month)}-${padTwo(timestamp.day)} '
+        '${padTwo(timestamp.hour)}:${padTwo(timestamp.minute)}]';
   }
 
   /// Sets the result for a test.
@@ -54,8 +55,6 @@ class TestRun {
   TestResult getResult(String fullDescription) {
     return results[fullDescription] ?? TestResult.absent;
   }
-
-  static String _pad(int n) => n.toString().padLeft(2, '0');
 }
 
 /// Sort priority for a result/expectation combination.

@@ -10,3 +10,6 @@ export 'src/parser/dart_test_parser.dart';
 export 'src/parser/test_description_parser.dart';
 export 'src/tracking/baseline_command.dart';
 export 'src/tracking/test_command.dart';
+export 'src/util/file_helpers.dart';
+export 'src/util/format_helpers.dart';
+export 'src/util/markdown_table.dart';

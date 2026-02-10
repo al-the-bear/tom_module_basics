@@ -1,3 +1,5 @@
+import '../util/format_helpers.dart';
+
 /// Represents a single test entry with parsed metadata from its description.
 class TestEntry {
   /// The test ID (text before the first colon), or null if no ID found.
@@ -36,8 +38,8 @@ class TestEntry {
     buf.write(description);
     if (creationDate != null) {
       final d = creationDate!;
-      buf.write(' [${_pad(d.year)}-${_pad(d.month)}-${_pad(d.day)} '
-          '${_pad(d.hour)}:${_pad(d.minute)}]');
+      buf.write(' [${padTwo(d.year)}-${padTwo(d.month)}-${padTwo(d.day)} '
+          '${padTwo(d.hour)}:${padTwo(d.minute)}]');
     }
     return buf.toString();
   }
@@ -46,8 +48,6 @@ class TestEntry {
   ///
   /// Tests without a creation date sort after dated tests.
   DateTime get sortDate => creationDate ?? DateTime(9999);
-
-  static String _pad(int n) => n.toString().padLeft(2, '0');
 
   @override
   String toString() => 'TestEntry($displayLabel, expect=$expectation)';
