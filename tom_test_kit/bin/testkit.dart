@@ -1,6 +1,6 @@
 /// Tom Test Kit CLI — test result tracking tool.
 ///
-/// Run `test_kit help` or `--help` for full usage information.
+/// Run `testkit help` or `--help` for full usage information.
 library;
 
 import 'dart:io';
@@ -12,7 +12,7 @@ import 'package:utopia_tui/utopia_tui.dart';
 
 import 'package:tom_test_kit/tom_test_kit.dart';
 
-const _toolName = 'test_kit';
+const _toolName = 'testkit';
 
 void main(List<String> args) async {
   // Check for --tui mode (before any other parsing)
@@ -263,12 +263,12 @@ void _printUsage(ArgParser? parser) {
     toolName: 'Test Kit',
     toolDescription: 'Test result tracking for Dart projects',
     usagePatterns: [
-      'test_kit :baseline [options]',
-      'test_kit :test [options]',
-      'test_kit --tui [--root <path>]',
-      'buildkit :test_kit :baseline [options]',
-      'test_kit help',
-      'test_kit version',
+      'testkit :baseline [options]',
+      'testkit :test [options]',
+      'testkit --tui [--root <path>]',
+      'buildkit :testkit :baseline [options]',
+      'testkit help',
+      'testkit version',
     ],
   )) {
     print(line);
@@ -317,7 +317,7 @@ void _printUsage(ArgParser? parser) {
   print('');
 
   // Standard footer
-  for (final line in getToolHelpFooter(toolName: 'test_kit')) {
+  for (final line in getToolHelpFooter(toolName: 'testkit')) {
     print(line);
   }
 }
