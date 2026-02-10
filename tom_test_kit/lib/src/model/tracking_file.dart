@@ -101,48 +101,7 @@ class TrackingFile {
       buf.writeln();
     }
 
-    // --- Summary section (below, after comma separator) ---
 
-    if (runs.isNotEmpty) {
-      final latestRun = runs.last;
-      var passCount = 0;
-      var failCount = 0;
-      var skipCount = 0;
-      for (final entry in sorted) {
-        final result = latestRun.getResult(entry.fullDescription);
-        switch (result) {
-          case TestResult.ok:
-            passCount++;
-          case TestResult.fail:
-            failCount++;
-          case TestResult.skip:
-            skipCount++;
-          case TestResult.absent:
-            break;
-        }
-      }
-
-      // Comma-only separator line (same column count as data rows)
-      final sep = List.filled(2 + runs.length, ',').join();
-      buf.writeln(sep);
-      buf.writeln();
-      buf.writeln('Summary');
-      buf.writeln('Metric,Count');
-      buf.writeln('Total,${sorted.length}');
-      buf.writeln('Passed,$passCount');
-      buf.writeln('Failed,$failCount');
-      if (skipCount > 0) buf.writeln('Skipped,$skipCount');
-      buf.writeln(sep);
-      buf.writeln();
-      buf.writeln('Legend');
-      buf.writeln('Cell,Meaning');
-      buf.writeln('OK/OK,Passed as expected');
-      buf.writeln('X/OK,Regression — failed unexpectedly');
-      buf.writeln('X/FAIL,Known failure — expected');
-      buf.writeln('OK/FAIL,Progress — passed unexpectedly');
-      buf.writeln('SKIP/OK,Skipped — needs attention');
-      buf.writeln('-/OK,Not present in this run');
-    }
 
     final file = File(filePath);
     await file.parent.create(recursive: true);
@@ -204,7 +163,7 @@ class TrackingFile {
     final entries = <String, TestEntry>{};
     for (var i = 1; i < lines.length; i++) {
       final line = lines[i].trim();
-      if (line.isEmpty || _isCommaSeparator(line)) break; // End of results table
+      if (line.isEmpty) break;
 
       final cells = _splitCsvRow(line);
       if (cells.length < 3) continue;
@@ -225,11 +184,6 @@ class TrackingFile {
     }
 
     return TrackingFile(entries: entries, runs: runs);
-  }
-
-  /// Returns true if the line is a comma-only separator (all fields empty).
-  static bool _isCommaSeparator(String line) {
-    return line.isNotEmpty && line.split(',').every((c) => c.trim().isEmpty);
   }
 
   /// Splits a CSV row into cells, handling quoted fields.
