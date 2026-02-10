@@ -169,7 +169,8 @@ Each cell uses the format: `<result>/<expectation>`
 |-------|---------|
 | `OK` | Test passed |
 | `X` | Test failed |
-| `SKIP` | Test was skipped |
+| `-` | Test was skipped |
+| `--` | Test was not present in this run |
 
 | Expectation | Source | Meaning |
 |-------------|--------|---------|
@@ -184,8 +185,9 @@ Each cell uses the format: `<result>/<expectation>`
 | `X/OK` | Failed unexpectedly — **regression** |
 | `X/X` | Failed as expected — known issue |
 | `OK/X` | Passed unexpectedly — **progress** (bug may be fixed) |
-| `SKIP/OK` | Skipped — needs attention |
-| `SKIP/X` | Skipped known failure — acceptable |
+| `-/OK` | Skipped — needs attention |
+| `-/X` | Skipped known failure — acceptable |
+| `--/OK` | Not present in this run |
 
 ### Sorting Order
 
@@ -195,7 +197,8 @@ Rows in the tracking file are sorted by priority based on the **latest run**:
 2. **Failed (expected)** — `X/X` — Known issues
 3. **Passed (unexpected)** — `OK/X` — Potential fixes to verify
 4. **Passed (expected)** — `OK/OK` — Healthy tests
-5. **Skipped** — `SKIP/*` — Last
+5. **Skipped** — `-/*` — Last
+6. **Absent** — `--/*` — Not present
 
 Within each group, tests are sorted by creation date (oldest first), extracted from the `[YYYY-MM-DD HH:MM]` annotation in the test description. Tests without a creation date sort after dated tests.
 

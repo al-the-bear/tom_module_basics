@@ -59,8 +59,8 @@ DateTime? parseColumnTimestamp(String header) {
 TestResult parseResultCell(String cell) {
   if (cell.startsWith('OK')) return TestResult.ok;
   if (cell.startsWith('X')) return TestResult.fail;
-  if (cell.startsWith('SKIP')) return TestResult.skip;
-  if (cell.startsWith('-')) return TestResult.absent;
+  if (cell.startsWith('--')) return TestResult.absent;
+  if (cell.startsWith('-')) return TestResult.skip;
   return TestResult.absent;
 }
 

@@ -70,12 +70,12 @@ void main() {
       expect(parseResultCell('X/OK'), equals(TestResult.fail));
     });
 
-    test('TK-MDT-12: should parse SKIP/OK as skip', () {
-      expect(parseResultCell('SKIP/OK'), equals(TestResult.skip));
+    test('TK-MDT-12: should parse -/OK as skip', () {
+      expect(parseResultCell('-/OK'), equals(TestResult.skip));
     });
 
-    test('TK-MDT-13: should parse -/OK as absent', () {
-      expect(parseResultCell('-/OK'), equals(TestResult.absent));
+    test('TK-MDT-13: should parse --/OK as absent', () {
+      expect(parseResultCell('--/OK'), equals(TestResult.absent));
     });
 
     test('TK-MDT-14: should return absent for unknown cell', () {

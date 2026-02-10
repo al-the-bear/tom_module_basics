@@ -7,8 +7,8 @@ void main() {
     test('TK-RUN-1: should have correct labels', () {
       expect(TestResult.ok.label, equals('OK'));
       expect(TestResult.fail.label, equals('X'));
-      expect(TestResult.skip.label, equals('SKIP'));
-      expect(TestResult.absent.label, equals('-'));
+      expect(TestResult.skip.label, equals('-'));
+      expect(TestResult.absent.label, equals('--'));
     });
   });
 
@@ -87,7 +87,7 @@ void main() {
       expect(formatResultCell(TestResult.ok, 'OK'), equals('OK/OK'));
       expect(formatResultCell(TestResult.fail, 'FAIL'), equals('X/X'));
       expect(formatResultCell(TestResult.ok, 'FAIL'), equals('OK/X'));
-      expect(formatResultCell(TestResult.skip, 'OK'), equals('SKIP/OK'));
+      expect(formatResultCell(TestResult.skip, 'OK'), equals('-/OK'));
     });
   });
 

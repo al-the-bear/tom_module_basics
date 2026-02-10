@@ -10,10 +10,10 @@ enum TestResult {
   fail('X'),
 
   /// Test was skipped.
-  skip('SKIP'),
+  skip('-'),
 
   /// Test was not present in this run.
-  absent('-');
+  absent('--');
 
   final String label;
   const TestResult(this.label);
