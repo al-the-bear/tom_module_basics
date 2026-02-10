@@ -87,6 +87,29 @@ class DartTestParser {
     return (strippedName, segments.isNotEmpty ? segments.join(' > ') : null);
   }
 
+  /// Options that must not appear in additional args because they would
+  /// break JSON output parsing or cause the process to hang.
+  static const _forbiddenArgs = [
+    '--reporter',
+    '-r',
+    '--file-reporter',
+    '--pause-after-load',
+    '--debug',
+  ];
+
+  /// Checks whether [args] contain any forbidden options.
+  ///
+  /// Returns the first forbidden option found, or null if all are safe.
+  static String? findForbiddenArg(List<String> args) {
+    for (final arg in args) {
+      final normalized = arg.contains('=') ? arg.split('=').first : arg;
+      for (final forbidden in _forbiddenArgs) {
+        if (normalized == forbidden) return forbidden;
+      }
+    }
+    return null;
+  }
+
   /// Runs `dart test --reporter json` in the given directory and parses output.
   ///
   /// [projectPath] is the working directory for `dart test`.
@@ -97,6 +120,17 @@ class DartTestParser {
     List<String> additionalArgs = const [],
     bool verbose = false,
   }) async {
+    // Validate that additional args don't contain forbidden options
+    final forbidden = findForbiddenArg(additionalArgs);
+    if (forbidden != null) {
+      stderr.writeln('Error: "$forbidden" cannot be used in --test-args.');
+      stderr.writeln('testkit requires --reporter json for result parsing.');
+      if (forbidden == '--pause-after-load' || forbidden == '--debug') {
+        stderr.writeln('$forbidden would prevent the process from completing.');
+      }
+      return null;
+    }
+
     final args = ['test', '--reporter', 'json', ...additionalArgs];
 
     if (verbose) {

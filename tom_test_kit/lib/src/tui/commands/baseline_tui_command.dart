@@ -41,7 +41,20 @@ class BaselineTuiCommand extends TuiCommand {
     final dartArgs = ['test', '--reporter', 'json'];
     final additionalArgs = args['test-args'];
     if (additionalArgs != null && additionalArgs.isNotEmpty) {
-      dartArgs.addAll(additionalArgs.split(' '));
+      final splitArgs = additionalArgs.split(' ');
+      final forbidden = DartTestParser.findForbiddenArg(splitArgs);
+      if (forbidden != null) {
+        sink.log('Error: "$forbidden" cannot be used in --test-args.',
+            level: TuiLogLevel.error);
+        sink.log('testkit requires --reporter json for result parsing.',
+            level: TuiLogLevel.error);
+        sink.done(summary: 'Forbidden test arg: $forbidden');
+        return TuiCommandResult(
+          success: false,
+          summary: 'Forbidden test arg: $forbidden',
+        );
+      }
+      dartArgs.addAll(splitArgs);
     }
 
     final process = await Process.start(
