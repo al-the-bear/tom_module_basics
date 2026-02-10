@@ -158,7 +158,7 @@ class TuiOutputPanel extends TuiComponent {
     surface.putText(rect.x + 2, rect.y + 2, 'and press Enter to run it.',
         style: style);
     surface.putText(rect.x + 2, rect.y + 4,
-        'Use arrow keys to navigate, q to quit.', style: style);
+        'Use arrow keys to navigate, Ctrl+C to quit.', style: style);
   }
 
   void _paintRunning(TuiSurface surface, TuiRect rect) {

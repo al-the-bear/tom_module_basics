@@ -79,11 +79,6 @@ class TestKitTuiApp extends TuiApp {
       return;
     }
 
-    // Quit with q (only when not running)
-    if (event.isPrintable && event.char == 'q' && !_commandRunning) {
-      return; // Let Ctrl+C handle quit; q just returns to idle
-    }
-
     // Escape returns to menu / idle
     if (event.code == TuiKeyCode.escape) {
       if (_commandRunning) {
