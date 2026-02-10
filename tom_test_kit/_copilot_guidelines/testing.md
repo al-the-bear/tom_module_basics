@@ -23,6 +23,9 @@ Test files mirror the source structure under `test/`:
 | `test/model/tracking_file_test.dart` | `lib/src/model/tracking_file.dart` | TrackingFile round-trip (write → load), addRun, sortedEntries |
 | `test/parser/test_description_parser_test.dart` | `lib/src/parser/test_description_parser.dart` | Parsing IDs, dates, expectations from descriptions |
 | `test/parser/dart_test_parser_test.dart` | `lib/src/parser/dart_test_parser.dart` | Parsing JSON output from dart test |
+| `test/tui/tui_command_test.dart` | `lib/src/tui/tui_command.dart` | TuiCommandSink event delivery, TuiCommandResult |
+| `test/tui/tui_command_registry_test.dart` | `lib/src/tui/tui_command_registry.dart` | Command/module registration, lookup, menu labels |
+| `test/tui/tui_output_parser_test.dart` | `lib/src/tui/tui_output_parser.dart` | Protocol and passthrough line parsing |
 | `test/util/format_helpers_test.dart` | `lib/src/util/format_helpers.dart` | padTwo, escapeMarkdownCell, baselineTimestamp |
 | `test/util/markdown_table_test.dart` | `lib/src/util/markdown_table.dart` | splitTableRow, parseColumnTimestamp, parseResultCell, parseEntryFromLabel |
 | `test/util/file_helpers_test.dart` | `lib/src/util/file_helpers.dart` | defaultBaselinePath, findLatestTrackingFile |
@@ -47,6 +50,12 @@ Test IDs use the format: `TK-<CATEGORY>-<number>`
 | Tracking file | `TRK` | `TrackingFile` round-trip, merge, sort |
 | Description parser | `TDP` | `TestDescriptionParser.parse` |
 | Dart test parser | `DTP` | `DartTestParser.parseJsonOutput` |
+| TUI command | `TCD` | `TuiCommand`, `TuiCommandSink`, `TuiCommandEvent`, `TuiCommandResult` |
+| TUI registry | `TRG` | `TuiCommandRegistry` registration, lookup, menu labels |
+| TUI output parser | `TOP` | `TuiProtocolParser`, `PassthroughParser` line parsing |
+| TUI adapter | `TAD` | `ExternalToolAdapter` process wrapping |
+| TUI app | `TAP` | `TestKitTuiApp` keyboard handling, layout, focus |
+| TUI panels | `TPN` | `TuiOutputPanel`, `TuiMenuPanel` state, rendering |
 
 > **Note:** Add new categories as new commands and modules are added to the tool.
 

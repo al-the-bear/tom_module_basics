@@ -8,12 +8,19 @@ import 'dart:io';
 import 'package:args/args.dart';
 import 'package:path/path.dart' as p;
 import 'package:tom_build_base/tom_build_base.dart';
+import 'package:utopia_tui/utopia_tui.dart';
 
 import 'package:tom_test_kit/tom_test_kit.dart';
 
 const _toolName = 'test_kit';
 
 void main(List<String> args) async {
+  // Check for --tui mode (before any other parsing)
+  if (args.contains('--tui')) {
+    await _runTuiMode(args.where((a) => a != '--tui').toList());
+    return;
+  }
+
   // Check for help command first (before parsing)
   if (isHelpCommand(args)) {
     _printUsage(null);
@@ -33,6 +40,7 @@ void main(List<String> args) async {
     stderr.writeln('Error: No subcommand specified.');
     stderr.writeln('');
     stderr.writeln('Available subcommands: :baseline, :test');
+    stderr.writeln('Or use --tui for interactive mode.');
     stderr.writeln('Run "$_toolName help" for usage information.');
     exitCode = 1;
     return;
@@ -254,6 +262,7 @@ void _printUsage(ArgParser? parser) {
     usagePatterns: [
       'test_kit :baseline [options]',
       'test_kit :test [options]',
+      'test_kit --tui [--root <path>]',
       'buildkit :test_kit :baseline [options]',
       'test_kit help',
       'test_kit version',
@@ -270,6 +279,7 @@ void _printUsage(ArgParser? parser) {
 
   // Tool-specific options
   print('Tool Options:');
+  print('      --tui            Launch interactive TUI dashboard');
   print('      --output=<path>  Output file path (overrides default)');
   print('      --file=<path>    Tracking file to update (:test only)');
   print('      --test-args=<args>  Additional arguments passed to dart test');
@@ -314,4 +324,46 @@ void _printVersion() {
   print('Test Kit $version+$buildNumber');
   if (gitCommit != 'unknown') print('Git: $gitCommit');
   if (buildTimestamp.isNotEmpty) print('Built: $buildTimestamp');
+}
+
+/// Runs the TUI mode — full-screen interactive dashboard.
+Future<void> _runTuiMode(List<String> args) async {
+  // Parse minimal args for project path
+  final tuiParser = ArgParser()
+    ..addOption('root', abbr: 'R', help: 'Project root directory');
+  addNavigationOptions(tuiParser);
+
+  final (processedArgs, bareRoot) = preprocessRootFlag(args);
+  final ArgResults results;
+  try {
+    results = tuiParser.parse(processedArgs);
+  } catch (e) {
+    stderr.writeln('Error: $e');
+    exitCode = 1;
+    return;
+  }
+
+  final navArgs = parseNavigationArgs(results, bareRoot: bareRoot);
+  final currentDir = Directory.current.path;
+
+  String projectPath;
+  try {
+    projectPath = resolveExecutionRoot(navArgs, currentDir: currentDir);
+  } on ArgumentError catch (e) {
+    stderr.writeln('Error: ${e.message}');
+    exitCode = 1;
+    return;
+  }
+
+  // Build command registry with built-in commands
+  final registry = TuiCommandRegistry()
+    ..registerCommand(BaselineTuiCommand())
+    ..registerCommand(TestTuiCommand());
+
+  // Launch TUI
+  final app = TestKitTuiApp(
+    registry: registry,
+    projectPath: projectPath,
+  );
+  await TuiRunner(app).run();
 }
