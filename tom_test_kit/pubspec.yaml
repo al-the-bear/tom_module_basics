@@ -1,14 +1,16 @@
 name: tom_test_kit
-description: A starting point for Dart libraries or applications.
-version: 1.0.0
-# repository: https://github.com/my_org/my_repo
+description: Test result tracking tool for Dart projects.
+version: 0.1.0
+publish_to: none
 
 environment:
   sdk: ^3.10.4
 
-# Add regular dependencies here.
 dependencies:
-  # path: ^1.9.0
+  args: ^2.6.0
+  path: ^1.9.1
+  tom_build_base:
+    path: ../tom_build_base
 
 dev_dependencies:
   lints: ^6.0.0

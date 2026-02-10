@@ -28,6 +28,12 @@ This folder contains project-specific guidelines for the `tom_build_kit` package
 **Documentation:**
 - [Tools User Guide](../doc/tools_user_guide.md) — Individual tool reference
 - [BuildKit User Guide](../doc/buildkit_user_guide.md) — Pipeline orchestrator
+- [Git Guide Mode](../doc/git_guide_mode.md) — Guided mode flows for git commands
+- [Standalone Guided Mode](../doc/standalone_guided_mode.md) — Guided mode for Docker, Dart, Flutter tools
+- [BuildKit Guided](../doc/buildkit_guided.md) — `bk -g` workspace build flow proposal
+- [Flutter Commands](../doc/flutter_buildkit_commands.md) — Proposed Flutter-specific BuildKit commands
+- [REPL Integration](../doc/tom_buildkit_repls.md) — Tom CLI / BuildKit REPL assessment
+- [Console UI Libraries](../doc/console_ui_libraries.md) — Library recommendations for interactive CLI
 - [README](../README.md) — Quick start guide
 
 ## Related Packages
