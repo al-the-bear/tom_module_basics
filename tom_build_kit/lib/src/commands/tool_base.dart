@@ -203,6 +203,7 @@ abstract class ToolBase {
       exclude: navArgs.exclude,
       excludeProjects: navArgs.excludeProjects,
       recursionExclude: navArgs.recursionExclude,
+      modules: navArgs.modules,
       basePath: basePath,
     );
   }
@@ -220,6 +221,9 @@ abstract class ToolBase {
   /// defaults from `buildkit_master.yaml` (`navigation:` section).
   /// If the master config defines `scan:`, that is used as the default;
   /// otherwise falls back to processing only the current directory.
+  ///
+  /// When [modules] is provided, filters results to only include projects
+  /// within the specified git modules (repositories).
   Future<List<String>> findProjects({
     String? project,
     String? scan,
@@ -227,6 +231,7 @@ abstract class ToolBase {
     List<String> exclude = const [],
     List<String> excludeProjects = const [],
     List<String> recursionExclude = const [],
+    List<String> modules = const [],
     required String basePath,
   }) async {
     final discovery = ProjectDiscovery(verbose: verbose);
@@ -300,6 +305,17 @@ abstract class ToolBase {
 
     // Remove projects that contain buildkit_skip.yaml
     results = _filterSkippedProjects(results);
+
+    // Apply --modules filtering (include only projects within specified modules)
+    if (modules.isNotEmpty) {
+      results = ProjectDiscovery.applyModulesFilter(
+        results,
+        modules,
+        wsRoot,
+        verbose: verbose,
+        log: (msg) => print(msg),
+      );
+    }
 
     return results;
   }

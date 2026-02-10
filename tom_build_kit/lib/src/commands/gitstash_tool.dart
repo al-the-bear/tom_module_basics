@@ -100,7 +100,19 @@ class GitStashTool extends ToolBase {
     final listStashes = results['list-stashes'] as bool;
     final listMode = results['list'] as bool;
 
-    final repos = _findGitRepositories(executionRoot);
+    var repos = _findGitRepositories(executionRoot);
+
+    // Apply modules filter if specified
+    if (navArgs.modules.isNotEmpty) {
+      final wsRoot = findWorkspaceRoot(executionRoot);
+      repos = ProjectDiscovery.applyModulesFilter(
+        repos,
+        navArgs.modules,
+        wsRoot,
+        verbose: verbose,
+        log: (msg) => print(msg),
+      );
+    }
     
     if (repos.isEmpty) {
       print('No git repositories found in: $executionRoot');

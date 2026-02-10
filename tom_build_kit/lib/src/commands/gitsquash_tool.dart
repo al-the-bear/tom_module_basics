@@ -111,7 +111,19 @@ class GitSquashTool extends ToolBase {
       return false;
     }
 
-    final repos = _findGitRepositories(executionRoot);
+    var repos = _findGitRepositories(executionRoot);
+
+    // Apply modules filter if specified
+    if (navArgs.modules.isNotEmpty) {
+      final wsRoot = findWorkspaceRoot(executionRoot);
+      repos = ProjectDiscovery.applyModulesFilter(
+        repos,
+        navArgs.modules,
+        wsRoot,
+        verbose: verbose,
+        log: (msg) => print(msg),
+      );
+    }
     
     if (repos.isEmpty) {
       print('No git repositories found in: $executionRoot');
@@ -167,7 +179,20 @@ class GitSquashTool extends ToolBase {
     print('Squash merge combines all commits from a branch into a single change.');
     print('');
     
-    final repos = _findGitRepositories(executionRoot);
+    var repos = _findGitRepositories(executionRoot);
+
+    // Apply modules filter if specified
+    if (navArgs.modules.isNotEmpty) {
+      final wsRoot = findWorkspaceRoot(executionRoot);
+      repos = ProjectDiscovery.applyModulesFilter(
+        repos,
+        navArgs.modules,
+        wsRoot,
+        verbose: verbose,
+        log: (msg) => print(msg),
+      );
+    }
+
     if (repos.isEmpty) {
       print('No git repositories found.');
       return false;

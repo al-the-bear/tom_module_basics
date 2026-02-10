@@ -166,6 +166,10 @@ Future<void> main(List<String> args) async {
     ..addMultiOption('exclude-projects',
         help:
             'Exclude projects by name or path (e.g. zom_*, xternal/tom_module_basics/*)')
+    ..addOption('modules',
+        abbr: 'm',
+        help:
+            'Include only projects within specified git modules (comma-separated, use "root" or "tom" for main repo)')
     ..addFlag('build-order',
         abbr: 'b',
         negatable: false,
@@ -498,10 +502,14 @@ Future<void> main(List<String> args) async {
   }
 
   // Apply exclusion filters
+  final modulesOption = results['modules'] as String?;
+  final modules = modulesOption?.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList() ?? <String>[];
+  
   projectPaths = _filterProjectPaths(
     projectPaths,
     exclude: results['exclude'] as List<String>,
     excludeProjects: results['exclude-projects'] as List<String>,
+    modules: modules,
     rootPath: rootPath,
   );
 
@@ -1794,11 +1802,12 @@ Future<bool> _runCommandHelp(String commandName) async {
 }
 
 /// Filter project paths by exclude patterns, exclude-projects patterns,
-/// master YAML exclude-projects, and buildkit_skip.yaml marker files.
+/// master YAML exclude-projects, modules filter, and buildkit_skip.yaml marker files.
 List<String> _filterProjectPaths(
   List<String> projects, {
   required List<String> exclude,
   required List<String> excludeProjects,
+  required List<String> modules,
   required String rootPath,
 }) {
   var result = projects;
@@ -1871,6 +1880,17 @@ List<String> _filterProjectPaths(
     return true;
   }).toList();
 
+  // Apply --modules filtering (include only projects within specified modules)
+  if (modules.isNotEmpty) {
+    result = ProjectDiscovery.applyModulesFilter(
+      result,
+      modules,
+      rootPath,
+      verbose: _verbose,
+      log: (msg) => print(msg),
+    );
+  }
+
   return result;
 }
 
@@ -1889,6 +1909,7 @@ const _knownGlobalFlags = {
   '--root', '-R',
   '--exclude', '-x',
   '--exclude-projects',
+  '--modules', '-m',
   '--build-order', '-b',
   '--list', '-l',
   '--help', '-h',

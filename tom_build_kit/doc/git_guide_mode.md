@@ -2,6 +2,16 @@
 
 This document describes the guided mode (`-g` / `--guide`) for git commands in BuildKit.
 
+## Implementation Status
+
+| Component | Status |
+|-----------|--------|
+| `--guide` flag on all git commands | ✅ Implemented |
+| `GuidedMode` utility class | ✅ Implemented |
+| `ProjectGroupPicker` for scope selection | ✅ Implemented |
+| `gitcommit -g` full flow | ✅ Implemented |
+| Other git commands `-g` | ⏳ Pending (flag added, flow not implemented) |
+
 ## Overview
 
 Guided mode provides a step-by-step, menu-driven interface for git operations across multi-repo workspaces. It is designed as a **use-case-based expert system** that:
@@ -109,45 +119,47 @@ Quick actions:
 ```
 === Git Commit - Guided Mode ===
 
+Repositories with changes:
+  • tom_module_d4rt
+  • tom_core_kernel
+
 Step 1: What files to stage?
   1. All files (git add -A) [default]
   2. Tracked files only (git add -u)
   3. Already staged only (skip staging)
-  4. Pick files to stage
+  4. Select by project scope
   5. Cancel
 
 Choose [1-5]:
 ```
 
-**If "Pick files to stage" selected:**
+**If "Select by project scope" selected:**
 ```
-Select files to stage (space to toggle, enter to confirm):
+What to include?
+  1. All changed projects (complete)
+  2. All changed projects (select scope per project)
+  3. Select specific projects
+  4. Cancel
 
-  [ ] src/
-      [ ] src/main.dart
-      [ ] src/utils/
-          [ ] src/utils/helper.dart
-          [ ] src/utils/parser.dart
-  [x] lib/
-      [x] lib/api.dart
-      [x] lib/models.dart
-  [ ] test/
+Choose [1-4]:
+```
 
-Shortcuts:
-  a - Select all
-  n - Deselect all
-  f - Toggle folder (selects/deselects all children)
-  Enter - Confirm selection
-  Esc - Cancel
+**Project scope selection (using interact MultiSelect):**
+```
+Select scope for tom_core_kernel
+  (Space to toggle, Enter to confirm)
 
-Selected: 2 files
+  [x] Complete project (All files in the project)
+  [ ] Code only (bin/ and lib/ folders)
+  [ ] Examples (example/ folder)
+  [ ] Tests (test/ folder)
 ```
 
 **Step 2: Commit message:**
 ```
 Step 2: Enter commit message
 
-Message: |
+Commit message: |
 
 Hint: Start with a verb (Add, Fix, Update, Refactor, Remove)
       Keep under 72 characters for subject line
@@ -641,56 +653,159 @@ Choose [1-6]:
 
 ## Navigation Patterns
 
-### Universal Commands
+### Menu Selection
 
-Available at any prompt:
+Uses `interact` package's `Select` component:
 
-| Key | Action |
-|-----|--------|
-| `q` | Quit immediately |
-| `b` | Go back one step |
-| `?` | Show help for current step |
-| `!` | Show command preview |
-| `Enter` | Select default option |
+```
+What files to stage?
+  > All files (git add -A) [default]
+    Tracked files only (git add -u)
+    Already staged only
+    Select by project scope
+    Cancel
+
+Use arrow keys to navigate, Enter to select
+```
+
+### Confirmation
+
+Uses `interact` package's `Confirm` component:
+
+```
+Proceed? [Y/n]: 
+```
+
+- Y or Enter - Confirm
+- n - Cancel
 
 ### Selection Lists
 
-```
-Multi-select (space to toggle):
-  [x] Option A
-  [ ] Option B
-  [x] Option C
+Uses `interact` package's `MultiSelect` component:
 
-Keys:
-  Space - Toggle selection
-  a     - Select all
-  n     - Deselect all
-  Enter - Confirm
-  Esc   - Cancel
 ```
+Select scope (Space to toggle, Enter to confirm):
+
+  [x] Complete project
+  [ ] Code only
+  [ ] Examples
+  [x] Tests
+```
+
+Keys (provided by interact):
+- Space - Toggle selection
+- Up/Down - Navigate
+- Enter - Confirm
 
 ### File/Folder Trees
 
-```
-Navigate files:
-  ↑/↓  - Move cursor
-  →    - Expand folder
-  ←    - Collapse folder
-  Space - Toggle selection
-  f    - Toggle folder (all children)
-  Enter - Confirm
+For git operations, use the `ProjectGroupPicker` instead of individual file selection:
+
+```dart
+final picker = ProjectGroupPicker(
+  workspaceRoot: executionRoot,
+  changedProjects: reposWithChanges,
+);
+
+final selection = picker.pick();
+if (selection == null || selection.isEmpty) {
+  // Cancelled
+  return true;
+}
+
+// Get paths to stage based on selected scopes
+final paths = selection.getFilePaths();
 ```
 
 ---
 
 ## Implementation Notes
 
-### Required Libraries
+### Library: interact
 
-For enhanced console UI:
-- **dart_console** - ANSI escape codes, cursor positioning
-- **chalkdart** or **ansicolor** - Colored output
-- **tint** - Terminal styling
+Guided mode uses the `interact` package for cross-platform interactive prompts:
+
+```dart
+import 'package:interact/interact.dart';
+
+// Single select menu
+final choice = Select(
+  prompt: 'What files to stage?',
+  options: ['All files (git add -A)', 'Tracked only', 'By project scope'],
+).interact();
+
+// Multi-select with checkboxes
+final scopes = MultiSelect(
+  prompt: 'Select scope',
+  options: ['Complete project', 'Code only', 'Examples', 'Tests'],
+  defaults: [true, false, false, false],
+).interact();
+
+// Confirmation
+final proceed = Confirm(
+  prompt: 'Execute commands?',
+  defaultValue: true,
+).interact();
+
+// Text input
+final message = Input(
+  prompt: 'Commit message',
+).interact();
+```
+
+### Project Scopes
+
+For git operations, files are selected by project scope rather than individual files:
+
+| Scope | Folders | Description |
+|-------|---------|-------------|
+| Complete project | `.` | All files in the project |
+| Code only | `bin/`, `lib/` | Source code folders |
+| Examples | `example/` | Example code |
+| Tests | `test/` | Test files |
+
+### Guided Mode Utilities
+
+Implementation in `lib/src/guided/`:
+
+| File | Purpose |
+|------|---------|---|
+| `guided_mode.dart` | `GuidedMode` class with menu, multiSelect, confirm, input, showPreview |
+| `project_group_picker.dart` | `ProjectGroupPicker` for project scope selection |
+| `guided.dart` | Barrel export |
+
+### Usage in Tools
+
+```dart
+import '../guided/guided.dart';
+
+Future<bool> _runGuided(String executionRoot, WorkspaceNavigationArgs navArgs) async {
+  final guide = GuidedMode();
+  
+  guide.header('Git Commit - Guided Mode');
+  
+  // Show menu
+  final choice = guide.menu(
+    'What files to stage?',
+    ['All files', 'Tracked only', 'By project scope'],
+  );
+  
+  if (choice == -1) return true; // Cancelled
+  
+  // Get commit message
+  final message = guide.input('Commit message');
+  
+  // Show preview and confirm
+  guide.showPreview(
+    command: 'git commit -m "$message"',
+    repositories: reposWithChanges,
+  );
+  
+  if (!guide.confirm('Proceed?')) return true;
+  
+  // Execute...
+}
+```
 
 ### State Machine
 

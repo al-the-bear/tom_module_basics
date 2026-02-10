@@ -143,7 +143,19 @@ class GitCommitTool extends ToolBase {
     }
 
     // Find git repositories
-    final repos = _findGitRepositories(executionRoot);
+    var repos = _findGitRepositories(executionRoot);
+    
+    // Apply modules filter if specified
+    if (navArgs.modules.isNotEmpty) {
+      final wsRoot = findWorkspaceRoot(executionRoot);
+      repos = ProjectDiscovery.applyModulesFilter(
+        repos,
+        navArgs.modules,
+        wsRoot,
+        verbose: verbose,
+        log: (msg) => print(msg),
+      );
+    }
     
     if (repos.isEmpty) {
       print('No git repositories found in: $executionRoot');
@@ -430,7 +442,20 @@ class GitCommitTool extends ToolBase {
     guide.header('Git Commit - Guided Mode');
 
     // Find repositories with changes
-    final repos = _findGitRepositories(executionRoot);
+    var repos = _findGitRepositories(executionRoot);
+    
+    // Apply modules filter if specified
+    if (navArgs.modules.isNotEmpty) {
+      final wsRoot = findWorkspaceRoot(executionRoot);
+      repos = ProjectDiscovery.applyModulesFilter(
+        repos,
+        navArgs.modules,
+        wsRoot,
+        verbose: verbose,
+        log: (msg) => print(msg),
+      );
+    }
+    
     if (repos.isEmpty) {
       guide.info('No git repositories found.');
       return true;
