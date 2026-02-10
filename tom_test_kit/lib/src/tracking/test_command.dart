@@ -5,6 +5,7 @@ import 'package:path/path.dart' as p;
 import '../model/tracking_file.dart';
 import '../parser/dart_test_parser.dart';
 import '../util/file_helpers.dart';
+import 'baseline_command.dart';
 
 /// Implements the `:test` subcommand.
 ///
@@ -17,6 +18,7 @@ class TestCommand {
   /// [trackingFilePath] overrides which tracking file to update.
   /// [testArgs] are additional arguments passed to `dart test`.
   /// [verbose] enables diagnostic output.
+  /// [createBaseline] if true, creates a baseline when no tracking file exists.
   ///
   /// Returns true on success, false on failure.
   static Future<bool> run({
@@ -24,14 +26,25 @@ class TestCommand {
     String? trackingFilePath,
     List<String> testArgs = const [],
     bool verbose = false,
+    bool createBaseline = false,
   }) async {
     // Find the tracking file
     final filePath =
         trackingFilePath ?? findLatestTrackingFile(projectPath);
 
     if (filePath == null) {
+      if (createBaseline) {
+        if (verbose) {
+          print('  No tracking file found — creating baseline.');
+        }
+        return BaselineCommand.run(
+          projectPath: projectPath,
+          testArgs: testArgs,
+          verbose: verbose,
+        );
+      }
       stderr.writeln('[$projectPath] No tracking file found. '
-          'Run :baseline first to create one.');
+          'Run :baseline first, or use --baseline to create one.');
       return false;
     }
 

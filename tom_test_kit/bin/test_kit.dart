@@ -57,6 +57,8 @@ void main(List<String> args) async {
         help: 'Tracking file to update (:test only)')
     ..addOption('test-args',
         help: 'Additional arguments passed to dart test')
+    ..addFlag('baseline',
+        help: 'Create baseline if no tracking file exists (:test only)')
     ..addFlag('verbose', abbr: 'v', help: 'Enable verbose output')
     ..addFlag('list',
         abbr: 'l', help: 'List projects that would be processed (no action)')
@@ -162,6 +164,7 @@ void main(List<String> args) async {
           trackingFilePath: trackingFile,
           testArgs: testArgs,
           verbose: verbose,
+          createBaseline: results['baseline'] as bool,
         );
       default:
         stderr.writeln('Unknown subcommand: :$subcommand');
