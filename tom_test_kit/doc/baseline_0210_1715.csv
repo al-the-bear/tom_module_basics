@@ -1,0 +1,88 @@
+ID,Groups,Description,Baseline [02-10 17:15]
+TK-FIL-4,findLatestTrackingFile,should return null when no baseline files exist,OK/OK
+TK-FMT-2,padTwo,should not pad two-digit number,OK/OK
+TK-FMT-3,padTwo,should zero-pad zero,OK/OK
+TK-FMT-4,padTwo,should handle three-digit number without truncating,OK/OK
+TK-FMT-5,escapeMarkdownCell,should escape pipe characters,OK/OK
+TK-FMT-6,escapeMarkdownCell,should return unchanged text without pipes,OK/OK
+TK-FMT-7,baselineTimestamp,should format as MMDD_HHMM,OK/OK
+TK-MDT-1,splitTableRow,should split a simple row into cells,OK/OK
+TK-MDT-2,splitTableRow,should handle escaped pipes within cells,OK/OK
+TK-MDT-3,splitTableRow,should return empty list for non-table line,OK/OK
+TK-MDT-4,splitTableRow,should return empty list for empty string,OK/OK
+TK-MDT-5,splitTableRow,should handle single-cell row,OK/OK
+TK-MDT-6,parseColumnTimestamp,should parse Baseline header,OK/OK
+TK-MDT-7,parseColumnTimestamp,should parse non-baseline header,OK/OK
+TK-MDT-8,parseColumnTimestamp,should return null for invalid header,OK/OK
+TK-FIL-1,defaultBaselinePath,should create path with MMDD_HHMM timestamp,OK/OK
+TK-MDT-9,parseColumnTimestamp,should return null for empty string,OK/OK
+TK-FIL-2,defaultBaselinePath,should zero-pad month and day,OK/OK
+TK-MDT-10,parseResultCell,should parse OK/OK as ok,OK/OK
+TK-MDT-11,parseResultCell,should parse X/OK as fail,OK/OK
+TK-MDT-12,parseResultCell,should parse -/OK as skip,OK/OK
+TK-MDT-13,parseResultCell,should parse --/OK as absent,OK/OK
+TK-MDT-14,parseResultCell,should return absent for unknown cell,OK/OK
+TK-FIL-3,findLatestTrackingFile,should return null when doc/ does not exist,OK/OK
+TK-MDT-15,parseEntryFromLabel,"should parse full label with ID, date, and expectation",OK/OK
+TK-MDT-16,parseEntryFromLabel,should parse label without ID,OK/OK
+TK-MDT-17,parseEntryFromLabel,should parse label with ID but no date or expectation,OK/OK
+TK-MDT-18,parseEntryFromLabel,should default expectation to OK when PASS is specified,OK/OK
+TK-MDT-19,parseEntryFromColumns,"should parse ID, groups, and description columns",OK/OK
+TK-FMT-1,padTwo,should zero-pad single digit,OK/OK
+TK-MDT-20,parseEntryFromColumns,should handle empty ID and groups,OK/OK
+TK-MDT-21,parseEntryFromColumns,should extract date and FAIL from description,OK/OK
+TK-FIL-5,findLatestTrackingFile,should return the latest baseline file by name sort,OK/OK
+TK-DTP-1,DartTestParser > parseJsonOutput,should parse a passing test from JSON events,OK/OK
+TK-DTP-2,DartTestParser > parseJsonOutput,should parse a failing test,OK/OK
+TK-DTP-3,DartTestParser > parseJsonOutput,should parse a skipped test,OK/OK
+TK-DTP-4,DartTestParser > parseJsonOutput,"should skip ""loading"" tests",OK/OK
+TK-DTP-5,DartTestParser > parseJsonOutput,should skip hidden tests,OK/OK
+TK-DTP-6,DartTestParser > parseJsonOutput,should handle multiple tests mixed pass/fail,OK/OK
+TK-DTP-7,DartTestParser > parseJsonOutput,should skip non-JSON lines gracefully,OK/OK
+TK-DTP-8,DartTestParser > parseJsonOutput,should handle empty input,OK/OK
+TK-TDP-1,TestDescriptionParser > parse,should extract ID before first colon,OK/OK
+TK-DTP-9,DartTestParser > parseJsonOutput,should extract single group and strip from name,OK/OK
+TK-TDP-2,TestDescriptionParser > parse,should extract creation date [YYYY-MM-DD HH:MM],OK/OK
+TK-TDP-3,TestDescriptionParser > parse,should extract FAIL expectation,OK/OK
+TK-TDP-4,TestDescriptionParser > parse,should extract PASS expectation as OK,OK/OK
+TK-DTP-10,DartTestParser > parseJsonOutput,should extract nested groups with > separator,OK/OK
+TK-TDP-5,TestDescriptionParser > parse,should default expectation to OK when absent,OK/OK
+TK-DTP-11,DartTestParser > parseJsonOutput,should handle test with only root group (no groups),OK/OK
+TK-TDP-6,TestDescriptionParser > parse,should parse full description with all components,OK/OK
+TK-ENT-1,TestEntry > displayLabel,should include ID and description when ID is present,OK/OK
+TK-TDP-7,TestDescriptionParser > parse,should preserve fullDescription as-is,OK/OK
+TK-ENT-2,TestEntry > displayLabel,should omit ID prefix when ID is null,OK/OK
+TK-TDP-8,TestDescriptionParser > parse,should handle description without any metadata,OK/OK
+TK-TDP-9,TestDescriptionParser > parse,should store suite when provided,OK/OK
+TK-TDP-10,TestDescriptionParser > parse,should handle ID-only description (no extra text),OK/OK
+TK-ENT-3,TestEntry > displayLabel,should include creation date when present,OK/OK
+TK-RUN-14,SortableTestEntry,should compute sort priority from entry and result,OK/OK
+TK-ENT-5,TestEntry > sortDate,should return creationDate when present,OK/OK
+TK-ENT-6,TestEntry > sortDate,should return far-future date when creationDate is null,OK/OK
+TK-ENT-7,TestEntry > expectation,should default to OK,OK/OK
+TK-TRK-1,TrackingFile > fromBaseline,should create tracking file with entries and one run,OK/OK
+TK-TRK-2,TrackingFile > addRun,should append a run and merge new entries,OK/OK
+TK-TRK-3,TrackingFile > addRun,should mark missing tests as absent in new run,OK/OK
+TK-ENT-8,TestEntry > groups,should store group path when provided,OK/OK
+TK-ENT-9,TestEntry > descriptionLabel,should include date and FAIL marker,OK/OK
+TK-TRK-4,TrackingFile > sortedEntries,should sort regressions before healthy tests,OK/OK
+TK-ENT-10,TestEntry > descriptionLabel,should omit FAIL marker when expectation is OK,OK/OK
+TK-TRK-5,TrackingFile > sortedEntries,should sort by creation date within same priority group,OK/OK
+TK-TRK-6,TrackingFile > write and load round-trip,should write and reload a baseline tracking file,OK/OK
+TK-TRK-7,TrackingFile > write and load round-trip,should preserve results across round-trip,OK/OK
+TK-TRK-8,TrackingFile > write and load round-trip,should preserve multiple runs across round-trip,OK/OK
+TK-TRK-9,TrackingFile > load,should return null for non-existent file,OK/OK
+TK-RUN-1,TestResult,should have correct labels,OK/OK
+TK-RUN-2,TestRun > columnHeader,should include Baseline prefix when isBaseline is true,OK/OK
+TK-RUN-3,TestRun > columnHeader,should omit prefix when isBaseline is false,OK/OK
+TK-RUN-4,TestRun > setResult / getResult,should store and retrieve a result,OK/OK
+TK-RUN-5,TestRun > setResult / getResult,should return absent for unknown test,OK/OK
+TK-RUN-6,TestRun > constructor,should accept pre-populated results map,OK/OK
+TK-RUN-7,resultSortPriority,regression (X/OK) should be highest priority,OK/OK
+TK-RUN-8,resultSortPriority,expected failure (X/X) should be priority 1,OK/OK
+TK-RUN-9,resultSortPriority,progress (OK/X) should be priority 2,OK/OK
+TK-RUN-10,resultSortPriority,healthy (OK/OK) should be priority 3,OK/OK
+TK-RUN-11,resultSortPriority,skip should be priority 4,OK/OK
+TK-RUN-12,resultSortPriority,absent should be priority 5,OK/OK
+TK-RUN-13,formatResultCell,should format as result/expectation,OK/OK
+TK-ENT-4,TestEntry > displayLabel,should omit date when creationDate is null,OK/OK
