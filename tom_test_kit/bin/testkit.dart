@@ -40,7 +40,8 @@ void main(List<String> args) async {
     stderr.writeln('Error: No subcommand specified.');
     stderr.writeln('');
     stderr.writeln('Available subcommands: :baseline, :test, :runs, :status, '
-        ':basediff, :lastdiff, :diff, :crossreference, :reset');
+        ':basediff, :lastdiff, :diff, :history, :flaky, :crossreference, '
+        ':trim, :reset');
     stderr.writeln('Or use --tui for interactive mode.');
     stderr.writeln('Run "$_toolName help" for usage information.');
     exitCode = 1;
@@ -84,8 +85,9 @@ void main(List<String> args) async {
   try {
     results = parser.parse(processedArgs);
 
-    // :diff accepts positional timestamp args; others do not
-    if (results.rest.isNotEmpty && subcommand != 'diff') {
+    // :diff, :history, :trim accept positional args; others do not
+    final positionalCommands = {'diff', 'history', 'trim'};
+    if (results.rest.isNotEmpty && !positionalCommands.contains(subcommand)) {
       stderr.writeln('Error: Unknown arguments: ${results.rest.join(' ')}\n');
       _printUsage(parser);
       exitCode = 1;
@@ -258,6 +260,47 @@ void main(List<String> args) async {
           output: outputSpec,
           verbose: verbose,
         );
+      case 'history':
+        if (results.rest.isEmpty) {
+          stderr.writeln('Error: :history requires a test name or ID.');
+          stderr.writeln('Usage: testkit :history <test-name>');
+          exitCode = 1;
+          return;
+        }
+        success = await HistoryCommand.run(
+          projectPath: projectPath,
+          testName: results.rest.join(' '),
+          baselineFile: baselineFile,
+          output: outputSpec,
+          verbose: verbose,
+        );
+      case 'flaky':
+        success = await FlakyCommand.run(
+          projectPath: projectPath,
+          baselineFile: baselineFile,
+          output: outputSpec,
+          verbose: verbose,
+        );
+      case 'trim':
+        if (results.rest.isEmpty) {
+          stderr.writeln('Error: :trim requires a count.');
+          stderr.writeln('Usage: testkit :trim <n>');
+          exitCode = 1;
+          return;
+        }
+        final keepCount = int.tryParse(results.rest.first);
+        if (keepCount == null || keepCount < 1) {
+          stderr.writeln('Error: :trim requires a positive integer.');
+          exitCode = 1;
+          return;
+        }
+        success = await TrimCommand.run(
+          projectPath: projectPath,
+          keepCount: keepCount,
+          baselineFile: baselineFile,
+          force: forceFlag,
+          verbose: verbose,
+        );
       case 'reset':
         success = await ResetCommand.run(
           projectPath: projectPath,
@@ -303,7 +346,7 @@ void main(List<String> args) async {
   // Also support without colon prefix
   const knownCommands = {
     'baseline', 'test', 'runs', 'status', 'basediff', 'lastdiff', 'diff',
-    'crossreference', 'crossref', 'xref', 'reset',
+    'history', 'flaky', 'crossreference', 'crossref', 'xref', 'trim', 'reset',
   };
   if (knownCommands.contains(first)) {
     return (first, args.sublist(1));
@@ -386,9 +429,12 @@ void _printUsage(ArgParser? parser) {
   print('  :basediff            Diff baseline vs latest run');
   print('  :lastdiff            Diff previous run vs latest run');
   print('  :diff <ts> [<ts2>]   Diff two arbitrary runs by timestamp');
+  print('  :history <name>      Show all results for a test across runs');
+  print('  :flaky               List tests with inconsistent results across runs');
   print('  :crossreference      Map tests to source files (aliases: :crossref, :xref)');
   print('');
   print('  Maintenance commands:');
+  print('  :trim <n>            Keep only the last N runs (baseline always preserved)');
   print('  :reset               Delete all tracking files (with confirmation)');
   print('');
 
@@ -406,7 +452,7 @@ void _printUsage(ArgParser? parser) {
   print('                           or <format>:<filename> to write to file');
   print('      --full               Include error details from last_testrun.json');
   print('      --report=<file>      Generate detailed Markdown report to file');
-  print('      --force              Skip confirmation prompts (:reset)');
+  print('      --force              Skip confirmation prompts (:reset, :trim)');
   print('');
   print('  General options:');
   print('  -v, --verbose            Enable verbose output');
