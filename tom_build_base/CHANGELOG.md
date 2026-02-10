@@ -1,3 +1,20 @@
+## 1.5.0
+
+### Features
+
+- **`--modules` / `-m` navigation option** — New include filter to limit project discovery to specific git modules (repositories). Comma-separated list of module names (e.g., `--modules tom_module_d4rt,tom_module_basics`). Use "root" or "tom" to reference the main repository.
+- **`ProjectDiscovery.findGitRepositories()`** — Static method to discover all git repositories in a workspace.
+- **`ProjectDiscovery.resolveModulePaths()`** — Resolve module names to absolute paths.
+- **`ProjectDiscovery.filterByModules()`** — Filter project list to only those within specified modules.
+- **`ProjectDiscovery.applyModulesFilter()`** — Convenience method combining resolution and filtering.
+
+### API Changes
+
+- `WorkspaceNavigationArgs` now includes a `modules` field (List<String>).
+- `addNavigationOptions()` registers the `-m, --modules` option.
+- `parseNavigationArgs()` parses the modules option as comma-separated values.
+- Help text updated with modules documentation.
+
 ## 1.3.2
 
 ### Internal

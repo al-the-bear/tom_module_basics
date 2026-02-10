@@ -59,6 +59,12 @@ class WorkspaceNavigationArgs {
   /// Exclude patterns during recursive scan.
   final List<String> recursionExclude;
 
+  /// Include only projects within specified git modules (comma-separated).
+  ///
+  /// Module names are git repository folder names (e.g., "tom_module_d4rt").
+  /// Use "root" or "tom" to reference the main repository.
+  final List<String> modules;
+
   WorkspaceNavigationArgs({
     this.scan,
     this.recursive = false,
@@ -72,6 +78,7 @@ class WorkspaceNavigationArgs {
     this.exclude = const [],
     this.excludeProjects = const [],
     this.recursionExclude = const [],
+    this.modules = const [],
   });
 
   /// Determines the execution mode based on parsed arguments.
@@ -123,9 +130,10 @@ class WorkspaceNavigationArgs {
       exclude: exclude,
       excludeProjects: excludeProjects,
       recursionExclude: recursionExclude,
+      modules: modules,
     );
   }
-  
+
   /// Apply project mode defaults if in project mode.
   ///
   /// @deprecated Use [withDefaults] instead for consistent behavior.
@@ -152,6 +160,7 @@ class WorkspaceNavigationArgs {
       exclude: exclude,
       excludeProjects: excludeProjects,
       recursionExclude: recursionExclude,
+      modules: modules,
     );
   }
 
@@ -169,6 +178,7 @@ class WorkspaceNavigationArgs {
     List<String>? exclude,
     List<String>? excludeProjects,
     List<String>? recursionExclude,
+    List<String>? modules,
   }) {
     return WorkspaceNavigationArgs(
       scan: scan ?? this.scan,
@@ -183,6 +193,7 @@ class WorkspaceNavigationArgs {
       exclude: exclude ?? this.exclude,
       excludeProjects: excludeProjects ?? this.excludeProjects,
       recursionExclude: recursionExclude ?? this.recursionExclude,
+      modules: modules ?? this.modules,
     );
   }
 
@@ -241,6 +252,10 @@ void addNavigationOptions(ArgParser parser) {
           'Exclude projects by name or path (e.g. zom_*, xternal/tom_module_basics/*)');
   parser.addMultiOption('recursion-exclude',
       help: 'Exclude patterns during recursive scan');
+  parser.addOption('modules',
+      abbr: 'm',
+      help:
+          'Include only projects within specified git modules (comma-separated, e.g. tom_module_d4rt,tom_module_basics)');
 }
 
 /// Preprocess command-line arguments to handle special -R behavior.
@@ -356,7 +371,20 @@ WorkspaceNavigationArgs parseNavigationArgs(
     exclude: results['exclude'] as List<String>? ?? [],
     excludeProjects: results['exclude-projects'] as List<String>? ?? [],
     recursionExclude: results['recursion-exclude'] as List<String>? ?? [],
+    modules: _parseModulesOption(results['modules'] as String?),
   );
+}
+
+/// Parse comma-separated modules option into a list.
+///
+/// Handles trimming whitespace around each module name.
+List<String> _parseModulesOption(String? value) {
+  if (value == null || value.isEmpty) return const [];
+  return value
+      .split(',')
+      .map((s) => s.trim())
+      .where((s) => s.isNotEmpty)
+      .toList();
 }
 
 /// Find the workspace root by traversing upwards looking for workspace markers.
@@ -504,6 +532,8 @@ List<String> getNavigationOptionsHelpLines() {
     '  -x, --exclude=<glob>      Exclude patterns (path-based globs)',
     '      --exclude-projects=<pattern>  Exclude projects by name or path',
     '      --recursion-exclude=<glob>    Exclude patterns during recursive scan',
+    '  -m, --modules=<names>     Include only projects within specified git modules',
+    '                            (comma-separated, use "root" or "tom" for main repo)',
   ];
 }
 

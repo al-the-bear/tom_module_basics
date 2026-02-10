@@ -498,4 +498,158 @@ class ProjectDiscovery {
 
     return startPath;
   }
+
+  // ===========================================================================
+  // Module Filtering
+  // ===========================================================================
+
+  /// Find all git repositories in the workspace.
+  ///
+  /// Returns a map from repository folder name to absolute path.
+  /// The main repository uses 'root' and the actual repository name as keys.
+  static Map<String, String> findGitRepositories(String workspaceRoot) {
+    final repos = <String, String>{};
+    final rootGit = p.join(workspaceRoot, '.git');
+
+    // Check if workspace root is a git repo
+    if (Directory(rootGit).existsSync() || File(rootGit).existsSync()) {
+      // Add with 'root' key and repository folder name
+      repos['root'] = workspaceRoot;
+      final repoName = p.basename(workspaceRoot);
+      repos[repoName] = workspaceRoot;
+    }
+
+    // Recursively find git repos in subdirectories
+    _findGitReposRecursive(Directory(workspaceRoot), repos, workspaceRoot);
+
+    return repos;
+  }
+
+  static void _findGitReposRecursive(
+    Directory dir,
+    Map<String, String> repos,
+    String workspaceRoot,
+  ) {
+    try {
+      for (final entity in dir.listSync()) {
+        if (entity is Directory) {
+          final dirName = p.basename(entity.path);
+
+          // Skip hidden directories and known non-project directories
+          if (dirName.startsWith('.') ||
+              alwaysSkipDirectories.contains(dirName)) {
+            continue;
+          }
+
+          // Check if this directory is a git repo
+          final gitPath = p.join(entity.path, '.git');
+          if (Directory(gitPath).existsSync() || File(gitPath).existsSync()) {
+            repos[dirName] = entity.path;
+            // Still recurse to find nested repos
+          }
+
+          // Recurse into subdirectory
+          _findGitReposRecursive(entity, repos, workspaceRoot);
+        }
+      }
+    } catch (_) {
+      // Ignore permission errors
+    }
+  }
+
+  /// Resolve module names to their absolute paths.
+  ///
+  /// [moduleNames] - List of module names (e.g., ['tom_module_d4rt', 'root'])
+  /// [workspaceRoot] - The workspace root path
+  ///
+  /// Returns a list of absolute paths for the specified modules.
+  /// Unknown module names are logged and skipped.
+  static List<String> resolveModulePaths(
+    List<String> moduleNames,
+    String workspaceRoot, {
+    bool verbose = false,
+    void Function(String)? log,
+  }) {
+    if (moduleNames.isEmpty) return [];
+
+    final repos = findGitRepositories(workspaceRoot);
+    final paths = <String>[];
+    final logFn = log ?? print;
+
+    for (final name in moduleNames) {
+      final modulePath = repos[name];
+      if (modulePath != null) {
+        paths.add(modulePath);
+      } else {
+        // Try case-insensitive match
+        final lowerName = name.toLowerCase();
+        final match = repos.entries.firstWhere(
+          (e) => e.key.toLowerCase() == lowerName,
+          orElse: () => const MapEntry('', ''),
+        );
+        if (match.value.isNotEmpty) {
+          paths.add(match.value);
+        } else {
+          if (verbose) {
+            logFn('Warning: Unknown module "$name". Available: ${repos.keys.join(', ')}');
+          }
+        }
+      }
+    }
+
+    return paths;
+  }
+
+  /// Filter projects to only those within specified modules.
+  ///
+  /// [projectPaths] - List of project paths to filter
+  /// [modulePaths] - List of module root paths (from resolveModulePaths)
+  ///
+  /// Returns only projects whose path starts with one of the module paths.
+  static List<String> filterByModules(
+    List<String> projectPaths,
+    List<String> modulePaths,
+  ) {
+    if (modulePaths.isEmpty) return projectPaths;
+
+    return projectPaths.where((projectPath) {
+      final normalizedProject = p.normalize(p.absolute(projectPath));
+      return modulePaths.any((modulePath) {
+        final normalizedModule = p.normalize(p.absolute(modulePath));
+        // Project path must start with module path (be inside the module)
+        return normalizedProject.startsWith(normalizedModule + p.separator) ||
+            normalizedProject == normalizedModule;
+      });
+    }).toList();
+  }
+
+  /// Filter projects using WorkspaceNavigationArgs.modules setting.
+  ///
+  /// Convenience method that combines resolveModulePaths and filterByModules.
+  static List<String> applyModulesFilter(
+    List<String> projectPaths,
+    List<String> modules,
+    String workspaceRoot, {
+    bool verbose = false,
+    void Function(String)? log,
+  }) {
+    if (modules.isEmpty) return projectPaths;
+
+    final modulePaths = resolveModulePaths(
+      modules,
+      workspaceRoot,
+      verbose: verbose,
+      log: log,
+    );
+
+    if (modulePaths.isEmpty) {
+      // No valid modules found - return empty (strict filtering)
+      if (verbose) {
+        (log ?? print)('Warning: No valid modules found, no projects will be processed');
+      }
+      return [];
+    }
+
+    return filterByModules(projectPaths, modulePaths);
+  }
 }
