@@ -141,7 +141,10 @@ Future<void> main(List<String> args) async {
     ..addFlag('list',
         abbr: 'l', negatable: false, help: 'List available pipelines')
     ..addFlag('recursive',
-        abbr: 'r', negatable: false, help: 'Scan directories recursively')
+        abbr: 'r',
+        negatable: true,
+        defaultsTo: false,
+        help: 'Scan directories recursively (use --no-recursive to disable)')
     ..addFlag('inner-first-git',
         abbr: 'i',
         negatable: false,
@@ -286,12 +289,16 @@ Future<void> main(List<String> args) async {
   // Apply default flags for project mode (if no explicit scan/project)
   final projectArg = results['project'] as String?;
   final buildOrder = results['build-order'] as bool;
+  final recursiveExplicitlySet = results.wasParsed('recursive');
 
   if (!isWorkspaceMode && scanPath == null && projectArg == null &&
       !innerFirstGit && !outerFirstGit) {
     // Project mode defaults: --scan . --recursive --build-order
+    // But only apply recursive default if user didn't explicitly set it
     scanPath = '.';
-    recursive = true;
+    if (!recursiveExplicitlySet) {
+      recursive = true;
+    }
     // Note: build-order is handled separately below
   }
 
@@ -299,7 +306,9 @@ Future<void> main(List<String> args) async {
   if (isWorkspaceMode && bareRootFlag && scanPath == null && projectArg == null &&
       !innerFirstGit && !outerFirstGit) {
     scanPath = '.';
-    recursive = true;
+    if (!recursiveExplicitlySet) {
+      recursive = true;
+    }
   }
 
   // Warn if known global flags appear after the pipeline/command name.

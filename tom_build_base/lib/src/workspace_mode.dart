@@ -27,6 +27,11 @@ class WorkspaceNavigationArgs {
   /// Scan directories recursively.
   final bool recursive;
 
+  /// True if recursive flag was explicitly set by user (--recursive or --no-recursive).
+  ///
+  /// Used to determine if defaults should be applied or user's explicit choice honored.
+  final bool recursiveExplicitlySet;
+
   /// Sort projects in dependency build order.
   final bool buildOrder;
 
@@ -68,6 +73,7 @@ class WorkspaceNavigationArgs {
   WorkspaceNavigationArgs({
     this.scan,
     this.recursive = false,
+    this.recursiveExplicitlySet = false,
     this.buildOrder = false,
     this.project,
     this.root,
@@ -107,8 +113,8 @@ class WorkspaceNavigationArgs {
   ///
   /// Returns a new [WorkspaceNavigationArgs] with defaults applied:
   /// - `--scan .` (if no scan was specified)
-  /// - `--recursive` (always enabled)
-  /// - `--build-order` (always enabled)
+  /// - `--recursive` (enabled unless explicitly disabled with --no-recursive)
+  /// - `--build-order` (enabled unless explicitly disabled with --no-build-order)
   ///
   /// This applies in both project and workspace modes when no explicit
   /// scanning options are provided. The difference is which directory
@@ -117,9 +123,15 @@ class WorkspaceNavigationArgs {
     // Only apply scan default if no explicit project/scan was given
     final needsScanDefault = scan == null && project == null;
     
+    // Only apply recursive default if user didn't explicitly set it
+    final effectiveRecursive = recursiveExplicitlySet 
+        ? recursive 
+        : (needsScanDefault || recursive);
+    
     return WorkspaceNavigationArgs(
       scan: needsScanDefault ? '.' : scan,
-      recursive: needsScanDefault || recursive,
+      recursive: effectiveRecursive,
+      recursiveExplicitlySet: recursiveExplicitlySet,
       buildOrder: needsScanDefault || buildOrder,
       project: project,
       root: root,
@@ -140,16 +152,20 @@ class WorkspaceNavigationArgs {
   ///
   /// Returns a new [WorkspaceNavigationArgs] with defaults applied:
   /// - `--scan .`
-  /// - `--recursive`
+  /// - `--recursive` (unless explicitly disabled)
   /// - `--build-order`
   ///
   /// In workspace mode, no defaults are applied - use explicit options.
   WorkspaceNavigationArgs withProjectModeDefaults() {
     if (isWorkspaceMode) return this;
 
+    // Respect explicit --no-recursive
+    final effectiveRecursive = recursiveExplicitlySet ? recursive : true;
+
     return WorkspaceNavigationArgs(
       scan: scan ?? '.',
-      recursive: true,
+      recursive: effectiveRecursive,
+      recursiveExplicitlySet: recursiveExplicitlySet,
       buildOrder: true,
       project: project,
       root: root,
@@ -168,6 +184,7 @@ class WorkspaceNavigationArgs {
   WorkspaceNavigationArgs copyWith({
     String? scan,
     bool? recursive,
+    bool? recursiveExplicitlySet,
     bool? buildOrder,
     String? project,
     String? root,
@@ -183,6 +200,7 @@ class WorkspaceNavigationArgs {
     return WorkspaceNavigationArgs(
       scan: scan ?? this.scan,
       recursive: recursive ?? this.recursive,
+      recursiveExplicitlySet: recursiveExplicitlySet ?? this.recursiveExplicitlySet,
       buildOrder: buildOrder ?? this.buildOrder,
       project: project ?? this.project,
       root: root ?? this.root,
@@ -200,7 +218,8 @@ class WorkspaceNavigationArgs {
   @override
   String toString() =>
       'WorkspaceNavigationArgs(mode=${executionMode.name}, scan=$scan, '
-      'recursive=$recursive, buildOrder=$buildOrder, project=$project, '
+      'recursive=$recursive${recursiveExplicitlySet ? '(explicit)' : ''}, '
+      'buildOrder=$buildOrder, project=$project, '
       'root=$root, bareRoot=$bareRoot, workspaceRecursion=$workspaceRecursion, '
       'innerFirstGit=$innerFirstGit, outerFirstGit=$outerFirstGit)';
 }
@@ -209,8 +228,8 @@ class WorkspaceNavigationArgs {
 ///
 /// Adds the following options:
 /// - `-s, --scan` - Scan directory for projects
-/// - `-r, --recursive` - Scan directories recursively
-/// - `-b, --build-order` - Sort projects in dependency build order
+/// - `-r, --recursive` - Scan directories recursively (supports --no-recursive)
+/// - `-b, --build-order` - Sort projects in dependency build order (supports --no-build-order)
 /// - `-p, --project` - Project(s) to run on
 /// - `-R, --root` - Workspace root (bare: detected, path: specified workspace)
 /// - `-w, --workspace-recursion` - Shell out to sub-workspaces instead of skipping
@@ -219,15 +238,20 @@ class WorkspaceNavigationArgs {
 /// - `-x, --exclude` - Exclude patterns (path-based globs)
 /// - `--exclude-projects` - Exclude projects by name or path
 /// - `--recursion-exclude` - Exclude patterns during recursive scan
+/// - `-m, --modules` - Include only projects within specified git modules
 void addNavigationOptions(ArgParser parser) {
   parser.addOption('scan',
       abbr: 's', help: 'Scan directory for projects');
   parser.addFlag('recursive',
-      abbr: 'r', negatable: false, help: 'Scan directories recursively');
+      abbr: 'r',
+      negatable: true,
+      defaultsTo: false,
+      help: 'Scan directories recursively (use --no-recursive to disable)');
   parser.addFlag('build-order',
       abbr: 'b',
-      negatable: false,
-      help: 'Sort projects in dependency build order');
+      negatable: true,
+      defaultsTo: false,
+      help: 'Sort projects in dependency build order (use --no-build-order to disable)');
   parser.addOption('project',
       abbr: 'p', help: 'Project(s) to run (comma-separated, globs supported)');
   parser.addOption('root',
@@ -358,9 +382,13 @@ WorkspaceNavigationArgs parseNavigationArgs(
     bareRoot = true;
   }
 
+  // Check if recursive was explicitly set (--recursive or --no-recursive)
+  final recursiveExplicitlySet = results.wasParsed('recursive');
+
   return WorkspaceNavigationArgs(
     scan: results['scan'] as String?,
     recursive: results['recursive'] as bool? ?? false,
+    recursiveExplicitlySet: recursiveExplicitlySet,
     buildOrder: results['build-order'] as bool? ?? false,
     project: results['project'] as String?,
     root: root,

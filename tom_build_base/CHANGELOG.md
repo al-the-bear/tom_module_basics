@@ -1,3 +1,17 @@
+## 1.6.0
+
+### Features
+
+- **`--no-recursive` support** — The `--recursive` flag is now negatable. Pass `--no-recursive` to suppress recursion when applied via `buildkit.yaml` or parent directories.
+- **`--no-build-order` support** — The `--build-order` flag is now negatable. Pass `--no-build-order` to skip dependency-based sorting.
+- **`recursiveExplicitlySet` field** — `WorkspaceNavigationArgs` now tracks whether the `-r, --recursive` flag was explicitly set by the user, allowing downstream tools to distinguish between defaulted and explicit values.
+
+### API Changes
+
+- `WorkspaceNavigationArgs.recursiveExplicitlySet` — New boolean field indicating explicit user setting.
+- `parseNavigationArgs()` now uses `wasParsed('recursive')` to detect explicit usage.
+- `withDefaults()` and `withProjectModeDefaults()` respect explicit settings and don't override them.
+
 ## 1.5.0
 
 ### Features
