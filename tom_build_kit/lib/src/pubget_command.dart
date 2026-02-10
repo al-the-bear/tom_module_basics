@@ -75,7 +75,10 @@ class PubGetCommand {
     ..addFlag('verbose',
         abbr: 'v', negatable: false, help: 'Show detailed output')
     ..addFlag('recursive',
-        abbr: 'R', negatable: false, help: 'Scan directories recursively')
+        abbr: 'R',
+        negatable: true,
+        defaultsTo: false,
+        help: 'Scan directories recursively (use --no-recursive to disable)')
     ..addOption('scan',
         abbr: 's', help: 'Scan directory for projects to process')
     ..addOption('project',
@@ -98,6 +101,7 @@ class PubGetCommand {
     print('  buildkit :pubget --project tom_* --updates');
     print('  buildkit :pubgetall');
     print('  buildkit :pubgetall --errors');
+    print('  buildkit :pubgetall --no-recursive  # Only process top-level projects');
   }
 
   /// Execute pub get across projects.
@@ -165,16 +169,20 @@ class PubGetCommand {
       final relativePath = p.relative(projectPath, from: rootPath);
       final projectName = _getProjectName(projectPath);
 
-      // Show progress
+      // Show progress (pad to fixed width to clear previous longer names)
       processedCount++;
-      stdout.write('\r  Processing ($processedCount/${projectPaths.length}): $projectName');
+      final progressText = '  Processing ($processedCount/${projectPaths.length}): $projectName';
+      // Pad to 120 chars to overwrite any previous longer text
+      final paddedText = progressText.padRight(120);
+      stdout.write('\r$paddedText');
+      await stdout.flush();
 
       final result = await _runPubGet(projectPath, relativePath, projectName);
       results2.add(result);
     }
 
     // Clear progress line
-    stdout.write('\r${' ' * 80}\r');
+    stdout.write('\r${' ' * 120}\r');
 
     // Apply filters and display results
     final filteredResults = _filterResults(

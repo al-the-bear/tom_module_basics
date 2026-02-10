@@ -110,8 +110,12 @@ void main(List<String> args) async {
   final testArgsStr = results['test-args'] as String?;
   final testArgs = testArgsStr != null ? testArgsStr.split(' ') : <String>[];
 
-  // Apply defaults (--scan . --recursive --build-order) if no explicit navigation
-  final effectiveNavArgs = navArgs.withDefaults();
+  // Apply defaults (--scan . --build-order) if no explicit navigation.
+  // Unlike other build tools, testkit does NOT default to --recursive.
+  // Use -r explicitly to recurse into subprojects.
+  final effectiveNavArgs = navArgs.withDefaults().copyWith(
+        recursive: navArgs.recursive,
+      );
 
   // Find projects to process
   final projects =

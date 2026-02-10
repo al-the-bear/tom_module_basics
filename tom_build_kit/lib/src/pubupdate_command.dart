@@ -71,7 +71,10 @@ class PubUpdateCommand {
     ..addFlag('verbose',
         abbr: 'v', negatable: false, help: 'Show detailed output')
     ..addFlag('recursive',
-        abbr: 'R', negatable: false, help: 'Scan directories recursively')
+        abbr: 'R',
+        negatable: true,
+        defaultsTo: false,
+        help: 'Scan directories recursively (use --no-recursive to disable)')
     ..addOption('scan',
         abbr: 's', help: 'Scan directory for projects to process')
     ..addOption('project',
@@ -95,6 +98,7 @@ class PubUpdateCommand {
     print('  buildkit :pubupdate --major-versions');
     print('  buildkit :pubupdateall');
     print('  buildkit :pubupdateall --errors');
+    print('  buildkit :pubupdateall --no-recursive  # Only process top-level projects');
   }
 
   /// Execute pub upgrade across projects.
@@ -165,10 +169,13 @@ class PubUpdateCommand {
       final relativePath = p.relative(projectPath, from: rootPath);
       final projectName = _getProjectName(projectPath);
 
-      // Show progress
+      // Show progress (pad to fixed width to clear previous longer names)
       processedCount++;
-      stdout
-          .write('\r  Processing ($processedCount/${projectPaths.length}): $projectName');
+      final progressText = '  Processing ($processedCount/${projectPaths.length}): $projectName';
+      // Pad to 120 chars to overwrite any previous longer text
+      final paddedText = progressText.padRight(120);
+      stdout.write('\r$paddedText');
+      await stdout.flush();
 
       final result = await _runPubUpgrade(
         projectPath,
@@ -180,7 +187,7 @@ class PubUpdateCommand {
     }
 
     // Clear progress line
-    stdout.write('\r${' ' * 80}\r');
+    stdout.write('\r${' ' * 120}\r');
 
     // Apply filters and display results
     final filteredResults = _filterResults(
