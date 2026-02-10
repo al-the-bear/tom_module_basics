@@ -117,14 +117,14 @@ class TrackingFile {
     buf.writeln();
 
     // Table header
-    buf.write('| ID / Description |');
+    buf.write('| ID | Groups | Description |');
     for (final run in runs) {
       buf.write(' ${run.columnHeader} |');
     }
     buf.writeln();
 
     // Separator
-    buf.write('|---|');
+    buf.write('|---|---|---|');
     for (var i = 0; i < runs.length; i++) {
       buf.write('---|');
     }
@@ -132,7 +132,9 @@ class TrackingFile {
 
     // Rows
     for (final entry in sorted) {
-      buf.write('| ${escapeMarkdownCell(entry.displayLabel)} |');
+      buf.write('| ${escapeMarkdownCell(entry.id ?? '')} |');
+      buf.write(' ${escapeMarkdownCell(entry.groups ?? '')} |');
+      buf.write(' ${escapeMarkdownCell(entry.descriptionLabel)} |');
       for (final run in runs) {
         final result = run.getResult(entry.fullDescription);
         buf.write(' ${formatResultCell(result, entry.expectation)} |');
@@ -172,9 +174,15 @@ class TrackingFile {
   static TrackingFile? _parse(String content) {
     final lines = content.split('\n');
 
-    // Find the results table
-    final headerIdx =
-        lines.indexWhere((l) => l.startsWith('| ID / Description |'));
+    // Find the results table — support both new 3-column and old 1-column format
+    var headerIdx =
+        lines.indexWhere((l) => l.startsWith('| ID | Groups | Description |'));
+    final isNewFormat = headerIdx != -1;
+
+    if (!isNewFormat) {
+      headerIdx =
+          lines.indexWhere((l) => l.startsWith('| ID / Description |'));
+    }
     if (headerIdx == -1) return null;
 
     final headerLine = lines[headerIdx];
@@ -185,8 +193,11 @@ class TrackingFile {
     final headerCells = splitTableRow(headerLine);
     if (headerCells.length < 2) return null;
 
+    // Fixed columns: 3 for new format (ID, Groups, Description), 1 for old
+    final fixedColumns = isNewFormat ? 3 : 1;
+
     final runs = <TestRun>[];
-    for (var i = 1; i < headerCells.length; i++) {
+    for (var i = fixedColumns; i < headerCells.length; i++) {
       final cell = headerCells[i].trim();
       final isBaseline = cell.startsWith('Baseline');
       final timestamp = parseColumnTimestamp(cell);
@@ -207,16 +218,32 @@ class TrackingFile {
       final cells = splitTableRow(line);
       if (cells.isEmpty) continue;
 
-      final label = cells[0].trim().replaceAll('\\|', '|');
-      // Re-parse the label to extract test entry metadata
-      final entry = parseEntryFromLabel(label);
+      TestEntry entry;
+      int resultStartCol;
+
+      if (isNewFormat) {
+        if (cells.length < 3) continue;
+        entry = parseEntryFromColumns(
+          id: cells[0].trim().replaceAll('\\|', '|'),
+          groups: cells[1].trim().replaceAll('\\|', '|'),
+          description: cells[2].trim().replaceAll('\\|', '|'),
+        );
+        resultStartCol = 3;
+      } else {
+        final label = cells[0].trim().replaceAll('\\|', '|');
+        entry = parseEntryFromLabel(label);
+        resultStartCol = 1;
+      }
+
       entries[entry.fullDescription] = entry;
 
       // Parse result cells
-      for (var j = 1; j < cells.length && j - 1 < runs.length; j++) {
+      for (var j = resultStartCol;
+          j < cells.length && j - resultStartCol < runs.length;
+          j++) {
         final resultStr = cells[j].trim();
         final result = parseResultCell(resultStr);
-        runs[j - 1].setResult(entry.fullDescription, result);
+        runs[j - resultStartCol].setResult(entry.fullDescription, result);
       }
     }
 

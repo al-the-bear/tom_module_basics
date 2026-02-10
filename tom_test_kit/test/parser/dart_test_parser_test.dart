@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:test/test.dart';
 import 'package:tom_test_kit/tom_test_kit.dart';
 
-/// Test IDs: TK-DTP-1 through TK-DTP-8
+/// Test IDs: TK-DTP-1 through TK-DTP-11
 void main() {
   group('DartTestParser', () {
     group('parseJsonOutput', () {
@@ -21,6 +21,7 @@ void main() {
         expect(results.failedTests, equals(0));
         expect(results.entries, hasLength(1));
         expect(results.entries.first.fullDescription, equals('should pass'));
+        expect(results.entries.first.groups, isNull);
       });
 
       test('TK-DTP-2: should parse a failing test', () {
@@ -115,6 +116,63 @@ void main() {
         final results = DartTestParser.parseJsonOutput([]);
         expect(results.totalTests, equals(0));
         expect(results.entries, isEmpty);
+      });
+
+      test('TK-DTP-9: should extract single group and strip from name', () {
+        final lines = _makeJsonLines([
+          _suiteEvent(0, 'test/my_test.dart'),
+          _groupEvent(1, '', suiteId: 0),
+          _groupEvent(2, 'padTwo', suiteId: 0),
+          _testStartEvent(
+              3, 'padTwo TK-FMT-1: should zero-pad single digit',
+              suiteId: 0, groupIds: [1, 2]),
+          _testDoneEvent(3, result: 'success'),
+        ]);
+
+        final results = DartTestParser.parseJsonOutput(lines);
+        expect(results.entries, hasLength(1));
+        final entry = results.entries.first;
+        expect(entry.groups, equals('padTwo'));
+        expect(entry.id, equals('TK-FMT-1'));
+        expect(entry.description, equals('should zero-pad single digit'));
+        expect(entry.fullDescription,
+            equals('TK-FMT-1: should zero-pad single digit'));
+      });
+
+      test('TK-DTP-10: should extract nested groups with > separator', () {
+        final lines = _makeJsonLines([
+          _suiteEvent(0, 'test/my_test.dart'),
+          _groupEvent(1, '', suiteId: 0),
+          _groupEvent(2, 'DartTestParser', suiteId: 0),
+          _groupEvent(3, 'DartTestParser parseJsonOutput', suiteId: 0),
+          _testStartEvent(
+              4, 'DartTestParser parseJsonOutput TK-DTP-1: should parse',
+              suiteId: 0, groupIds: [1, 2, 3]),
+          _testDoneEvent(4, result: 'success'),
+        ]);
+
+        final results = DartTestParser.parseJsonOutput(lines);
+        final entry = results.entries.first;
+        expect(entry.groups, equals('DartTestParser > parseJsonOutput'));
+        expect(entry.id, equals('TK-DTP-1'));
+        expect(entry.description, equals('should parse'));
+      });
+
+      test('TK-DTP-11: should handle test with only root group (no groups)',
+          () {
+        final lines = _makeJsonLines([
+          _suiteEvent(0, 'test/my_test.dart'),
+          _groupEvent(1, '', suiteId: 0),
+          _testStartEvent(2, 'TK-1: bare test', suiteId: 0, groupIds: [1]),
+          _testDoneEvent(2, result: 'success'),
+        ]);
+
+        final results = DartTestParser.parseJsonOutput(lines);
+        final entry = results.entries.first;
+        expect(entry.groups, isNull);
+        expect(entry.id, equals('TK-1'));
+        expect(entry.description, equals('bare test'));
+        expect(entry.fullDescription, equals('TK-1: bare test'));
       });
     });
   });

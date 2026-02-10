@@ -1,7 +1,7 @@
 import 'package:test/test.dart';
 import 'package:tom_test_kit/tom_test_kit.dart';
 
-/// Test IDs: TK-MDT-1 through TK-MDT-15
+/// Test IDs: TK-MDT-1 through TK-MDT-21
 void main() {
   group('splitTableRow', () {
     test('TK-MDT-1: should split a simple row into cells', () {
@@ -113,6 +113,48 @@ void main() {
         () {
       final entry = parseEntryFromLabel('Test that passes (PASS)');
       expect(entry.expectation, equals('OK'));
+    });
+  });
+
+  group('parseEntryFromColumns', () {
+    test('TK-MDT-19: should parse ID, groups, and description columns', () {
+      final entry = parseEntryFromColumns(
+        id: 'TK-FMT-1',
+        groups: 'padTwo',
+        description: 'should zero-pad single digit',
+      );
+      expect(entry.id, equals('TK-FMT-1'));
+      expect(entry.groups, equals('padTwo'));
+      expect(entry.description, equals('should zero-pad single digit'));
+      expect(entry.fullDescription,
+          equals('TK-FMT-1: should zero-pad single digit'));
+    });
+
+    test('TK-MDT-20: should handle empty ID and groups', () {
+      final entry = parseEntryFromColumns(
+        id: '',
+        groups: '',
+        description: 'bare test',
+      );
+      expect(entry.id, isNull);
+      expect(entry.groups, isNull);
+      expect(entry.description, equals('bare test'));
+      expect(entry.fullDescription, equals('bare test'));
+    });
+
+    test('TK-MDT-21: should extract date and FAIL from description', () {
+      final entry = parseEntryFromColumns(
+        id: 'TK-1',
+        groups: 'grp',
+        description: 'some test [2026-02-10 08:00] (FAIL)',
+      );
+      expect(entry.id, equals('TK-1'));
+      expect(entry.groups, equals('grp'));
+      expect(entry.description, equals('some test'));
+      expect(entry.creationDate, equals(DateTime(2026, 2, 10, 8, 0)));
+      expect(entry.expectation, equals('FAIL'));
+      expect(entry.fullDescription,
+          equals('TK-1: some test [2026-02-10 08:00] (FAIL)'));
     });
   });
 }

@@ -1,7 +1,7 @@
 import 'package:test/test.dart';
 import 'package:tom_test_kit/tom_test_kit.dart';
 
-/// Test IDs: TK-ENT-1 through TK-ENT-7
+/// Test IDs: TK-ENT-1 through TK-ENT-10
 void main() {
   group('TestEntry', () {
     group('displayLabel', () {
@@ -69,6 +69,38 @@ void main() {
           description: 'test',
         );
         expect(entry.expectation, equals('OK'));
+      });
+    });
+
+    group('groups', () {
+      test('TK-ENT-8: should store group path when provided', () {
+        final entry = TestEntry(
+          fullDescription: 'test',
+          description: 'test',
+          groups: 'A > B',
+        );
+        expect(entry.groups, equals('A > B'));
+      });
+    });
+
+    group('descriptionLabel', () {
+      test('TK-ENT-9: should include date and FAIL marker', () {
+        final entry = TestEntry(
+          fullDescription: 'test',
+          description: 'some test',
+          creationDate: DateTime(2026, 2, 10, 8, 0),
+          expectation: 'FAIL',
+        );
+        expect(entry.descriptionLabel,
+            equals('some test [2026-02-10 08:00] (FAIL)'));
+      });
+
+      test('TK-ENT-10: should omit FAIL marker when expectation is OK', () {
+        final entry = TestEntry(
+          fullDescription: 'test',
+          description: 'simple test',
+        );
+        expect(entry.descriptionLabel, equals('simple test'));
       });
     });
   });

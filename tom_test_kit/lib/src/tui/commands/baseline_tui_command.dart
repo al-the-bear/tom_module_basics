@@ -9,6 +9,7 @@ import 'package:path/path.dart' as p;
 import '../../model/test_entry.dart';
 import '../../model/test_run.dart';
 import '../../model/tracking_file.dart';
+import '../../parser/dart_test_parser.dart';
 import '../../parser/test_description_parser.dart';
 import '../../util/file_helpers.dart';
 import '../tui_command.dart';
@@ -54,6 +55,8 @@ class BaselineTuiCommand extends TuiCommand {
     final testNames = <int, String>{};
     final testSuites = <int, String>{};
     final testSuiteMap = <int, int>{};
+    final groupNames = <int, String>{};
+    final testGroupMap = <int, List<int>>{};
 
     var passCount = 0;
     var failCount = 0;
@@ -91,6 +94,13 @@ class BaselineTuiCommand extends TuiCommand {
             testSuites[suite['id'] as int] = suite['path'] as String? ?? '';
           }
 
+        case 'group':
+          final group = json['group'] as Map<String, dynamic>?;
+          if (group != null) {
+            groupNames[group['id'] as int] =
+                group['name'] as String? ?? '';
+          }
+
         case 'testStart':
           final test = json['test'] as Map<String, dynamic>?;
           if (test != null) {
@@ -98,6 +108,9 @@ class BaselineTuiCommand extends TuiCommand {
             final name = test['name'] as String? ?? '';
             testNames[testId] = name;
             testSuiteMap[testId] = test['suiteID'] as int? ?? 0;
+            final gids =
+                (test['groupIDs'] as List<dynamic>?)?.cast<int>() ?? [];
+            testGroupMap[testId] = gids;
             totalExpected++;
           }
 
@@ -132,7 +145,14 @@ class BaselineTuiCommand extends TuiCommand {
           }
 
           final suitePath = testSuites[testSuiteMap[testId]];
-          final entry = TestDescriptionParser.parse(name, suite: suitePath);
+          final gids = testGroupMap[testId] ?? [];
+          final (strippedName, groups) = DartTestParser.extractGroups(
+            testName: name,
+            groupIds: gids,
+            groupNames: groupNames,
+          );
+          final entry = TestDescriptionParser.parse(strippedName,
+              suite: suitePath, groups: groups);
           entries.add(entry);
           run.setResult(entry.fullDescription, result);
 

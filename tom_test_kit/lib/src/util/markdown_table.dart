@@ -110,3 +110,52 @@ TestEntry parseEntryFromLabel(String label) {
     expectation: expectation,
   );
 }
+
+/// Reconstructs a [TestEntry] from separate ID, Groups, and Description
+/// columns in the new 3-column tracking table format.
+///
+/// The [description] parameter is the Description column content which may
+/// contain creation date `[YYYY-MM-DD HH:MM]` and `(FAIL)` markers.
+TestEntry parseEntryFromColumns({
+  required String id,
+  required String groups,
+  required String description,
+}) {
+  var remaining = description;
+  DateTime? creationDate;
+  var expectation = 'OK';
+
+  // Extract expected result (PASS)/(FAIL) from end
+  final expectMatch = RegExp(r'\((PASS|FAIL)\)\s*$').firstMatch(remaining);
+  if (expectMatch != null) {
+    expectation = expectMatch.group(1) == 'FAIL' ? 'FAIL' : 'OK';
+    remaining = remaining.substring(0, expectMatch.start).trim();
+  }
+
+  // Extract creation date [YYYY-MM-DD HH:MM]
+  final dateMatch = RegExp(r'\[(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2})\]')
+      .firstMatch(remaining);
+  if (dateMatch != null) {
+    creationDate = DateTime(
+      int.parse(dateMatch.group(1)!),
+      int.parse(dateMatch.group(2)!),
+      int.parse(dateMatch.group(3)!),
+      int.parse(dateMatch.group(4)!),
+      int.parse(dateMatch.group(5)!),
+    );
+    remaining = remaining.replaceFirst(dateMatch.group(0)!, '').trim();
+  }
+
+  // Reconstruct fullDescription to match what DartTestParser produces
+  final idPrefix = id.isNotEmpty ? '$id: ' : '';
+  final fullDescription = '$idPrefix$description';
+
+  return TestEntry(
+    id: id.isNotEmpty ? id : null,
+    fullDescription: fullDescription,
+    description: remaining,
+    groups: groups.isNotEmpty ? groups : null,
+    creationDate: creationDate,
+    expectation: expectation,
+  );
+}

@@ -147,6 +147,7 @@ void main() {
             id: 'TK-1',
             fullDescription: 'TK-1: basic test',
             description: 'basic test',
+            groups: 'myGroup',
             creationDate: DateTime(2026, 2, 10, 8, 0),
           ),
         ];
@@ -165,6 +166,10 @@ void main() {
         expect(loaded!.entries, hasLength(1));
         expect(loaded.runs, hasLength(1));
         expect(loaded.runs.first.isBaseline, isTrue);
+        // Verify groups survived round-trip
+        final entry = loaded.entries.values.first;
+        expect(entry.groups, equals('myGroup'));
+        expect(entry.id, equals('TK-1'));
       });
 
       test('TK-TRK-7: should preserve results across round-trip', () async {
@@ -174,7 +179,7 @@ void main() {
             description: 'passing test',
           ),
           TestEntry(
-            fullDescription: 'failing test',
+            fullDescription: 'failing test (FAIL)',
             description: 'failing test',
             expectation: 'FAIL',
           ),
@@ -184,7 +189,7 @@ void main() {
           isBaseline: true,
           results: {
             'passing test': TestResult.ok,
-            'failing test': TestResult.fail,
+            'failing test (FAIL)': TestResult.fail,
           },
         );
         final tracking = TrackingFile.fromBaseline(entries, run);
@@ -195,7 +200,8 @@ void main() {
         final loaded = TrackingFile.load(filePath)!;
         final loadedRun = loaded.runs.first;
         expect(loadedRun.getResult('passing test'), equals(TestResult.ok));
-        expect(loadedRun.getResult('failing test'), equals(TestResult.fail));
+        expect(loadedRun.getResult('failing test (FAIL)'),
+            equals(TestResult.fail));
       });
 
       test('TK-TRK-8: should preserve multiple runs across round-trip',

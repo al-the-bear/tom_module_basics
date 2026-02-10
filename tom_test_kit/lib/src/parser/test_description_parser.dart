@@ -20,7 +20,9 @@ class TestDescriptionParser {
   ///
   /// [fullDescription] is the complete description as reported by `dart test`.
   /// [suite] is the optional test file path.
-  static TestEntry parse(String fullDescription, {String? suite}) {
+  /// [groups] is the optional group path extracted from the test hierarchy.
+  static TestEntry parse(String fullDescription,
+      {String? suite, String? groups}) {
     var remaining = fullDescription.trim();
     String? id;
     DateTime? creationDate;
@@ -58,6 +60,7 @@ class TestDescriptionParser {
       id: id,
       fullDescription: fullDescription,
       description: remaining,
+      groups: groups,
       creationDate: creationDate,
       expectation: expectation,
       suite: suite,

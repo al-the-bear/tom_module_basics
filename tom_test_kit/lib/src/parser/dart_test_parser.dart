@@ -37,6 +37,56 @@ class DartTestResults {
 
 /// Parses `dart test --reporter json` output into structured results.
 class DartTestParser {
+  /// Extracts group names and strips the group prefix from a test name.
+  ///
+  /// The dart test JSON reporter prepends the full group hierarchy to each
+  /// test name. This method identifies the group prefix, strips it, and
+  /// returns the individual group segments joined with ` > `.
+  ///
+  /// Returns a record of `(strippedName, groups)` where `groups` is null
+  /// if the test has no named groups.
+  static (String strippedName, String? groups) extractGroups({
+    required String testName,
+    required List<int> groupIds,
+    required Map<int, String> groupNames,
+  }) {
+    // Find the innermost non-root group name (full accumulated path)
+    String? innermostGroupName;
+    for (final gid in groupIds.reversed) {
+      final gname = groupNames[gid];
+      if (gname != null && gname.isNotEmpty) {
+        innermostGroupName = gname;
+        break;
+      }
+    }
+
+    if (innermostGroupName == null ||
+        !testName.startsWith('$innermostGroupName ')) {
+      return (testName, null);
+    }
+
+    // Strip group prefix from test name
+    final strippedName = testName.substring(innermostGroupName.length + 1);
+
+    // Build individual group segments for display (e.g., "A > B")
+    final segments = <String>[];
+    String prevName = '';
+    for (final gid in groupIds) {
+      final gname = groupNames[gid];
+      if (gname != null && gname.isNotEmpty) {
+        final segment = prevName.isEmpty
+            ? gname
+            : gname.substring(prevName.length).trim();
+        if (segment.isNotEmpty) {
+          segments.add(segment);
+        }
+        prevName = gname;
+      }
+    }
+
+    return (strippedName, segments.isNotEmpty ? segments.join(' > ') : null);
+  }
+
   /// Runs `dart test --reporter json` in the given directory and parses output.
   ///
   /// [projectPath] is the working directory for `dart test`.
@@ -109,6 +159,7 @@ class DartTestParser {
     final testSuites = <int, String>{}; // suiteID -> path
     final testSuiteMap = <int, int>{}; // testID -> suiteID
     final groupNames = <int, String>{}; // groupID -> name
+    final testGroupMap = <int, List<int>>{}; // testID -> groupIDs
 
     var passCount = 0;
     var failCount = 0;
@@ -147,6 +198,9 @@ class DartTestParser {
             final name = test['name'] as String? ?? '';
             testNames[testId] = name;
             testSuiteMap[testId] = test['suiteID'] as int? ?? 0;
+            final gids =
+                (test['groupIDs'] as List<dynamic>?)?.cast<int>() ?? [];
+            testGroupMap[testId] = gids;
           }
 
         case 'testDone':
@@ -178,7 +232,14 @@ class DartTestParser {
           }
 
           final suitePath = testSuites[testSuiteMap[testId]];
-          final entry = TestDescriptionParser.parse(name, suite: suitePath);
+          final gids = testGroupMap[testId] ?? [];
+          final (strippedName, groups) = extractGroups(
+            testName: name,
+            groupIds: gids,
+            groupNames: groupNames,
+          );
+          final entry = TestDescriptionParser.parse(strippedName,
+              suite: suitePath, groups: groups);
           entries.add(entry);
           run.setResult(entry.fullDescription, result);
       }

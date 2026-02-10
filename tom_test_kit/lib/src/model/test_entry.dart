@@ -17,6 +17,9 @@ class TestEntry {
   /// The expected result: `OK` (pass) or `FAIL`.
   final String expectation;
 
+  /// The test group path (e.g., `padTwo` or `DartTestParser > parseJsonOutput`).
+  final String? groups;
+
   /// The test suite (file path) this test belongs to.
   final String? suite;
 
@@ -24,6 +27,7 @@ class TestEntry {
     this.id,
     required this.fullDescription,
     required this.description,
+    this.groups,
     this.creationDate,
     this.expectation = 'OK',
     this.suite,
@@ -40,6 +44,23 @@ class TestEntry {
       final d = creationDate!;
       buf.write(' [${padTwo(d.year)}-${padTwo(d.month)}-${padTwo(d.day)} '
           '${padTwo(d.hour)}:${padTwo(d.minute)}]');
+    }
+    return buf.toString();
+  }
+
+  /// Returns the description column content for tracking tables.
+  ///
+  /// Includes the description, optional creation date bracket, and
+  /// `(FAIL)` marker when the expectation is FAIL.
+  String get descriptionLabel {
+    final buf = StringBuffer(description);
+    if (creationDate != null) {
+      final d = creationDate!;
+      buf.write(' [${padTwo(d.year)}-${padTwo(d.month)}-${padTwo(d.day)} '
+          '${padTwo(d.hour)}:${padTwo(d.minute)}]');
+    }
+    if (expectation == 'FAIL') {
+      buf.write(' (FAIL)');
     }
     return buf.toString();
   }
