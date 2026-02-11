@@ -350,22 +350,40 @@ class ProjectNavigator {
 
     // Phase 1: Discover projects
     if (project != null) {
-      // Validate --project path existence for non-glob patterns
+      String effectivePattern = project;
+
+      // For non-glob patterns, try literal path first, then search by name
       if (!_isGlobPattern(project)) {
         final resolvedPath = p.isAbsolute(project)
             ? project
             : p.normalize(p.join(basePath, project));
         if (!Directory(resolvedPath).existsSync()) {
-          return NavigationResult.error(
-              'Project path does not exist: $project');
+          // If it looks like a simple project name (no path separators),
+          // convert to glob pattern and search
+          if (!project.contains('/') && !project.contains(r'\')) {
+            effectivePattern = '**/$project';
+            if (verbose) {
+              log('Project "$project" not found as literal path, searching '
+                  'with pattern "$effectivePattern"');
+            }
+          } else {
+            return NavigationResult.error(
+                'Project path does not exist: $project');
+          }
         }
       }
 
       final paths = await discovery.resolveProjectPatterns(
-        project,
+        effectivePattern,
         basePath: basePath,
         projectFilter: config.projectFilter,
       );
+      
+      if (paths.isEmpty && effectivePattern != project) {
+        return NavigationResult.error(
+            'No project found matching name: $project');
+      }
+      
       results = config.usePathExclude ? filterByPath(paths, exclude) : paths;
     } else if (scan != null) {
       final scanDir = _resolvePath(scan, basePath);
