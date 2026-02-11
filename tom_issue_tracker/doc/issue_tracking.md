@@ -64,7 +64,7 @@ This eliminates synchronization problems: there is no link record that can get o
 
 ### 2. Convention Over Configuration
 
-Issue-to-test linking works through ID conventions, not explicit registration. When a developer writes a reproduction test with the correct ID format, the issuekit can discover it automatically. No manual `:link` step is needed (though one exists as an override).
+Issue-to-test linking works through ID conventions, not explicit registration. When a developer writes a reproduction test with the correct ID format, the issuekit can discover it automatically. No exceptions or overrides.
 
 ### 3. Verified Resolution
 
