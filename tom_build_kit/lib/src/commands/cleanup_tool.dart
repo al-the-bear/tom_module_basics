@@ -26,8 +26,8 @@ class CleanupSection {
       return CleanupSection(globs: [json]);
     }
     if (json is Map) {
-      final globs = ToolBase.toStringList(json['globs'] ?? json['glob']);
-      final excludes = ToolBase.toStringList(json['excludes'] ?? json['exclude']);
+      final globs = toStringList(json['globs'] ?? json['glob']);
+      final excludes = toStringList(json['excludes'] ?? json['exclude']);
       if (globs.isEmpty) {
         throw ArgumentError('CleanupSection map must have "globs" key');
       }
@@ -109,18 +109,18 @@ class CleanupConfig {
 
       // Parse global excludes
       final globalExcludes =
-          ToolBase.toStringList(cleanupYaml['excludes'] ?? cleanupYaml['exclude']);
+          toStringList(cleanupYaml['excludes'] ?? cleanupYaml['exclude']);
 
       // Parse additional protected folders (additive to built-in list)
-      final protectedFolders = ToolBase.toStringList(
+      final protectedFolders = toStringList(
           cleanupYaml['protected-folders'] ?? cleanupYaml['protectedFolders']);
 
       return CleanupConfig(
         project: cleanupYaml['project'] as String?,
         scan: cleanupYaml['scan'] as String?,
         recursive: cleanupYaml['recursive'] as bool? ?? false,
-        exclude: ToolBase.toStringList(cleanupYaml['exclude']),
-        recursionExclude: ToolBase.toStringList(
+        exclude: toStringList(cleanupYaml['exclude']),
+        recursionExclude: toStringList(
             cleanupYaml['recursion-exclude'] ?? cleanupYaml['recursionExclude']),
         cleanupSections: sections,
         globalExcludes: globalExcludes,

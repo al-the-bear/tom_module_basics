@@ -179,45 +179,25 @@ void main(List<String> args) async {
   }
 }
 
-/// Find projects to process based on navigation args
+/// Find projects to process based on navigation args using ProjectNavigator.
 Future<List<String>> _findProjects(
   WorkspaceNavigationArgs navArgs,
   String basePath,
   bool verbose,
 ) async {
-  final discovery = ProjectDiscovery(verbose: verbose);
-
-  // Project pattern(s) specified (supports comma-separated, globs, ./* etc.)
-  if (navArgs.project != null) {
-    return discovery.resolveProjectPatterns(
-      navArgs.project!,
-      basePath: basePath,
+  final navigator = ProjectNavigator(
+    verbose: verbose,
+    config: NavigationConfig(
+      usePathExclude: true,
+      useNameExclude: true,
+      useSkipFiles: true,
+      useMasterConfigDefaults: false, // Uses withDefaults() instead
       projectFilter: _isAstgenProject,
-    );
-  }
+    ),
+  );
 
-  // Scan directory for projects
-  if (navArgs.scan != null) {
-    final scanPath = p.isAbsolute(navArgs.scan!)
-        ? navArgs.scan!
-        : p.join(basePath, navArgs.scan!);
-
-    final allProjects = await discovery.scanForProjects(
-      scanPath,
-      recursive: navArgs.recursive,
-      toolKey: toolKey,
-    );
-
-    // Filter to only astgen projects
-    return allProjects.where((path) => _isAstgenProject(path)).toList();
-  }
-
-  // Default: process current directory if it has config
-  if (_isAstgenProject(basePath)) {
-    return [basePath];
-  }
-
-  return [];
+  final result = await navigator.navigate(navArgs, basePath: basePath);
+  return result.paths;
 }
 
 /// Check if a directory is an astgen project

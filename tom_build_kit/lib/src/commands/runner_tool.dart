@@ -46,9 +46,9 @@ class BuilderFilterConfig {
       if (buildRunner == null) return null;
 
       return BuilderFilterConfig(
-        includeBuilders: ToolBase.toStringList(
+        includeBuilders: toStringList(
             buildRunner['include-builders'] ?? buildRunner['include_builders']),
-        excludeBuilders: ToolBase.toStringList(
+        excludeBuilders: toStringList(
             buildRunner['exclude-builders'] ?? buildRunner['exclude_builders']),
       );
     } catch (_) {
@@ -89,9 +89,9 @@ class BuilderFilterConfig {
             final buildRunner = yaml['build_runner'] as YamlMap?;
             if (buildRunner != null) {
               final rootConfig = BuilderFilterConfig(
-                includeBuilders: ToolBase.toStringList(
+                includeBuilders: toStringList(
                     buildRunner['include-builders'] ?? buildRunner['include_builders']),
-                excludeBuilders: ToolBase.toStringList(
+                excludeBuilders: toStringList(
                     buildRunner['exclude-builders'] ?? buildRunner['exclude_builders']),
               );
               if (rootConfig.isNotEmpty) return rootConfig;
@@ -154,8 +154,8 @@ class BuildRunnerConfig {
         project: runnerYaml['project'] as String?,
         scan: runnerYaml['scan'] as String?,
         recursive: runnerYaml['recursive'] as bool? ?? false,
-        exclude: ToolBase.toStringList(runnerYaml['exclude']),
-        recursionExclude: ToolBase.toStringList(
+        exclude: toStringList(runnerYaml['exclude']),
+        recursionExclude: toStringList(
             runnerYaml['recursion-exclude'] ?? runnerYaml['recursionExclude']),
         verbose: runnerYaml['verbose'] as bool? ?? false,
         dryRun: runnerYaml['dry-run'] as bool? ?? false,
@@ -271,7 +271,7 @@ class RunnerTool extends ToolBase {
     final showMode = results['show'] as bool;
 
     // Load workspace-level config
-    final rootPath = ToolBase.findWorkspaceRoot(executionRoot);
+    final rootPath = findWorkspaceRoot(executionRoot);
     var config = BuildRunnerConfig.loadFromYaml(executionRoot) ?? BuildRunnerConfig();
 
     // Override with CLI options

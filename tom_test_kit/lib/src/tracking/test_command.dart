@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 
+import '../model/test_run.dart';
 import '../model/tracking_file.dart';
 import '../parser/dart_test_parser.dart';
 import '../util/file_helpers.dart';
@@ -19,6 +20,9 @@ class TestCommand {
   /// [testArgs] are additional arguments passed to `dart test`.
   /// [verbose] enables diagnostic output.
   /// [createBaseline] if true, creates a baseline when no tracking file exists.
+  /// [failedOnly] if true, only re-run failed tests (X/OK, X/X).
+  /// [mismatchedOnly] if true, only re-run tests that don't match expectation
+  ///   (X/OK, OK/X).
   ///
   /// Returns true on success, false on failure.
   static Future<bool> run({
@@ -28,6 +32,8 @@ class TestCommand {
     bool verbose = false,
     bool createBaseline = false,
     String? comment,
+    bool failedOnly = false,
+    bool mismatchedOnly = false,
   }) async {
     // Find the tracking file
     final filePath =
@@ -61,10 +67,37 @@ class TestCommand {
       print('  Using tracking file: ${p.relative(filePath, from: projectPath)}');
     }
 
+    // Build effective test args, potentially filtering by --failed/--mismatched
+    var effectiveTestArgs = [...testArgs];
+
+    if (failedOnly || mismatchedOnly) {
+      final filterNames = _getFilteredTestNames(
+        tracking,
+        failedOnly: failedOnly,
+        mismatchedOnly: mismatchedOnly,
+      );
+
+      if (filterNames.isEmpty) {
+        print('  No tests match the filter criteria.');
+        return true;
+      }
+
+      if (verbose) {
+        print('  Filtering to ${filterNames.length} test(s)');
+      }
+
+      // Add --name patterns to filter tests
+      for (final name in filterNames) {
+        // Escape regex special characters in test name
+        final escaped = _escapeRegex(name);
+        effectiveTestArgs.addAll(['--name', '^$escaped\$']);
+      }
+    }
+
     // Run dart test
     final results = await DartTestParser.runAndParse(
       projectPath: projectPath,
-      additionalArgs: testArgs,
+      additionalArgs: effectiveTestArgs,
       verbose: verbose,
     );
 
@@ -96,5 +129,54 @@ class TestCommand {
         '${results.skippedTests > 0 ? ', ${results.skippedTests} skipped' : ''})');
 
     return true;
+  }
+
+  /// Returns test names that should be re-run based on filter criteria.
+  ///
+  /// [failedOnly] selects tests with X/OK or X/X results (failed tests).
+  /// [mismatchedOnly] selects tests with X/OK or OK/X results (mismatched).
+  static List<String> _getFilteredTestNames(
+    TrackingFile tracking, {
+    required bool failedOnly,
+    required bool mismatchedOnly,
+  }) {
+    if (tracking.runs.isEmpty) return [];
+
+    final latestRun = tracking.runs.last;
+    final names = <String>[];
+
+    for (final entry in tracking.entries.entries) {
+      final fullDescription = entry.key;
+      final testEntry = entry.value;
+      final result = latestRun.getResult(fullDescription);
+      final expectation = testEntry.expectation;
+
+      // Convert expectation to match result labels for comparison
+      final isFailed = result == TestResult.fail;
+      final expectsOk = expectation == 'OK';
+      final expectsFail = expectation == 'FAIL';
+      final isOk = result == TestResult.ok;
+
+      // X/OK or X/X: failed tests
+      final isFailedTest = isFailed;
+      // X/OK or OK/X: mismatched tests
+      final isMismatchedTest =
+          (isFailed && expectsOk) || (isOk && expectsFail);
+
+      if ((failedOnly && isFailedTest) ||
+          (mismatchedOnly && isMismatchedTest)) {
+        names.add(fullDescription);
+      }
+    }
+
+    return names;
+  }
+
+  /// Escapes regex special characters in a string.
+  static String _escapeRegex(String input) {
+    return input.replaceAllMapped(
+      RegExp(r'[.*+?^${}()|[\]\\]'),
+      (match) => '\\${match.group(0)}',
+    );
   }
 }

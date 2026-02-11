@@ -10,6 +10,7 @@ import 'package:path/path.dart' as p;
 import 'package:tom_build_base/tom_build_base.dart';
 import 'package:utopia_tui/utopia_tui.dart';
 
+import 'package:tom_test_kit/src/version.g.dart';
 import 'package:tom_test_kit/tom_test_kit.dart';
 
 const _toolName = 'testkit';
@@ -42,8 +43,8 @@ void main(List<String> args) async {
     return;
   }
 
-  // Detect subcommand
-  final (subcommand, remainingArgs) = _extractSubcommand(args);
+  // Phase 1: Extract subcommand and split args into before/after
+  final (subcommand, beforeSubcommand, afterSubcommand) = _extractSubcommandAndSplit(args);
 
   if (subcommand == null) {
     stderr.writeln('Error: No subcommand specified.');
@@ -53,8 +54,35 @@ void main(List<String> args) async {
     return;
   }
 
+  // Phase 2: Parse global navigation options (from args before subcommand)
+  ArgResults? globalNavResults;
+  bool globalBareRoot = false;
+  if (beforeSubcommand.isNotEmpty) {
+    // Preprocess args for bare -R detection
+    final (processedGlobalArgs, bareRoot) = preprocessRootFlag(beforeSubcommand);
+    globalBareRoot = bareRoot;
+    
+    final globalNavParser = ArgParser();
+    addNavigationOptions(globalNavParser);
+    
+    try {
+      globalNavResults = globalNavParser.parse(processedGlobalArgs);
+      // Check for unknown options
+      if (globalNavResults.rest.isNotEmpty) {
+        stderr.writeln('Error: Unknown arguments before subcommand: ${globalNavResults.rest.join(' ')}');
+        stderr.writeln('Only navigation options can appear before the subcommand.');
+        exitCode = 1;
+        return;
+      }
+    } catch (e) {
+      stderr.writeln('Error parsing options before subcommand: $e');
+      exitCode = 1;
+      return;
+    }
+  }
+
   // Preprocess args for bare -R detection
-  final (processedArgs, bareRoot) = preprocessRootFlag(remainingArgs);
+  final (processedArgs, bareRoot) = preprocessRootFlag(afterSubcommand);
 
   final parser = ArgParser()
     // Tool-specific options
@@ -74,6 +102,10 @@ void main(List<String> args) async {
         help: 'Generate detailed Markdown report (filename optional)')
     ..addFlag('baseline',
         help: 'Create baseline if no tracking file exists (:test only)')
+    ..addFlag('failed',
+        help: 'Re-run only failed tests (X/OK, X/X) from most recent run')
+    ..addFlag('mismatched',
+        help: 'Re-run tests that don\'t match expectation (X/OK, OK/X)')
     ..addFlag('full',
         help: 'Include full details from last_testrun.json (diff commands)')
     ..addFlag('force',
@@ -83,7 +115,7 @@ void main(List<String> args) async {
         abbr: 'l', help: 'List projects that would be processed (no action)')
     ..addFlag('help', abbr: 'h', negatable: false, help: 'Show this help');
 
-  // Add standard navigation options
+  // Add standard navigation options (for command-level parsing)
   addNavigationOptions(parser);
 
   final ArgResults results;
@@ -110,8 +142,18 @@ void main(List<String> args) async {
     return;
   }
 
-  // Parse navigation options
-  final navArgs = parseNavigationArgs(results, bareRoot: bareRoot);
+  // Parse command-level navigation options
+  final cmdNavArgs = parseNavigationArgs(results, bareRoot: bareRoot);
+  
+  // Merge global and command-level navigation args (command overrides global)
+  final navArgs = _mergeNavigationArgs(
+    globalNavResults, 
+    results, 
+    cmdNavArgs,
+    globalBareRoot: globalBareRoot,
+    cmdBareRoot: bareRoot,
+  );
+  
   final currentDir = Directory.current.path;
 
   // Resolve execution root
@@ -216,6 +258,8 @@ void main(List<String> args) async {
           verbose: verbose,
           createBaseline: results['baseline'] as bool,
           comment: comment,
+          failedOnly: results['failed'] as bool,
+          mismatchedOnly: results['mismatched'] as bool,
         );
       case 'runs':
         success = await RunsCommand.run(
@@ -344,24 +388,41 @@ void main(List<String> args) async {
 ///
 /// Subcommands are prefixed with `:` (e.g., `:baseline`, `:test`).
 /// Returns the subcommand name (without `:`) and the remaining args.
-(String?, List<String>) _extractSubcommand(List<String> args) {
-  if (args.isEmpty) return (null, args);
+/// Extract subcommand and split args into before/after subcommand.
+///
+/// Returns (subcommand, argsBefore, argsAfter).
+/// argsBefore contains all args before the subcommand (e.g., navigation options).
+/// argsAfter contains all args after the subcommand.
+(String?, List<String>, List<String>) _extractSubcommandAndSplit(List<String> args) {
+  if (args.isEmpty) return (null, [], []);
 
-  final first = args.first;
-  if (first.startsWith(':')) {
-    return (first.substring(1), args.sublist(1));
-  }
-
-  // Also support without colon prefix
   const knownCommands = {
     'baseline', 'test', 'runs', 'status', 'basediff', 'lastdiff', 'diff',
     'history', 'flaky', 'crossreference', 'crossref', 'xref', 'trim', 'reset',
   };
-  if (knownCommands.contains(first)) {
-    return (first, args.sublist(1));
+
+  // Find the first argument that's a subcommand
+  for (int i = 0; i < args.length; i++) {
+    final arg = args[i];
+    
+    // Check for :command format
+    if (arg.startsWith(':')) {
+      final cmd = arg.substring(1);
+      if (knownCommands.contains(cmd)) {
+        return (cmd, args.sublist(0, i), args.sublist(i + 1));
+      }
+      // If it starts with : but isn't a known command, it's an error
+      // Return it anyway so the error handling can deal with it
+      return (cmd, args.sublist(0, i), args.sublist(i + 1));
+    }
+    
+    // Check for command without colon
+    if (knownCommands.contains(arg)) {
+      return (arg, args.sublist(0, i), args.sublist(i + 1));
+    }
   }
 
-  return (null, args);
+  return (null, [], args);
 }
 
 /// Find projects to process based on navigation args.
@@ -370,37 +431,29 @@ Future<List<String>> _findProjects(
   String basePath,
   bool verbose,
 ) async {
-  final discovery = ProjectDiscovery(verbose: verbose);
-
-  // Project pattern(s) specified
-  if (navArgs.project != null) {
-    return discovery.resolveProjectPatterns(
-      navArgs.project!,
-      basePath: basePath,
+  final navigator = ProjectNavigator(
+    config: NavigationConfig(
+      usePathExclude: true,
+      useNameExclude: true,
+      useModulesFilter: true,
+      useRecursionExclude: true,
+      useSkipFiles: true,
+      useMasterConfigDefaults: true,
+      useBuildOrder: navArgs.buildOrder,
+      useGitTraversal: true,
       projectFilter: _isTestableProject,
-    );
+    ),
+    verbose: verbose,
+  );
+
+  final result = await navigator.navigate(navArgs, basePath: basePath);
+
+  if (result.hasError) {
+    print('Error: ${result.errorMessage}');
+    return [];
   }
 
-  // Scan directory for projects
-  if (navArgs.scan != null) {
-    final scanPath = p.isAbsolute(navArgs.scan!)
-        ? navArgs.scan!
-        : p.join(basePath, navArgs.scan!);
-
-    final allProjects = await discovery.scanForProjects(
-      scanPath,
-      recursive: navArgs.recursive,
-    );
-
-    return allProjects.where(_isTestableProject).toList();
-  }
-
-  // Default: process current directory if it has tests
-  if (_isTestableProject(basePath)) {
-    return [basePath];
-  }
-
-  return [];
+  return result.paths;
 }
 
 /// Check if a directory is a testable project.
@@ -480,11 +533,24 @@ Command Options:
   -c, --comment=<text>     Short label shown in the run column header
       --file=<path>        Tracking file to update (instead of most recent)
       --baseline           Create baseline if no tracking file exists
+      --failed             Re-run only failed tests (X/OK, X/X) from last run
+      --mismatched         Re-run tests that don't match expectation (X/OK, OK/X)
       --test-args=<args>   Additional arguments passed to dart test
 
 $_commonOptions
 
 $_navOptionsSummary
+
+Filtering Options:
+  --failed and --mismatched filter tests based on the most recent run results.
+  They can be combined to run both groups. Tests are matched using --name
+  patterns passed to dart test.
+
+  Result codes:
+    X/OK  = Failed, expected pass (regression)
+    X/X   = Failed, expected fail
+    OK/X  = Passed, expected fail (unexpected pass)
+    OK/OK = Passed, expected pass
 
 Test Args (--test-args):
   Arguments are passed through to "dart test". testkit always adds
@@ -503,7 +569,10 @@ Examples:
   testkit :test                              # Append run to latest baseline
   testkit :test -c "after refactor"          # Run with comment
   testkit :test --baseline                   # Create baseline if missing
-  testkit :test --test-args="--name parser"  # Only run parser tests''',
+  testkit :test --test-args="--name parser"  # Only run parser tests
+  testkit :test --failed                     # Re-run only failed tests
+  testkit :test --mismatched                 # Re-run regressions and fixes
+  testkit :test --failed --mismatched        # Both groups combined''',
 
   'runs': '''
 testkit :runs — List all run timestamps in the tracking file.
@@ -819,6 +888,11 @@ void _printOverview() {
   print('  Use -r to recurse into subprojects, -R for workspace mode.');
   print('  Use -s <path> to scan a specific directory, -p <glob> for patterns.');
   print('');
+  print('  Navigation options can appear before OR after the subcommand:');
+  print('    testkit --project tom_d4rt :test');
+  print('    testkit :test --project tom_d4rt');
+  print('  Command-level options override global options when both are specified.');
+  print('');
   print('Tracking File:');
   print('  Baseline: doc/baseline_<MMDD_HHMM>.csv');
   print('  :test appends a result column to the most recent baseline file.');
@@ -847,19 +921,124 @@ void _printCommandHelp(String command) {
   print(helpText);
 }
 
-void _printVersion() {
-  // Version will come from version.g.dart once versioner runs
-  const version = String.fromEnvironment('version', defaultValue: '0.1.0');
-  const buildNumber =
-      String.fromEnvironment('buildNumber', defaultValue: '0');
-  const gitCommit =
-      String.fromEnvironment('gitCommit', defaultValue: 'unknown');
-  const buildTimestamp =
-      String.fromEnvironment('buildTimestamp', defaultValue: '');
+/// Merge global and command-level navigation args.
+///
+/// Command-level options override global options when explicitly set.
+/// If neither is set, uses the default from [cmdNavArgs].
+WorkspaceNavigationArgs _mergeNavigationArgs(
+  ArgResults? globalResults,
+  ArgResults cmdResults,
+  WorkspaceNavigationArgs cmdNavArgs, {
+  required bool globalBareRoot,
+  required bool cmdBareRoot,
+}) {
+  // If no global args were parsed, just use command args
+  if (globalResults == null) return cmdNavArgs;
 
-  print('Test Kit $version+$buildNumber');
-  if (gitCommit != 'unknown') print('Git: $gitCommit');
-  if (buildTimestamp.isNotEmpty) print('Built: $buildTimestamp');
+  // Helper to check if a value was explicitly set at command level
+  bool wasSetInCmd(String name) => cmdResults.wasParsed(name);
+  bool wasSetInGlobal(String name) => globalResults.wasParsed(name);
+
+  // For each option, use command value if set, else global value if set, else default
+  return WorkspaceNavigationArgs(
+    scan: wasSetInCmd('scan')
+        ? cmdNavArgs.scan
+        : (wasSetInGlobal('scan')
+            ? globalResults['scan'] as String?
+            : cmdNavArgs.scan),
+    
+    recursive: wasSetInCmd('recursive')
+        ? cmdNavArgs.recursive
+        : (wasSetInGlobal('recursive')
+            ? globalResults['recursive'] as bool? ?? false
+            : cmdNavArgs.recursive),
+    
+    recursiveExplicitlySet: wasSetInCmd('recursive') || wasSetInGlobal('recursive'),
+    
+    buildOrder: wasSetInCmd('build-order')
+        ? cmdNavArgs.buildOrder
+        : (wasSetInGlobal('build-order')
+            ? globalResults['build-order'] as bool? ?? false
+            : cmdNavArgs.buildOrder),
+    
+    project: wasSetInCmd('project')
+        ? cmdNavArgs.project
+        : (wasSetInGlobal('project')
+            ? globalResults['project'] as String?
+            : cmdNavArgs.project),
+    
+    root: wasSetInCmd('root')
+        ? cmdNavArgs.root
+        : (wasSetInGlobal('root')
+            ? _getRootValue(globalResults['root'] as String?)
+            : cmdNavArgs.root),
+    
+    bareRoot: cmdBareRoot || globalBareRoot,
+    
+    workspaceRecursion: wasSetInCmd('workspace-recursion')
+        ? cmdNavArgs.workspaceRecursion
+        : (wasSetInGlobal('workspace-recursion')
+            ? globalResults['workspace-recursion'] as bool? ?? false
+            : cmdNavArgs.workspaceRecursion),
+    
+    innerFirstGit: wasSetInCmd('inner-first-git')
+        ? cmdNavArgs.innerFirstGit
+        : (wasSetInGlobal('inner-first-git')
+            ? globalResults['inner-first-git'] as bool? ?? false
+            : cmdNavArgs.innerFirstGit),
+    
+    outerFirstGit: wasSetInCmd('outer-first-git')
+        ? cmdNavArgs.outerFirstGit
+        : (wasSetInGlobal('outer-first-git')
+            ? globalResults['outer-first-git'] as bool? ?? false
+            : cmdNavArgs.outerFirstGit),
+    
+    exclude: wasSetInCmd('exclude')
+        ? cmdNavArgs.exclude
+        : (wasSetInGlobal('exclude')
+            ? globalResults['exclude'] as List<String>? ?? []
+            : cmdNavArgs.exclude),
+    
+    excludeProjects: wasSetInCmd('exclude-projects')
+        ? cmdNavArgs.excludeProjects
+        : (wasSetInGlobal('exclude-projects')
+            ? globalResults['exclude-projects'] as List<String>? ?? []
+            : cmdNavArgs.excludeProjects),
+    
+    recursionExclude: wasSetInCmd('recursion-exclude')
+        ? cmdNavArgs.recursionExclude
+        : (wasSetInGlobal('recursion-exclude')
+            ? globalResults['recursion-exclude'] as List<String>? ?? []
+            : cmdNavArgs.recursionExclude),
+    
+    modules: wasSetInCmd('modules')
+        ? cmdNavArgs.modules
+        : (wasSetInGlobal('modules')
+            ? _parseModulesOption(globalResults['modules'] as String?)
+            : cmdNavArgs.modules),
+  );
+}
+
+/// Parse comma-separated modules option into a list.
+List<String> _parseModulesOption(String? value) {
+  if (value == null || value.isEmpty) return const [];
+  return value
+      .split(',')
+      .map((s) => s.trim())
+      .where((s) => s.isNotEmpty)
+      .toList();
+}
+
+/// Get root value, handling __BARE_ROOT__ marker.
+String? _getRootValue(String? value) {
+  if (value == '__BARE_ROOT__') return null;
+  return value;
+}
+
+void _printVersion() {
+  print('Test Kit ${TestKitVersionInfo.versionShort}');
+  print('Git: ${TestKitVersionInfo.gitCommit}');
+  print('Built: ${TestKitVersionInfo.buildTime}');
 }
 
 /// Runs the TUI mode — full-screen interactive dashboard.

@@ -167,30 +167,30 @@ Issues (@issues) move through a defined state machine, with each transition driv
 
 ```mermaid
 stateDiagram-v2
-    [*] --> NEW: ":new"
-    NEW --> ANALYZED: ":analyze"
-    NEW --> ASSIGNED: ":assign (project known)"
-    NEW --> DUPLICATE: "duplicate detected"
-    NEW --> WONTFIX: "out of scope"
+    [*] --> NEW : new
+    NEW --> ANALYZED : analyze
+    NEW --> ASSIGNED : assign (project known)
+    NEW --> DUPLICATE : duplicate detected
+    NEW --> WONTFIX : out of scope
 
-    ANALYZED --> ASSIGNED: ":assign"
+    ANALYZED --> ASSIGNED : assign
 
-    ASSIGNED --> TESTING: ":testing (dart test created)"
-    ASSIGNED --> BLOCKED: "external blocker"
+    ASSIGNED --> TESTING : testing (dart test created)
+    ASSIGNED --> BLOCKED : external blocker
 
-    TESTING --> VERIFYING: ":verify (all pass)"
-    TESTING --> BLOCKED: "external blocker"
+    TESTING --> VERIFYING : verify (all pass)
+    TESTING --> BLOCKED : external blocker
 
-    VERIFYING --> RESOLVED: ":resolve (confirmed)"
-    VERIFYING --> TESTING: "verification fails"
+    VERIFYING --> RESOLVED : resolve (confirmed)
+    VERIFYING --> TESTING : verification fails
 
-    RESOLVED --> CLOSED: ":close"
-    RESOLVED --> NEW: ":sync (regression)"
+    RESOLVED --> CLOSED : close
+    RESOLVED --> NEW : sync (regression)
 
-    CLOSED --> NEW: ":sync (regression)"
+    CLOSED --> NEW : sync (regression)
 
-    BLOCKED --> ASSIGNED: "blocker removed"
-    BLOCKED --> TESTING: "blocker removed"
+    BLOCKED --> ASSIGNED : blocker removed
+    BLOCKED --> TESTING : blocker removed
 ```
 
 | State | issuekit command | What happens |

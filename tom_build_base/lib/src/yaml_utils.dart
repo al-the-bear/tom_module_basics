@@ -42,3 +42,14 @@ List<dynamic> yamlListToList(YamlList yaml) {
     }
   }).toList();
 }
+
+/// Convert a dynamic value to a list of strings.
+///
+/// Handles null, single string, and list values.
+/// Used for parsing YAML fields that can be either a single value or a list.
+List<String> toStringList(dynamic value) {
+  if (value == null) return [];
+  if (value is String) return [value];
+  if (value is List) return value.map((e) => e.toString()).toList();
+  return [value.toString()];
+}

@@ -56,8 +56,8 @@ class CompilerConfig {
         project: compilerYaml['project'] as String?,
         scan: compilerYaml['scan'] as String?,
         recursive: compilerYaml['recursive'] as bool? ?? false,
-        exclude: ToolBase.toStringList(compilerYaml['exclude']),
-        recursionExclude: ToolBase.toStringList(
+        exclude: toStringList(compilerYaml['exclude']),
+        recursionExclude: toStringList(
             compilerYaml['recursion-exclude'] ?? compilerYaml['recursionExclude']),
       );
     } catch (_) {
@@ -434,7 +434,7 @@ class CompilerTool extends ToolBase {
 
         final builtinCommands = BuiltinCommands(
           projectPath: Directory.current.path,
-          rootPath: ToolBase.findWorkspaceRoot(Directory.current.path),
+          rootPath: findWorkspaceRoot(Directory.current.path),
           verbose: verbose,
           dryRun: dryRun,
         );
@@ -699,7 +699,7 @@ class CompilerTool extends ToolBase {
 
       final builtinCommands = BuiltinCommands(
         projectPath: projectPath,
-        rootPath: ToolBase.findWorkspaceRoot(projectPath),
+        rootPath: findWorkspaceRoot(projectPath),
         verbose: verbose,
         dryRun: dryRun,
       );

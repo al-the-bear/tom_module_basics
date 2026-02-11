@@ -10,16 +10,17 @@ This package provides the common foundation that Tom CLI build tools (like `tom_
 - **Configuration merging** — `ConfigMerger` with additive, scalar, nullable, section, and map merge strategies
 - **Project scanning** — `ProjectScanner` for directory traversal with custom validators, glob matching, and exclusions
 - **Project discovery** — `ProjectDiscovery` for workspace-wide scanning with proper scan-vs-recursive semantics
+- **Project navigation** — `ProjectNavigator` for unified navigation with configurable feature opt-in/opt-out
 - **build.yaml utilities** — Detect builder definitions vs consumers, read options and enabled flags
 - **Path validation** — `isPathContained` and `validatePathContainment` for directory-traversal protection
-- **YAML utilities** — `yamlToMap()` and `yamlListToList()` for converting YAML nodes to plain Dart maps/lists
+- **YAML utilities** — `yamlToMap()`, `yamlListToList()`, and `toStringList()` for converting YAML nodes
 - **Result tracking** — `ProcessingResult` for batch success/failure/file counting
 
 ## Installation
 
 ```yaml
 dependencies:
-  tom_build_base: ^1.3.0
+  tom_build_base: ^1.7.0
 ```
 
 ## Included CLI Tool — `show_versions`
@@ -109,6 +110,43 @@ final found = await discovery.resolveProjectPatterns(
 );
 ```
 
+### Project Navigation (Unified)
+
+For CLI tools, `ProjectNavigator` provides unified navigation with configurable features:
+
+```dart
+import 'package:tom_build_base/tom_build_base.dart';
+
+// Create navigator with tool-specific config
+final navigator = ProjectNavigator(
+  config: NavigationConfig(
+    usePathExclude: true,       // Apply --exclude patterns
+    useNameExclude: true,       // Apply --exclude-projects
+    useModulesFilter: true,     // Apply --modules filter
+    useSkipFiles: true,         // Skip buildkit_skip.yaml dirs
+    useMasterConfigDefaults: true, // Load from buildkit_master.yaml
+    useBuildOrder: true,        // Sort by dependency order
+    useGitTraversal: true,      // Support --inner-first-git / --outer-first-git
+    projectFilter: (path) => File('$path/pubspec.yaml').existsSync(),
+  ),
+  verbose: true,
+);
+
+// Navigate using parsed navigation args
+final result = await navigator.navigate(navArgs, basePath: executionRoot);
+
+if (result.hasError) {
+  print('Error: ${result.errorMessage}');
+  return;
+}
+
+for (final project in result.paths) {
+  // Process each project
+}
+```
+
+Use `NavigationConfig.all()` for full features or `NavigationConfig.minimal()` for basic discovery.
+
 ### Detecting Builder Definitions
 
 ```dart
@@ -170,7 +208,8 @@ show_versions:
 
 ## Documentation
 
-See [build_base_user_guide.md](doc/build_base_user_guide.md) for the complete user guide with API reference.
+- [build_base_user_guide.md](doc/build_base_user_guide.md) — Complete user guide with API reference
+- [cli_tools_navigation.md](doc/cli_tools_navigation.md) — CLI navigation options and implementation guide
 
 ## License
 

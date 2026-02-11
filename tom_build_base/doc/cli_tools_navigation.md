@@ -119,7 +119,15 @@ astgen --recursion-exclude='**/.git/**,**/node_modules/**'
 
 ### Adding Navigation to Your Tool
 
+There are two approaches for implementing navigation:
+
+1. **ProjectNavigator** (recommended) — Unified navigation with configurable features
+2. **Manual discovery** — Use `ProjectDiscovery` directly for custom control
+
+### Using ProjectNavigator (Recommended)
+
 ```dart
+import 'dart:io';
 import 'package:args/args.dart';
 import 'package:tom_build_base/tom_build_base.dart';
 
@@ -154,6 +162,8 @@ void main(List<String> args) async {
     return;
   }
 
+  final verbose = results['verbose'] as bool;
+
   // 6. Parse navigation options
   final navArgs = parseNavigationArgs(results, bareRoot: bareRoot);
   
@@ -166,15 +176,44 @@ void main(List<String> args) async {
   // 8. Apply defaults if needed
   final effectiveNavArgs = navArgs.withDefaults();
 
-  // 9. Find projects using navigation args
-  final discovery = ProjectDiscovery(verbose: results['verbose'] as bool);
-  final projects = await discovery.findProjects(effectiveNavArgs, executionRoot);
+  // 9. Create navigator with tool-specific config
+  final navigator = ProjectNavigator(
+    config: NavigationConfig(
+      usePathExclude: true,
+      useNameExclude: true,
+      useModulesFilter: true,
+      useRecursionExclude: true,
+      useSkipFiles: true,
+      useMasterConfigDefaults: true,
+      useBuildOrder: effectiveNavArgs.buildOrder,
+      useGitTraversal: true,
+      projectFilter: _isValidProject,  // Optional: custom filter
+    ),
+    verbose: verbose,
+  );
 
-  // 10. Process projects...
+  // 10. Navigate to find projects
+  final result = await navigator.navigate(
+    effectiveNavArgs,
+    basePath: executionRoot,
+  );
+
+  if (result.hasError) {
+    stderr.writeln('Error: ${result.errorMessage}');
+    exit(1);
+  }
+
+  // 11. Process projects
+  for (final project in result.paths) {
+    await processProject(project);
+  }
+}
+
+bool _isValidProject(String dirPath) {
+  return File('$dirPath/pubspec.yaml').existsSync();
 }
 
 void _printUsage() {
-  // Print tool-specific header
   print('MyTool - Does something useful');
   print('');
   print('Usage:');
@@ -182,17 +221,16 @@ void _printUsage() {
   print('  mytool help');
   print('  mytool version');
   print('');
-  
-  // Print tool-specific options
   print('Tool Options:');
   print('  -c, --config=<path>  Config file path');
   print('  -v, --verbose        Verbose output');
   print('  -h, --help           Show help');
   print('');
-  
-  // Print standard navigation options
   printNavigationOptionsHelp();
 }
+```
+
+### Using ProjectDiscovery (Manual Approach)
 ```
 
 ### Generating Consistent Help Output
@@ -248,12 +286,39 @@ void _printUsage(ArgParser parser) {
 | `getToolHelpHeader(...)` | Generate standard tool help header |
 | `getToolHelpFooter(toolName)` | Generate standard tool help footer |
 
-### Classes
+### Navigation Classes
 
 | Class | Description |
 |-------|-------------|
+| `ProjectNavigator` | Unified project navigation with configurable features |
+| `NavigationConfig` | Configuration for which features to enable |
+| `NavigationDefaults` | Navigation defaults loaded from master config |
+| `NavigationResult` | Result container with paths and metadata |
 | `WorkspaceNavigationArgs` | Parsed navigation options container |
 | `ExecutionMode` | Enum: `project` or `workspace` |
+
+### NavigationConfig Properties
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `usePathExclude` | `bool` | `true` | Apply `--exclude` patterns |
+| `useNameExclude` | `bool` | `true` | Apply `--exclude-projects` patterns |
+| `useModulesFilter` | `bool` | `true` | Apply `--modules` filter |
+| `useRecursionExclude` | `bool` | `true` | Apply `--recursion-exclude` |
+| `useSkipFiles` | `bool` | `true` | Skip dirs with `buildkit_skip.yaml` |
+| `useMasterConfigDefaults` | `bool` | `true` | Load defaults from `buildkit_master.yaml` |
+| `useBuildOrder` | `bool` | `true` | Sort by dependency order |
+| `useGitTraversal` | `bool` | `true` | Support git-based traversal |
+| `projectFilter` | `Function?` | `null` | Custom project filter callback |
+
+### NavigationResult Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `paths` | `List<String>` | Discovered project or repo paths |
+| `isGitMode` | `bool` | True if git traversal was used |
+| `hasError` | `bool` | True if an error occurred |
+| `errorMessage` | `String?` | Error message if `hasError` is true |
 
 ### WorkspaceNavigationArgs Properties
 

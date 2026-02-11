@@ -183,9 +183,12 @@ TestEntry parseEntryFromColumns({
     remaining = remaining.replaceFirst(dateMatch.group(0)!, '').trim();
   }
 
-  // Reconstruct fullDescription to match what DartTestParser produces
+  // Reconstruct fullDescription to match what DartTestParser produces.
+  // The original test name may have (PASS) or (FAIL) suffix which is stripped
+  // when writing to CSV but needs to be restored for key matching.
   final idPrefix = id.isNotEmpty ? '$id: ' : '';
-  final fullDescription = '$idPrefix$description';
+  final expectSuffix = expectation == 'FAIL' ? '' : ' (PASS)';
+  final fullDescription = '$idPrefix$description$expectSuffix';
 
   return TestEntry(
     id: id.isNotEmpty ? id : null,

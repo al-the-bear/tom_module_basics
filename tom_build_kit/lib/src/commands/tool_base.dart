@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:args/args.dart';
-import 'package:glob/glob.dart';
 import 'package:path/path.dart' as p;
 import 'package:tom_build_base/tom_build_base.dart';
 import 'package:yaml/yaml.dart';
@@ -14,13 +13,7 @@ const kBuildkitMasterYaml = 'buildkit_master.yaml';
 /// Filename for the project-level build configuration.
 const kBuildkitYaml = 'buildkit.yaml';
 
-/// Filename that marks a directory (and all subdirectories) as excluded
-/// from buildkit processing.
-///
-/// When present in a directory, no tool will process that directory or
-/// any of its children. If the directory is a git repository root,
-/// tests will also skip git commit/checkout operations for it.
-const kBuildkitSkipYaml = 'buildkit_skip.yaml';
+// Note: kBuildkitSkipYaml is exported from tom_build_base/workspace_mode.dart
 
 /// Base class for all integrated build tools.
 ///
@@ -240,7 +233,7 @@ abstract class ToolBase {
     // When no explicit --project or --scan, load defaults from master YAML.
     // If no master config exists, fall back to --scan . --recursive.
     if (project == null && scan == null) {
-      final navDefaults = _loadNavigationDefaults(basePath);
+      final navDefaults = ProjectNavigator.loadNavigationDefaults(basePath);
       if (navDefaults != null) {
         scan = navDefaults.scan;
         recursive = navDefaults.recursive || recursive;
@@ -279,7 +272,7 @@ abstract class ToolBase {
         project,
         basePath: basePath,
       );
-      results = _filterProjects(paths, exclude);
+      results = ProjectNavigator.filterByPath(paths, exclude);
     } else if (scan != null) {
       final scanDir = _resolvePath(scan, basePath);
       final paths = await discovery.scanForProjects(
@@ -288,7 +281,7 @@ abstract class ToolBase {
         toolKey: toolKey,
         recursionExclude: recursionExclude,
       );
-      results = _filterProjects(paths, exclude);
+      results = ProjectNavigator.filterByPath(paths, exclude);
     } else {
       results = [basePath];
     }
@@ -296,15 +289,15 @@ abstract class ToolBase {
     // Merge CLI --exclude-projects with master YAML navigation section
     final allExcludeProjects = [
       ...excludeProjects,
-      ..._loadMasterExcludeProjects(basePath),
+      ...ProjectNavigator.loadMasterExcludeProjects(basePath),
     ];
 
     // Apply --exclude-projects filtering
     final wsRoot = findWorkspaceRoot(basePath);
-    results = _filterProjectsByName(results, allExcludeProjects, wsRoot);
+    results = ProjectNavigator.filterByName(results, allExcludeProjects, wsRoot);
 
     // Remove projects that contain buildkit_skip.yaml
-    results = _filterSkippedProjects(results);
+    results = ProjectNavigator.filterSkippedProjects(results, verbose: verbose);
 
     // Apply --modules filtering (include only projects within specified modules)
     if (modules.isNotEmpty) {
@@ -320,102 +313,18 @@ abstract class ToolBase {
     return results;
   }
 
-  /// Load `exclude-projects` from the master YAML navigation section.
-  List<String> _loadMasterExcludeProjects(String basePath) {
-    final masterYaml = loadMasterConfig(basePath);
-    if (masterYaml == null) return [];
-    final nav = masterYaml['navigation'] as YamlMap?;
-    if (nav == null) return [];
-    return toStringList(nav['exclude-projects'] ?? nav['excludeProjects']);
-  }
-
-  /// Load navigation defaults (scan, recursive, exclude, recursion-exclude)
-  /// from `buildkit_master.yaml`'s `navigation:` section.
-  ///
-  /// Returns null if no master config or no navigation section is found.
-  _NavigationDefaults? _loadNavigationDefaults(String basePath) {
-    final masterYaml = loadMasterConfig(basePath);
-    if (masterYaml == null) return null;
-    final nav = masterYaml['navigation'] as YamlMap?;
-    if (nav == null) return null;
-    return _NavigationDefaults(
-      scan: nav['scan'] as String?,
-      recursive: nav['recursive'] as bool? ?? false,
-      exclude: toStringList(nav['exclude']),
-      recursionExclude: toStringList(
-          nav['recursion-exclude'] ?? nav['recursionExclude']),
-    );
-  }
+  // Note: Navigation defaults and exclude-projects loading moved to
+  // ProjectNavigator.loadNavigationDefaults() and
+  // ProjectNavigator.loadMasterExcludeProjects() in tom_build_base.
 
   /// Check if a directory is a project this tool should process.
   bool isToolProject(String dirPath);
 
-  /// Filter projects by exclusion patterns using glob matching on full path.
-  List<String> _filterProjects(
-      List<String> projects, List<String> exclude) {
-    if (exclude.isEmpty) return projects;
-
-    return projects.where((path) {
-      for (final pattern in exclude) {
-        try {
-          if (Glob(pattern).matches(path)) return false;
-        } catch (_) {
-          // Fallback to substring match for non-glob patterns
-          if (path.contains(pattern)) return false;
-        }
-      }
-      return true;
-    }).toList();
-  }
-
-  /// Filter projects by exclude-projects patterns.
-  ///
-  /// Patterns that contain `/` or `**` are treated as **path patterns** and
-  /// matched against the workspace-relative path (e.g. `xternal/tom_module_basics/*`,
-  /// `**/tom_module_basics/*`).
-  ///
-  /// All other patterns are treated as **folder name patterns** and matched
-  /// against the directory basename only (e.g. `zom_*`, `tom_test_*`).
-  List<String> _filterProjectsByName(
-      List<String> projects, List<String> excludePatterns, String wsRoot) {
-    if (excludePatterns.isEmpty) return projects;
-
-    return projects.where((projectPath) {
-      final folderName = p.basename(projectPath);
-      final relativePath = p.relative(projectPath, from: wsRoot);
-      for (final pattern in excludePatterns) {
-        final isPathPattern = pattern.contains('/') || pattern.contains('**');
-        final matchTarget = isPathPattern ? relativePath : folderName;
-        try {
-          if (Glob(pattern).matches(matchTarget)) return false;
-        } catch (_) {
-          if (matchTarget.contains(pattern)) return false;
-        }
-      }
-      return true;
-    }).toList();
-  }
-
-  /// Remove projects that contain a [kBuildkitSkipYaml] file.
-  ///
-  /// Also checks all parent directories up to (but not above) the workspace
-  /// root — if any ancestor has the skip file, the project is excluded.
-  List<String> _filterSkippedProjects(List<String> projects) {
-    return projects.where((projectPath) {
-      if (hasSkipFile(projectPath)) {
-        if (verbose) {
-          print('  Skipping ($kBuildkitSkipYaml): $projectPath');
-        }
-        return false;
-      }
-      return true;
-    }).toList();
-  }
-
-  /// Check if a directory contains a [kBuildkitSkipYaml] file.
-  static bool hasSkipFile(String dirPath) {
-    return File(p.join(dirPath, kBuildkitSkipYaml)).existsSync();
-  }
+  // Note: Filtering methods moved to ProjectNavigator static methods:
+  // - ProjectNavigator.filterByPath()
+  // - ProjectNavigator.filterByName()
+  // - ProjectNavigator.filterSkippedProjects()
+  // - ProjectNavigator.hasSkipFile()
 
   /// Validate path containment and print error if invalid.
   ///
@@ -444,48 +353,6 @@ abstract class ToolBase {
   }
 
   // ---------------------------------------------------------------------------
-  // Workspace root discovery
-  // ---------------------------------------------------------------------------
-
-  /// Find the workspace root by traversing upwards looking for
-  /// `buildkit_master.yaml` or `tom_workspace.yaml`.
-  ///
-  /// Returns the directory containing the workspace config, or [startPath]
-  /// if none is found.
-  static String findWorkspaceRoot(String startPath) {
-    var current = p.normalize(p.absolute(startPath));
-    final root = p.rootPrefix(current);
-
-    while (current != root) {
-      if (File(p.join(current, kBuildkitMasterYaml)).existsSync() ||
-          File(p.join(current, 'tom_workspace.yaml')).existsSync() ||
-          File(p.join(current, 'tom.code-workspace')).existsSync()) {
-        return current;
-      }
-      current = p.dirname(current);
-    }
-
-    return startPath;
-  }
-
-  /// Load the workspace-level master config ([kBuildkitMasterYaml]).
-  ///
-  /// Traverses up from [startDir] to find the workspace root,
-  /// then loads `buildkit_master.yaml` from there.
-  /// Returns null if not found.
-  static YamlMap? loadMasterConfig(String startDir) {
-    final wsRoot = findWorkspaceRoot(startDir);
-    final file = File(p.join(wsRoot, kBuildkitMasterYaml));
-    if (!file.existsSync()) return null;
-    try {
-      final content = file.readAsStringSync();
-      return loadYaml(content) as YamlMap?;
-    } catch (_) {
-      return null;
-    }
-  }
-
-  // ---------------------------------------------------------------------------
   // Shared YAML utilities
   // ---------------------------------------------------------------------------
 
@@ -499,14 +366,6 @@ abstract class ToolBase {
     } catch (_) {
       return null;
     }
-  }
-
-  /// Convert a dynamic YAML value to a `List<String>`.
-  static List<String> toStringList(dynamic value) {
-    if (value == null) return [];
-    if (value is String) return [value];
-    if (value is List) return value.map((e) => e.toString()).toList();
-    return [];
   }
 
   /// Print a YAML node with indentation (for --show).
@@ -556,19 +415,4 @@ abstract class ToolBase {
       print('  Error reading buildkit.yaml: $e');
     }
   }
-}
-
-/// Navigation defaults loaded from `buildkit_master.yaml`.
-class _NavigationDefaults {
-  final String? scan;
-  final bool recursive;
-  final List<String> exclude;
-  final List<String> recursionExclude;
-
-  const _NavigationDefaults({
-    this.scan,
-    this.recursive = false,
-    this.exclude = const [],
-    this.recursionExclude = const [],
-  });
 }

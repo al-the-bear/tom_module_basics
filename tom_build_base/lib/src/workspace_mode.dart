@@ -7,6 +7,7 @@ import 'package:path/path.dart' as p;
 const kBuildkitMasterYaml = 'buildkit_master.yaml';
 const kTomWorkspaceYaml = 'tom_workspace.yaml';
 const kTomCodeWorkspace = 'tom.code-workspace';
+const kBuildkitSkipYaml = 'buildkit_skip.yaml';
 
 /// Represents the execution mode for a tool.
 enum ExecutionMode {

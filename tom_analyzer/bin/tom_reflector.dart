@@ -128,8 +128,6 @@ void main(List<String> args) async {
 
   final processingResult = ProcessingResult();
   for (final projectPath in projects) {
-    if (ProjectDiscovery.hasSkipFile(projectPath)) continue;
-
     final success = await _processProject(
       projectPath: projectPath,
       executionRoot: executionRoot,
@@ -157,44 +155,25 @@ void main(List<String> args) async {
   }
 }
 
-/// Find projects to process based on navigation args.
+/// Find projects to process based on navigation args using ProjectNavigator.
 Future<List<String>> _findProjects(
   WorkspaceNavigationArgs navArgs,
   String basePath,
   bool verbose,
 ) async {
-  final discovery = ProjectDiscovery(verbose: verbose);
-
-  // Project pattern(s) specified
-  if (navArgs.project != null) {
-    return discovery.resolveProjectPatterns(
-      navArgs.project!,
-      basePath: basePath,
+  final navigator = ProjectNavigator(
+    verbose: verbose,
+    config: NavigationConfig(
+      usePathExclude: true,
+      useNameExclude: true,
+      useSkipFiles: true,
+      useMasterConfigDefaults: false, // Uses withDefaults() instead
       projectFilter: _isReflectorProject,
-    );
-  }
+    ),
+  );
 
-  // Scan directory for projects
-  if (navArgs.scan != null) {
-    final scanPath = p.isAbsolute(navArgs.scan!)
-        ? navArgs.scan!
-        : p.join(basePath, navArgs.scan!);
-
-    final allProjects = await discovery.scanForProjects(
-      scanPath,
-      recursive: navArgs.recursive,
-      toolKey: _toolKey,
-    );
-
-    return allProjects.where(_isReflectorProject).toList();
-  }
-
-  // Default: process current directory if it has config
-  if (_isReflectorProject(basePath)) {
-    return [basePath];
-  }
-
-  return [];
+  final result = await navigator.navigate(navArgs, basePath: basePath);
+  return result.paths;
 }
 
 /// Check if a directory is a tom_reflector project.

@@ -173,9 +173,10 @@ void main() {
       });
 
       test('TK-TRK-7: should preserve results across round-trip', () async {
+        // fullDescription should include (PASS) or (FAIL) to match dart test format
         final entries = [
           TestEntry(
-            fullDescription: 'passing test',
+            fullDescription: 'passing test (PASS)',
             description: 'passing test',
           ),
           TestEntry(
@@ -188,7 +189,7 @@ void main() {
           timestamp: DateTime(2026, 2, 10, 14, 30),
           isBaseline: true,
           results: {
-            'passing test': TestResult.ok,
+            'passing test (PASS)': TestResult.ok,
             'failing test (FAIL)': TestResult.fail,
           },
         );
@@ -199,29 +200,30 @@ void main() {
 
         final loaded = TrackingFile.load(filePath)!;
         final loadedRun = loaded.runs.first;
-        expect(loadedRun.getResult('passing test'), equals(TestResult.ok));
+        expect(loadedRun.getResult('passing test (PASS)'), equals(TestResult.ok));
         expect(loadedRun.getResult('failing test (FAIL)'),
             equals(TestResult.fail));
       });
 
       test('TK-TRK-8: should preserve multiple runs across round-trip',
           () async {
+        // fullDescription should include (PASS) to match dart test format
         final entries = [
           TestEntry(
-            fullDescription: 'test A',
+            fullDescription: 'test A (PASS)',
             description: 'test A',
           ),
         ];
         final baselineRun = TestRun(
           timestamp: DateTime(2026, 2, 10, 14, 30),
           isBaseline: true,
-          results: {'test A': TestResult.ok},
+          results: {'test A (PASS)': TestResult.ok},
         );
         final tracking = TrackingFile.fromBaseline(entries, baselineRun);
 
         final secondRun = TestRun(
           timestamp: DateTime(2026, 2, 10, 15, 0),
-          results: {'test A': TestResult.fail},
+          results: {'test A (PASS)': TestResult.fail},
         );
         tracking.addRun(secondRun, []);
 
@@ -230,8 +232,8 @@ void main() {
 
         final loaded = TrackingFile.load(filePath)!;
         expect(loaded.runs, hasLength(2));
-        expect(loaded.runs[0].getResult('test A'), equals(TestResult.ok));
-        expect(loaded.runs[1].getResult('test A'), equals(TestResult.fail));
+        expect(loaded.runs[0].getResult('test A (PASS)'), equals(TestResult.ok));
+        expect(loaded.runs[1].getResult('test A (PASS)'), equals(TestResult.fail));
       });
     });
 

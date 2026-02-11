@@ -1,3 +1,26 @@
+## 1.7.1
+
+- Changelog update for 1.7.0 features.
+
+## 1.7.0
+
+### Features
+
+- **`ProjectNavigator` class** — New unified project navigation and discovery class that can be shared across CLI tools. Supports all navigation modes: project patterns, directory scanning, git-based traversal.
+- **`NavigationConfig` class** — Configurable opt-in/opt-out for navigation features (path exclude, name exclude, modules filter, skip files, master config defaults, build order, git traversal).
+- **`NavigationDefaults` class** — Navigation defaults loaded from master config.
+- **`NavigationResult` class** — Result container with discovered paths and metadata.
+- **Build order sorting** — `ProjectNavigator.sortByBuildOrder()` uses Kahn's algorithm for dependency-based topological sorting.
+- **Git repository discovery** — `ProjectNavigator.findGitRepositories()` recursively scans for `.git` folders.
+- **Static filter methods** — `filterByPath()`, `filterByName()`, `filterSkippedProjects()`, `hasSkipFile()`.
+- **Master config loading** — `loadNavigationDefaults()` and `loadMasterExcludeProjects()` static methods.
+
+### API Changes
+
+- New `project_navigator.dart` exported from `tom_build_base.dart`.
+- `kBuildkitSkipYaml` constant now exported from `workspace_mode.dart`.
+- `toStringList()` utility added to `yaml_utils.dart`.
+
 ## 1.6.0
 
 ### Features

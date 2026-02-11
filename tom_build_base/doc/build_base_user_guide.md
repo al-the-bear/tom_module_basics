@@ -11,6 +11,7 @@ This guide explains how to use `tom_build_base` to create CLI tools that integra
 - **Build.yaml utilities** — detect builder definitions vs consumers, read options
 - **Project scanning** — `ProjectScanner` for directory traversal with custom validators
 - **Project discovery** — `ProjectDiscovery` for glob-based resolution and workspace search
+- **Project navigation** — `ProjectNavigator` for unified navigation with configurable features
 - **Path validation** — `isPathContained`, `validatePathContainment` for security
 - **Result tracking** — `ProcessingResult` for batch success/failure/file counting
 
@@ -323,6 +324,183 @@ final root = ProjectDiscovery.findWorkspaceRoot(Directory.current.path);
 
 ---
 
+## Project Navigation — ProjectNavigator
+
+`ProjectNavigator` provides unified project navigation with configurable feature opt-in/opt-out. It's designed for CLI tools that need consistent navigation behavior while supporting tool-specific customizations.
+
+### Why Use ProjectNavigator?
+
+- **Unified behavior** — All navigation features (scanning, filtering, git traversal, build order) in one place
+- **Configurable** — Enable/disable features per tool via `NavigationConfig`
+- **Consistent** — Same behavior across buildkit, testkit, and other tools
+- **Complete** — Handles all standard navigation options from `WorkspaceNavigationArgs`
+
+### Basic Usage
+
+```dart
+import 'package:tom_build_base/tom_build_base.dart';
+
+// Create navigator with all features enabled
+final navigator = ProjectNavigator(
+  config: const NavigationConfig.all(),
+  verbose: true,
+);
+
+// Navigate using parsed navigation args
+final result = await navigator.navigate(
+  navArgs,
+  basePath: executionRoot,
+);
+
+if (result.hasError) {
+  print('Error: ${result.errorMessage}');
+  return;
+}
+
+for (final project in result.paths) {
+  // Process each project
+}
+```
+
+### NavigationConfig — Feature Control
+
+`NavigationConfig` allows tools to opt-in or opt-out of navigation features:
+
+```dart
+// Full buildkit-style navigation (all features)
+final config = NavigationConfig.all();
+
+// Minimal navigation (just discovery, no filtering)
+final config = NavigationConfig.minimal();
+
+// Custom configuration
+final config = NavigationConfig(
+  usePathExclude: true,       // Apply --exclude patterns
+  useNameExclude: true,       // Apply --exclude-projects patterns
+  useModulesFilter: true,     // Apply --modules filter
+  useRecursionExclude: true,  // Apply --recursion-exclude patterns
+  useSkipFiles: true,         // Skip dirs with buildkit_skip.yaml
+  useMasterConfigDefaults: true, // Load defaults from buildkit_master.yaml
+  useBuildOrder: true,        // Sort by dependency order
+  useGitTraversal: true,      // Support --inner-first-git/--outer-first-git
+  projectFilter: _isTestableProject, // Custom project filter function
+);
+```
+
+### Custom Project Filters
+
+Filter projects by providing a callback function:
+
+```dart
+// Only process projects with test/ directories
+bool _isTestableProject(String dirPath) {
+  if (!File('$dirPath/pubspec.yaml').existsSync()) return false;
+  return Directory('$dirPath/test').existsSync();
+}
+
+final navigator = ProjectNavigator(
+  config: NavigationConfig(
+    projectFilter: _isTestableProject,
+    // ... other options
+  ),
+);
+```
+
+### Git Repository Traversal
+
+For git-based operations (commit, push, pull):
+
+```dart
+final navigator = ProjectNavigator(
+  config: const NavigationConfig.all(),
+);
+
+// --inner-first-git: deepest repos first (for commit/push)
+// --outer-first-git: shallowest repos first (for pull/fetch)
+final result = await navigator.navigate(navArgs, basePath: wsRoot);
+
+if (result.isGitMode) {
+  // result.paths contains git repository roots
+  for (final repo in result.paths) {
+    await runGitCommand(repo, 'commit', ['-m', 'Update']);
+  }
+}
+```
+
+### Build Order Sorting
+
+Sort projects by dependency order (dependencies before dependents):
+
+```dart
+// Using navigator (respects navArgs.buildOrder)
+final config = NavigationConfig(useBuildOrder: true);
+final navigator = ProjectNavigator(config: config);
+final result = await navigator.navigate(navArgs, basePath: root);
+
+// Or use the static method directly
+final sorted = navigator.sortByBuildOrder(projects);
+if (sorted != null) {
+  // sorted is in dependency order
+} else {
+  // circular dependency detected
+}
+```
+
+### Static Filter Methods
+
+`ProjectNavigator` provides static methods for filtering outside of navigation:
+
+```dart
+// Filter by path patterns (glob matching)
+final filtered = ProjectNavigator.filterByPath(
+  projects,
+  ['**/test/**', '**/example/**'],
+);
+
+// Filter by project name patterns
+final filtered = ProjectNavigator.filterByName(
+  projects,
+  ['zom_*', '*_test'],
+  wsRoot,
+);
+
+// Remove projects with skip files
+final filtered = ProjectNavigator.filterSkippedProjects(projects);
+
+// Check for skip file
+if (ProjectNavigator.hasSkipFile(dirPath)) {
+  print('Skipping: $dirPath');
+}
+```
+
+### Loading Master Config Defaults
+
+```dart
+// Load navigation defaults from buildkit_master.yaml
+final defaults = ProjectNavigator.loadNavigationDefaults(basePath);
+if (defaults != null) {
+  print('Default scan: ${defaults.scan}');
+  print('Recursive: ${defaults.recursive}');
+  print('Exclude: ${defaults.exclude}');
+}
+
+// Load exclude-projects from master config
+final excludeProjects = ProjectNavigator.loadMasterExcludeProjects(basePath);
+```
+
+### NavigationResult
+
+The `navigate()` method returns a `NavigationResult`:
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `paths` | `List<String>` | Discovered project/repo paths |
+| `isGitMode` | `bool` | True if git traversal was used |
+| `hasError` | `bool` | True if an error occurred |
+| `errorMessage` | `String?` | Error message if `hasError` is true |
+
+---
+
 ## Result Tracking — ProcessingResult
 
 Track success/failure counts across batch operations.
@@ -407,6 +585,10 @@ See [example/tom_build_base_example.dart](../example/tom_build_base_example.dart
 | `ConfigMerger` | config_merger | Static merge helpers |
 | `ProjectScanner` | project_scanner | Directory-walk project finder |
 | `ProjectDiscovery` | project_discovery | Glob / workspace-wide finder |
+| `ProjectNavigator` | project_navigator | Unified navigation with config |
+| `NavigationConfig` | project_navigator | Feature opt-in/opt-out |
+| `NavigationDefaults` | project_navigator | Master config default values |
+| `NavigationResult` | project_navigator | Navigation result container |
 | `ProcessingResult` | processing_result | Batch result tracker |
 | `isPathContained()` | path_utils | Single path containment |
 | `validatePathContainment()` | path_utils | Multi-path validation |
@@ -417,3 +599,9 @@ See [example/tom_build_base_example.dart](../example/tom_build_base_example.dart
 | `hasBuildYamlConsumerConfig()` | build_yaml_utils | Detect consumer config |
 | `getBuildYamlBuilderOptions()` | build_yaml_utils | Read builder options |
 | `isBuildYamlBuilderEnabled()` | build_yaml_utils | Check builder enabled flag |
+| `WorkspaceNavigationArgs` | workspace_mode | Parsed navigation options |
+| `addNavigationOptions()` | workspace_mode | Add nav options to ArgParser |
+| `parseNavigationArgs()` | workspace_mode | Parse nav options from ArgResults |
+| `resolveExecutionRoot()` | workspace_mode | Resolve workspace root |
+| `findWorkspaceRoot()` | workspace_mode | Find workspace by traversing up |
+| `toStringList()` | yaml_utils | Convert YAML to List<String> |

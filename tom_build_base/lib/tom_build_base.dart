@@ -7,6 +7,7 @@
 ///
 /// - Unified `tom_build.yaml` configuration loading
 /// - Project directory traversal with glob pattern support
+/// - Unified project navigation via [ProjectNavigator]
 /// - Path containment validation
 /// - Processing result tracking
 ///
@@ -21,10 +22,12 @@
 ///   toolKey: 'dartgen',
 /// );
 ///
-/// // Use project scanner for traversal
-/// final scanner = ProjectScanner(
-///   isProjectCallback: (path) => File('$path/pubspec.yaml').existsSync(),
+/// // Use ProjectNavigator for unified navigation
+/// final navigator = ProjectNavigator(
+///   config: NavigationConfig.all(),
+///   verbose: true,
 /// );
+/// final result = await navigator.navigate(navArgs, basePath: root);
 ///
 /// // Check if build.yaml defines a builder (should be ignored by CLI tools)
 /// if (isBuildYamlBuilderDefinition(projectPath)) {
@@ -41,6 +44,7 @@ export 'src/config_merger.dart';
 export 'src/path_utils.dart';
 export 'src/processing_result.dart';
 export 'src/project_discovery.dart';
+export 'src/project_navigator.dart';
 export 'src/project_scanner.dart';
 export 'src/workspace_mode.dart';
 export 'src/yaml_utils.dart';

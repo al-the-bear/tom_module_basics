@@ -166,7 +166,7 @@ class BuiltinCommands {
     }
     var args = parts.skip(1).toList();
 
-    // Forward --project to tool if not already in args (bug #18 fix).
+    // Forward --project and --root to tool if not already in args (bug #18 fix).
     // Skip injection for dcli — it doesn't use --project; it uses
     // the working directory instead.
     if (cmd != 'dcli' &&
@@ -174,6 +174,15 @@ class BuiltinCommands {
         !args.contains('--project') &&
         !args.contains('-p')) {
       args = ['--project', projectPath, ...args];
+    }
+    // Forward --root to tool for proper path validation (bug #38 fix).
+    // Without this, tools compute executionRoot from current directory
+    // instead of using the buildkit-determined workspace root.
+    if (cmd != 'dcli' &&
+        rootPath.isNotEmpty &&
+        !args.contains('--root') &&
+        !args.contains('-R')) {
+      args = ['--root', rootPath, ...args];
     }
 
     switch (cmd) {

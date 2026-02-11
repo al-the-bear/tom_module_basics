@@ -174,7 +174,7 @@ class VersionerTool extends ToolBase {
     final showMode = results['show'] as bool;
 
     // Load workspace-level config
-    final wsRoot = ToolBase.findWorkspaceRoot(executionRoot);
+    final wsRoot = findWorkspaceRoot(executionRoot);
     final wsConfig = VersionerConfig.loadFromMasterYaml(wsRoot) ?? VersionerConfig();
 
     // Build CLI config (highest priority) - tool-specific options only

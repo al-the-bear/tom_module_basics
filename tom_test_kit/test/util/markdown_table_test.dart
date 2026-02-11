@@ -126,8 +126,9 @@ void main() {
       expect(entry.id, equals('TK-FMT-1'));
       expect(entry.groups, equals('padTwo'));
       expect(entry.description, equals('should zero-pad single digit'));
+      // fullDescription includes (PASS) to match dart test output format
       expect(entry.fullDescription,
-          equals('TK-FMT-1: should zero-pad single digit'));
+          equals('TK-FMT-1: should zero-pad single digit (PASS)'));
     });
 
     test('TK-MDT-20: should handle empty ID and groups', () {
@@ -139,7 +140,8 @@ void main() {
       expect(entry.id, isNull);
       expect(entry.groups, isNull);
       expect(entry.description, equals('bare test'));
-      expect(entry.fullDescription, equals('bare test'));
+      // fullDescription includes (PASS) to match dart test output format
+      expect(entry.fullDescription, equals('bare test (PASS)'));
     });
 
     test('TK-MDT-21: should extract date and FAIL from description', () {
