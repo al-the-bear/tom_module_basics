@@ -1,6 +1,6 @@
 # Issue Tracking — Concept and Workflow
 
-This document defines the issue tracking process supported by Tom Issue Tracker's `issuekit` CLI. It describes the lifecycle of an issue from discovery through verified resolution, the ID conventions that link issues to reproduction tests via the codebase, and the commands needed to support each step.
+This document defines the issue tracking process supported by Tom Issue Kit's `issuekit` CLI. It describes the lifecycle of an issue from discovery through verified resolution, the ID conventions that link issues to reproduction tests via the codebase, and the commands needed to support each step.
 
 ---
 
@@ -26,7 +26,7 @@ This document defines the issue tracking process supported by Tom Issue Tracker'
 
 `issuekit` bridges the gap between **discovering a problem** and **confirming it is fixed**. When a consumer of a component experiences a problem, the root cause is often unclear — it might be in the component itself, in a dependency, or in the integration between components. The issue needs to be recorded immediately so it doesn't get lost, then tracked through analysis, project assignment, reproduction test creation, bug fix, and verified resolution.
 
-Tom Issue Tracker fills the space that neither `testkit` nor `buildkit` covers:
+Tom Issue Kit fills the space that neither `testkit` nor `buildkit` covers:
 
 | Tool | Scope |
 |------|-------|
@@ -928,7 +928,7 @@ Accepts CSV, JSON, or YAML files. New IDs are auto-assigned; existing IDs are up
 
 ### The Complete Chain
 
-Issue Tracker and Test Kit form a closed-loop verification cycle through the ID convention:
+Issue Kit and Test Kit form a closed-loop verification cycle through the ID convention:
 
 ```
 1. Issue ISS-0042 created
