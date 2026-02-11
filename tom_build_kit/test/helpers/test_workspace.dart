@@ -385,14 +385,35 @@ class TestWorkspace {
 
   /// Install a test fixture by copying its buildkit_master.yaml
   /// into the workspace root, overwriting the real one.
+  ///
+  /// Also copies any project-level config files from the fixture's
+  /// `projects/` subdirectory to the corresponding workspace projects.
+  /// For example: `fixtures/versioner/projects/_build/buildkit.yaml`
+  /// would be copied to `<workspace>/_build/buildkit.yaml`.
   Future<void> installFixture(String fixtureName) async {
-    final src = File(p.join(fixturesDir, fixtureName, 'buildkit_master.yaml'));
-    if (!src.existsSync()) {
-      throw StateError('Fixture not found: ${src.path}');
+    final fixtureDir = p.join(fixturesDir, fixtureName);
+    
+    // Copy buildkit_master.yaml
+    final masterSrc = File(p.join(fixtureDir, 'buildkit_master.yaml'));
+    if (!masterSrc.existsSync()) {
+      throw StateError('Fixture not found: ${masterSrc.path}');
     }
-    final dst = File(p.join(workspaceRoot, 'buildkit_master.yaml'));
-    await src.copy(dst.path);
+    final masterDst = File(p.join(workspaceRoot, 'buildkit_master.yaml'));
+    await masterSrc.copy(masterDst.path);
     print('    📋 Installed fixture "$fixtureName" → buildkit_master.yaml');
+    
+    // Copy project-level config files if they exist
+    final projectsDir = Directory(p.join(fixtureDir, 'projects'));
+    if (projectsDir.existsSync()) {
+      await for (final entity in projectsDir.list(recursive: true)) {
+        if (entity is File && entity.path.endsWith('buildkit.yaml')) {
+          final relativePath = p.relative(entity.path, from: projectsDir.path);
+          final dstPath = p.join(workspaceRoot, relativePath);
+          await entity.copy(dstPath);
+          print('    📋 Installed fixture "$fixtureName" → $relativePath');
+        }
+      }
+    }
   }
 
   // ---------------------------------------------------------------------------
