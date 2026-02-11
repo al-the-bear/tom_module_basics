@@ -4,6 +4,8 @@ Complete command reference for the `issuekit` CLI. Each command includes options
 
 For the underlying concepts, architecture, and design principles, see [Issue Tracking — Concept and Workflow](issue_tracking.md).
 
+**Terminology:** This document uses `@issues` for entries in `tom_issues`, `@tests` for test entries in `tom_tests`, and `@code` for dart tests in project source code. See [Terminology](issue_tracking.md#terminology) for full definitions.
+
 ---
 
 ## Table of Contents
@@ -34,6 +36,7 @@ For the underlying concepts, architecture, and design principles, see [Issue Tra
    - [:scan](#scan)
    - [:search](#search)
    - [:show](#show)
+   - [:snapshot](#snapshot)
    - [:summary](#summary)
    - [:sync](#sync)
    - [:testing](#testing)
@@ -50,58 +53,59 @@ This reference documents every command in detail. The introduction recaps the es
 
 ### Architecture Overview
 
-issuekit operates across three GitHub repositories and any number of project repositories:
+issuekit operates across three GitHub repositories and any number of project repositories. It uses **two GitHub Issue trackers** — `tom_issues` for problem reports (@issues) and `tom_tests` for test entries (@tests).
 
 ```mermaid
 graph TB
     subgraph "Public"
-        TI["tom_issues<br/>GitHub Issues tab<br/>+ README + templates"]
+        TI["tom_issues<br/>GitHub Issues tab<br/>Problem reports (@issues)"]
     end
 
     subgraph "Private"
-        TT["tom_tests<br/>Consolidated baselines<br/>Test results history<br/>Regression reports"]
+        TT["tom_tests<br/>GitHub Issues tab<br/>Test entries (@tests)<br/>+ Baselines + Snapshots"]
     end
 
     subgraph "Project Repositories (public or private)"
-        P1["tom_module_d4rt<br/>Code + tests"]
-        P2["tom_module_basics<br/>Code + tests"]
-        P3["tom_module_crypto<br/>Code + tests"]
+        P1["tom_module_d4rt<br/>Code + dart tests (@code)"]
+        P2["tom_module_basics<br/>Code + dart tests (@code)"]
+        P3["tom_module_crypto<br/>Code + dart tests (@code)"]
         PN["... other repos"]
     end
 
-    Reporter -->|files issue| TI
-    Copilot -->|"files issue via issuekit"| TI
+    Reporter -->|files issue @issues| TI
+    Copilot -->|"files issue @issues via issuekit"| TI
 
     IK["issuekit CLI"]
 
-    TI <-->|"GitHub API<br/>read/update issues"| IK
-    IK -->|"scan for issue-linked tests"| P1
-    IK -->|"scan for issue-linked tests"| P2
-    IK -->|"scan for issue-linked tests"| P3
-    IK -->|aggregate results| TT
+    TI <-->|"GitHub API<br/>read/update @issues"| IK
+    TT <-->|"GitHub API<br/>read/update @tests"| IK
+    IK -->|"scan for dart tests @code"| P1
+    IK -->|"scan for dart tests @code"| P2
+    IK -->|"scan for dart tests @code"| P3
+    IK -->|aggregate results + snapshots| TT
 
     GA["GitHub Action<br/>in tom_tests"] -->|"checkout all repos<br/>run testkit"| P1
     GA -->|"checkout all repos<br/>run testkit"| P2
     GA -->|"checkout all repos<br/>run testkit"| P3
-    GA -->|commit baselines| TT
-    GA -->|"update issues via API"| TI
+    GA -->|commit baselines + snapshots| TT
+    GA -->|"update @issues via API"| TI
 ```
 
 | Repository | Visibility | Purpose |
 |------------|-----------|---------|
-| **`tom_issues`** | Public | External issue intake — reporters file issues here |
-| **`tom_tests`** | Private | Consolidated test results and regression tracking |
-| **Project repos** | Public or private | Contain the actual code and issue-linked tests |
+| **`tom_issues`** | Public | External issue intake (@issues) — reporters file issues here |
+| **`tom_tests`** | Private | Test entries (@tests) as GitHub Issues — project/module metadata, consolidated baselines, nightly snapshots |
+| **Project repos** | Public or private | Contain the actual code and dart tests (@code) |
 
 ### Key Actors
 
 | Actor | Role |
 |-------|------|
-| **Reporter** | Files an issue in `tom_issues` (human or Copilot) |
-| **Triage** | Analyzes root cause, assigns to project (`:analyze`, `:assign`) |
-| **Developer / Copilot** | Creates reproduction test, fixes bug, verifies |
-| **issuekit** | Orchestrates lifecycle, scans tests, syncs state |
-| **testkit** | Runs tests, tracks baselines, detects pass/fail changes |
+| **Reporter** | Files an issue (@issues) in `tom_issues` (human or Copilot) |
+| **Triage** | Analyzes root cause, assigns to project, creates test entry @tests (`:analyze`, `:assign`) |
+| **Developer / Copilot** | Creates dart test (@code), fixes bug, verifies |
+| **issuekit** | Orchestrates lifecycle, scans dart tests, syncs state |
+| **testkit** | Runs dart tests (@code), tracks baselines, detects pass/fail changes |
 | **GitHub Actions** | Nightly automated test runs from `tom_tests` |
 
 ### ID Scheme
@@ -121,9 +125,9 @@ Every entity in the system is identified by a short, scannable ID:
 | `tom_crypto` | `CR` |
 | `tom_basics` | `BA` |
 
-**Issue IDs** — just the GitHub Issue number: `#42`, `#103`.
+**Issue IDs** (@issues) — just the GitHub Issue number in `tom_issues`: `#42`, `#103`.
 
-**Test IDs** — two forms:
+**Test IDs** (@tests and @code) — two forms:
 
 ```mermaid
 graph LR
@@ -136,22 +140,22 @@ graph LR
     subgraph "Issue-Linked Test ID"
         I["D4-42-PAR-7"]
         I1["Project: D4"] --> I
-        I2["Issue: #42"] --> I
+        I2["Issue @issues: #42"] --> I
         I3["Project-specific: PAR-7"] --> I
     end
 
-    subgraph "Stub (needs test)"
+    subgraph "Stub (needs dart test)"
         S["D4-42"]
         S1["Project: D4"] --> S
-        S2["Issue: #42"] --> S
+        S2["Issue @issues: #42"] --> S
     end
 ```
 
 | Form | Format | Example | When |
 |------|--------|---------|------|
 | Regular | `<PROJECT_ID>-<project-specific>` | `D4-PAR-15` | Normal development |
-| Issue-linked | `<PROJECT_ID>-<issue>-<project-specific>` | `D4-42-PAR-7` | Linked to a `tom_issues` issue |
-| Stub | `<PROJECT_ID>-<issue>` | `D4-42` | Issue assigned, no test yet |
+| Issue-linked | `<PROJECT_ID>-<issue>-<project-specific>` | `D4-42-PAR-7` | Linked to an issue @issues |
+| Stub | `<PROJECT_ID>-<issue>` | `D4-42` | Issue assigned, no dart test @code yet |
 
 **Promotion**: `D4-PAR-15` → `D4-42-PAR-15` (insert issue number; project-specific part stays the same).
 
@@ -159,7 +163,7 @@ graph LR
 
 ### Issue Lifecycle
 
-Issues move through a defined state machine, with each transition driven by an issuekit command:
+Issues (@issues) move through a defined state machine, with each transition driven by an issuekit command:
 
 ```mermaid
 stateDiagram-v2
@@ -171,7 +175,7 @@ stateDiagram-v2
 
     ANALYZED --> ASSIGNED: ":assign"
 
-    ASSIGNED --> TESTING: ":testing (test created)"
+    ASSIGNED --> TESTING: ":testing (dart test created)"
     ASSIGNED --> BLOCKED: "external blocker"
 
     TESTING --> VERIFYING: ":verify (all pass)"
@@ -191,13 +195,13 @@ stateDiagram-v2
 
 | State | issuekit command | What happens |
 |-------|-----------------|--------------|
-| → NEW | `:new` | Issue created in `tom_issues` via API |
+| → NEW | `:new` | Issue @issues created in `tom_issues` via API |
 | → ANALYZED | `:analyze` | Root cause recorded, comment added |
-| → ASSIGNED | `:assign` | Project identified, stub `D4-42` created, labels updated |
-| → TESTING | `:testing` | Full test ID verified (not just stub), label updated |
-| → VERIFYING | `:verify` | All linked tests pass, label updated |
+| → ASSIGNED | `:assign` | Project identified, test entry @tests created in `tom_tests` with stub ID, labels updated |
+| → TESTING | `:testing` | Full dart test @code verified (not just stub), label updated |
+| → VERIFYING | `:verify` | All linked dart tests @code pass, label updated |
 | → RESOLVED | `:resolve` | Fix confirmed by reporter, label updated |
-| → CLOSED | `:close` | Issue closed via API |
+| → CLOSED | `:close` | Issue @issues closed via API |
 | → NEW (reopen) | `:sync` / `:reopen` | Regression detected or manual reopen |
 
 ### The Pipeline
@@ -206,64 +210,65 @@ The complete issue-to-resolution flow, showing which commands drive each step:
 
 ```mermaid
 graph TB
-    A["1. :new<br/>Issue reported in tom_issues (#42)"] --> B["2. :analyze<br/>Root cause identified"]
-    B --> B2["3. :assign --project tom_d4rt<br/>Stub D4-42 created"]
-    B2 --> C["4. :scan --missing-tests<br/>Detects stub without project-specific ID"]
-    C --> C2["5. Developer creates test<br/>D4-42-PAR-7 (FAIL)"]
-    C2 --> C3["6. :testing 42<br/>Confirms full test exists"]
+    A["1. :new<br/>Issue @issues reported in tom_issues (#42)"] --> B["2. :analyze<br/>Root cause identified"]
+    B --> B2["3. :assign --project tom_d4rt<br/>Test entry @tests created in tom_tests<br/>Stub D4-42, labels: project:D4"]
+    B2 --> C["4. :scan --missing-tests<br/>Detects stub without dart test"]
+    C --> C2["5. Developer creates dart test @code<br/>D4-42-PAR-7 (FAIL)"]
+    C2 --> C3["6. :testing 42<br/>Confirms dart test exists"]
     C3 --> D["7. Developer fixes bug"]
     D --> E["8. testkit :test<br/>D4-42-PAR-7: OK/X"]
-    E --> F["9. :verify 42<br/>All tests pass → VERIFYING"]
+    E --> F["9. :verify 42<br/>All dart tests pass → VERIFYING"]
     F --> G["10. Reporter confirms<br/>(human verification)"]
-    G --> H["11. :resolve 42 + :close 42<br/>Updates tom_issues via API"]
-    H --> I["12. Test D4-42-PAR-7<br/>permanent regression guard"]
+    G --> H["11. :resolve 42 + :close 42<br/>Updates @issues via API"]
+    H --> I["12. Dart test D4-42-PAR-7<br/>permanent regression guard"]
     I --> J{"Regression?"}
-    J -->|"test fails later"| K[":sync detects<br/>reopens #42"]
+    J -->|"dart test fails later"| K[":sync detects<br/>reopens #42"]
     K --> C2
-    J -->|"test keeps passing"| L["Issue stays closed"]
+    J -->|"dart test keeps passing"| L["Issue @issues stays closed"]
 ```
 
 ### Copilot Cross-Project Issue Reporting
 
-Copilot sessions can file issues against other projects and pick them up later:
+Copilot sessions can file issues (@issues) against other projects and pick them up later:
 
 ```mermaid
 sequenceDiagram
     participant C1 as Copilot Session 1<br/>(working on tom_d4rt)
-    participant GH as tom_issues<br/>(GitHub)
+    participant GH1 as tom_issues<br/>(@issues)
+    participant GH2 as tom_tests<br/>(@tests)
     participant C2 as Copilot Session 2<br/>(triage session)
     participant C3 as Copilot Session 3<br/>(working on tom_crypto)
 
     Note over C1: Discovers bug in tom_crypto<br/>while working on tom_d4rt
-    C1->>GH: :new "Cipher fails on empty input"<br/>--reporter copilot
+    C1->>GH1: :new "Cipher fails on empty input"<br/>--reporter copilot
 
     Note over C2: Triage session reviews new issues
-    C2->>GH: :list --state new
-    C2->>GH: :analyze 103 --project tom_crypto
-    Note over C2: Stub CR-103 created
+    C2->>GH1: :list --state new
+    C2->>GH1: :analyze 103 --project tom_crypto
+    Note over GH2: Test entry @tests CR-103 created<br/>labels: project:CR, module:cipher
 
-    Note over C3: Working on tom_crypto,<br/>checks for assigned issues
-    C3->>GH: :scan --missing-tests
-    Note over C3: Sees CR-103 stub (no test yet)
-    C3->>C3: Creates test CR-103-ENC-4
-    C3->>GH: :testing 103
-    Note over C3: Fixes bug, test passes
-    C3->>GH: :verify 103
+    Note over C3: Working on tom_crypto,<br/>checks for assigned issues @issues
+    C3->>GH2: :scan --missing-tests
+    Note over C3: Sees CR-103 stub (no dart test yet)
+    C3->>C3: Creates dart test @code CR-103-ENC-4
+    C3->>GH1: :testing 103
+    Note over C3: Fixes bug, dart test passes
+    C3->>GH1: :verify 103
 ```
 
 ### Convention-Based Test Linking
 
-The mechanism that connects issues to tests without a database:
+The mechanism that connects issues (@issues) to dart tests (@code) without a database:
 
 ```mermaid
 graph TB
     subgraph "Linking Mechanism"
-        A["1. :assign 42 --project tom_d4rt<br/>Creates stub D4-42"]
-        B["2. Developer writes test<br/>D4-42-PAR-7 in source"]
+        A["1. :assign 42 --project tom_d4rt<br/>Creates test entry @tests D4-42 in tom_tests"]
+        B["2. Developer writes dart test @code<br/>D4-42-PAR-7 in source"]
         C["3. :scan 42<br/>Scans test/ dirs for 'D4-42-'"]
-        D["4. testkit tracks it<br/>as normal test"]
+        D["4. testkit tracks it<br/>as normal dart test"]
         E["5. :verify reads baselines<br/>checks pass/fail"]
-        F["6. :sync updates tom_issues<br/>based on test results"]
+        F["6. :sync updates @issues<br/>based on dart test results"]
     end
 
     A --> B --> C --> D --> E --> F
@@ -271,9 +276,10 @@ graph TB
 
 | What | How |
 |------|-----|
-| Find all tests for issue #42 | Scan `test/` dirs for `<PROJECT_ID>-42-` in descriptions |
-| Check test status | Read testkit `doc/baseline_*.csv` |
-| Detect missing tests | Look for stubs (`D4-42`) without project-specific parts |
+| Find all dart tests for issue #42 | Scan `test/` dirs for `<PROJECT_ID>-42-` in descriptions |
+| Find which project owns issue #42 | Query `tom_tests` for test entries with `42` in ID, read `project:` label |
+| Check dart test status | Read testkit `doc/baseline_*.csv` |
+| Detect missing dart tests | Look for stubs (`D4-42`) without project-specific parts |
 | Detect regressions | Compare baselines: `OK → X` = regression |
 
 ### Project Traversal Options
@@ -389,33 +395,35 @@ issuekit :analyze <issue-number> [options]
 | Option | Description |
 |--------|-------------|
 | `--root-cause=<text>` | Explanation of the root cause |
-| `--project=<name>` | Identified target project (also triggers assignment + stub creation) |
+| `--project=<name>` | Identified target project (also triggers assignment + test entry creation @tests) |
 | `--module=<name>` | Identified target module within the project |
 | `--note=<text>` | Additional analysis notes |
 
 #### Summary
 
-Records analysis findings for an issue — root cause, affected project, and module. Adds a structured comment to the GitHub Issue. If `--project` is provided, also assigns the issue and creates the stub test ID, combining the `:analyze` and `:assign` steps.
+Records analysis findings for an issue @issues — root cause, affected project, and module. Adds a structured comment to the GitHub Issue in tom_issues. If `--project` is provided, also assigns the issue and creates a test entry @tests (stub) in tom_tests, combining the `:analyze` and `:assign` steps.
 
 #### Use Case
 
-After an issue is filed (`:new`), someone must investigate it: what's the root cause, and which project owns the fix? This is the triage step.
+After an issue @issues is filed (`:new`), someone must investigate it: what's the root cause, and which project owns the fix? This is the triage step.
 
-`:analyze` records the findings directly on the GitHub Issue as a structured comment. This creates an audit trail — future readers can see the reasoning behind the project assignment.
+`:analyze` records the findings directly on the issue @issues as a structured comment. This creates an audit trail — future readers can see the reasoning behind the project assignment.
 
 ```mermaid
 graph TB
     subgraph "Before :analyze"
-        I1["Issue #42<br/>State: NEW<br/>Title: Array parser crashes<br/>No analysis yet"]
+        I1["Issue @issues #42<br/>State: NEW<br/>Title: Array parser crashes<br/>No analysis yet"]
     end
 
     A[":analyze 42<br/>--root-cause '...'<br/>--project tom_d4rt"]
 
     subgraph "After :analyze"
-        I2["Issue #42<br/>State: ASSIGNED<br/>Labels: assigned, project:D4<br/>Stub: D4-42<br/>Comment: analysis details"]
+        I2["Issue @issues #42<br/>State: ASSIGNED<br/>Labels: assigned"]
+        T2["Test entry @tests D4-42<br/>in tom_tests<br/>Labels: project:D4, stub"]
     end
 
     I1 --> A --> I2
+    A --> T2
 ```
 
 When `--project` is provided, `:analyze` is a two-in-one command: it records the analysis AND assigns the issue. Without `--project`, it only records the analysis and moves the issue to `ANALYZED`.
@@ -427,13 +435,13 @@ graph LR
     ANALYZED -->|":assign"| ASSIGNED
 ```
 
-The analysis comment on the GitHub Issue includes:
+The analysis comment on the issue @issues includes:
 - Root cause explanation
 - Target project and module (if identified)
 - Additional notes
 - Timestamp and analyst identity
 
-This information helps the developer who later creates the reproduction test understand what to test and where to look.
+This information helps the developer who later creates the dart test @code understand what to test and where to look.
 
 #### Examples
 
@@ -474,39 +482,42 @@ issuekit :assign <issue-number> --project=<name> [options]
 
 #### Summary
 
-Assigns an issue to a specific project and creates the stub test ID. Updates GitHub Issue labels to `assigned` and `project:<PROJECT_ID>`. This is the step that establishes ownership — after assignment, the issue belongs to a project and appears in that project's issue scan results.
+Assigns an issue @issues to a specific project by creating a test entry @tests (stub) in tom_tests with the appropriate project label. Updates the issue @issues labels to `assigned`. This is the step that establishes ownership — after assignment, the issue belongs to a project and appears in that project's scan results.
 
 #### Use Case
 
-Once the root cause is identified (via `:analyze` or direct knowledge), the issue must be assigned to the project that owns the fix. `:assign` does three things:
+Once the root cause is identified (via `:analyze` or direct knowledge), the issue @issues must be assigned to the project that owns the fix. `:assign` does three things:
 
-1. Creates a **stub test ID** (`D4-42`) — this is the initial link between the issue and the project
-2. Updates the GitHub Issue **labels** to `assigned` and `project:<PROJECT_ID>`
-3. Adds a **comment** noting the assignment and stub ID
+1. Creates a **test entry @tests** (stub `D4-42`) in tom_tests — this is the initial link between the issue and the project
+2. Updates the test entry **labels** in tom_tests to `project:<PROJECT_ID>`, `stub`, and optionally `module:<MODULE_ID>`
+3. Updates the issue @issues **labels** in tom_issues to `assigned`
+4. Adds a **comment** to the issue @issues noting the assignment
 
 ```mermaid
 graph TB
     subgraph "Before :assign"
-        I1["Issue #42<br/>State: ANALYZED<br/>No project assignment"]
+        I1["Issue @issues #42<br/>State: ANALYZED<br/>No project assignment"]
     end
 
     A[":assign 42 --project tom_d4rt"]
 
     subgraph "After :assign"
-        I2["Issue #42<br/>State: ASSIGNED<br/>Labels: assigned, project:D4<br/>Stub: D4-42"]
+        I2["Issue @issues #42<br/>State: ASSIGNED<br/>Labels: assigned"]
+        T2["Test entry @tests D4-42<br/>in tom_tests<br/>Labels: project:D4, stub"]
     end
 
     subgraph "Detectable by"
-        S1[":scan --missing-tests<br/>Shows D4-42 as 'needs test'"]
+        S1[":scan --missing-tests<br/>Shows D4-42 as 'needs dart test @code'"]
         S2[":list --project tom_d4rt<br/>Issue appears in project list"]
     end
 
     I1 --> A --> I2
-    I2 --> S1
+    A --> T2
+    T2 --> S1
     I2 --> S2
 ```
 
-The stub `D4-42` is critical: it signals to `:scan --missing-tests` that this issue is assigned but has no reproduction test yet. This drives the next step — test creation.
+The stub test entry `D4-42` is critical: it signals to `:scan --missing-tests` that this issue is assigned but has no dart test @code yet. This drives the next step — dart test creation.
 
 If the target project is already known at filing time, `:new --project tom_d4rt` can skip the `:analyze` / `:assign` steps entirely.
 
@@ -535,32 +546,32 @@ issuekit :assign 103 --project tom_crypto --module cipher
 issuekit :close <issue-number>
 ```
 
-No additional options. The issue must be in `RESOLVED` state.
+No additional options. The issue @issues must be in `RESOLVED` state.
 
 #### Summary
 
-Closes a resolved issue via the GitHub API. Adds a resolution summary comment and closes the issue. The linked reproduction tests remain in the codebase permanently as regression guards.
+Closes a resolved issue @issues via the GitHub API. Adds a resolution summary comment and closes the issue. The linked dart tests @code remain in the codebase permanently as regression guards.
 
 #### Use Case
 
-`:close` is the final step in the issue lifecycle. After the fix has been verified (`:verify`) and the resolution confirmed (`:resolve`), `:close` archives the issue.
+`:close` is the final step in the issue lifecycle. After the fix has been verified (`:verify`) and the resolution confirmed (`:resolve`), `:close` archives the issue @issues.
 
 ```mermaid
 graph LR
-    V[":verify 42<br/>All tests pass"] --> R[":resolve 42<br/>Reporter confirms"]
-    R --> C[":close 42<br/>Archive issue"]
-    C --> G["Test D4-42-PAR-7<br/>stays as regression guard"]
+    V[":verify 42<br/>All dart tests @code pass"] --> R[":resolve 42<br/>Reporter confirms"]
+    R --> C[":close 42<br/>Archive issue @issues"]
+    C --> G["Dart test @code D4-42-PAR-7<br/>stays as regression guard"]
     G --> SY{":sync (nightly)"}
-    SY -->|"test still passes"| OK["Stays closed"]
-    SY -->|"test fails"| RE["Reopened automatically"]
+    SY -->|"dart test still passes"| OK["Issue @issues stays closed"]
+    SY -->|"dart test fails"| RE["Issue @issues reopened automatically"]
 ```
 
-The issue is closed via the GitHub API. A summary comment is added listing:
-- All linked test IDs and their final status
+The issue @issues is closed via the GitHub API. A summary comment is added listing:
+- All linked dart test @code IDs and their final status
 - The fix description (from `:resolve`)
 - Closure timestamp
 
-Closing an issue does NOT delete anything — the test remains, the issue remains accessible in GitHub, and `:sync` continues to monitor it for regressions. If a linked test ever fails again, `:sync` will automatically reopen the issue.
+Closing an issue does NOT delete anything — the dart test @code remains, the issue @issues remains accessible in GitHub, and `:sync` continues to monitor it for regressions. If a linked dart test ever fails again, `:sync` will automatically reopen the issue @issues.
 
 #### Examples
 
@@ -594,41 +605,44 @@ issuekit :edit <issue-number> [field options]
 | `--expected=<text>` | Update expected behavior |
 | `--symptom=<text>` | Update observable symptoms |
 | `--tags=<t1,t2,...>` | Replace tags (comma-separated) |
-| `--project=<name>` | Reassign to a different project |
-| `--module=<name>` | Update module |
+| `--project=<name>` | Reassign to a different project (updates test entry @tests) |
+| `--module=<name>` | Update module (updates test entry @tests) |
 | `--assignee=<name>` | Update assignee |
 
 #### Summary
 
-Modifies fields on an existing issue via the GitHub API. Any field can be updated independently. If `--project` changes the project assignment, the stub test ID is updated accordingly.
+Modifies fields on an existing issue @issues via the GitHub API. Any field can be updated independently. If `--project` changes the project assignment, the test entry @tests in tom_tests is updated accordingly with new project labels.
 
 #### Use Case
 
-Issues evolve as understanding improves. Initial reports may have the wrong severity, unclear descriptions, or need reassignment to a different project after deeper analysis.
+Issues @issues evolve as understanding improves. Initial reports may have the wrong severity, unclear descriptions, or need reassignment to a different project after deeper analysis.
 
 ```mermaid
 graph TB
     subgraph "Before :edit"
-        I1["Issue #42<br/>severity: normal<br/>project: tom_d4rt"]
+        I1["Issue @issues #42<br/>severity: normal"]
+        T1["Test entry @tests D4-42<br/>project: D4"]
     end
 
     E[":edit 42 --severity high<br/>--module tokenizer"]
 
     subgraph "After :edit"
-        I2["Issue #42<br/>severity: high<br/>project: tom_d4rt<br/>module: tokenizer"]
+        I2["Issue @issues #42<br/>severity: high"]
+        T2["Test entry @tests D4-42<br/>project: D4, module: tokenizer"]
     end
 
     I1 --> E --> I2
+    T1 --> E --> T2
 ```
 
-When reassigning to a different project (`--project`), the stub test ID changes:
+When reassigning to a different project (`--project`), the test entry @tests is updated with new labels:
 
 ```mermaid
 graph LR
-    A["D4-42 (stub in tom_d4rt)"] -->|":edit 42 --project tom_basics"| B["BA-42 (stub in tom_basics)"]
+    A["Test @tests D4-42<br/>Labels: project:D4"] -->|":edit 42 --project tom_basics"| B["Test @tests BA-42<br/>Labels: project:BA"]
 ```
 
-Note: if full tests already exist with the old project ID (`D4-42-PAR-7`), them must be manually renamed — `:edit` does not rewrite test source files. It only updates the stub in the issue metadata.
+Note: if dart tests @code already exist with the old project ID (`D4-42-PAR-7`), they must be manually renamed — `:edit` does not rewrite test source files. It only updates the test entry @tests in tom_tests.
 
 #### Examples
 
@@ -666,40 +680,45 @@ issuekit :export [filters] --output=<spec>
 | `--project=<name>` | Filter by project |
 | `--tags=<t1,t2>` | Filter by tags |
 | `--all` | Include closed issues |
+| `--repo=<issues\|tests>` | Which tracker to export from (default: `issues`) |
 
 #### Summary
 
-Exports issues from `tom_issues` to a file for offline processing, reporting, or migration. Supports CSV, JSON, and Markdown formats. Same filtering options as `:list`.
+Exports entries from `tom_issues` (@issues) or `tom_tests` (@tests) to a file for offline processing, reporting, or migration. Supports CSV, JSON, and Markdown formats. Same filtering options as `:list`.
 
 #### Use Case
 
-There are scenarios where you need issue data outside of GitHub:
+There are scenarios where you need data outside of GitHub:
 
-- **Reporting**: Generate a CSV of all open issues for a stakeholder review
-- **Migration**: Export all issues before moving to a different system
-- **Offline analysis**: Pull down issues for batch processing or metrics
+- **Reporting**: Generate a CSV of all open issues @issues for a stakeholder review
+- **Migration**: Export all issues @issues before moving to a different system
+- **Backup**: Export test entries @tests for snapshot/backup purposes
+- **Offline analysis**: Pull down data for batch processing or metrics
 
 ```mermaid
 graph LR
-    GH["tom_issues<br/>(GitHub)"] -->|":export --output csv:issues.csv"| CSV["issues.csv"]
-    GH -->|":export --output json:issues.json"| JSON["issues.json"]
-    GH -->|":export --output md:report.md"| MD["report.md"]
+    GH1["tom_issues<br/>(@issues)"] -->|":export --output csv:issues.csv"| CSV1["issues.csv"]
+    GH1 -->|":export --output json:issues.json"| JSON1["issues.json"]
+    GH2["tom_tests<br/>(@tests)"] -->|":export --repo tests --output json:tests.json"| JSON2["tests.json"]
 ```
 
 #### Examples
 
 ```bash
-# Export all open issues as CSV
+# Export all open issues @issues as CSV
 issuekit :export --output=csv:open_issues.csv
 
-# Export critical issues as Markdown
+# Export critical issues @issues as Markdown
 issuekit :export --severity critical --output=md:critical_issues.md
 
-# Export all issues (including closed) as JSON
+# Export all issues @issues (including closed) as JSON
 issuekit :export --all --output=json:all_issues.json
 
-# Export tom_d4rt issues
+# Export tom_d4rt issues @issues
 issuekit :export --project tom_d4rt --output=csv:d4rt_issues.csv
+
+# Export all test entries @tests from tom_tests
+issuekit :export --repo tests --output=json:all_tests.json
 ```
 
 [TOC](#table-of-contents) | [Intro](#introduction) | [Commands](#commands) | :export: [Summary](#summary-6) | [Use Case](#use-case-6) | [Examples](#examples-6) — [:edit](#edit) | [:import](#import)
@@ -716,23 +735,26 @@ issuekit :import <file>
 
 | Option | Description |
 |--------|-------------|
-| `<file>` | Path to JSON or CSV file with issues to import (required) |
+| `<file>` | Path to JSON or CSV file with entries to import (required) |
 | `--dry-run` | Show what would be created without actually creating |
+| `--repo=<issues\|tests>` | Which tracker to import into (default: `issues`) |
 
 #### Summary
 
-Imports issues from a file into `tom_issues`. Useful for migration from another system or for bulk-creating issues from a structured file. Each record becomes a new GitHub Issue.
+Imports entries from a file into `tom_issues` (@issues) or `tom_tests` (@tests). Useful for migration from another system, recovery from backup, or bulk-creating entries from a structured file. Each record becomes a new GitHub Issue in the respective tracker.
 
 #### Use Case
 
-When migrating from another issue tracker, or when a batch of issues has been collected offline (e.g., from a test audit), `:import` creates them all in `tom_issues` at once.
+When migrating from another issue tracker, recovering from a snapshot, or when a batch of entries has been collected offline (e.g., from a test audit), `:import` creates them all at once.
 
 ```mermaid
 graph LR
-    F["issues.json<br/>(structured file)"] -->|":import issues.json"| GH["tom_issues<br/>(GitHub)"]
-    GH --> I1["Issue #201"]
-    GH --> I2["Issue #202"]
-    GH --> I3["Issue #203"]
+    F1["issues.json<br/>(structured file)"] -->|":import issues.json"| GH1["tom_issues<br/>(@issues)"]
+    GH1 --> I1["Issue @issues #201"]
+    GH1 --> I2["Issue @issues #202"]
+    F2["tests.json<br/>(structured file)"] -->|":import tests.json --repo tests"| GH2["tom_tests<br/>(@tests)"]
+    GH2 --> T1["Test @tests CR-103"]
+    GH2 --> T2["Test @tests D4-42"]
 ```
 
 The import file follows the same schema as `:export` output — so a roundtrip is possible: export from one system, edit, re-import.
@@ -740,11 +762,14 @@ The import file follows the same schema as `:export` output — so a roundtrip i
 #### Examples
 
 ```bash
-# Import from a JSON file
+# Import issues @issues from a JSON file
 issuekit :import collected_issues.json
 
 # Dry-run to preview what would be created
 issuekit :import audit_findings.csv --dry-run
+
+# Import test entries @tests from a backup
+issuekit :import tests_backup.json --repo tests
 ```
 
 [TOC](#table-of-contents) | [Intro](#introduction) | [Commands](#commands) | :import: [Summary](#summary-7) | [Use Case](#use-case-7) | [Examples](#examples-7) — [:export](#export) | [:init](#init)
@@ -761,22 +786,22 @@ issuekit :init [options]
 
 | Option | Description |
 |--------|-------------|
-| `--repo=<name>` | Target repository (default: `tom_issues` from workspace config) |
+| `--repo=<issues\|tests\|both>` | Which tracker(s) to initialize (default: `both`) |
 | `--force` | Overwrite existing labels and templates |
 
 #### Summary
 
-Initializes a GitHub repository for issue tracking integration. Sets up labels matching issuekit states and severities, creates issue templates, and optionally adds a collaborator-only gating Action for public repos.
+Initializes GitHub repositories for issue tracking integration. Sets up labels matching issuekit states and severities in tom_issues (@issues), creates project/module labels in tom_tests (@tests), and optionally adds issue templates and gating Actions.
 
 #### Use Case
 
-Before issuekit can manage issues in a repository, the repository needs the correct labels. `:init` creates them in one step:
+Before issuekit can manage entries in a repository, the repository needs the correct labels. `:init` creates them in one step for both trackers:
 
 ```mermaid
 graph TB
-    INIT[":init --repo tom_issues"]
+    INIT[":init"]
 
-    subgraph "Labels Created"
+    subgraph "tom_issues Labels (@issues)"
         L1["new (blue)"]
         L2["analyzed (purple)"]
         L3["assigned (yellow)"]
@@ -788,28 +813,40 @@ graph TB
         L9["severity:high (orange)"]
         L10["severity:normal (blue)"]
         L11["severity:low (gray)"]
-        L12["project:D4 (varies)"]
-        L13["reporter:copilot (purple)"]
+        L12["reporter:copilot (purple)"]
+    end
+
+    subgraph "tom_tests Labels (@tests)"
+        T1["project:D4 (varies)"]
+        T2["project:BK (varies)"]
+        T3["project:CR (varies)"]
+        T4["module:parser (gray)"]
+        T5["module:cipher (gray)"]
+        T6["stub (yellow)"]
+        T7["has-tests (green)"]
+        T8["all-pass (green)"]
+        T9["some-fail (red)"]
     end
 
     subgraph "Templates Created"
-        T1[".github/ISSUE_TEMPLATE/<br/>bug_report.md"]
-        T2[".github/ISSUE_TEMPLATE/<br/>config.yml"]
+        TP1[".github/ISSUE_TEMPLATE/<br/>bug_report.md"]
+        TP2[".github/ISSUE_TEMPLATE/<br/>config.yml"]
     end
 
-    INIT --> L1 & L2 & L3 & L4 & L5 & L6 & L7 & L8 & L9 & L10 & L11 & L12 & L13
-    INIT --> T1 & T2
+    INIT --> L1 & L2 & L3 & L4 & L5 & L6 & L7 & L8 & L9 & L10 & L11 & L12
+    INIT --> T1 & T2 & T3 & T4 & T5 & T6 & T7 & T8 & T9
+    INIT --> TP1 & TP2
 ```
 
-The label mapping:
+**tom_issues label mapping (@issues):**
 
 | Label | Color | Purpose |
 |-------|-------|---------|
 | `new` | blue | Issue just filed |
 | `analyzed` | purple | Root cause identified |
 | `assigned` | yellow | Assigned to a project |
-| `testing` | orange | Reproduction test exists |
-| `verifying` | cyan | Tests pass, awaiting confirmation |
+| `testing` | orange | Dart test @code exists |
+| `verifying` | cyan | Dart tests pass, awaiting confirmation |
 | `resolved` | green | Fix confirmed |
 | `blocked` | red | Waiting on external factor |
 | `duplicate` | gray | Duplicate of another issue |
@@ -818,17 +855,30 @@ The label mapping:
 | `severity:high` | orange | High severity |
 | `severity:normal` | blue | Normal severity |
 | `severity:low` | gray | Low severity |
-| `project:<ID>` | varies | Per-project labels |
 | `reporter:copilot` | purple | Filed by Copilot |
+
+**tom_tests label mapping (@tests):**
+
+| Label | Color | Purpose |
+|-------|-------|---------|
+| `project:<ID>` | varies | Project ownership (e.g., `project:D4`) |
+| `module:<ID>` | gray | Module within project (e.g., `module:parser`) |
+| `stub` | yellow | Test entry exists but no dart test @code yet |
+| `has-tests` | green | At least one dart test @code exists |
+| `all-pass` | green | All linked dart tests pass |
+| `some-fail` | red | At least one linked dart test fails |
 
 #### Examples
 
 ```bash
-# Initialize tom_issues with standard labels
+# Initialize both tom_issues and tom_tests with standard labels
 issuekit :init
 
-# Initialize a specific repo
-issuekit :init --repo al-the-bear/tom_issues
+# Initialize only tom_issues
+issuekit :init --repo issues
+
+# Initialize only tom_tests
+issuekit :init --repo tests
 
 # Force-recreate labels (fix colors, add missing ones)
 issuekit :init --force
@@ -848,48 +898,48 @@ issuekit :link <issue-number> --test-id=<id> [options]
 
 | Option | Description |
 |--------|-------------|
-| `--test-id=<id>` | The test ID to link (required) |
+| `--test-id=<id>` | The dart test @code ID to link (required) |
 | `--test-file=<path>` | Path to the test file (optional, for non-standard locations) |
 | `--note=<text>` | Reason for the explicit link |
 
 #### Summary
 
-Explicitly links a test to an issue as an override for non-standard IDs. Normally, issuekit discovers issue-test links by scanning for the `<PROJECT_ID>-<issue>-` pattern. `:link` handles cases where a test doesn't follow the convention but is still relevant.
+Explicitly links a dart test @code to an issue @issues as an override for non-standard IDs. Normally, issuekit discovers issue-test links by scanning for the `<PROJECT_ID>-<issue>-` pattern. `:link` handles cases where a dart test doesn't follow the convention but is still relevant.
 
 #### Use Case
 
 Most test linking happens automatically via the ID convention. But there are edge cases:
 
-- A test was written before the convention was established
-- A test covers multiple issues and the ID can only encode one
+- A dart test was written before the convention was established
+- A dart test covers multiple issues and the ID can only encode one
 - A third-party test or integration test doesn't follow the naming scheme
 
 ```mermaid
 graph TB
     subgraph "Normal (automatic)"
-        T1["D4-42-PAR-7<br/>(convention-based)"]
+        T1["Dart test @code D4-42-PAR-7<br/>(convention-based)"]
         SC[":scan 42"] -->|"discovers"| T1
     end
 
     subgraph "Override (explicit)"
-        T2["legacy_parser_test<br/>(no convention ID)"]
+        T2["Dart test @code legacy_parser_test<br/>(no convention ID)"]
         LK[":link 42 --test-id legacy_parser_test"] -->|"registers"| T2
     end
 ```
 
-Explicit links are stored as comments on the GitHub Issue and are also checked by `:verify` and `:sync`.
+Explicit links are stored as comments on the issue @issues and are also checked by `:verify` and `:sync`.
 
 #### Examples
 
 ```bash
-# Link a legacy test
+# Link a legacy dart test
 issuekit :link 42 --test-id "legacy_parser_empty_array" \
   --test-file "test/legacy/parser_test.dart" \
   --note "Pre-convention test, still relevant"
 
-# Link a test that covers multiple issues
+# Link a dart test that covers multiple issues
 issuekit :link 103 --test-id "D4-42-PAR-7" \
-  --note "This test also exercises the cipher bug path"
+  --note "This dart test also exercises the cipher bug path"
 ```
 
 [TOC](#table-of-contents) | [Intro](#introduction) | [Commands](#commands) | :link: [Summary](#summary-9) | [Use Case](#use-case-9) | [Examples](#examples-9) — [:init](#init) | [:list](#list)
@@ -914,10 +964,11 @@ issuekit :list [filters]
 | `--all` | Include closed issues (default: only open) |
 | `--sort=<field>` | Sort by: `created`, `severity`, `state`, `project` |
 | `--output=<spec>` | Output format: `plain` (default), `csv`, `json`, `md`, or `<format>:<file>` |
+| `--repo=<issues\|tests>` | Which tracker to list from (default: `issues`) |
 
 #### Summary
 
-Lists issues from `tom_issues` with filtering and sorting. The primary discovery command for finding issues by state, severity, project, or tags. Used during triage sessions to review new issues and by developers to check their project's workload.
+Lists entries from `tom_issues` (@issues) or `tom_tests` (@tests) with filtering and sorting. The primary discovery command for finding issues by state, severity, project, or tags. Used during triage sessions to review new issues and by developers to check their project's workload.
 
 #### Use Case
 
@@ -927,22 +978,22 @@ Lists issues from `tom_issues` with filtering and sorting. The primary discovery
 graph TB
     subgraph "Triage Session"
         T1[":list --state new"]
-        T2["Review each new issue"]
+        T2["Review each new issue @issues"]
         T3[":analyze / :assign"]
         T1 --> T2 --> T3
     end
 
     subgraph "Developer Starting Work"
         D1[":list --project tom_d4rt --state assigned"]
-        D2["Pick issue to work on"]
+        D2["Pick issue @issues to work on"]
         D3[":scan --missing-tests"]
         D1 --> D2 --> D3
     end
 
-    subgraph "Management Overview"
-        M1[":list --severity critical"]
-        M2[":list --sort severity"]
-        M1 --> M2
+    subgraph "Test Entry Review"
+        E1[":list --repo tests --project tom_d4rt"]
+        E2["See all test entries @tests for D4"]
+        E1 --> E2
     end
 ```
 
@@ -958,19 +1009,19 @@ Output example (plain format):
 #### Examples
 
 ```bash
-# All new issues (triage queue)
+# All new issues @issues (triage queue)
 issuekit :list --state new
 
-# All issues assigned to tom_d4rt
+# All issues @issues assigned to tom_d4rt
 issuekit :list --project tom_d4rt
 
-# Critical issues across all projects
+# Critical issues @issues across all projects
 issuekit :list --severity critical
 
-# Issues filed by Copilot
+# Issues @issues filed by Copilot
 issuekit :list --reporter copilot
 
-# All issues including closed, sorted by creation date
+# All issues @issues including closed, sorted by creation date
 issuekit :list --all --sort created
 
 # Export the list as CSV
@@ -978,6 +1029,12 @@ issuekit :list --state testing --output=csv:testing_issues.csv
 
 # Combine filters
 issuekit :list --project tom_crypto --severity high --state assigned
+
+# List all test entries @tests for a project
+issuekit :list --repo tests --project tom_d4rt
+
+# List test entries @tests that are stubs (no dart test yet)
+issuekit :list --repo tests --tags stub
 ```
 
 [TOC](#table-of-contents) | [Intro](#introduction) | [Commands](#commands) | :list: [Summary](#summary-10) | [Use Case](#use-case-10) | [Examples](#examples-10) — [:link](#link) | [:new](#new)
@@ -999,12 +1056,12 @@ issuekit :new "<title>" [options]
 | `--expected=<text>` | Expected behavior |
 | `--symptom=<text>` | Observable symptoms (defaults to title if not set) |
 | `--tags=<t1,t2,...>` | Comma-separated tags (mapped to GitHub labels) |
-| `--project=<name>` | Pre-assign to a project (skips NEW → goes directly to ASSIGNED, creates stub) |
+| `--project=<name>` | Pre-assign to a project (skips NEW → goes directly to ASSIGNED, creates test entry @tests) |
 | `--reporter=<name>` | Reporter name (default: configured user, or `copilot` for AI sessions) |
 
 #### Summary
 
-Creates a new issue in the `tom_issues` GitHub repository via the API. This is the entry point for all issues — the first step in the pipeline. If `--project` is provided, the issue skips the NEW state and goes directly to ASSIGNED with a stub test ID.
+Creates a new issue @issues in the `tom_issues` GitHub repository via the API. This is the entry point for all issues — the first step in the pipeline. If `--project` is provided, the issue skips the NEW state and goes directly to ASSIGNED with a test entry @tests (stub) created in tom_tests.
 
 #### Use Case
 
@@ -1015,7 +1072,7 @@ graph TB
     subgraph "Filing an Issue"
         D["Discovery<br/>(human or Copilot)"]
         N[":new 'title'<br/>--severity --context --tags"]
-        GH["GitHub Issue #42<br/>in tom_issues"]
+        GH["Issue @issues #42<br/>in tom_issues"]
         D --> N --> GH
     end
 
@@ -1027,8 +1084,8 @@ graph TB
 
     subgraph "With --project"
         S3["State: ASSIGNED"]
-        S4["Stub D4-42 created"]
-        S5["Next: create test"]
+        S4["Test entry @tests D4-42<br/>created in tom_tests"]
+        S5["Next: create dart test @code"]
         GH --> S3 --> S4 --> S5
     end
 ```
@@ -1038,11 +1095,11 @@ graph TB
 ```mermaid
 sequenceDiagram
     participant C as Copilot<br/>(working on tom_d4rt)
-    participant GH as tom_issues
+    participant GH as tom_issues<br/>(@issues)
 
     Note over C: Working on parser refactoring...<br/>discovers bug in tom_crypto
     C->>GH: :new "Cipher fails on empty input"<br/>--severity high --reporter copilot<br/>--context "Seen while testing D4RT encryption bridge"
-    Note over GH: Issue #103 created<br/>Labels: new, severity:high, reporter:copilot
+    Note over GH: Issue @issues #103 created<br/>Labels: new, severity:high, reporter:copilot
     Note over C: Continues parser work (bug recorded, won't get lost)
 ```
 
@@ -1098,57 +1155,58 @@ issuekit :promote <test-id> --issue <issue-number>
 
 | Option | Description |
 |--------|-------------|
-| `<test-id>` | Current test ID (regular format, e.g., `D4-PAR-15`) (required) |
-| `--issue <number>` | Issue number to link to (required) |
+| `<test-id>` | Current dart test @code ID (regular format, e.g., `D4-PAR-15`) (required) |
+| `--issue <number>` | Issue @issues number to link to (required) |
 | `--dry-run` | Show what would change without modifying files |
 
 #### Summary
 
-Promotes a regular test to an issue-linked test by inserting the issue number into the ID. The project-specific part stays the same, preserving the test's identity. The source file is modified in-place.
+Promotes a regular dart test @code to an issue-linked dart test by inserting the issue number into the ID. The project-specific part stays the same, preserving the test's identity. The source file is modified in-place.
 
 #### Use Case
 
-Sometimes a test that was written for a feature turns out to be relevant to a reported issue. Instead of creating a duplicate test, the existing test can be promoted:
+Sometimes a dart test that was written for a feature turns out to be relevant to a reported issue @issues. Instead of creating a duplicate dart test, the existing one can be promoted:
 
 ```mermaid
 graph TB
     subgraph "Before :promote"
-        T1["D4-PAR-15<br/>Regular test — no issue link<br/>test('D4-PAR-15: Parser handles nested...']"]
+        T1["D4-PAR-15<br/>Regular dart test @code — no issue link<br/>test('D4-PAR-15: Parser handles nested...']"]
     end
 
     P[":promote D4-PAR-15 --issue 42"]
 
     subgraph "After :promote"
-        T2["D4-42-PAR-15<br/>Issue-linked test<br/>test('D4-42-PAR-15: Parser handles nested...']"]
+        T2["D4-42-PAR-15<br/>Issue-linked dart test @code<br/>test('D4-42-PAR-15: Parser handles nested...']"]
     end
 
     T1 --> P --> T2
 
     subgraph "What stays the same"
         S1["Project-specific ID: PAR-15"]
-        S2["Test logic unchanged"]
+        S2["Dart test logic unchanged"]
         S3["testkit baseline tracks the rename"]
     end
 ```
 
 The promotion:
-1. **Scans** the workspace for the test ID in test descriptions
+1. **Scans** the workspace for the dart test ID in test descriptions
 2. **Renames** the ID in the source file: `D4-PAR-15` → `D4-42-PAR-15`
 3. **Preserves** the project-specific part (`PAR-15`) — this is the stable identity
-4. **Records** the rename in a comment for testkit baseline tracking
+4. **Updates** the test entry @tests in tom_tests (if one exists) to mark it as linked
+5. **Records** the rename in a comment for testkit baseline tracking
 
-Since the uniqueness rule says `D4-PAR-15` and `D4-42-PAR-15` refer to the same conceptual test, they should not both exist. Promotion replaces the old ID.
+Since the uniqueness rule says `D4-PAR-15` and `D4-42-PAR-15` refer to the same conceptual dart test, they should not both exist. Promotion replaces the old ID.
 
 #### Examples
 
 ```bash
-# Promote a test to link to issue #42
+# Promote a dart test to link to issue #42
 issuekit :promote D4-PAR-15 --issue 42
 
 # Preview the change without modifying
 issuekit :promote BK-BLD-3 --issue 56 --dry-run
 
-# Promote a crypto test
+# Promote a crypto dart test
 issuekit :promote CR-ENC-7 --issue 103
 ```
 
@@ -1170,7 +1228,7 @@ issuekit :reopen <issue-number> [options]
 
 #### Summary
 
-Reopens a closed or resolved issue. Used when a regression is detected manually or when the original fix is found to be incomplete. Adds a comment with the reason and resets the state to NEW.
+Reopens a closed or resolved issue @issues. Used when a regression is detected manually or when the original fix is found to be incomplete. Adds a comment with the reason and resets the state to NEW.
 
 #### Use Case
 
@@ -1179,8 +1237,8 @@ There are two paths to reopening:
 ```mermaid
 graph TB
     subgraph "Automatic (via :sync)"
-        SY[":sync detects regression<br/>D4-42-PAR-7: OK → X"]
-        SY --> AR["Automatically reopens #42<br/>Comment: 'Regression detected'"]
+        SY[":sync detects regression<br/>Dart test @code D4-42-PAR-7: OK → X"]
+        SY --> AR["Automatically reopens issue @issues #42<br/>Comment: 'Regression detected'"]
     end
 
     subgraph "Manual (via :reopen)"
@@ -1188,13 +1246,13 @@ graph TB
         HU --> MR[":reopen 42<br/>--note 'Fix only handles arrays, not objects'"]
     end
 
-    AR --> NEW["Issue #42<br/>State: NEW<br/>(cycle restarts)"]
+    AR --> NEW["Issue @issues #42<br/>State: NEW<br/>(cycle restarts)"]
     MR --> NEW
 ```
 
-`:sync` handles automatic reopening for regressions detected by test failures. `:reopen` handles the manual case — when someone realizes the fix was incomplete or a new aspect of the same problem surfaces.
+`:sync` handles automatic reopening for regressions detected by dart test failures. `:reopen` handles the manual case — when someone realizes the fix was incomplete or a new aspect of the same problem surfaces.
 
-After reopening, the issue restarts the lifecycle at NEW. The existing tests remain and new ones can be added.
+After reopening, the issue @issues restarts the lifecycle at NEW. The existing dart tests @code remain and new ones can be added.
 
 #### Examples
 
@@ -1228,34 +1286,34 @@ issuekit :resolve <issue-number> [options]
 
 #### Summary
 
-Confirms that the fix addresses the original issue. Requires the issue to be in `VERIFYING` state (all tests pass). This is the human confirmation step — the reporter or reviewer confirms the original symptom is gone.
+Confirms that the fix addresses the original issue @issues. Requires the issue to be in `VERIFYING` state (all dart tests @code pass). This is the human confirmation step — the reporter or reviewer confirms the original symptom is gone.
 
 #### Use Case
 
-`:verify` checks that tests pass (machine verification). `:resolve` is the **human confirmation** that the original problem is actually solved.
+`:verify` checks that dart tests pass (machine verification). `:resolve` is the **human confirmation** that the original problem is actually solved.
 
 ```mermaid
 graph TB
     subgraph "Machine Verification"
         V[":verify 42"]
-        V --> CHK{"All tests pass?"}
-        CHK -->|"Yes"| VER["State: VERIFYING<br/>'The tests pass'"]
-        CHK -->|"No"| FAIL["Stay in TESTING<br/>Report failing tests"]
+        V --> CHK{"All dart tests @code pass?"}
+        CHK -->|"Yes"| VER["State: VERIFYING<br/>'The dart tests pass'"]
+        CHK -->|"No"| FAIL["Stay in TESTING<br/>Report failing dart tests"]
     end
 
     subgraph "Human Verification"
         R[":resolve 42"]
         Q{"Does the original<br/>problem still occur?"}
         Q -->|"No — it's fixed"| RES["State: RESOLVED<br/>'The problem is gone'"]
-        Q -->|"Yes — test too narrow"| BACK["Back to TESTING<br/>Need better test"]
+        Q -->|"Yes — dart test too narrow"| BACK["Back to TESTING<br/>Need better dart test"]
     end
 
     VER --> Q
 ```
 
-**Why two steps?** A reproduction test might be too narrow. The test passes, but the original problem still occurs under different conditions. `:resolve` is the checkpoint where a human confirms the fix actually works from the reporter's perspective.
+**Why two steps?** A reproduction dart test might be too narrow. The dart test passes, but the original problem still occurs under different conditions. `:resolve` is the checkpoint where a human confirms the fix actually works from the reporter's perspective.
 
-The developer also updates the test expectation at this point — removing `(FAIL)` from the test description since the test now represents expected behavior:
+The developer also updates the dart test expectation at this point — removing `(FAIL)` from the test description since the dart test now represents expected behavior:
 
 ```dart
 // Before resolve:
@@ -1297,7 +1355,7 @@ issuekit :run-tests [options]
 
 #### Summary
 
-Triggers the nightly test workflow in `tom_tests` via a GitHub API `workflow_dispatch` event. This runs all tests across all projects, aggregates results, and syncs issue states — the same process that runs on schedule, but triggered on demand.
+Triggers the nightly test workflow in `tom_tests` via a GitHub API `workflow_dispatch` event. This runs all dart tests @code across all projects, aggregates results, and syncs issue states — the same process that runs on schedule, but triggered on demand.
 
 #### Use Case
 
@@ -1310,7 +1368,7 @@ graph TB
     GA --> CO["Checkout all repos"]
     CO --> TK["Run testkit :baseline<br/>in each project"]
     TK --> AG[":aggregate<br/>Merge baselines"]
-    AG --> SY[":sync --auto<br/>Update issue states"]
+    AG --> SY[":sync --auto<br/>Update issue @issues states"]
     SY --> CM["Commit results<br/>to tom_tests"]
 ```
 
@@ -1338,10 +1396,10 @@ issuekit :scan [<issue-number>] [options]
 
 | Option | Description |
 |--------|-------------|
-| `<issue-number>` | Scan for a specific issue's tests (optional) |
+| `<issue-number>` | Scan for a specific issue's dart tests @code (optional) |
 | `--project=<name>` | Only scan within a specific project |
 | `--state=<state>` | Only scan for issues in a specific state |
-| `--missing-tests` | Show issues that have only stub IDs (no full test yet) |
+| `--missing-tests` | Show issues that have only stub test entries @tests (no dart test @code yet) |
 | `--output=<spec>` | Output format: `plain`, `csv`, `json`, `md` |
 | `-R, --root[=<path>]` | Workspace root |
 | `-s, --scan=<path>` | Scan directory |
@@ -1352,7 +1410,7 @@ issuekit :scan [<issue-number>] [options]
 
 #### Summary
 
-Scans the workspace for tests linked to issues via the ID convention. This is the core discovery mechanism — it finds all `<PROJECT_ID>-<issue-number>-<project-specific>` patterns in test descriptions across `test/` directories. Can also detect stubs (assigned issues without full tests).
+Scans the workspace for dart tests @code linked to issues @issues via the ID convention. This is the core discovery mechanism — it finds all `<PROJECT_ID>-<issue-number>-<project-specific>` patterns in test descriptions across `test/` directories. Can also detect stubs (assigned issues with test entries @tests but no dart tests @code).
 
 #### Use Case
 
@@ -1361,10 +1419,10 @@ Scans the workspace for tests linked to issues via the ID convention. This is th
 ```mermaid
 graph TB
     subgraph "Questions :scan Answers"
-        Q1["What tests exist for issue #42?"]
-        Q2["Which projects have tests for #42?"]
-        Q3["Which issues have no tests yet?"]
-        Q4["What's the test coverage for all issues?"]
+        Q1["What dart tests @code exist for issue #42?"]
+        Q2["Which projects have dart tests for #42?"]
+        Q3["Which issues @issues have no dart tests yet?"]
+        Q4["What's the dart test coverage for all issues?"]
     end
 
     SC[":scan"]
@@ -1384,7 +1442,7 @@ graph TB
 ```
 issuekit :scan 42
 
-Tests for issue #42 (tom_issues):
+Dart tests @code for issue #42 (tom_issues):
 
 Project       Test ID         File                                    Line  Status
 -----------   -------------   ------------------------------------    ----  ------
@@ -1393,12 +1451,12 @@ tom_d4rt      D4-42-PAR-8     test/parser/array_null_test.dart        12    FAIL
 tom_build_kit BK-42-BLD-12    test/build/edge_cases_test.dart         88    PASS
 ```
 
-**Detecting missing tests:**
+**Detecting missing dart tests:**
 
 ```mermaid
 graph LR
-    STUB["D4-42<br/>(stub — no project-specific part)"]
-    FULL["D4-42-PAR-7<br/>(full test ID)"]
+    STUB["Test entry @tests D4-42<br/>(stub — no dart test @code)"]
+    FULL["Dart test @code D4-42-PAR-7<br/>(full test ID)"]
 
     SC[":scan --missing-tests"]
     SC -->|"detects"| STUB
@@ -1408,7 +1466,7 @@ graph LR
 ```
 issuekit :scan --missing-tests
 
-Issues with missing tests:
+Issues @issues with missing dart tests @code:
 
 Issue   Project   Stub ID   State      Title
 ------  --------  --------  ---------  -----
@@ -1416,24 +1474,24 @@ Issue   Project   Stub ID   State      Title
 #103    CR        CR-103    ASSIGNED   Cipher fails on empty input
 ```
 
-This is the signal that drives test creation — Copilot or a developer sees which issues need reproduction tests.
+This is the signal that drives dart test creation — Copilot or a developer sees which issues need reproduction tests.
 
 #### Examples
 
 ```bash
-# Scan for all tests linked to issue #42
+# Scan for all dart tests @code linked to issue #42
 issuekit :scan 42
 
-# Scan all issue-linked tests across the workspace
+# Scan all issue-linked dart tests across the workspace
 issuekit :scan
 
 # Only scan tom_d4rt
 issuekit :scan --project tom_d4rt
 
-# Find issues with only stub IDs (no full test)
+# Find issues with only stub test entries (no dart test @code)
 issuekit :scan --missing-tests
 
-# Find missing tests in one project
+# Find missing dart tests in one project
 issuekit :scan --missing-tests --project tom_crypto
 
 # Only scan issues in TESTING state
@@ -1459,21 +1517,22 @@ issuekit :search "<query>" [options]
 |--------|-------------|
 | `<query>` | Search text (required) |
 | `--output=<spec>` | Output format |
+| `--repo=<issues\|tests>` | Which tracker to search (default: `issues`) |
 
 #### Summary
 
-Full-text search across all issues in `tom_issues`. Uses the GitHub Issues search API to find issues by content, including titles, descriptions, and comments.
+Full-text search across all entries in `tom_issues` (@issues) or `tom_tests` (@tests). Uses the GitHub Issues search API to find entries by content, including titles, descriptions, and comments.
 
 #### Use Case
 
-When you need to find issues by keyword — a specific error message, a component name, or a symptom — `:search` queries the GitHub search API. It searches across titles, descriptions, and all comments on issues.
+When you need to find issues @issues by keyword — a specific error message, a component name, or a symptom — `:search` queries the GitHub search API. It searches across titles, descriptions, and all comments.
 
 ```mermaid
 graph LR
     Q[":search 'RangeError'"]
     Q --> API["GitHub Search API"]
-    API --> R1["#42: Array parser crashes..."]
-    API --> R2["#89: Map indexer RangeError..."]
+    API --> R1["Issue @issues #42: Array parser crashes..."]
+    API --> R2["Issue @issues #89: Map indexer RangeError..."]
 ```
 
 Unlike `:list` (which filters by structured fields), `:search` is a free-text search — useful when you don't know the exact state, project, or tags but remember a keyword.
@@ -1481,14 +1540,17 @@ Unlike `:list` (which filters by structured fields), `:search` is a free-text se
 #### Examples
 
 ```bash
-# Search by error message
+# Search issues @issues by error message
 issuekit :search "RangeError"
 
-# Search by component
+# Search issues @issues by component
 issuekit :search "ArrayParser"
 
-# Search by symptom
+# Search issues @issues by symptom
 issuekit :search "empty input"
+
+# Search test entries @tests
+issuekit :search "parser" --repo tests
 ```
 
 [TOC](#table-of-contents) | [Intro](#introduction) | [Commands](#commands) | :search: [Summary](#summary-17) | [Use Case](#use-case-17) | [Examples](#examples-17) — [:scan](#scan) | [:show](#show)
@@ -1503,41 +1565,48 @@ issuekit :search "empty input"
 issuekit :show <issue-number>
 ```
 
-No additional options. Shows all available information for the issue.
+No additional options. Shows all available information for the issue @issues.
 
 #### Summary
 
-Displays full details of a single issue — GitHub Issue fields, analysis comments, linked tests (via workspace scan), and current test status from testkit baselines. This is the single-issue deep dive.
+Displays full details of a single issue @issues — GitHub Issue fields, analysis comments, linked dart tests @code (via workspace scan), and current test status from testkit baselines. This is the single-issue deep dive.
 
 #### Use Case
 
-`:show` combines data from two sources: the GitHub Issue (metadata, comments, labels) and the workspace (linked tests, test status). It's the command to run before starting work on an issue.
+`:show` combines data from three sources: the issue @issues in tom_issues (metadata, comments, labels), the test entry @tests in tom_tests (project, module, stub status), and the workspace (linked dart tests @code, test status). It's the command to run before starting work on an issue.
 
 ```mermaid
 graph TB
     SH[":show 42"]
 
-    subgraph "From GitHub API"
+    subgraph "From tom_issues API (@issues)"
         G1["Title, description, labels"]
         G2["Analysis comments"]
         G3["State history"]
         G4["Reporter, assignee"]
     end
 
-    subgraph "From Workspace Scan"
-        W1["Linked tests: D4-42-PAR-7, D4-42-PAR-8"]
+    subgraph "From tom_tests API (@tests)"
+        T1["Test entry D4-42"]
+        T2["Project: D4, Module: parser"]
+        T3["Stub status"]
+    end
+
+    subgraph "From Workspace Scan (@code)"
+        W1["Linked dart tests: D4-42-PAR-7, D4-42-PAR-8"]
         W2["Test files and line numbers"]
         W3["Pass/fail from baseline"]
     end
 
     SH --> G1 & G2 & G3 & G4
+    SH --> T1 & T2 & T3
     SH --> W1 & W2 & W3
 
     subgraph "Combined Output"
-        O["Issue #42 — Array parser crashes on empty arrays<br/>State: TESTING | Severity: HIGH | Project: D4<br/>...<br/>Tests:<br/>  D4-42-PAR-7  FAIL  test/parser/array_parser_test.dart:45<br/>  D4-42-PAR-8  FAIL  test/parser/array_null_test.dart:12"]
+        O["Issue @issues #42 — Array parser crashes on empty arrays<br/>State: TESTING | Severity: HIGH | Project: D4<br/>...<br/>Dart tests @code:<br/>  D4-42-PAR-7  FAIL  test/parser/array_parser_test.dart:45<br/>  D4-42-PAR-8  FAIL  test/parser/array_null_test.dart:12"]
     end
 
-    G1 & W1 --> O
+    G1 & T1 & W1 --> O
 ```
 
 #### Examples
@@ -1550,7 +1619,131 @@ issuekit :show 42
 issuekit :show 103
 ```
 
-[TOC](#table-of-contents) | [Intro](#introduction) | [Commands](#commands) | :show: [Summary](#summary-18) | [Use Case](#use-case-18) | [Examples](#examples-18) — [:search](#search) | [:summary](#summary-cmd)
+[TOC](#table-of-contents) | [Intro](#introduction) | [Commands](#commands) | :show: [Summary](#summary-18) | [Use Case](#use-case-18) | [Examples](#examples-18) — [:search](#search) | [:snapshot](#snapshot)
+
+---
+
+### :snapshot
+
+#### Options
+
+```
+issuekit :snapshot [options]
+```
+
+| Option | Description |
+|--------|-------------|
+| `--issues-only` | Only snapshot issues @issues from tom_issues |
+| `--tests-only` | Only snapshot test entries @tests from tom_tests |
+| `--output=<dir>` | Output directory (default: `tom_tests/snapshots/`) |
+
+#### Summary
+
+Exports all issues @issues from tom_issues and all test entries @tests from tom_tests to timestamped JSON files. These snapshots provide versioned backup and enable recovery. Designed to be run nightly by a GitHub Action, with results committed to tom_tests for git-based versioning.
+
+#### Use Case
+
+The nightly backup mechanism ensures that all issue tracking data is preserved and versioned. `:snapshot` exports the complete state of both GitHub Issue trackers:
+
+```mermaid
+graph TB
+    SN[":snapshot"]
+
+    subgraph "tom_issues (@issues)"
+        I1["Issue #42"]
+        I2["Issue #56"]
+        I3["Issue #103"]
+    end
+
+    subgraph "tom_tests (@tests)"
+        T1["Test entry D4-42"]
+        T2["Test entry BK-56"]
+        T3["Test entry CR-103"]
+    end
+
+    subgraph "Snapshot Files"
+        F1["tom_tests/snapshots/issues/<br/>snapshot_20260211.json"]
+        F2["tom_tests/snapshots/tests/<br/>snapshot_20260211.json"]
+    end
+
+    I1 & I2 & I3 --> SN --> F1
+    T1 & T2 & T3 --> SN --> F2
+```
+
+The snapshot workflow is typically run by a nightly GitHub Action:
+
+```mermaid
+sequenceDiagram
+    participant GA as GitHub Action<br/>(nightly)
+    participant GH1 as tom_issues<br/>(@issues)
+    participant GH2 as tom_tests<br/>(@tests)
+    participant FS as tom_tests<br/>(file system)
+    participant GIT as Git
+
+    Note over GA: Nightly at 3:00 AM
+    GA->>GH1: Fetch all issues via API
+    GA->>GH2: Fetch all test entries via API
+    GA->>FS: Write snapshots/issues/snapshot_YYYYMMDD.json
+    GA->>FS: Write snapshots/tests/snapshot_YYYYMMDD.json
+    GA->>GIT: git add snapshots/
+    GA->>GIT: git commit -m "Nightly snapshot YYYY-MM-DD"
+    Note over GIT: Versioning via git history
+```
+
+**Recovery scenarios:**
+
+| Scenario | Recovery Command |
+|----------|-----------------|
+| Accidental issue deletion | `issuekit :import snapshots/issues/snapshot_20260210.json` |
+| Test entry corruption | `issuekit :import snapshots/tests/snapshot_20260210.json --repo tests` |
+| Full disaster recovery | Import both snapshots from previous date |
+| Audit/history | `git log --oneline snapshots/` to see daily changes |
+
+**Snapshot file format:**
+
+```json
+{
+  "snapshot_date": "2026-02-11T03:00:00Z",
+  "source": "tom_issues",
+  "total_count": 47,
+  "entries": [
+    {
+      "number": 42,
+      "title": "Array parser crashes on empty arrays",
+      "state": "testing",
+      "severity": "high",
+      "labels": ["testing", "severity:high"],
+      "created_at": "2026-02-01T10:30:00Z",
+      "comments_count": 5
+    }
+  ]
+}
+```
+
+The snapshot files are read-only artifacts — they are not modified after creation. Each day's snapshot is a complete point-in-time export, enabling precise recovery to any date.
+
+#### Examples
+
+```bash
+# Full snapshot (both issues and tests)
+issuekit :snapshot
+
+# Only snapshot issues @issues
+issuekit :snapshot --issues-only
+
+# Only snapshot test entries @tests
+issuekit :snapshot --tests-only
+
+# Custom output directory
+issuekit :snapshot --output=backups/2026-02/
+
+# Typical nightly Action usage
+issuekit :snapshot && \
+  git add snapshots/ && \
+  git commit -m "Nightly snapshot $(date +%Y-%m-%d)"
+```
+
+[TOC](#table-of-contents) | [Intro](#introduction) | [Commands](#commands) | :snapshot: [Summary](#summary-19) | [Use Case](#use-case-19) | [Examples](#examples-19) — [:show](#show) | [:summary](#summary-cmd)
 
 ---
 
@@ -1570,7 +1763,7 @@ issuekit :summary [options]
 
 #### Summary
 
-Displays a dashboard overview of all issues — counts by state, severity, and project. Highlights issues needing attention: missing tests, awaiting verification, Copilot-filed issues pending triage.
+Displays a dashboard overview of all issues @issues — counts by state, severity, and project. Highlights issues needing attention: missing dart tests @code, awaiting verification, Copilot-filed issues pending triage.
 
 #### Use Case
 
@@ -1584,7 +1777,7 @@ graph TB
         S1["By State<br/>NEW: 3 | ASSIGNED: 5 | TESTING: 8<br/>VERIFYING: 2 | RESOLVED: 1"]
         S2["By Severity<br/>CRITICAL: 1 | HIGH: 4 | NORMAL: 10 | LOW: 4"]
         S3["By Project<br/>D4: 7 | BK: 3 | CR: 5 | BA: 2"]
-        S4["Attention Needed<br/>Missing tests: 3 | Awaiting verify: 2<br/>Copilot unreviewed: 1"]
+        S4["Attention Needed<br/>Missing dart tests: 3 | Awaiting verify: 2<br/>Copilot unreviewed: 1"]
     end
 
     SUM --> S1 & S2 & S3 & S4
@@ -1605,7 +1798,7 @@ By State:
   BLOCKED      1
 
 By Severity:
-  CRITICAL     1    ⚠ #201: Server crash on startup
+  CRITICAL     1    ⚠ Issue @issues #201: Server crash on startup
   HIGH         4
   NORMAL      10
   LOW          4
@@ -1617,9 +1810,9 @@ By Project:
   BA           2
 
 Attention:
-  Missing tests (stubs only):  3   → run :scan --missing-tests
-  Awaiting verification:       2   → run :verify on each
-  Copilot-filed, unreviewed:   1   → run :list --reporter copilot --state new
+  Missing dart tests (stubs only):  3   → run :scan --missing-tests
+  Awaiting verification:            2   → run :verify on each
+  Copilot-filed, unreviewed:        1   → run :list --reporter copilot --state new
 ```
 
 #### Examples
@@ -1632,7 +1825,7 @@ issuekit :summary
 issuekit :summary --output=md:summary.md
 ```
 
-[TOC](#table-of-contents) | [Intro](#introduction) | [Commands](#commands) | :summary: [Summary](#summary-19) | [Use Case](#use-case-19) | [Examples](#examples-19) — [:show](#show) | [:sync](#sync)
+[TOC](#table-of-contents) | [Intro](#introduction) | [Commands](#commands) | :summary: [Summary](#summary-20) | [Use Case](#use-case-20) | [Examples](#examples-20) — [:snapshot](#snapshot) | [:sync](#sync)
 
 ---
 
@@ -1658,19 +1851,19 @@ issuekit :sync [options]
 
 #### Summary
 
-Synchronizes issue states with test results across the workspace. Detects fixes (tests now pass), regressions (tests now fail), and missing tests. Can automatically apply state transitions and reopen issues on regression. This is the automation backbone — run nightly by GitHub Actions.
+Synchronizes issue @issues states with dart test @code results across the workspace. Detects fixes (dart tests now pass), regressions (dart tests now fail), and missing tests. Can automatically apply state transitions and reopen issues @issues on regression. This is the automation backbone — run nightly by GitHub Actions.
 
 #### Use Case
 
-`:sync` is the command that closes the feedback loop. It cross-references every issue in `tom_issues` with the actual test results in the codebase:
+`:sync` is the command that closes the feedback loop. It cross-references every issue @issues in `tom_issues` with the actual dart test @code results in the codebase:
 
 ```mermaid
 graph TB
     SY[":sync"]
 
-    subgraph "For ASSIGNED Issues"
-        A1["Scan for full tests"]
-        A2{"Full test found?"}
+    subgraph "For ASSIGNED Issues @issues"
+        A1["Scan for full dart tests @code"]
+        A2{"Full dart test found?"}
         A3["Suggest → TESTING"]
         A4["No change"]
         A1 --> A2
@@ -1678,20 +1871,20 @@ graph TB
         A2 -->|"No (still stub)"| A4
     end
 
-    subgraph "For TESTING Issues"
-        T1["Check test results"]
-        T2{"All tests pass?"}
+    subgraph "For TESTING Issues @issues"
+        T1["Check dart test results"]
+        T2{"All dart tests pass?"}
         T3["Suggest → VERIFYING"]
-        T4["Report failing tests"]
+        T4["Report failing dart tests"]
         T1 --> T2
         T2 -->|"Yes"| T3
         T2 -->|"No"| T4
     end
 
-    subgraph "For RESOLVED/CLOSED Issues"
+    subgraph "For RESOLVED/CLOSED Issues @issues"
         R1["Check for regressions"]
-        R2{"Any test fails?"}
-        R3["REOPEN issue<br/>Add regression comment"]
+        R2{"Any dart test fails?"}
+        R3["REOPEN issue @issues<br/>Add regression comment"]
         R4["All clear"]
         R1 --> R2
         R2 -->|"Yes (OK → X)"| R3
@@ -1705,11 +1898,11 @@ graph TB
 
 ```mermaid
 graph LR
-    FIX["Bug fixed<br/>test passes"] --> CLOSE["Issue closed"]
+    FIX["Bug fixed<br/>dart test passes"] --> CLOSE["Issue @issues closed"]
     CLOSE --> NIGHT["Nightly :sync"]
-    NIGHT --> CHK{"Test still passes?"}
+    NIGHT --> CHK{"Dart test still passes?"}
     CHK -->|"OK"| CLOSE
-    CHK -->|"FAIL"| REOPEN["Issue reopened<br/>Comment: 'Regression in D4-42-PAR-7'"]
+    CHK -->|"FAIL"| REOPEN["Issue @issues reopened<br/>Comment: 'Regression in D4-42-PAR-7'"]
     REOPEN --> FIX
 ```
 
@@ -1720,11 +1913,11 @@ Output (dry-run):
 Sync Report
 ===========
 
-Issue  Current     Suggested   Reason
------  ----------  ----------  ------
-#42    ASSIGNED    → TESTING   Full test D4-42-PAR-7 found
-#56    TESTING     → VERIFYING All 2 tests pass
-#78    CLOSED      → NEW       Regression: CR-78-ENC-2 now fails (was OK)
+Issue   Current     Suggested   Reason
+------  ----------  ----------  ------
+#42     ASSIGNED    → TESTING   Full dart test D4-42-PAR-7 found
+#56     TESTING     → VERIFYING All 2 dart tests pass
+#78     CLOSED      → NEW       Regression: CR-78-ENC-2 now fails (was OK)
 
 Run with --auto to apply changes.
 ```
@@ -1748,7 +1941,7 @@ issuekit :sync
 issuekit :sync --auto
 ```
 
-[TOC](#table-of-contents) | [Intro](#introduction) | [Commands](#commands) | :sync: [Summary](#summary-20) | [Use Case](#use-case-20) | [Examples](#examples-20) — [:summary](#summary-cmd) | [:testing](#testing)
+[TOC](#table-of-contents) | [Intro](#introduction) | [Commands](#commands) | :sync: [Summary](#summary-21) | [Use Case](#use-case-21) | [Examples](#examples-21) — [:summary](#summary-cmd) | [:testing](#testing)
 
 ---
 
@@ -1760,54 +1953,58 @@ issuekit :sync --auto
 issuekit :testing <issue-number>
 ```
 
-No additional options. The issue must be in `ASSIGNED` state.
+No additional options. The issue @issues must be in `ASSIGNED` state.
 
 #### Summary
 
-Marks that a reproduction test has been created for an issue. Verifies that at least one **full** test ID (not just a stub) matching the issue exists in the workspace, then updates the GitHub Issue label to `testing`.
+Marks that a reproduction dart test @code has been created for an issue @issues. Verifies that at least one **full** test ID (not just a stub) matching the issue exists in the workspace, then updates the issue @issues label to `testing` and updates the test entry @tests in tom_tests to remove the `stub` label and add `has-tests`.
 
 #### Use Case
 
-After an issue is assigned (`:assign`), someone creates a reproduction test. `:testing` is the confirmation step — it verifies the test actually exists before transitioning the issue:
+After an issue @issues is assigned (`:assign`), someone creates a reproduction dart test @code. `:testing` is the confirmation step — it verifies the dart test actually exists before transitioning the issue:
 
 ```mermaid
 graph TB
     subgraph "Before :testing"
-        I1["Issue #42<br/>State: ASSIGNED<br/>Stub: D4-42"]
-        T1["Developer created:<br/>test('D4-42-PAR-7: ...') in source"]
+        I1["Issue @issues #42<br/>State: ASSIGNED"]
+        T1["Test entry @tests D4-42<br/>Labels: project:D4, stub"]
+        C1["Developer created:<br/>dart test @code<br/>test('D4-42-PAR-7: ...') in source"]
     end
 
     TE[":testing 42"]
 
     subgraph ":testing checks"
-        C1["Scan workspace for D4-42-*"]
-        C2{"Full test ID found?<br/>(not just stub D4-42)"}
-        C3["D4-42-PAR-7 ✓"]
-        C4["Error: no full test found"]
+        C2["Scan workspace for D4-42-*"]
+        C3{"Full dart test @code found?<br/>(not just stub D4-42)"}
+        C4["D4-42-PAR-7 ✓"]
+        C5["Error: no full dart test found"]
     end
 
     subgraph "After :testing"
-        I2["Issue #42<br/>State: TESTING<br/>Label: testing<br/>Comment: 'Test D4-42-PAR-7 found'"]
+        I2["Issue @issues #42<br/>State: TESTING<br/>Label: testing"]
+        T2["Test entry @tests D4-42<br/>Labels: project:D4, has-tests<br/>Comment: 'Dart test D4-42-PAR-7 found'"]
     end
 
-    I1 --> TE --> C1 --> C2
-    C2 -->|"Yes"| C3 --> I2
-    C2 -->|"No"| C4
+    I1 --> TE --> C2 --> C3
+    T1 --> TE
+    C3 -->|"Yes"| C4 --> I2
+    C4 --> T2
+    C3 -->|"No"| C5
 ```
 
-The distinction between a **stub** and a **full test**:
+The distinction between a **stub test entry @tests** and a **full dart test @code**:
 
 | ID | Type | Has project-specific part? | `:testing` accepts? |
 |----|------|---------------------------|---------------------|
-| `D4-42` | Stub | No | No |
-| `D4-42-PAR-7` | Full test | Yes (`PAR-7`) | Yes |
+| `D4-42` | Stub (test entry @tests) | No | No |
+| `D4-42-PAR-7` | Full dart test @code | Yes (`PAR-7`) | Yes |
 
-`:testing` refuses to proceed if only a stub exists. This ensures that the issue has an actual reproduction test, not just an assignment marker.
+`:testing` refuses to proceed if only a stub exists. This ensures that the issue has an actual reproduction dart test, not just an assignment marker.
 
 #### Examples
 
 ```bash
-# Mark that a test exists for issue #42
+# Mark that a dart test exists for issue #42
 issuekit :testing 42
 
 # After creating the test in source:
@@ -1817,7 +2014,7 @@ issuekit :testing 42
 # → Issue #42 updated to TESTING
 ```
 
-[TOC](#table-of-contents) | [Intro](#introduction) | [Commands](#commands) | :testing: [Summary](#summary-21) | [Use Case](#use-case-21) | [Examples](#examples-21) — [:sync](#sync) | [:validate](#validate)
+[TOC](#table-of-contents) | [Intro](#introduction) | [Commands](#commands) | :testing: [Summary](#summary-22) | [Use Case](#use-case-22) | [Examples](#examples-22) — [:sync](#sync) | [:validate](#validate)
 
 ---
 
@@ -1842,7 +2039,7 @@ issuekit :validate [options]
 
 #### Summary
 
-Checks test ID uniqueness across the workspace. Ensures no duplicate project-specific IDs within a project, no conflicts between regular and promoted IDs, and that all issue numbers in test IDs reference existing `tom_issues` issues.
+Checks dart test @code ID uniqueness across the workspace. Ensures no duplicate project-specific IDs within a project, no conflicts between regular and promoted IDs, and that all issue numbers in test IDs reference existing issues @issues in tom_issues.
 
 #### Use Case
 
@@ -1853,7 +2050,7 @@ graph TB
     VA[":validate"]
 
     subgraph "Check 1: Duplicate project-specific IDs"
-        C1["D4-PAR-15 in parser_test.dart<br/>D4-PAR-15 in other_test.dart"]
+        C1["Dart test @code D4-PAR-15 in parser_test.dart<br/>Dart test @code D4-PAR-15 in other_test.dart"]
         C1R["ERROR: Duplicate PAR-15 in D4"]
     end
 
@@ -1863,7 +2060,7 @@ graph TB
     end
 
     subgraph "Check 3: Invalid issue references"
-        C3["D4-999-PAR-7<br/>but issue #999 doesn't exist"]
+        C3["D4-999-PAR-7<br/>but issue @issues #999 doesn't exist"]
         C3R["WARNING: Issue #999 not found<br/>in tom_issues"]
     end
 
@@ -1882,9 +2079,9 @@ Errors (must fix):
   D4  PAR-15    Conflict: regular D4-PAR-15 AND promoted D4-42-PAR-15
 
 Warnings:
-  D4  D4-999-PAR-7    Issue #999 not found in tom_issues
+  D4  D4-999-PAR-7    Issue @issues #999 not found in tom_issues
 
-Summary: 2 errors, 1 warning across 47 tests in 8 projects
+Summary: 2 errors, 1 warning across 47 dart tests in 8 projects
 ```
 
 Run `:validate` after bulk promotions, imports, or test reorganizations to ensure the ID scheme is consistent.
@@ -1902,7 +2099,7 @@ issuekit :validate --project tom_d4rt
 issuekit :validate --fix
 ```
 
-[TOC](#table-of-contents) | [Intro](#introduction) | [Commands](#commands) | :validate: [Summary](#summary-22) | [Use Case](#use-case-22) | [Examples](#examples-22) — [:testing](#testing) | [:verify](#verify)
+[TOC](#table-of-contents) | [Intro](#introduction) | [Commands](#commands) | :validate: [Summary](#summary-23) | [Use Case](#use-case-23) | [Examples](#examples-23) — [:testing](#testing) | [:verify](#verify)
 
 ---
 
@@ -1925,11 +2122,11 @@ issuekit :verify <issue-number> [options]
 
 #### Summary
 
-Checks whether all reproduction tests for an issue now pass. Scans the workspace for linked tests, reads testkit baselines, and if **all pass**, transitions the issue to VERIFYING. If any still fail, reports which ones. This is the machine verification step.
+Checks whether all reproduction dart tests @code for an issue @issues now pass. Scans the workspace for linked dart tests, reads testkit baselines, and if **all pass**, transitions the issue to VERIFYING and updates the test entry @tests labels in tom_tests. If any still fail, reports which ones. This is the machine verification step.
 
 #### Use Case
 
-After the developer fixes the bug and testkit shows the test passing (`OK/X`), `:verify` confirms this across all linked tests — potentially in multiple projects:
+After the developer fixes the bug and testkit shows the dart test passing (`OK/X`), `:verify` confirms this across all linked dart tests — potentially in multiple projects:
 
 ```mermaid
 graph TB
@@ -1942,10 +2139,10 @@ graph TB
 
     subgraph ":verify process"
         S1["1. Scan workspace for D4-42-*, BK-42-*, ..."]
-        S2["2. Find: D4-42-PAR-7, D4-42-PAR-8, BK-42-BLD-12"]
+        S2["2. Find dart tests @code: D4-42-PAR-7, D4-42-PAR-8, BK-42-BLD-12"]
         S3["3. Read testkit baselines for each project"]
         S4{"4. All pass?"}
-        S5["→ VERIFYING<br/>Update label"]
+        S5["→ VERIFYING<br/>Update issue @issues label<br/>Update test entry @tests: all-pass"]
         S6["Report failures:<br/>BK-42-BLD-12: still FAIL"]
     end
 
@@ -1954,11 +2151,11 @@ graph TB
     S4 -->|"Some fail"| S6
 ```
 
-`:verify` checks ALL linked tests, not just ones in the developer's project. An issue in `tom_d4rt` might also have tests in `tom_build_kit` — all must pass for verification.
+`:verify` checks ALL linked dart tests @code, not just ones in the developer's project. An issue in `tom_d4rt` might also have dart tests in `tom_build_kit` — all must pass for verification.
 
 ```mermaid
 graph LR
-    subgraph "Issue #42 tests"
+    subgraph "Issue @issues #42 dart tests @code"
         T1["D4-42-PAR-7  ✓ OK"]
         T2["D4-42-PAR-8  ✓ OK"]
         T3["BK-42-BLD-12  ✗ FAIL"]
@@ -1968,22 +2165,23 @@ graph LR
     VE --> R["NOT VERIFIED<br/>BK-42-BLD-12 still fails<br/>in tom_build_kit"]
 ```
 
-Only when ALL linked tests pass does the issue move to VERIFYING:
+Only when ALL linked dart tests pass does the issue @issues move to VERIFYING:
 
 ```
 issuekit :verify 42
 
-Verifying issue #42: Array parser crashes on empty arrays
+Verifying issue @issues #42: Array parser crashes on empty arrays
 
-Tests found:
+Dart tests @code found:
   D4-42-PAR-7   tom_d4rt       OK   ✓
   D4-42-PAR-8   tom_d4rt       OK   ✓
   BK-42-BLD-12  tom_build_kit  OK   ✓
 
-All 3 tests pass. Issue #42 → VERIFYING
+All 3 dart tests pass. Issue @issues #42 → VERIFYING
+Test entry @tests D4-42 → all-pass
 ```
 
-If testkit hasn't been run recently, `:verify` reports `NOT RUN` for those tests.
+If testkit hasn't been run recently, `:verify` reports `NOT RUN` for those dart tests.
 
 #### Examples
 
@@ -1998,7 +2196,7 @@ issuekit :verify 103
 issuekit :verify 42 -i "tom_d4rt" -i "tom_build_kit"
 ```
 
-[TOC](#table-of-contents) | [Intro](#introduction) | [Commands](#commands) | :verify: [Summary](#summary-23) | [Use Case](#use-case-23) | [Examples](#examples-23) — [:validate](#validate) | [:aggregate](#aggregate)
+[TOC](#table-of-contents) | [Intro](#introduction) | [Commands](#commands) | :verify: [Summary](#summary-24) | [Use Case](#use-case-24) | [Examples](#examples-24) — [:validate](#validate) | [:aggregate](#aggregate)
 
 ---
 
