@@ -217,7 +217,7 @@ class RunnerTool extends ToolBase {
           allowed: ['build', 'watch', 'clean'],
           help: 'Build runner command')
       ..addMultiOption('include-builders',
-          abbr: 'i', help: 'Include specific builders')
+          abbr: 'I', help: 'Include specific builders')
       ..addMultiOption('exclude-builders',
           help: 'Exclude specific builders')
       ..addOption('config',

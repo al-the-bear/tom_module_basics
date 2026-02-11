@@ -172,7 +172,7 @@ class CleanupTool extends ToolBase {
           negatable: false,
           help: 'Skip safety check on file count')
       ..addOption('max-files',
-          abbr: 'm',
+          abbr: 'M',
           defaultsTo: '100',
           help: 'Maximum files to delete without --force');
   }
