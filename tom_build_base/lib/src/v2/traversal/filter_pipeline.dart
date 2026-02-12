@@ -1,0 +1,180 @@
+import 'package:glob/glob.dart';
+import 'package:path/path.dart' as p;
+
+import '../folder/fs_folder.dart';
+import '../folder/natures/buildkit_folder.dart';
+import '../folder/natures/git_folder.dart';
+import 'traversal_info.dart';
+
+/// Applies filters to folder lists based on TraversalInfo configuration.
+class FilterPipeline {
+  /// Apply filters for project traversal mode.
+  List<FsFolder> applyProjectFilters(List<FsFolder> folders, ProjectTraversalInfo info) {
+    var result = folders;
+
+    // 1. Path exclude (--exclude, -x)
+    if (info.excludePatterns.isNotEmpty) {
+      result = result.where((f) => !_matchesAnyPath(f.path, info.excludePatterns)).toList();
+    }
+
+    // 2. Project include (--project, -p)
+    if (info.projectPatterns.isNotEmpty) {
+      result = result.where((f) =>
+          _matchesAnyPath(f.path, info.projectPatterns) ||
+          _matchesAnyPath(f.name, info.projectPatterns) ||
+          _matchesProjectId(f, info.projectPatterns)).toList();
+    }
+
+    // 3. Project name exclude (--exclude-projects)
+    if (info.excludeProjects.isNotEmpty) {
+      result = result.where((f) => !_matchesAnyPath(f.name, info.excludeProjects)).toList();
+    }
+
+    // 4. Test project filter
+    result = _applyTestFilter(result, info);
+
+    return result;
+  }
+
+  /// Apply filters for git traversal mode.
+  List<FsFolder> applyGitFilters(List<FsFolder> folders, GitTraversalInfo info) {
+    var result = folders;
+
+    // 1. Path exclude (--exclude, -x)
+    if (info.excludePatterns.isNotEmpty) {
+      result = result.where((f) => !_matchesAnyPath(f.path, info.excludePatterns)).toList();
+    }
+
+    // 2. Module filter (--modules, -m)
+    if (info.modules.isNotEmpty) {
+      result = _applyModulesFilter(result, info.modules);
+    }
+
+    // 3. Skip modules filter (--skip-modules)
+    if (info.skipModules.isNotEmpty) {
+      result = _applySkipModulesFilter(result, info.skipModules);
+    }
+
+    // 4. Test project filter
+    result = _applyTestFilter(result, info);
+
+    return result;
+  }
+
+  /// Apply test project filters based on traversal info.
+  List<FsFolder> _applyTestFilter(List<FsFolder> folders, BaseTraversalInfo info) {
+    if (info.testProjectsOnly) {
+      // Only include zom_* test projects
+      return folders.where((f) => f.name.startsWith('zom_')).toList();
+    } else if (!info.includeTestProjects) {
+      // Exclude zom_* by default
+      return folders.where((f) => !f.name.startsWith('zom_')).toList();
+    }
+    return folders;
+  }
+
+  /// Check if path matches any of the patterns.
+  bool _matchesAnyPath(String value, List<String> patterns) {
+    for (final pattern in patterns) {
+      try {
+        final glob = Glob(pattern);
+        if (glob.matches(value)) return true;
+      } catch (_) {
+        // Invalid glob - try simple match
+        if (value.contains(pattern) || value == pattern) return true;
+      }
+    }
+    return false;
+  }
+
+  /// Check if folder has a matching project ID in buildkit.yaml.
+  bool _matchesProjectId(FsFolder folder, List<String> patterns) {
+    // Look for BuildkitFolder nature if detected
+    for (final nature in folder.natures) {
+      if (nature is BuildkitFolder && nature.projectId != null) {
+        for (final pattern in patterns) {
+          if (nature.projectId == pattern ||
+              nature.projectId!.startsWith(pattern)) {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
+
+  /// Filter to keep only folders within specified git submodules.
+  List<FsFolder> _applyModulesFilter(List<FsFolder> folders, List<String> modules) {
+    return folders.where((f) {
+      // Check if this folder is within any of the specified modules
+      for (final module in modules) {
+        if (f.path.contains(module)) return true;
+        // Also check natures for submodule name
+        for (final nature in f.natures) {
+          if (nature is GitFolder && nature.submoduleName != null) {
+            if (modules.any((m) => nature.submoduleName!.contains(m))) {
+              return true;
+            }
+          }
+        }
+      }
+      return false;
+    }).toList();
+  }
+
+  /// Filter to exclude folders within specified git submodules.
+  List<FsFolder> _applySkipModulesFilter(List<FsFolder> folders, List<String> skipModules) {
+    return folders.where((f) {
+      // Exclude if this folder is within any of the specified modules
+      for (final module in skipModules) {
+        if (f.path.contains(module)) return false;
+        for (final nature in f.natures) {
+          if (nature is GitFolder && nature.submoduleName != null) {
+            if (skipModules.any((m) => nature.submoduleName!.contains(m))) {
+              return false;
+            }
+          }
+        }
+      }
+      return true;
+    }).toList();
+  }
+}
+
+/// Sorts folders based on traversal configuration.
+class FolderSorter {
+  /// Sort folders by dependency order (for project traversal).
+  ///
+  /// Projects that are dependencies of others come first.
+  List<T> sortByBuildOrder<T>(List<T> folders, String Function(T) getPath, String Function(T) getName) {
+    // TODO: Implement topological sort based on pubspec.yaml dependencies
+    // For now, return as-is
+    return folders;
+  }
+
+  /// Sort git repos by inner-first order.
+  ///
+  /// Deeper nested repos (submodules) come before outer repos.
+  List<T> sortByInnerFirst<T>(List<T> folders, String Function(T) getPath) {
+    final sorted = List<T>.from(folders);
+    sorted.sort((a, b) {
+      final depthA = getPath(a).split(p.separator).length;
+      final depthB = getPath(b).split(p.separator).length;
+      return depthB.compareTo(depthA); // Deeper first
+    });
+    return sorted;
+  }
+
+  /// Sort git repos by outer-first order.
+  ///
+  /// Parent repos come before nested repos (submodules).
+  List<T> sortByOuterFirst<T>(List<T> folders, String Function(T) getPath) {
+    final sorted = List<T>.from(folders);
+    sorted.sort((a, b) {
+      final depthA = getPath(a).split(p.separator).length;
+      final depthB = getPath(b).split(p.separator).length;
+      return depthA.compareTo(depthB); // Shallower first
+    });
+    return sorted;
+  }
+}
