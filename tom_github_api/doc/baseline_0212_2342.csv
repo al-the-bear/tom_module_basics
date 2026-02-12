@@ -1,0 +1,58 @@
+ID,Groups,Description,Baseline [02-12 23:42]
+GH-MDL-11,GitHubComment,fromJson parses comment [2026-02-13 10:00],OK/OK
+GH-PAG-2,HTTP Utilities,parseLinkHeader returns empty map for null header [2026-02-13 10:00],OK/OK
+GH-PAG-3,HTTP Utilities,parseLinkHeader returns empty map for empty string [2026-02-13 10:00],OK/OK
+GH-PAG-4,HTTP Utilities,parseLinkHeader handles single link [2026-02-13 10:00],OK/OK
+GH-MDL-1,GitHubIssue,fromJson parses all fields [2026-02-13 10:00],OK/OK
+GH-MDL-2,GitHubIssue,fromJson handles null body [2026-02-13 10:00],OK/OK
+GH-MDL-3,GitHubIssue,fromJson parses closed issue with closedAt [2026-02-13 10:00],OK/OK
+GH-MDL-4,GitHubIssue,fromJson handles empty labels list [2026-02-13 10:00],OK/OK
+GH-MDL-5,GitHubIssue,toJson produces valid round-trip data [2026-02-13 10:00],OK/OK
+GH-MDL-6,GitHubIssue,equality based on number [2026-02-13 10:00],OK/OK
+GH-MDL-7,GitHubIssue,fromJson handles missing comments field [2026-02-13 10:00],OK/OK
+GH-ISS-1,GitHubApiClient — Issue Operations,createIssue sends POST and returns created issue [2026-02-13 10:00],OK/OK
+GH-WFL-1,GitHubApiClient — Workflow Operations,dispatchWorkflow sends POST to workflow endpoint [2026-02-13 10:00],OK/OK
+GH-MDL-8,GitHubLabel,fromJson parses label [2026-02-13 10:00],OK/OK
+GH-WFL-2,GitHubApiClient — Workflow Operations,dispatchWorkflow with inputs [2026-02-13 10:00],OK/OK
+GH-MDL-9,GitHubLabel,equality based on name [2026-02-13 10:00],OK/OK
+GH-ISS-2,GitHubApiClient — Issue Operations,getIssue retrieves issue by number [2026-02-13 10:00],OK/OK
+GH-LBL-1,GitHubApiClient — Label Operations,createLabel sends POST and returns label [2026-02-13 10:00],OK/OK
+GH-MDL-10,GitHubLabel,toJson round-trip [2026-02-13 10:00],OK/OK
+GH-PAG-1,HTTP Utilities,parseLinkHeader extracts next and last URLs [2026-02-13 10:00],OK/OK
+GH-MDL-12,GitHubComment,equality based on id [2026-02-13 10:00],OK/OK
+GH-MDL-13,GitHubUser,fromJson parses user [2026-02-13 10:00],OK/OK
+GH-ISS-3,GitHubApiClient — Issue Operations,getIssue throws GitHubNotFoundException for missing issue [2026-02-13 10:00],OK/OK
+GH-LBL-2,GitHubApiClient — Label Operations,createLabel throws GitHubValidationException on duplicate [2026-02-13 10:00],OK/OK
+GH-MDL-14,GitHubUser,equality based on id and login [2026-02-13 10:00],OK/OK
+GH-ISS-4,GitHubApiClient — Issue Operations,updateIssue sends only provided fields [2026-02-13 10:00],OK/OK
+GH-MDL-15,GitHubSearchResult,fromJson parses search result [2026-02-13 10:00],OK/OK
+GH-LBL-3,GitHubApiClient — Label Operations,listLabels returns all labels [2026-02-13 10:00],OK/OK
+GH-ISS-5,GitHubApiClient — Issue Operations,closeIssue sets state to closed [2026-02-13 10:00],OK/OK
+GH-MDL-16,GitHubRateLimit,fromHeaders parses rate limit [2026-02-13 10:00],OK/OK
+GH-LBL-4,GitHubApiClient — Label Operations,updateLabel sends PATCH [2026-02-13 10:00],OK/OK
+GH-WFL-3,GitHubApiClient — Workflow Operations,dispatchWorkflow throws on 404 [2026-02-13 10:00],OK/OK
+GH-ISS-6,GitHubApiClient — Issue Operations,reopenIssue sets state to open [2026-02-13 10:00],OK/OK
+GH-MDL-17,GitHubRateLimit,isExceeded when remaining is 0 [2026-02-13 10:00],OK/OK
+GH-LBL-5,GitHubApiClient — Label Operations,deleteLabel sends DELETE [2026-02-13 10:00],OK/OK
+GH-ISS-7,GitHubApiClient — Issue Operations,listIssues returns filtered list [2026-02-13 10:00],OK/OK
+GH-LBL-6,GitHubApiClient — Label Operations,addLabelsToIssue returns updated label list [2026-02-13 10:00],OK/OK
+GH-ERR-9,GitHubException factory,403 with rate-limit remaining=0 creates rate limit exception [2026-02-13 10:00],OK/OK
+GH-ISS-8,GitHubApiClient — Issue Operations,listIssues filters out pull requests [2026-02-13 10:00],OK/OK
+GH-ISS-9,GitHubApiClient — Issue Operations,repoSlug form works [2026-02-13 10:00],OK/OK
+GH-ISS-10,GitHubApiClient — Issue Operations,invalid repoSlug throws ArgumentError [2026-02-13 10:00],OK/OK
+GH-ISS-11,GitHubApiClient — Issue Operations,missing owner/repo throws ArgumentError [2026-02-13 10:00],OK/OK
+GH-ISS-12,GitHubApiClient — Issue Operations,listAllIssues fetches all pages [2026-02-13 10:00],OK/OK
+GH-SRC-1,GitHubApiClient — Search Operations,searchIssues returns search results [2026-02-13 10:00],OK/OK
+GH-SRC-2,GitHubApiClient — Search Operations,searchIssues handles empty results [2026-02-13 10:00],OK/OK
+GH-ERR-1,Error Handling,401 throws GitHubAuthException [2026-02-13 10:00],OK/OK
+GH-CMT-1,GitHubApiClient — Comment Operations,addComment sends POST and returns comment [2026-02-13 10:00],OK/OK
+GH-ERR-2,Error Handling,403 with rate limit remaining=0 throws GitHubRateLimitException [2026-02-13 10:00],OK/OK
+GH-CMT-2,GitHubApiClient — Comment Operations,listComments returns comments for issue [2026-02-13 10:00],OK/OK
+GH-ERR-3,Error Handling,403 without rate limit exhaustion throws GitHubAuthException [2026-02-13 10:00],OK/OK
+GH-ERR-4,Error Handling,404 throws GitHubNotFoundException [2026-02-13 10:00],OK/OK
+GH-CMT-3,GitHubApiClient — Comment Operations,listAllComments handles pagination [2026-02-13 10:00],OK/OK
+GH-ERR-5,Error Handling,422 throws GitHubValidationException with errors [2026-02-13 10:00],OK/OK
+GH-ERR-6,Error Handling,500 throws generic GitHubException [2026-02-13 10:00],OK/OK
+GH-ERR-7,Error Handling,rate limit info tracked from response headers [2026-02-13 10:00],OK/OK
+GH-ERR-8,GitHubException factory,fromResponse creates correct exception type [2026-02-13 10:00],OK/OK
+GH-LBL-7,GitHubApiClient — Label Operations,removeLabelFromIssue sends DELETE [2026-02-13 10:00],OK/OK
