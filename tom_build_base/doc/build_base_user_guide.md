@@ -580,7 +580,7 @@ See [example/tom_build_base_example.dart](../example/tom_build_base_example.dart
 |------------------|--------|---------|
 | `TomBuildConfig` | build_config | Load, merge, copy-with config |
 | `TomBuildConfig.load()` | build_config | Read `tom_build.yaml` |
-| `TomBuildConfig.loadMaster()` | build_config | Read `tom_build_master.yaml` |
+| `TomBuildConfig.loadMaster()` | build_config | Read `buildkit_master.yaml` |
 | `hasTomBuildConfig()` | build_config | Check for tool section |
 | `ConfigMerger` | config_merger | Static merge helpers |
 | `ProjectScanner` | project_scanner | Directory-walk project finder |

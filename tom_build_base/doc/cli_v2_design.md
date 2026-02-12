@@ -20,6 +20,7 @@ This document specifies the v2 architecture for `tom_build_base`, the foundation
    - [Core Design Principles](#core-design-principles)
 2. [Usage Scenarios](#usage-scenarios)
    - [Scenario 1: CLI Tool Invocation](#scenario-1-cli-tool-invocation)
+   - [Scenario 1.5: Git Command Invocation](#scenario-15-git-command-invocation)
    - [Scenario 2: TUI Interactive Mode](#scenario-2-tui-interactive-mode)
    - [Scenario 3: D4rt Script Traversal](#scenario-3-d4rt-script-traversal)
    - [Scenario 4: REPL Tool](#scenario-4-repl-tool)
@@ -51,7 +52,10 @@ This document specifies the v2 architecture for `tom_build_base`, the foundation
    - [Project IDs](#project-ids)
    - [Test Project Modes](#test-project-modes)
 7. [API for Programmatic Use](#api-for-programmatic-use)
-   - [TraversalInfo Class](#traversalinfo-class)
+   - [TraversalInfo Hierarchy](#traversalinfo-hierarchy)
+   - [BaseTraversalInfo](#basetraversalinfo)
+   - [ProjectTraversalInfo](#projecttraversalinfo)
+   - [GitTraversalInfo](#gittraversalinfo)
    - [BuildBase.traverse() API](#buildbasetraverse-api)
    - [D4rt Script Integration](#d4rt-script-integration)
    - [TUI Integration](#tui-integration)
@@ -227,6 +231,84 @@ buildkit -s . -r --exclude="zom_*" :cleanup :compile
 buildkit -p BB,D4G :compile
 ```
 
+### Scenario 1.5: Git Command Invocation
+
+CLI tool invocation with commands that operate on git repositories instead of (or in addition to) project folders.
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant CLI as CLI Tool (buildkit)
+    participant Parser as CliArgParser
+    participant TI as GitTraversalInfo
+    participant BB as BuildBase
+    participant Scanner as FolderScanner
+    participant Filter as FilterPipeline
+    participant Exec as CommandExecutor
+    participant Cmd as Git Command
+    
+    User->>CLI: buildkit -s . -r --inner-first-git :gitstatus :commit
+    CLI->>Parser: parse(args)
+    Parser->>Parser: Identify git commands
+    Parser->>Parser: Extract per-command options
+    Parser->>TI: Create GitTraversalInfo
+    
+    Note over Parser,TI: Git commands use GitTraversalInfo<br/>with --modules, --skip-modules,<br/>--inner/outer-first-git
+    
+    CLI->>BB: executeCommands(traversalInfo, commands)
+    
+    BB->>Scanner: scan(info.scan, recursive: true)
+    Scanner->>Scanner: Find folders with .git/ or .git file
+    Scanner-->>BB: List of git root FsFolders
+    
+    BB->>Filter: apply(folders, info)
+    Filter->>Filter: Apply --modules filter
+    Filter->>Filter: Apply --skip-modules filter
+    Filter->>Filter: Apply --exclude patterns
+    Filter-->>BB: Filtered git folders
+    
+    BB->>BB: Order by --inner-first-git
+    Note over BB: Inner git repos (submodules)<br/>processed before outer (main repo)
+    
+    loop Each Command (:gitstatus, :commit)
+        BB->>Exec: execute(command, contexts)
+        loop Each git folder
+            Exec->>Cmd: run(GitCommandContext)
+            Cmd->>Cmd: Git operations
+            Cmd-->>Exec: Success/failure
+        end
+        Exec-->>BB: ProcessingResult
+        BB-->>CLI: Aggregate results
+    end
+    
+    CLI-->>User: Exit code + output
+```
+
+**Example invocations:**
+```bash
+# Check git status across all repos, processing inner (submodules) first
+buildkit -s . -r --inner-first-git :gitstatus
+
+# Commit then push all repos, processing outer repo last
+buildkit -s . -r --inner-first-git :commit :push
+
+# Only process specific git submodules
+buildkit -s . -r --modules=basics,d4rt :gitstatus
+
+# Skip certain git submodules
+buildkit -s . -r --skip-modules=crypto :commit
+
+# Mix with path exclusions
+buildkit -s . -r --exclude="xternal_apps/*" --inner-first-git :gitstatus
+```
+
+**Key differences from Scenario 1:**
+- Uses `GitTraversalInfo` instead of `ProjectTraversalInfo`
+- Scans for `.git/` folders (or `.git` files for submodules) instead of project markers
+- Uses `--modules`/`--skip-modules` instead of `--project`/`--exclude-projects`
+- Requires `--inner-first-git` or `--outer-first-git` for ordering
+- Commands declare `worksWithNatures: {GitFolder}` in their definition
+
 ### Scenario 2: TUI Interactive Mode
 
 User launches TUI and interactively selects traversal options.
@@ -380,22 +462,20 @@ REPLs can use tom_build_base in two ways:
 **REPL command implementation:**
 
 ```dart
-/// Example REPL command that uses traversal internally.
 class GitStatusReplCommand extends ReplCommand {
-  @override
-  String get name => 'gitstatus';
-  
-  @override
-  String get usage => '.gitstatus [options]';
-  
+  @override String get name => 'gitstatus';
+  @override String get usage => '.gitstatus [options]';
+
+  static final definition = CommandDefinition(
+    name: 'gitstatus', description: 'Show git status across repositories',
+    worksWithNatures: {GitFolder}, supportsGitTraversal: true, options: [],
+  );
+
   @override
   Future<void> execute(String argsLine) async {
-    // Parse the argument line as if it were a command line
-    final traversalInfo = CliArgParser.parseCommandLine(argsLine);
-    
+    final traversalInfo = CliArgParser.parseCommandLine(argsLine, commandDefinition: definition);
     await BuildBase.traverse(
-      info: traversalInfo,
-      requiredNatures: {GitFolder},
+      info: traversalInfo, worksWithNatures: definition.worksWithNatures,
       run: (ctx) async {
         final git = ctx.getNature<GitFolder>();
         if (git.hasUncommittedChanges || git.hasUnpushedCommits) {
@@ -415,22 +495,16 @@ class GitStatusReplCommand extends ReplCommand {
 For REPL use, tom_build_base provides methods that accept a command-line string directly:
 
 ```dart
-/// Parse a command-line string into TraversalInfo.
-/// Handles shell-like quoting and escaping.
-static TraversalInfo parseCommandLine(String commandLine) {
+// Parse command-line string into TraversalInfo, handling shell-like quoting.
+static TraversalInfo parseCommandLine(String commandLine, {CommandDefinition? commandDefinition}) {
   final args = _splitCommandLine(commandLine);
-  return CliArgParser.parse(args).toTraversalInfo();
+  final parsed = CliArgParser.parse(args, allowedOptions: commandDefinition?.allOptions);
+  if (commandDefinition?.supportsGitTraversal == true) return parsed.toGitTraversalInfo();
+  return parsed.toProjectTraversalInfo();
 }
 
-/// Split a command line into arguments, respecting quotes.
-/// Examples:
-///   '-s . -r' → ['-s', '.', '-r']
-///   '--exclude="zom_*"' → ['--exclude=zom_*']
-///   '-p "My Project"' → ['-p', 'My Project']
-static List<String> _splitCommandLine(String line) {
-  // Handle quoted strings, escaped characters, etc.
-  // ...
-}
+// Split command line respecting quotes: '-s . -r' → ['-s', '.', '-r']
+static List<String> _splitCommandLine(String line) { /* ... */ }
 ```
 
 **Example REPL session:**
@@ -479,7 +553,7 @@ flowchart TB
     subgraph "Phase 3: Folder Scanning"
         C1["Start from scan path"]
         C2["Recursive or single level"]
-        C3["Skip folders with<br/>buildkit_skip.yaml"]
+        C3["Skip folders with skip marker<br/>or workspace boundary"]
         C4["Build folder tree"]
     end
     
@@ -521,45 +595,27 @@ flowchart TB
 **Output:** `TraversalInfo` object containing all traversal parameters.
 
 ```dart
-/// Parsed command-line arguments before conversion to TraversalInfo.
 class CliArgs {
-  // Global navigation options
-  final String? scan;
-  final bool recursive;      // -r, --recursive
-  final bool notRecursive;   // --not-recursive (explicit non-recursive)
-  final String? root;
+  final String? scan;                         // -s: starting path
+  final bool recursive;                       // -r: recurse into subdirs
+  final bool notRecursive;                    // --not-recursive: explicit non-recursive
+  final String? root;                         // -R: execution root
   final bool bareRoot;
-  final List<String> excludePatterns;
-  final List<String> excludeProjects;
-  final List<String> recursionExclude;
-  final List<String> projectPatterns;
-  final List<String> modules;       // --modules, -m (include git submodules)
-  final List<String> skipModules;   // --skip-modules (exclude git submodules)
-  final bool buildOrder;
-  final bool innerFirstGit;
-  final bool outerFirstGit;
+  final List<String> excludePatterns;         // -x: exclude paths
+  final List<String> excludeProjects;         // --exclude-projects
+  final List<String> recursionExclude;        // --recursion-exclude
+  final List<String> projectPatterns;         // -p: include projects
+  final List<String> modules;                 // -m: include git submodules
+  final List<String> skipModules;             // --skip-modules
+  final bool buildOrder;                      // -b: dependency order
+  final bool innerFirstGit;                   // -i: inner repos first
+  final bool outerFirstGit;                   // -o: outer repos first
   final bool workspaceRecursion;
-  
-  // Standard options
-  final bool verbose;
-  final bool dryRun;
-  final bool listOnly;
+  final bool verbose, dryRun, listOnly, force, guide, dumpConfig;
   final String? configPath;
-  final bool dumpConfig;
-  final bool guide;
-  final bool force;
-  
-  // Test project options
-  final bool includeTestProjects;
-  final bool testProjectsOnly;
-  
-  // Positional arguments (non-option)
-  final List<String> positionalArgs;
-  
-  // Per-command args (for multi-command tools)
-  final Map<String, CommandArgs> commandArgs;
-  
-  /// Convert to TraversalInfo for use with BuildBase.traverse()
+  final bool includeTestProjects, testProjectsOnly;
+  final List<String> positionalArgs;          // Non-option args
+  final Map<String, CommandArgs> commandArgs; // Per-command args
   TraversalInfo toTraversalInfo() => TraversalInfo.fromCliArgs(this);
 }
 ```
@@ -616,86 +672,53 @@ Walks the filesystem to discover folders. **Skip markers are checked during scan
 
 ```dart
 class FolderScanner {
-  /// Scan for folders starting from [root].
-  /// 
-  /// [recursive] - If true, descend into subdirectories
-  /// [recursionExclude] - Patterns to skip during recursive descent
-  Future<List<FsFolder>> scan(
-    String root, {
-    bool recursive = false,
-    List<String> recursionExclude = const [],
-  }) async {
+  Future<List<FsFolder>> scan(String root, {bool recursive = false, 
+      List<String> recursionExclude = const []}) async {
     final folders = <FsFolder>[];
-    
-    await _scanDirectory(
-      Directory(root),
-      folders,
-      recursive: recursive,
-      recursionExclude: recursionExclude,
-    );
-    
+    await _scanDirectory(Directory(root), folders, 
+        recursive: recursive, recursionExclude: recursionExclude);
     return folders;
   }
-  
-  Future<void> _scanDirectory(
-    Directory dir,
-    List<FsFolder> results, {
-    required bool recursive,
-    required List<String> recursionExclude,
-  }) async {
-    // Check for skip markers BEFORE adding or descending
-    // This skips the entire subtree when a skip marker is found
-    if (_hasSkipMarker(dir.path)) {
-      return; // Skip this folder and all descendants
-    }
-    
-    // Add this directory
+
+  Future<void> _scanDirectory(Directory dir, List<FsFolder> results, 
+      {required bool recursive, required List<String> recursionExclude}) async {
+    if (_hasSkipMarker(dir.path)) return; // Skip subtree on marker
     results.add(FsFolder(path: dir.path));
-    
     if (!recursive) return;
-    
-    // Descend into subdirectories
     await for (final entity in dir.list()) {
       if (entity is Directory) {
         final name = p.basename(entity.path);
-        
-        // Skip hidden directories
-        if (name.startsWith('.')) continue;
-        
-        // Apply recursion exclusions (during scan)
+        if (name.startsWith('.')) continue; // Skip hidden
         if (_matchesAny(entity.path, recursionExclude)) continue;
-        
-        await _scanDirectory(
-          entity,
-          results,
-          recursive: recursive,
-          recursionExclude: recursionExclude,
-        );
+        await _scanDirectory(entity, results, 
+            recursive: recursive, recursionExclude: recursionExclude);
       }
     }
   }
-  
-  /// Check for skip markers that exclude entire subtrees.
+
   bool _hasSkipMarker(String dirPath) {
-    // buildkit_skip.yaml - skip this folder and all descendants
-    if (File(p.join(dirPath, 'buildkit_skip.yaml')).existsSync()) {
-      return true;
-    }
-    // buildkit_master.yaml - separate buildkit workspace, treat as boundary
-    if (File(p.join(dirPath, 'buildkit_master.yaml')).existsSync()) {
-      return true;
-    }
+    if (File(p.join(dirPath, 'buildkit_skip.yaml')).existsSync()) return true;
+    if (File(p.join(dirPath, 'buildkit_master.yaml')).existsSync() ||
+        File(p.join(dirPath, 'tom_workspace.yaml')).existsSync()) return true;
     return false;
   }
 }
 ```
 
-**Skip markers:**
+**Skip markers and workspace boundaries:**
 
 | Marker File | Behavior |
 |-------------|----------|
 | `buildkit_skip.yaml` | Skip this folder and all descendants |
-| `buildkit_master.yaml` | Buildkit workspace root — treated as skip to avoid entering nested workspaces |
+| `buildkit_master.yaml` | Buildkit workspace root — treated as boundary |
+| `tom_workspace.yaml` | Tom workspace root — treated as boundary |
+
+**Project subfolders:** By default, the scanner continues into directories even after finding a project folder — this allows detecting nested projects. This can be prevented in two ways:
+
+1. **`--recursion-exclude` option** — Specify patterns to prevent entering specific directories
+2. **`buildkit.yaml` with `recursive: false`** — In the project's `buildkit.yaml`, set `recursive: false` to prevent the scanner from entering that project's subfolders
+
+**Rationale:** When a folder contains a workspace marker file, it represents an independent workspace root. The scanner stops at these boundaries to avoid accidentally processing nested workspaces that should be handled separately.
 
 ### Phase 4: Global Filter Application
 
@@ -751,52 +774,22 @@ flowchart TB
 class FilterPipeline {
   List<FsFolder> apply(List<FsFolder> folders, TraversalInfo info) {
     var result = folders;
-    
-    // 2. Path exclude (--exclude, -x)
-    if (info.excludePatterns.isNotEmpty) {
-      result = result.where((f) => 
-        !_matchesAny(f.path, info.excludePatterns)
-      ).toList();
-    }
-    
-    // 3. Project include (--project, -p)
-    if (info.projectPatterns.isNotEmpty) {
-      result = result.where((f) => 
-        _matchesAny(f.path, info.projectPatterns) ||
-        _matchesAny(f.name, info.projectPatterns) ||
-        _matchesProjectId(f, info.projectPatterns)
-      ).toList();
-    }
-    
-    // 4. Project name exclude (--exclude-projects)
-    if (info.excludeProjects.isNotEmpty) {
-      result = result.where((f) => 
-        !_matchesAny(f.name, info.excludeProjects)
-      ).toList();
-    }
-    
-    // 5. Module filter (--modules, -m)
-    // Keeps folders that are within the specified git submodules
-    if (info.modules.isNotEmpty) {
+    if (info.excludePatterns.isNotEmpty)  // --exclude, -x
+      result = result.where((f) => !_matchesAny(f.path, info.excludePatterns)).toList();
+    if (info.projectPatterns.isNotEmpty)  // --project, -p
+      result = result.where((f) => _matchesAny(f.path, info.projectPatterns) ||
+          _matchesAny(f.name, info.projectPatterns) ||
+          _matchesProjectId(f, info.projectPatterns)).toList();
+    if (info.excludeProjects.isNotEmpty)  // --exclude-projects
+      result = result.where((f) => !_matchesAny(f.name, info.excludeProjects)).toList();
+    if (info.modules.isNotEmpty)          // --modules, -m
       result = _applyModulesFilter(result, info.modules);
-    }
-    
-    // 6. Skip modules filter (--skip-modules)
-    // Excludes folders within the specified git submodules
-    if (info.skipModules.isNotEmpty) {
+    if (info.skipModules.isNotEmpty)      // --skip-modules
       result = _applySkipModulesFilter(result, info.skipModules);
-    }
-    
-    // 7. Test project filter
-    if (info.testProjectsOnly) {
+    if (info.testProjectsOnly)            // --test-only
       result = result.where((f) => f.name.startsWith('zom_')).toList();
-    } else if (!info.includeTestProjects) {
+    else if (!info.includeTestProjects)   // exclude zom_* by default
       result = result.where((f) => !f.name.startsWith('zom_')).toList();
-    }
-    
-    // Note: Skip file (buildkit_skip.yaml) is checked during SCAN phase,
-    // not here. This ensures entire subtrees are skipped efficiently.
-    
     return result;
   }
 }
@@ -810,77 +803,31 @@ After filtering, each folder is analyzed to determine its "natures" — what typ
 class NatureDetector {
   List<RunFolder> detectNatures(FsFolder folder) {
     final natures = <RunFolder>[];
-    
-    // Check each nature type
-    if (_isGitFolder(folder)) {
-      natures.add(GitFolder(folder));
-    }
-    if (_isDartProject(folder)) {
-      final dartNature = _createDartNature(folder);
-      natures.add(dartNature);
-    }
-    if (_isVsCodeExtension(folder)) {
-      natures.add(VsCodeExtensionFolder(folder));
-    }
-    if (_isTypeScriptProject(folder)) {
-      natures.add(TypeScriptFolder(folder));
-    }
-    
-    // Tom Framework natures
-    if (_hasBuildkitYaml(folder)) {
-      final buildkit = _createBuildkitNature(folder);
-      natures.add(buildkit);
-    }
-    if (_hasBuildYaml(folder)) {
-      natures.add(BuildRunnerFolder(folder));
-    }
-    if (_hasTomProjectYaml(folder)) {
-      natures.add(TomBuildFolder(folder));
-    }
-    if (_hasTomMasterYaml(folder)) {
-      natures.add(TomBuildMasterFolder(folder));
-    }
-    
+    if (_isGitFolder(folder)) natures.add(GitFolder(folder));
+    if (_isDartProject(folder)) natures.add(_createDartNature(folder));
+    if (_isVsCodeExtension(folder)) natures.add(VsCodeExtensionFolder(folder));
+    if (_isTypeScriptProject(folder)) natures.add(TypeScriptFolder(folder));
+    if (_hasBuildkitYaml(folder)) natures.add(_createBuildkitNature(folder));
+    if (_hasBuildYaml(folder)) natures.add(BuildRunnerFolder(folder));
+    if (_hasTomProjectYaml(folder)) natures.add(TomBuildFolder(folder));
+    if (_hasTomMasterYaml(folder)) natures.add(TomBuildMasterFolder(folder));
     return natures;
   }
-  
-  bool _isGitFolder(FsFolder folder) {
-    final gitPath = p.join(folder.path, '.git');
-    return Directory(gitPath).existsSync() || 
-           File(gitPath).existsSync(); // Submodule
-  }
-  
-  bool _isDartProject(FsFolder folder) {
-    return File(p.join(folder.path, 'pubspec.yaml')).existsSync();
-  }
-  
-  bool _hasBuildkitYaml(FsFolder folder) {
-    return File(p.join(folder.path, 'buildkit.yaml')).existsSync();
-  }
-  
+
+  bool _isGitFolder(FsFolder f) => Directory(p.join(f.path, '.git')).existsSync() || File(p.join(f.path, '.git')).existsSync();
+  bool _isDartProject(FsFolder f) => File(p.join(f.path, 'pubspec.yaml')).existsSync();
+  bool _hasBuildkitYaml(FsFolder f) => File(p.join(f.path, 'buildkit.yaml')).existsSync();
+
   DartProjectFolder _createDartNature(FsFolder folder) {
     final pubspec = _loadPubspec(folder);
-    
-    if (_hasFlutterSdk(pubspec)) {
-      return FlutterProjectFolder(folder, pubspec);
-    } else if (Directory(p.join(folder.path, 'bin')).existsSync()) {
-      return DartConsoleFolder(folder, pubspec);
-    } else {
-      return DartPackageFolder(folder, pubspec);
-    }
+    if (_hasFlutterSdk(pubspec)) return FlutterProjectFolder(folder, pubspec);
+    if (Directory(p.join(folder.path, 'bin')).existsSync()) return DartConsoleFolder(folder, pubspec);
+    return DartPackageFolder(folder, pubspec);
   }
-  
-  /// Extract project ID and config from buildkit.yaml.
+
   BuildkitFolder _createBuildkitNature(FsFolder folder) {
-    final buildkitPath = p.join(folder.path, 'buildkit.yaml');
-    final content = File(buildkitPath).readAsStringSync();
-    final yaml = loadYaml(content) as Map?;
-    
-    return BuildkitFolder(
-      folder,
-      projectId: yaml?['project-id'] as String?,
-      config: yaml ?? {},
-    );
+    final yaml = loadYaml(File(p.join(folder.path, 'buildkit.yaml')).readAsStringSync()) as Map?;
+    return BuildkitFolder(folder, projectId: yaml?['project-id'] as String?, config: yaml ?? {});
   }
 }
 ```
@@ -924,54 +871,23 @@ Finally, commands execute on folders matching their requirements.
 ```dart
 class CommandExecutor {
   Future<ProcessingResult> execute(
-    List<CommandContext> contexts,
-    Command command,
-    CommandOptions options,
+    List<CommandContext> contexts, Command command, CommandOptions options,
   ) async {
     final result = ProcessingResult();
-    
     for (final context in contexts) {
-      // Check if command's required natures are present
-      if (!_hasRequiredNatures(context, command.requiredNatures)) {
-        continue;
-      }
-      
-      // Apply per-command filters
-      if (!_passesCommandFilters(context, options)) {
-        continue;
-      }
-      
-      // Execute
+      if (!_hasRequiredNatures(context, command.requiredNatures)) continue;
+      if (!_passesCommandFilters(context, options)) continue;
       try {
         final success = await command.execute(context);
-        if (success) {
-          result.recordSuccess(context.path);
-        } else {
-          result.recordFailure(context.path);
-        }
-      } catch (e) {
-        result.recordError(context.path, e);
-      }
+        success ? result.recordSuccess(context.path) : result.recordFailure(context.path);
+      } catch (e) { result.recordError(context.path, e); }
     }
-    
     return result;
   }
   
   bool _passesCommandFilters(CommandContext ctx, CommandOptions opts) {
-    // Per-command --project filter
-    if (opts.includeProjects.isNotEmpty) {
-      if (!_matchesAny(ctx.name, opts.includeProjects)) {
-        return false;
-      }
-    }
-    
-    // Per-command --exclude filter
-    if (opts.excludeProjects.isNotEmpty) {
-      if (_matchesAny(ctx.name, opts.excludeProjects)) {
-        return false;
-      }
-    }
-    
+    if (opts.includeProjects.isNotEmpty && !_matchesAny(ctx.name, opts.includeProjects)) return false;
+    if (opts.excludeProjects.isNotEmpty && _matchesAny(ctx.name, opts.excludeProjects)) return false;
     return true;
   }
 }
@@ -984,9 +900,11 @@ Understanding filter order is critical for predictable behavior:
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │ SCAN PHASE                                                      │
-│  • buildkit_skip.yaml     → Skip entire subtree during scan     │
-│  • buildkit_master.yaml   → Skip nested workspaces              │
-│  • --recursion-exclude    → Prevents entering directories       │
+│  • buildkit_skip.yaml      → Skip entire subtree during scan    │
+│  • Workspace boundaries    → Skip nested workspaces:            │
+│      - buildkit_master.yaml                                     │
+│      - tom_workspace.yaml                                       │
+│  • --recursion-exclude     → Prevents entering project subfolders│
 ├─────────────────────────────────────────────────────────────────┤
 │ GLOBAL FILTERS (applied to all commands)                        │
 │  1. --exclude (-x)        → Remove by path pattern              │
@@ -1030,92 +948,170 @@ Hint: Remove per-command filters or use a tool that supports this feature.
 
 ### Git Traversal Mode
 
-Git traversal is a **fundamentally different traversal mode** that operates on git repository root folders rather than project folders. Some commands are designed for project traversal, others for git traversal — they cannot be mixed.
+There are two traversal modes: **project traversal** and **git traversal**. Commands can support one or both modes. When a command supports both, it runs in the mode selected by the user. The key difference is how folders are selected and ordered — **all folder natures are always detected** regardless of traversal mode.
+
+A folder can be both a project folder AND a git folder. For example, `tom_build_base/` contains `pubspec.yaml` (project) and `.git/` (git repo). Commands supporting both modes can operate on such folders in either mode.
 
 ```mermaid
 flowchart TB
-    subgraph "Project Traversal (default)"
+    subgraph "Project Traversal Mode"
         direction TB
-        P1["Scan all folders"]
-        P2["Detect projects<br/>(pubspec.yaml, etc.)"]
-        P3["Filter by project patterns"]
-        P4["Execute on each project"]
-        P1 --> P2 --> P3 --> P4
+        P1["Scan from --scan path"]
+        P2["Find folders with project markers<br/>(pubspec.yaml, etc.)"]
+        P3["Filter: --project, --exclude-projects, --test"]
+        P4["Order: --build-order (dependency sort)"]
+        P5["Execute on each project<br/>(all natures detected)"]
+        P1 --> P2 --> P3 --> P4 --> P5
     end
     
-    subgraph "Git Traversal"
+    subgraph "Git Traversal Mode"
         direction TB
-        G1["Scan all folders"]
-        G2["Find git repo roots<br/>(.git folder)"]
-        G3["Filter by module/path"]
-        G4["Order by --inner/outer-first-git"]
-        G5["Execute on each git root"]
-        G1 --> G2 --> G3 --> G4 --> G5
+        G1["Find all git roots<br/>(.git/ folder or .git file)"]
+        G2["Filter: --modules, --skip-modules"]
+        G3["Order: --inner-first-git / --outer-first-git"]
+        G4["Execute on each git root<br/>(all natures detected)"]
+        G1 --> G2 --> G3 --> G4
     end
 ```
 
-#### When to Use Git Traversal
+**Key points:**
+- Project traversal scans from `--scan` path, respects `--recursive`, finds folders with project markers
+- Git traversal finds all git repositories regardless of scanning options
+- In both modes, **all folder natures are detected** (a git folder is also checked for pubspec.yaml, etc.)
+- Commands that support both modes can use either, depending on user's choice
 
-| Traversal | Use Case | Filter Support |
-|-----------|----------|----------------|
-| **Project** | Build, test, analyze individual projects | `--project`, `--exclude-projects`, `--test` |
-| **Git** | Git operations across repos (commit, push, status) | `--modules`, `--skip-modules`, `--exclude` (path) |
+#### Command Nature Declarations
 
-**Key differences:**
+Commands declare their nature requirements using two properties:
 
-1. **Target folders** — Git traversal visits git repository roots only (folders with `.git`); project traversal visits any folder matching project natures.
+| Property | Type | Meaning |
+|----------|------|---------|
+| `requiredNatures` | `Set<Type>?` | Folder **must have ALL** these natures. `null` = no requirement |
+| `worksWithNatures` | `Set<Type>` | Natures the command can operate on. Command examines context |
 
-2. **Available filters** — Git traversal supports `--modules`, `--skip-modules`, and `--exclude` (path patterns), but NOT `--project`, `--exclude-projects`, or `--test` (these filter by project nature, which doesn't apply to git repos).
-
-3. **Ordering requirement** — Git traversal commands must specify either `--inner-first-git` or `--outer-first-git` to determine traversal order.
-
-#### Command Git Traversal Properties
-
-Commands declare their git traversal support in `CommandDefinition`:
+**Examples:**
 
 ```dart
-class CommandDefinition {
-  // ...
-  
-  /// Whether this command operates on git repos instead of projects.
-  final bool isGitCommand;
-  
-  /// Default git traversal order (null = no default, must be specified).
-  /// Only meaningful when isGitCommand is true.
-  final GitTraversalOrder? defaultGitOrder;
-}
+// Git-only command: Requires git folder, only works with git
+final pushCommand = CommandDefinition(
+  name: 'push',
+  requiredNatures: {GitFolder},
+  worksWithNatures: {GitFolder},
+);
 
-enum GitTraversalOrder { innerFirst, outerFirst }
+// Project-only command: Requires Dart project
+final analyzeCommand = CommandDefinition(
+  name: 'analyze',
+  requiredNatures: {DartProjectFolder},
+  worksWithNatures: {DartProjectFolder},
+);
+
+// Flexible command: Works with git folders AND projects
+// The command decides what to do based on available natures
+final statusCommand = CommandDefinition(
+  name: 'status',
+  requiredNatures: null,  // No requirement — runs on any folder
+  worksWithNatures: {GitFolder, DartProjectFolder},
+);
+
+// Dual-mode command: Requires git but can do more if it's also a project
+final infoCommand = CommandDefinition(
+  name: 'info',
+  requiredNatures: {GitFolder},  // Must be a git folder
+  worksWithNatures: {GitFolder, DartProjectFolder},  // Can use project info if available
+);
 ```
 
-#### Git Traversal Validation Rules
+#### Flexible Command Behavior
 
-When invoking a multi-command tool, the framework validates git traversal compatibility:
+Commands with multiple `worksWithNatures` can examine the context and behave differently:
 
-1. **No mixing** — All commands must have the same `isGitCommand` value. Error if some are git commands and others are not:
-   ```
-   Error: Cannot mix git commands and project commands in one invocation.
-   Git commands: :commit, :push
-   Project commands: :compile, :test
-   ```
+```dart
+class StatusCommand extends Command {
+  @override
+  Future<bool> execute(CommandContext ctx) async {
+    // Check what natures are available
+    final hasGit = ctx.hasNature<GitFolder>();
+    final hasProject = ctx.hasNature<DartProjectFolder>();
+    
+    if (hasGit) {
+      final git = ctx.getNature<GitFolder>();
+      print('Git: ${git.currentBranch}');
+      if (git.hasUncommittedChanges) print('  uncommitted changes');
+    }
+    
+    if (hasProject) {
+      final project = ctx.getNature<DartProjectFolder>();
+      print('Project: ${project.projectName} v${project.version}');
+    }
+    
+    return true;
+  }
+}
+```
 
-2. **Consistent defaults** — If multiple git commands have `defaultGitOrder` set, they must agree:
-   ```
-   Error: Conflicting default git order.
-   :commit defaults to innerFirst
-   :push defaults to outerFirst
-   Specify --inner-first-git or --outer-first-git explicitly.
-   ```
+#### Traversal Info Types
 
-3. **Order required** — If any git command has `defaultGitOrder == null`, a global `--inner-first-git` or `--outer-first-git` must be specified:
-   ```
-   Error: Git traversal order required.
-   :gitstatus requires --inner-first-git or --outer-first-git.
-   ```
+The framework provides separate traversal info types for different traversal modes. Each mode has its own set of options, plus common options that apply to both.
 
-#### Module Filter in Git Traversal
+**Common Options (both modes):**
 
-The `--modules` and `--skip-modules` options filter by **git submodule**. In a workspace with multiple git submodules:
+| Option | Abbr | Description |
+|--------|------|-------------|
+| `--exclude` | `-x` | Path patterns to exclude (glob patterns) |
+| `--test` | | Include zom_* test projects in results |
+| `--test-only` | | ONLY process zom_* test projects |
+| `--execution-root` | `-R` | Workspace root path |
+
+**Project Traversal Options:**
+
+| Option | Abbr | Description |
+|--------|------|-------------|
+| `--scan` | `-s` | Starting path for scan (default: `.`) |
+| `--recursive` | `-r` | Recurse into subdirectories |
+| `--not-recursive` | | Do not recurse (overrides -r) |
+| `--recursion-exclude` | | Patterns to skip during descent |
+| `--project` | `-p` | Project names/IDs to include (glob patterns) |
+| `--exclude-projects` | | Project names to exclude |
+| `--build-order` | `-b` | Sort by dependency order |
+
+**Git Traversal Options:**
+
+| Option | Abbr | Description |
+|--------|------|-------------|
+| `--modules` | `-m` | Git submodules to include (by name) |
+| `--skip-modules` | | Git submodules to exclude |
+| `--inner-first-git` | `-i` | Process submodules before parent repos |
+| `--outer-first-git` | `-o` | Process parent repos before submodules |
+
+```bash
+# Mixed command: Find all git repos and show project info if available
+buildkit -s . -r --inner-first-git :status
+
+# Filter: Only git repos that are also Dart projects matching 'tom_*'
+buildkit -s . -r --inner-first-git --project=tom_* :info
+```
+
+#### Git Folder Detection
+
+Git folders are detected by:
+
+| Indicator | Meaning |
+|-----------|---------|
+| `.git/` directory | Standard git repository root |
+| `.git` file | Git submodule (file contains path to actual git dir) |
+
+```dart
+bool _isGitFolder(String dirPath) {
+  final gitDir = Directory(p.join(dirPath, '.git'));
+  final gitFile = File(p.join(dirPath, '.git'));
+  return gitDir.existsSync() || gitFile.existsSync();
+}
+```
+
+#### Module Filters in Git Traversal
+
+The `--modules` and `--skip-modules` options filter by **git submodule name**:
 
 ```
 workspace/
@@ -1131,40 +1127,69 @@ workspace/
 
 ```bash
 # Only process the basics and d4rt submodules
-buildkit -s . -r --modules=basics,d4rt :gitstatus
+buildkit -s . -r --modules=basics,d4rt --inner-first-git :gitstatus
 
 # Process all except crypto
-buildkit -s . -r --skip-modules=crypto :commit :push
+buildkit -s . -r --skip-modules=crypto --inner-first-git :commit :push
 ```
 
-#### Example: Git Command Definitions
+#### Git Traversal Order
+
+When using git traversal, the order option determines whether inner repos (submodules) or outer repos (containing repos) are processed first:
+
+| Option | Effect |
+|--------|--------|
+| `--inner-first-git (-i)` | Process deepest git repos first (submodules before parent) |
+| `--outer-first-git (-o)` | Process outermost git repos first (parent before submodules) |
+
+**When to use each:**
+- `--inner-first-git`: Commit operations (commit submodules first, then parent can record new commits)
+- `--outer-first-git`: Status operations (see parent status first, then dive into details)
+- `--outer-first-git`: Push operations where parent must be pushed after submodules
+
+#### Command Examples
 
 ```dart
+// Git-only: commit command that requires inner-first ordering
 final commitCommand = CommandDefinition(
   name: 'commit',
   description: 'Commit changes across git repos',
-  isGitCommand: true,
-  defaultGitOrder: GitTraversalOrder.innerFirst,  // Commit inner repos first
   requiredNatures: {GitFolder},
-  // ...
+  worksWithNatures: {GitFolder},
+  defaultGitOrder: GitTraversalOrder.innerFirst,
+  supportsGitTraversal: true,
+  supportsProjectTraversal: false,
 );
 
+// Git-only: push command that suggests outer-first ordering  
 final pushCommand = CommandDefinition(
   name: 'push',
   description: 'Push changes across git repos',
-  isGitCommand: true,
-  defaultGitOrder: GitTraversalOrder.outerFirst,  // Push outer repos first
   requiredNatures: {GitFolder},
-  // ...
+  worksWithNatures: {GitFolder},
+  defaultGitOrder: GitTraversalOrder.outerFirst,
+  supportsGitTraversal: true,
+  supportsProjectTraversal: false,
 );
 
-final gitStatusCommand = CommandDefinition(
-  name: 'gitstatus',
-  description: 'Show git status across repos',
-  isGitCommand: true,
-  defaultGitOrder: null,  // Works with either order, but must be specified
-  requiredNatures: {GitFolder},
-  // ...
+// Flexible: status works on both git and project folders
+final statusCommand = CommandDefinition(
+  name: 'status',
+  description: 'Show status of git repos and/or projects',
+  requiredNatures: null,  // No requirements
+  worksWithNatures: {GitFolder, DartProjectFolder},
+  supportsGitTraversal: true,
+  supportsProjectTraversal: true,
+);
+
+// Flexible: cleanup command that can clean git ignored files OR project build artifacts
+final cleanupCommand = CommandDefinition(
+  name: 'cleanup',
+  description: 'Clean build artifacts and ignored files',
+  requiredNatures: null,
+  worksWithNatures: {GitFolder, DartProjectFolder, FlutterProjectFolder},
+  supportsGitTraversal: true,
+  supportsProjectTraversal: true,
 );
 ```
 
@@ -1177,22 +1202,17 @@ final gitStatusCommand = CommandDefinition(
 Two classes represent folders at different stages:
 
 ```dart
-/// Represents a filesystem folder during scanning.
-/// Minimal information — just the path and basic stats.
+/// Filesystem folder during scanning (minimal info)
 class FsFolder {
   final String path;
-  
   String get name => p.basename(path);
   bool get exists => Directory(path).existsSync();
 }
 
-/// Represents a folder during execution with detected capabilities.
-/// Base class for specific folder types (natures).
+/// Folder during execution with detected capabilities
 abstract class RunFolder {
   final FsFolder fsFolder;
-  
   RunFolder(this.fsFolder);
-  
   String get path => fsFolder.path;
   String get name => fsFolder.name;
 }
@@ -1377,83 +1397,66 @@ class GitStatusCommand extends Command {
 
 ```dart
 class ToolDefinition {
-  /// Tool name (e.g., 'buildkit', 'testkit')
-  final String name;
-  
-  /// Short description for help header
-  final String description;
-  
-  /// Version string (typically from version.g.dart)
-  final String version;
-  
-  /// Tool mode
-  final ToolMode mode;
-  
-  /// Global navigation options this tool supports
-  final NavigationFeatures navigationFeatures;
-  
-  /// Global options (non-navigation)
-  final List<OptionDefinition> globalOptions;
-  
-  /// Commands (for multi-command tools)
-  final List<CommandDefinition> commands;
-  
-  /// Whether this tool supports stdin mode
-  final bool supportsStdin;
-  
-  /// Help text for stdin mode (if supported)
-  final String? stdinHelp;
-  
-  /// Usage patterns for help
-  final List<String> usagePatterns;
-  
-  /// Options reserved for future use (show "not implemented" if used)
-  final List<String> blockedOptions;
+  final String name;                               // Tool name ('buildkit', 'testkit')
+  final String description;                        // Short description for help
+  final String version;                            // Version (from version.g.dart)
+  final ToolMode mode;                             // Tool mode
+  final NavigationFeatures navigationFeatures;     // Global navigation options
+  final List<OptionDefinition> globalOptions;      // Global non-navigation options
+  final List<CommandDefinition> commands;          // Commands (multi-command tools)
+  final bool supportsStdin;                        // Supports stdin mode
+  final String? stdinHelp;                         // Stdin mode help text
+  final List<String> usagePatterns;                // Usage patterns for help
+  final List<String> blockedOptions;               // Reserved options ("not implemented")
 }
 
-enum ToolMode {
-  simple,       // Single-purpose tool
-  multiCommand, // :command subcommands
-  repl,         // Interactive REPL
-  tui,          // Terminal UI
-}
+enum ToolMode { simple, multiCommand, repl, tui }
 ```
 
 ### CommandDefinition
 
 ```dart
 class CommandDefinition {
-  /// Command name (without : prefix)
-  final String name;
+  final String name;                       // Command name (without : prefix)
+  final String description;                // Short description
+  final List<String> aliases;              // Aliases (e.g., 'ls' for 'list')
+  final List<OptionDefinition> options;    // Command-specific options
   
-  /// Short description
-  final String description;
+  // Nature Requirements
+  final Set<Type>? requiredNatures;        // Folder MUST have ALL (null = any folder)
+  final Set<Type> worksWithNatures;        // Natures command can handle
   
-  /// Aliases (e.g., 'ls' for 'list')
-  final List<String> aliases;
+  // Traversal Support
+  final bool supportsProjectTraversal;     // Accepts --project, --exclude-projects, etc.
+  final bool supportsGitTraversal;         // Accepts --modules, --skip-modules, etc.
+  final GitTraversalOrder? defaultGitOrder;// Default git order (null = must specify)
+  final bool supportsPerCommandFilter;     // Supports per-command --project/--exclude
   
-  /// Command-specific options
-  final List<OptionDefinition> options;
+  // Execution
+  final bool requiresTraversal;            // Needs workspace traversal
+  final List<String> examples;             // Usage examples
+  final bool canRunStandalone;             // Can run as standalone binary
+  final NavigationFeatures? standaloneNavigation; // Navigation when standalone
   
-  /// Folder natures this command operates on
-  final Set<Type> requiredNatures;
-  
-  /// Whether command supports per-command --project/--exclude
-  final bool supportsProjectFilter;
-  
-  /// Whether command needs workspace traversal
-  final bool requiresTraversal;
-  
-  /// Usage examples
-  final List<String> examples;
-  
-  /// Can this command run as a standalone executable?
-  final bool canRunStandalone;
-  
-  /// Navigation features when run standalone (null = standard defaults)
-  final NavigationFeatures? standaloneNavigation;
+  List<OptionDefinition> get allOptions {
+    final result = <OptionDefinition>[...options];
+    if (supportsProjectTraversal) result.addAll(projectTraversalOptions);
+    if (supportsGitTraversal) result.addAll(gitTraversalOptions);
+    return result;
+  }
 }
+
+enum GitTraversalOrder { innerFirst, outerFirst }
 ```
+
+**Nature requirement examples:**
+
+| Command | `requiredNatures` | `worksWithNatures` | Behavior |
+|---------|------------------|-------------------|----------|
+| `:push` | `{GitFolder}` | `{GitFolder}` | Only runs on git folders |
+| `:analyze` | `{DartProjectFolder}` | `{DartProjectFolder}` | Only runs on Dart projects |
+| `:status` | `null` | `{GitFolder, DartProjectFolder}` | Runs on any folder, examines available natures |
+| `:info` | `{GitFolder}` | `{GitFolder, DartProjectFolder}` | Must be git folder, but can also use project info if available |
 
 ### OptionDefinition
 
@@ -1665,146 +1668,191 @@ buildkit -s . -r --test-only :compile
 
 ## API for Programmatic Use
 
-### TraversalInfo Class
+### TraversalInfo Hierarchy
 
-The central abstraction for traversal configuration:
+The traversal info types form a hierarchy based on traversal mode. Note that `scan`, `recursive`, and `recursionExclude` apply only to project traversal — git traversal finds all repositories regardless of scan path.
+
+```mermaid
+classDiagram
+    class BaseTraversalInfo {
+        +String executionRoot
+        +List~String~ excludePatterns
+        +bool includeTestProjects
+        +bool testProjectsOnly
+    }
+    
+    class ProjectTraversalInfo {
+        +String scan
+        +bool recursive
+        +List~String~ recursionExclude
+        +List~String~ projectPatterns
+        +List~String~ excludeProjects
+        +bool buildOrder
+    }
+    
+    class GitTraversalInfo {
+        +List~String~ modules
+        +List~String~ skipModules
+        +GitTraversalMode gitMode
+    }
+    
+    BaseTraversalInfo <|-- ProjectTraversalInfo
+    BaseTraversalInfo <|-- GitTraversalInfo
+```
+
+### BaseTraversalInfo
+
+Common options shared by all traversal modes:
 
 ```dart
-/// Configuration for project traversal.
-/// 
-/// Can be constructed from CLI args or manually for TUI/script use.
-class TraversalInfo {
-  /// Starting path for scan
-  final String scan;
+/// Base class for traversal configuration.
+abstract class BaseTraversalInfo {
+  final String executionRoot;           // Workspace root path
+  final List<String> excludePatterns;   // Path patterns to exclude (glob)
+  final bool includeTestProjects;       // Include zom_* test projects
+  final bool testProjectsOnly;          // ONLY process zom_* test projects
   
-  /// Whether to recurse into subdirectories
-  final bool recursive;
-  
-  /// Execution root (workspace root)
-  final String executionRoot;
-  
-  /// Path patterns to exclude
-  final List<String> excludePatterns;
-  
-  /// Project names/IDs to include (empty = all)
-  final List<String> projectPatterns;
-  
-  /// Project names to exclude
-  final List<String> excludeProjects;
-  
-  /// Patterns to skip during recursive descent
-  final List<String> recursionExclude;
-  
-  /// Git submodules to include (empty = all)
-  final List<String> modules;
-  
-  /// Git submodules to exclude
-  final List<String> skipModules;
-  
-  /// Sort by dependency order
-  final bool buildOrder;
-  
-  /// Git traversal mode (for git-specific commands)
-  final GitTraversalMode gitMode;
-  
-  /// Include zom_* test projects
-  final bool includeTestProjects;
-  
-  /// Only process zom_* test projects
-  final bool testProjectsOnly;
-  
-  /// Create from parsed CLI args
-  factory TraversalInfo.fromCliArgs(CliArgs args) {
-    return TraversalInfo(
-      scan: args.scan ?? '.',
-      recursive: args.recursive && !args.notRecursive,
-      executionRoot: args.executionRoot,
-      excludePatterns: args.excludePatterns,
-      projectPatterns: args.projectPatterns,
-      skipModules: args.skipModules,
-      // ... etc
-    );
-  }
-  
-  /// Copy with modified values
-  TraversalInfo copyWith({
-    String? scan,
-    bool? recursive,
-    List<String>? projectPatterns,
-    // ...
+  BaseTraversalInfo({
+    required this.executionRoot,
+    this.excludePatterns = const [],
+    this.includeTestProjects = false,
+    this.testProjectsOnly = false,
   });
 }
+```
 
-enum GitTraversalMode { none, innerFirst, outerFirst }
+### ProjectTraversalInfo
+
+Project-focused traversal with project name filtering:
+
+```dart
+/// Configuration for project-based traversal.
+class ProjectTraversalInfo extends BaseTraversalInfo {
+  final String scan;                    // Starting path for scan (default: '.')
+  final bool recursive;                 // Recurse into subdirectories
+  final List<String> recursionExclude;  // Patterns to skip during descent
+  final List<String> projectPatterns;   // Project names/IDs to include (glob, empty = all)
+  final List<String> excludeProjects;   // Project names to exclude
+  final bool buildOrder;                // Sort by dependency order
+  
+  ProjectTraversalInfo({
+    required super.executionRoot, super.excludePatterns,
+    super.includeTestProjects, super.testProjectsOnly,
+    this.scan = '.', this.recursive = false, this.recursionExclude = const [],
+    this.projectPatterns = const [], this.excludeProjects = const [],
+    this.buildOrder = false,
+  });
+  
+  factory ProjectTraversalInfo.fromCliArgs(CliArgs args) => ProjectTraversalInfo(
+    executionRoot: args.executionRoot, excludePatterns: args.excludePatterns,
+    includeTestProjects: args.includeTestProjects, testProjectsOnly: args.testProjectsOnly,
+    scan: args.scan ?? '.', recursive: args.recursive && !args.notRecursive,
+    recursionExclude: args.recursionExclude, projectPatterns: args.projectPatterns,
+    excludeProjects: args.excludeProjects, buildOrder: args.buildOrder,
+  );
+}
+```
+
+### GitTraversalInfo
+
+Git-focused traversal with submodule filtering. Git traversal finds all repositories regardless of scan path.
+
+```dart
+/// Configuration for git repository traversal.
+class GitTraversalInfo extends BaseTraversalInfo {
+  final List<String> modules;       // Git submodules to include (by name, empty = all)
+  final List<String> skipModules;   // Git submodules to exclude (by name)
+  final GitTraversalMode gitMode;   // innerFirst or outerFirst ordering
+  
+  GitTraversalInfo({
+    required super.executionRoot, super.excludePatterns,
+    super.includeTestProjects, super.testProjectsOnly,
+    this.modules = const [], this.skipModules = const [],
+    required this.gitMode,
+  });
+  
+  factory GitTraversalInfo.fromCliArgs(CliArgs args) => GitTraversalInfo(
+    executionRoot: args.executionRoot, excludePatterns: args.excludePatterns,
+    includeTestProjects: args.includeTestProjects, testProjectsOnly: args.testProjectsOnly,
+    modules: args.modules, skipModules: args.skipModules, gitMode: args.gitMode,
+  );
+}
+
+enum GitTraversalMode { innerFirst, outerFirst }
 ```
 
 ### BuildBase.traverse() API
 
-The main entry point for traversal:
+The main entry point for traversal. Accepts either `ProjectTraversalInfo` or `GitTraversalInfo`:
 
 ```dart
 abstract class BuildBase {
-  /// Traverse projects and execute callback on each.
-  /// 
-  /// [info] - Traversal configuration
-  /// [run] - Callback executed for each matching folder
-  /// [requiredNatures] - Only process folders with these natures
+  /// Traverse folders and execute callback on each.
+  /// [info] - ProjectTraversalInfo or GitTraversalInfo
+  /// [run] - Callback for each matching folder
+  /// [requiredNatures] - Folder MUST have ALL (null = no requirement)
+  /// [worksWithNatures] - Natures the callback can handle
   static Future<ProcessingResult> traverse({
-    required TraversalInfo info,
+    required BaseTraversalInfo info,
     required Future<bool> Function(CommandContext) run,
     Set<Type>? requiredNatures,
+    Set<Type> worksWithNatures = const {},
   }) async {
-    final scanner = FolderScanner();
-    final filter = FilterPipeline();
     final detector = NatureDetector();
     final result = ProcessingResult();
     
-    // Phase 3: Scan
-    final folders = await scanner.scan(
-      info.scan,
-      recursive: info.recursive,
-      recursionExclude: info.recursionExclude,
-    );
+    // Get folders based on traversal type
+    final folders = switch (info) {
+      ProjectTraversalInfo pi => await _scanProjects(pi),
+      GitTraversalInfo gi => await _findGitRepos(gi),
+      _ => <FsFolder>[],
+    };
     
-    // Phase 4: Filter
-    final filtered = filter.apply(folders, info);
-    
-    // Phase 5: Detect natures + create contexts
+    // Detect natures + create contexts
     final contexts = <CommandContext>[];
-    for (final folder in filtered) {
+    for (final folder in folders) {
       final natures = detector.detectNatures(folder);
-      contexts.add(CommandContext(
-        fsFolder: folder,
-        natures: natures,
-        executionRoot: info.executionRoot,
-      ));
+      contexts.add(CommandContext(fsFolder: folder, natures: natures, 
+          executionRoot: info.executionRoot));
     }
     
-    // Apply ordering
-    final ordered = _applyOrdering(contexts, info);
+    // Apply ordering based on traversal type
+    final ordered = switch (info) {
+      GitTraversalInfo gi => _applyGitOrdering(contexts, gi.gitMode),
+      ProjectTraversalInfo pi when pi.buildOrder => _applyBuildOrdering(contexts),
+      _ => contexts,
+    };
     
-    // Phase 6: Execute
+    // Execute
     for (final ctx in ordered) {
-      // Filter by required natures
       if (requiredNatures != null && requiredNatures.isNotEmpty) {
-        if (!requiredNatures.every((n) => ctx.hasNature(n))) {
-          continue;
-        }
+        if (!requiredNatures.every((n) => ctx.hasNature(n))) continue;
       }
-      
       try {
         final success = await run(ctx);
-        if (success) {
-          result.recordSuccess(ctx.path);
-        } else {
-          result.recordFailure(ctx.path);
-        }
+        success ? result.recordSuccess(ctx.path) : result.recordFailure(ctx.path);
       } catch (e) {
         result.recordError(ctx.path, e);
       }
     }
-    
     return result;
+  }
+  
+  /// Project traversal: scan from path, filter by patterns
+  static Future<List<FsFolder>> _scanProjects(ProjectTraversalInfo info) async {
+    final scanner = FolderScanner();
+    final filter = FilterPipeline();
+    final folders = await scanner.scan(info.scan, 
+        recursive: info.recursive, recursionExclude: info.recursionExclude);
+    return filter.applyProjectFilters(folders, info);
+  }
+  
+  /// Git traversal: find all git repositories under executionRoot
+  static Future<List<FsFolder>> _findGitRepos(GitTraversalInfo info) async {
+    final finder = GitRepoFinder();
+    final filter = FilterPipeline();
+    final repos = await finder.findAll(info.executionRoot);
+    return filter.applyGitFilters(repos, info);
   }
 }
 ```
@@ -1813,7 +1861,7 @@ abstract class BuildBase {
 
 Using build base from D4rt scripts requires bridging the gap between scripting convenience and full API access.
 
-**Basic usage:**
+**Basic usage — project traversal:**
 
 ```dart
 // In a .d4rt or .dcli script
@@ -1821,14 +1869,15 @@ import 'package:tom_build_base/tom_build_base_v2.dart';
 import 'package:dcli/dcli.dart';
 
 void main() async {
-  // Simple traversal
+  // Project traversal with typed info
   await BuildBase.traverse(
-    info: TraversalInfo(
+    info: ProjectTraversalInfo(
       scan: '.',
       recursive: true,
-      projectPatterns: ['tom_*'],
       executionRoot: pwd,
+      projectPatterns: ['tom_*'],
     ),
+    requiredNatures: {DartProjectFolder},
     run: (ctx) async {
       print('Processing: ${ctx.relativePath}');
       
@@ -1841,6 +1890,26 @@ void main() async {
     },
   );
 }
+```
+
+**Basic usage — git traversal:**
+
+```dart
+// Git traversal with typed info
+await BuildBase.traverse(
+  info: GitTraversalInfo(
+    scan: '.',
+    recursive: true,
+    executionRoot: pwd,
+    gitMode: GitTraversalMode.innerFirst,
+  ),
+  requiredNatures: {GitFolder},
+  run: (ctx) async {
+    final git = ctx.getNature<GitFolder>();
+    print('${ctx.name}: ${git.currentBranch}');
+    return true;
+  },
+);
 ```
 
 **Convenience extensions for scripting:**
@@ -1864,7 +1933,7 @@ extension BuildBaseScripting on BuildBase {
     List<String>? exclude,
   }) async {
     return await BuildBase.traverse(
-      info: TraversalInfo(
+      info: ProjectTraversalInfo(
         scan: scan,
         recursive: recursive,
         projectPatterns: include ?? [],
@@ -1884,15 +1953,19 @@ extension BuildBaseScripting on BuildBase {
     Future<void> Function(CommandContext) action, {
     String scan = '.',
     bool innerFirst = true,
+    List<String>? modules,
+    List<String>? skipModules,
   }) async {
     return await BuildBase.traverse(
-      info: TraversalInfo(
+      info: GitTraversalInfo(
         scan: scan,
         recursive: true,
+        executionRoot: Directory.current.path,
         gitMode: innerFirst 
             ? GitTraversalMode.innerFirst 
             : GitTraversalMode.outerFirst,
-        executionRoot: Directory.current.path,
+        modules: modules ?? [],
+        skipModules: skipModules ?? [],
       ),
       requiredNatures: {GitFolder},
       run: (ctx) async {
@@ -1903,51 +1976,22 @@ extension BuildBaseScripting on BuildBase {
   }
   
   /// Get list of projects without executing anything.
-  /// 
-  /// Useful for scripts that need to iterate manually.
   static Future<List<CommandContext>> findProjects({
-    String scan = '.',
-    bool recursive = true,
-    List<String>? include,
-    List<String>? exclude,
-    Set<Type>? requiredNatures,
+    String scan = '.', bool recursive = true, List<String>? include,
+    List<String>? exclude, Set<Type>? requiredNatures,
   }) async {
-    final info = TraversalInfo(
-      scan: scan,
-      recursive: recursive,
-      projectPatterns: include ?? [],
-      excludeProjects: exclude ?? [],
-      executionRoot: Directory.current.path,
+    final info = ProjectTraversalInfo(
+      scan: scan, recursive: recursive, executionRoot: Directory.current.path,
+      projectPatterns: include ?? [], excludeProjects: exclude ?? [],
     );
-    
-    final scanner = FolderScanner();
-    final filter = FilterPipeline();
+    final folders = await FolderScanner().scan(info.scan, 
+        recursive: info.recursive, recursionExclude: info.recursionExclude);
+    final filtered = FilterPipeline().apply(folders, info);
     final detector = NatureDetector();
-    
-    final folders = await scanner.scan(
-      info.scan,
-      recursive: info.recursive,
-      recursionExclude: info.recursionExclude,
-    );
-    
-    final filtered = filter.apply(folders, info);
-    
-    final contexts = <CommandContext>[];
-    for (final folder in filtered) {
+    return filtered.map((folder) {
       final natures = detector.detectNatures(folder);
-      final ctx = CommandContext(
-        fsFolder: folder,
-        natures: natures,
-        executionRoot: info.executionRoot,
-      );
-      
-      if (requiredNatures == null || 
-          requiredNatures.every((n) => ctx.hasNature(n))) {
-        contexts.add(ctx);
-      }
-    }
-    
-    return contexts;
+      return CommandContext(fsFolder: folder, natures: natures, executionRoot: info.executionRoot);
+    }).where((ctx) => requiredNatures == null || requiredNatures.every((n) => ctx.hasNature(n))).toList();
   }
 }
 ```
@@ -2001,59 +2045,37 @@ class MyTuiApp {
   bool _recursive = true;
   List<String> _selectedProjects = [];
   List<String> _excludedProjects = [];
-  
-  /// Current traversal config based on UI state
+
   TraversalInfo get _currentTraversal => TraversalInfo(
-    scan: _selectedPath,
-    recursive: _recursive,
-    projectPatterns: _selectedProjects,
-    excludeProjects: _excludedProjects,
-    executionRoot: _workspaceRoot,
+    scan: _selectedPath, recursive: _recursive, projectPatterns: _selectedProjects,
+    excludeProjects: _excludedProjects, executionRoot: _workspaceRoot,
   );
-  
-  /// User changed a setting — refresh project list
-  void _onSettingsChanged() {
-    // Re-scan with current settings to show preview
-    _refreshProjectList();
-  }
-  
+
+  void _onSettingsChanged() => _refreshProjectList();
+
   Future<void> _refreshProjectList() async {
     final contexts = await BuildBase.findProjects(
-      scan: _selectedPath,
-      recursive: _recursive,
+      scan: _selectedPath, recursive: _recursive,
       include: _selectedProjects.isEmpty ? null : _selectedProjects,
       exclude: _excludedProjects.isEmpty ? null : _excludedProjects,
     );
-    
     _updateProjectListPanel(contexts);
   }
-  
-  /// Execute a command with current traversal settings
+
   Future<void> _runCommand(Command command) async {
     final result = await BuildBase.traverse(
-      info: _currentTraversal,
-      requiredNatures: command.requiredNatures,
+      info: _currentTraversal, requiredNatures: command.requiredNatures,
       run: (ctx) async {
         _outputPanel.appendLine('Processing: ${ctx.relativePath}');
         return await command.execute(ctx);
       },
     );
-    
     _showResultsSummary(result);
   }
-  
-  /// User can trigger multiple traversals with different settings
+
   Future<void> _runOnSubset(List<String> specificProjects) async {
-    final customInfo = _currentTraversal.copyWith(
-      projectPatterns: specificProjects,
-    );
-    
-    await BuildBase.traverse(
-      info: customInfo,
-      run: (ctx) async {
-        // ...
-      },
-    );
+    final customInfo = _currentTraversal.copyWith(projectPatterns: specificProjects);
+    await BuildBase.traverse(info: customInfo, run: (ctx) async { /* ... */ });
   }
 }
 ```
@@ -2090,41 +2112,22 @@ These are direct dependencies of tom_build_base.
 **interact integration (guide mode):**
 
 ```dart
-/// Shared guide mode utilities wrapping interact package.
-/// 
-/// Available to tools when --guide is specified.
 class GuidedMode {
-  /// Single-select menu. Returns selected index, -1 if cancelled.
-  int menu(String prompt, List<String> options, {int defaultIndex = 0});
-  
-  /// Multi-select with checkboxes. Returns list of selected indices.
-  List<int> multiSelect(String prompt, List<String> options);
-  
-  /// Yes/no confirmation.
-  bool confirm(String prompt, {bool defaultYes = true});
-  
-  /// Text input with optional validation.
-  String input(String prompt, {String? defaultValue});
-  
-  /// Password input (hidden).
-  String password(String prompt);
-  
-  /// Spinner while async operation runs.
-  Future<T> withSpinner<T>(String message, Future<T> Function() action);
+  int menu(String prompt, List<String> options, {int defaultIndex = 0}); // Returns index, -1 if cancelled
+  List<int> multiSelect(String prompt, List<String> options);            // Returns selected indices
+  bool confirm(String prompt, {bool defaultYes = true});                 // Yes/no
+  String input(String prompt, {String? defaultValue});                   // Text input
+  String password(String prompt);                                        // Hidden input
+  Future<T> withSpinner<T>(String message, Future<T> Function() action); // Spinner wrapper
 }
+```
 
+```dart
 // Tools can use GuidedMode when --guide is active:
 if (args.guide) {
   final guided = GuidedMode();
-  final projectIndex = guided.menu(
-    'Select project:',
-    availableProjects.map((p) => p.name).toList(),
-  );
-  if (projectIndex < 0) {
-    print('Cancelled');
-    return;
-  }
-  // Continue with selection
+  final projectIndex = guided.menu('Select project:', availableProjects.map((p) => p.name).toList());
+  if (projectIndex < 0) { print('Cancelled'); return; }
 }
 ```
 
@@ -2253,53 +2256,22 @@ sequenceDiagram
 ```dart
 class CompletionGenerator {
   final ToolDefinition tool;
-  
-  /// Generate completion script for specified shell.
-  String generate(Shell shell) {
-    switch (shell) {
-      case Shell.bash:
-        return _generateBash();
-      case Shell.zsh:
-        return _generateZsh();
-      case Shell.fish:
-        return _generateFish();
-    }
-  }
-  
-  String _generateBash() {
-    // Generate bash completion script from ToolDefinition:
-    // - All commands and their aliases
-    // - All options (global and per-command)
-    // - Custom completion functions for dynamic values
-  }
+  String generate(Shell shell) => switch (shell) {
+    Shell.bash => _generateBash(), Shell.zsh => _generateZsh(), Shell.fish => _generateFish(),
+  };
+  String _generateBash() { /* Generate bash script from ToolDefinition (commands, options, custom functions) */ }
 }
 
-/// Handle completion request at runtime.
 class CompletionHandler {
-  /// Called when tool is invoked with completion environment variables.
   List<String> getCompletions(String partialInput, int cursorPosition) {
     final words = partialInput.split(' ');
     final currentWord = _getCurrentWord(words, cursorPosition);
-    
-    if (currentWord.startsWith(':')) {
-      // Complete command names
-      return _matchCommands(currentWord);
-    } else if (currentWord.startsWith('-')) {
-      // Complete option names
-      return _matchOptions(currentWord);
-    } else if (_isPreviousOptionWithValue(words)) {
-      // Complete option value (files, projects, etc.)
-      return _matchOptionValue(words);
-    } else {
-      // Complete file/directory paths
-      return _matchPaths(currentWord);
-    }
+    if (currentWord.startsWith(':')) return _matchCommands(currentWord);
+    if (currentWord.startsWith('-')) return _matchOptions(currentWord);
+    if (_isPreviousOptionWithValue(words)) return _matchOptionValue(words);
+    return _matchPaths(currentWord);
   }
-  
-  List<String> _matchProjects(String partial) {
-    // Scan workspace for projects with buildkit.yaml
-    // Return matching project names and IDs
-  }
+  List<String> _matchProjects(String partial) { /* Scan workspace for buildkit.yaml projects */ }
 }
 ```
 
