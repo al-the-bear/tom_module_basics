@@ -191,7 +191,8 @@ class NatureDetector {
         pubspec: pubspec,
         executables: executables,
       );
-    } else {
+    } else if (hasLibSrc) {
+      // Per design spec: DartPackageFolder requires lib/src/
       return DartPackageFolder(
         folder,
         projectName: projectName,
@@ -200,6 +201,16 @@ class NatureDetector {
         devDependencies: devDependencies,
         pubspec: pubspec,
         hasLibSrc: hasLibSrc,
+      );
+    } else {
+      // Generic Dart project without bin/ or lib/src/
+      return DartProjectFolder(
+        folder,
+        projectName: projectName,
+        version: version,
+        dependencies: dependencies,
+        devDependencies: devDependencies,
+        pubspec: pubspec,
       );
     }
   }

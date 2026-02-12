@@ -30,6 +30,7 @@ class FolderScanner {
       folders,
       recursive: recursive,
       recursionExclude: recursionExclude,
+      isRoot: true, // Don't skip the initial scan directory
     );
     
     return folders;
@@ -40,9 +41,11 @@ class FolderScanner {
     List<FsFolder> results, {
     required bool recursive,
     required List<String> recursionExclude,
+    bool isRoot = false,
   }) async {
     // Check for skip markers BEFORE adding or descending
-    if (_hasSkipMarker(dir.path)) return;
+    // Exception: don't skip the root directory (only skip nested workspaces)
+    if (!isRoot && _hasSkipMarker(dir.path)) return;
     
     // Add this directory
     results.add(FsFolder(path: dir.path));

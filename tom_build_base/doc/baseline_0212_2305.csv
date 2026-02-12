@@ -1,0 +1,320 @@
+ID,Groups,Description,Baseline [02-12 23:05]
+BB-CMP-26,Edge cases,Handles multiple command aliases [2026-02-12],OK/OK
+BB-CMP-1,ShellType,Has three values [2026-02-12],OK/OK
+BB-CMD-1,GitTraversalOrder,GitTraversalOrder has two values [2026-02-12],OK/OK
+BB-HLP-1,HelpGenerator > generateToolHelp,Includes tool name and version [2026-02-12],OK/OK
+BB-RUN-2,ItemResult > constructor,Creates result with all fields [2026-02-12],OK/OK
+BB-CMD-2,CommandDefinition > constructor,Creates command with required fields [2026-02-12],OK/OK
+BB-CMP-2,CompletionGenerator.generateBash,Generates bash completion script [2026-02-12],OK/OK
+BB-HLP-2,HelpGenerator > generateToolHelp,Includes tool description [2026-02-12],OK/OK
+BB-RUN-3,ItemResult > success factory,Creates success result [2026-02-12],OK/OK
+BB-CMP-3,CompletionGenerator.generateBash,Includes completion function [2026-02-12],OK/OK
+BB-HLP-3,HelpGenerator > generateToolHelp,Includes usage for multi-command tool [2026-02-12],OK/OK
+BB-CMD-3,CommandDefinition > constructor,Creates command with all fields [2026-02-12],OK/OK
+BB-RUN-4,ItemResult > failure factory,Creates failure result [2026-02-12],OK/OK
+BB-CMP-4,CompletionGenerator.generateBash,Includes commands [2026-02-12],OK/OK
+BB-RUN-5,ToolResult > constructor,Creates result with defaults [2026-02-12],OK/OK
+BB-CMD-4,CommandDefinition > allOptions,Returns only command options when no traversal support [2026-02-12],OK/OK
+BB-HLP-4,HelpGenerator > generateToolHelp,Includes usage for single-command tool [2026-02-12],OK/OK
+BB-CMP-5,CompletionGenerator.generateBash,Includes command aliases [2026-02-12],OK/OK
+BB-RUN-6,ToolResult > constructor,Creates result with all fields [2026-02-12],OK/OK
+BB-HLP-5,HelpGenerator > generateToolHelp,Lists global options [2026-02-12],OK/OK
+BB-CMP-6,CompletionGenerator.generateBash,Includes global options [2026-02-12],OK/OK
+BB-CMD-5,CommandDefinition > allOptions,Includes project traversal options when supported [2026-02-12],OK/OK
+BB-RUN-7,ToolResult > success factory,Creates success result [2026-02-12],OK/OK
+BB-HLP-6,HelpGenerator > generateToolHelp,Lists commands [2026-02-12],OK/OK
+BB-CMD-6,CommandDefinition > allOptions,Includes git traversal options when supported [2026-02-12],OK/OK
+BB-CLI-1,CliArgs > constructor,Creates args with defaults [2026-02-12],OK/OK
+BB-CMP-7,CompletionGenerator.generateBash,Includes command-specific options [2026-02-12],OK/OK
+BB-RUN-8,ToolResult > success factory,Creates success with item results [2026-02-12],OK/OK
+BB-HLP-7,HelpGenerator > generateToolHelp,Shows command aliases [2026-02-12],OK/OK
+BB-CMD-7,CommandDefinition > allOptions,Includes both traversal types when supported [2026-02-12],OK/OK
+BB-CLI-2,CliArgs > effectiveRecursive,effectiveRecursive true when recursive set [2026-02-12],OK/OK
+BB-RUN-9,ToolResult > failure factory,Creates failure result [2026-02-12],OK/OK
+BB-CMP-8,CompletionGenerator.generateBash,Registers completion [2026-02-12],OK/OK
+BB-HLP-8,HelpGenerator > generateToolHelp,Excludes hidden commands [2026-02-12],OK/OK
+BB-CMD-8,CommandDefinition > allOptions,Command options come first [2026-02-12],OK/OK
+BB-CLI-3,CliArgs > effectiveRecursive,effectiveRecursive false when both flags set [2026-02-12],OK/OK
+BB-HLP-9,HelpGenerator > generateToolHelp,Includes help footer [2026-02-12],OK/OK
+BB-CLI-4,CliArgs > effectiveRecursive,effectiveRecursive false when not recursive [2026-02-12],OK/OK
+BB-HLP-10,HelpGenerator > generateToolHelp,Shows command help hint [2026-02-12],OK/OK
+BB-CMP-9,CompletionGenerator.generateBash,Handles tool with no commands [2026-02-12],OK/OK
+BB-CMD-9,CommandDefinition > usage,Generates usage without aliases [2026-02-12],OK/OK
+BB-RUN-10,ToolResult > fromItems factory,Creates result from all successful items [2026-02-12],OK/OK
+BB-CLI-5,CliArgs > isHelpOrVersion,isHelpOrVersion true when help set [2026-02-12],OK/OK
+BB-CMD-10,CommandDefinition > usage,Generates usage with single alias [2026-02-12],OK/OK
+BB-HLP-11,HelpGenerator > generateCommandHelp,Includes command name [2026-02-12],OK/OK
+BB-CMP-10,CompletionGenerator.generateZsh,Generates zsh completion script [2026-02-12],OK/OK
+BB-RUN-11,ToolResult > fromItems factory,Creates result from mixed items [2026-02-12],OK/OK
+BB-CLI-6,CliArgs > isHelpOrVersion,isHelpOrVersion true when version set [2026-02-12],OK/OK
+BB-CMD-11,CommandDefinition > usage,Generates usage with multiple aliases [2026-02-12],OK/OK
+BB-HLP-12,HelpGenerator > generateCommandHelp,Includes command description [2026-02-12],OK/OK
+BB-CMP-11,CompletionGenerator.generateZsh,Includes commands array [2026-02-12],OK/OK
+BB-RUN-12,ToolResult > fromItems factory,Creates result from all failed items [2026-02-12],OK/OK
+BB-CLI-7,CliArgs > isHelpOrVersion,isHelpOrVersion false when neither set [2026-02-12],OK/OK
+BB-CMD-12,CommandDefinition > toString,Returns descriptive string [2026-02-12],OK/OK
+BB-CMP-12,CompletionGenerator.generateZsh,Includes global options array [2026-02-12],OK/OK
+BB-HLP-13,HelpGenerator > generateCommandHelp,Shows aliases [2026-02-12],OK/OK
+BB-RUN-13,ToolResult > fromItems factory,Creates result from empty items [2026-02-12],OK/OK
+BB-CLI-8,CliArgs > toProjectTraversalInfo,Converts basic args to ProjectTraversalInfo [2026-02-12],OK/OK
+BB-CMP-13,CompletionGenerator.generateZsh,Includes completion function [2026-02-12],OK/OK
+BB-HLP-14,HelpGenerator > generateCommandHelp,Lists command options [2026-02-12],OK/OK
+BB-CMD-13,Command with nature requirements,Can specify required natures [2026-02-12],OK/OK
+BB-CLI-9,CliArgs > toProjectTraversalInfo,Uses root from args if provided [2026-02-12],OK/OK
+BB-RUN-14,ToolRunner > constructor,Creates runner with required fields [2026-02-12],OK/OK
+BB-CMD-14,Command with nature requirements,Null required natures means any folder [2026-02-12],OK/OK
+BB-CMP-14,CompletionGenerator.generateZsh,Includes command-specific options [2026-02-12],OK/OK
+BB-HLP-15,HelpGenerator > generateCommandHelp,Lists project traversal options when supported [2026-02-12],OK/OK
+BB-CMD-15,Command with nature requirements,Empty required natures is different from null [2026-02-12],OK/OK
+BB-RUN-15,ToolRunner > constructor,Creates runner with executors [2026-02-12],OK/OK
+BB-CMP-15,CompletionGenerator.generateZsh,Calls completion function [2026-02-12],OK/OK
+BB-CLI-10,CliArgs > toProjectTraversalInfo,Respects notRecursive override [2026-02-12],OK/OK
+BB-HLP-16,HelpGenerator > generateCommandHelp,Lists git traversal options when supported [2026-02-12],OK/OK
+BB-CMP-16,CompletionGenerator.generateFish,Generates fish completion script [2026-02-12],OK/OK
+BB-CLI-11,CliArgs > toProjectTraversalInfo,Defaults scan to current directory [2026-02-12],OK/OK
+BB-HLP-17,HelpGenerator > generateCommandHelp,Mentions per-command filter support [2026-02-12],OK/OK
+BB-CMP-17,CompletionGenerator.generateFish,Disables file completion [2026-02-12],OK/OK
+BB-CLI-12,CliArgs > toGitTraversalInfo,Converts basic args to GitTraversalInfo [2026-02-12],OK/OK
+BB-RUN-16,ToolRunner > run,Shows tool help for --help [2026-02-12],OK/OK
+BB-CMP-18,CompletionGenerator.generateFish,Includes commands [2026-02-12],OK/OK
+BB-HLP-18,HelpGenerator > generateCommandHelp,Lists examples [2026-02-12],OK/OK
+BB-CLI-13,CliArgs > toGitTraversalInfo,Defaults to innerFirst git mode [2026-02-12],OK/OK
+BB-RUN-17,ToolRunner > run,Shows version for --version [2026-02-12],OK/OK
+BB-CMP-19,CompletionGenerator.generateFish,Includes global options [2026-02-12],OK/OK
+BB-HLP-19,HelpGenerator > generateCommandHelp,Uses tool name in usage [2026-02-12],OK/OK
+BB-CLI-14,CliArgs > toGitTraversalInfo,Uses outerFirst when specified [2026-02-12],OK/OK
+BB-HLP-20,HelpGenerator > generateUsageSummary,Shows basic usage [2026-02-12],OK/OK
+BB-CMP-20,CompletionGenerator.generateFish,Includes command-specific options [2026-02-12],OK/OK
+BB-RUN-18,ToolRunner > run,Shows command help for :command --help [2026-02-12],OK/OK
+BB-HLP-21,HelpGenerator > generateUsageSummary,Shows commands for multi-command tool [2026-02-12],OK/OK
+BB-CLI-15,PerCommandArgs,Creates PerCommandArgs with defaults [2026-02-12],OK/OK
+BB-CMP-21,ToolDefinitionCompletion extension,GenerateCompletion returns bash script [2026-02-12],OK/OK
+BB-RUN-19,ToolRunner > run,Finds command by alias [2026-02-12],OK/OK
+BB-HLP-22,HelpGenerator > generateUsageSummary,Truncates command list [2026-02-12],OK/OK
+BB-CMP-22,ToolDefinitionCompletion extension,GenerateCompletion returns zsh script [2026-02-12],OK/OK
+BB-CLI-16,PerCommandArgs,Creates PerCommandArgs with all fields [2026-02-12],OK/OK
+BB-HLP-23,HelpGenerator > generateOptionHelp,Formats flag option [2026-02-12],OK/OK
+BB-CMP-23,ToolDefinitionCompletion extension,GenerateCompletion returns fish script [2026-02-12],OK/OK
+BB-RUN-20,ToolRunner > run,Returns error for unknown command [2026-02-12],OK/OK
+BB-HLP-24,HelpGenerator > generateOptionHelp,Formats option with value [2026-02-12],OK/OK
+BB-CLI-17,CliArgParser > long options,Parses --help [2026-02-12],OK/OK
+BB-RUN-21,ToolRunner > run,Shows usage when no command specified [2026-02-12],OK/OK
+BB-CMP-24,Edge cases,Handles options without abbreviations [2026-02-12],OK/OK
+BB-HLP-25,HelpGenerator > generateOptionHelp,Includes default value [2026-02-12],OK/OK
+BB-CLI-18,CliArgParser > long options,Parses --version [2026-02-12],OK/OK
+BB-CMP-25,Edge cases,Handles descriptions with special characters [2026-02-12],OK/OK
+BB-CLI-19,CliArgParser > long options,Parses --verbose [2026-02-12],OK/OK
+BB-RUN-22,ToolRunner > run,Executes command without traversal [2026-02-12],OK/OK
+BB-RUN-1,ItemResult > constructor,Creates result with required fields [2026-02-12],OK/OK
+BB-RUN-23,ToolRunner > run,Returns error when no executor for command [2026-02-12],OK/OK
+BB-CMP-27,Edge cases,Handles empty options and commands [2026-02-12],OK/OK
+BB-CLI-20,CliArgParser > long options,Parses --dry-run [2026-02-12],OK/OK
+BB-CMP-28,Helper method tests,_getCommandsStr includes commands and aliases [2026-02-12],OK/OK
+BB-CLI-21,CliArgParser > long options,Parses --recursive [2026-02-12],OK/OK
+BB-RUN-24,CommandExecutor,Base class has default executeWithoutTraversal [2026-02-12],OK/OK
+BB-CLI-22,CliArgParser > long options,Parses --not-recursive [2026-02-12],OK/OK
+BB-CMP-29,Helper method tests,_getGlobalOptsStr includes all global options [2026-02-12],OK/OK
+BB-CLI-23,CliArgParser > long options,Parses --scan with = value [2026-02-12],OK/OK
+BB-CMP-30,Helper method tests,_getCommandOptsStr includes command options [2026-02-12],OK/OK
+BB-CLI-24,CliArgParser > long options,Parses --scan with space value [2026-02-12],OK/OK
+BB-CLI-25,CliArgParser > long options,Parses --exclude with multiple values [2026-02-12],OK/OK
+BB-CLI-26,CliArgParser > long options,Parses --exclude with comma-separated values [2026-02-12],OK/OK
+BB-CLI-27,CliArgParser > long options,Parses --project patterns [2026-02-12],OK/OK
+BB-CLI-28,CliArgParser > long options,Parses --modules [2026-02-12],OK/OK
+BB-CLI-29,CliArgParser > long options,Parses --skip-modules [2026-02-12],OK/OK
+BB-CLI-30,CliArgParser > long options,Parses --inner-first-git [2026-02-12],OK/OK
+BB-CLI-31,CliArgParser > long options,Parses --outer-first-git [2026-02-12],OK/OK
+BB-CLI-32,CliArgParser > long options,Parses --build-order [2026-02-12],OK/OK
+BB-CLI-33,CliArgParser > short options,Parses -h [2026-02-12],OK/OK
+BB-CLI-34,CliArgParser > short options,Parses -V [2026-02-12],OK/OK
+BB-CLI-35,CliArgParser > short options,Parses -v [2026-02-12],OK/OK
+BB-CLI-36,CliArgParser > short options,Parses -r [2026-02-12],OK/OK
+BB-CLI-37,CliArgParser > short options,Parses -s with value [2026-02-12],OK/OK
+BB-CLI-38,CliArgParser > short options,Parses -s with attached value [2026-02-12],OK/OK
+BB-CLI-39,CliArgParser > short options,Parses -x [2026-02-12],OK/OK
+BB-CLI-40,CliArgParser > short options,Parses -p [2026-02-12],OK/OK
+BB-CLI-41,CliArgParser > short options,Parses -m [2026-02-12],OK/OK
+BB-CLI-42,CliArgParser > short options,Parses -i [2026-02-12],OK/OK
+BB-CLI-43,CliArgParser > short options,Parses -o [2026-02-12],OK/OK
+BB-CLI-44,CliArgParser > short options,Parses -b [2026-02-12],OK/OK
+BB-CLI-45,CliArgParser > short options,Parses -n [2026-02-12],OK/OK
+BB-CLI-46,CliArgParser > short options,Parses -l [2026-02-12],OK/OK
+BB-CLI-47,CliArgParser > short options,Parses -f [2026-02-12],OK/OK
+BB-CLI-48,CliArgParser > bundled short options,Parses -rv bundled [2026-02-12],OK/OK
+BB-CLI-49,CliArgParser > bundled short options,Parses -rvb bundled [2026-02-12],OK/OK
+BB-CLI-50,CliArgParser > commands,Parses single command [2026-02-12],OK/OK
+BB-CLI-51,CliArgParser > commands,Parses multiple commands [2026-02-12],OK/OK
+BB-CLI-52,CliArgParser > commands,Parses command with options [2026-02-12],OK/OK
+BB-CLI-53,CliArgParser > per-command options,Parses per-command --project [2026-02-12],OK/OK
+BB-CLI-54,CliArgParser > per-command options,Parses per-command --exclude [2026-02-12],OK/OK
+BB-CLI-55,CliArgParser > per-command options,Parses per-command custom options [2026-02-12],OK/OK
+BB-CLI-56,CliArgParser > per-command options,Parses multiple commands with per-command options [2026-02-12],OK/OK
+BB-CLI-57,CliArgParser > positional arguments,Captures positional args at start [2026-02-12],OK/OK
+BB-CLI-58,CliArgParser > positional arguments,Captures positional args before options [2026-02-12],OK/OK
+BB-CLI-59,CliArgParser > positional arguments,Captures positional args before commands [2026-02-12],OK/OK
+BB-CLI-60,CliArgParser > extra options,Captures unknown options [2026-02-12],OK/OK
+BB-CLI-61,CliArgParser > extra options,Captures unknown options with values [2026-02-12],OK/OK
+BB-CLI-62,CliArgParser > complex command lines,Parses buildkit-style command [2026-02-12],OK/OK
+BB-CLI-63,CliArgParser > complex command lines,Parses testkit-style command [2026-02-12],OK/OK
+BB-CLI-64,CliArgParser > complex command lines,Parses git command line [2026-02-12],OK/OK
+BB-TDF-1,ToolMode,Has three values [2026-02-12],OK/OK
+BB-TDF-2,NavigationFeatures > constructor,Creates features with defaults [2026-02-12],OK/OK
+BB-TDF-3,NavigationFeatures > constructor,Creates features with all fields [2026-02-12],OK/OK
+BB-TDF-4,NavigationFeatures > predefined constants,All has all features enabled [2026-02-12],OK/OK
+BB-TDF-5,NavigationFeatures > predefined constants,Minimal has only verbose enabled [2026-02-12],OK/OK
+BB-TDF-6,NavigationFeatures > predefined constants,ProjectTool has project traversal enabled [2026-02-12],OK/OK
+BB-TDF-7,NavigationFeatures > predefined constants,GitTool has git traversal enabled [2026-02-12],OK/OK
+BB-OPT-1,OptionType,OptionType has three values [2026-02-12],OK/OK
+BB-TDF-8,NavigationFeatures > toString,Lists enabled features [2026-02-12],OK/OK
+BB-TDF-9,NavigationFeatures > toString,Handles no features enabled [2026-02-12],OK/OK
+BB-OPT-2,OptionDefinition > constructor,Creates option with required fields [2026-02-12],OK/OK
+BB-OPT-3,OptionDefinition > constructor,Creates option with all fields [2026-02-12],OK/OK
+BB-TDF-10,ToolDefinition > constructor,Creates tool with required fields [2026-02-12],OK/OK
+BB-OPT-4,OptionDefinition > flag factory,Creates flag with minimal fields [2026-02-12],OK/OK
+BB-TDF-11,ToolDefinition > constructor,Creates tool with all fields [2026-02-12],OK/OK
+BB-OPT-5,OptionDefinition > flag factory,Creates negatable flag [2026-02-12],OK/OK
+BB-TDF-12,ToolDefinition > findCommand,Finds command by name [2026-02-12],OK/OK
+BB-OPT-6,OptionDefinition > flag factory,Creates flag with default value [2026-02-12],OK/OK
+BB-TDF-13,ToolDefinition > findCommand,Finds command by alias [2026-02-12],OK/OK
+BB-OPT-7,OptionDefinition > flag factory,Creates hidden flag [2026-02-12],OK/OK
+BB-TDF-14,ToolDefinition > findCommand,Returns null for unknown command [2026-02-12],OK/OK
+BB-OPT-8,OptionDefinition > option factory,Creates single-value option [2026-02-12],OK/OK
+BB-OPT-9,OptionDefinition > option factory,Creates option with all fields [2026-02-12],OK/OK
+BB-TDF-15,ToolDefinition > visibleCommands,Returns non-hidden commands [2026-02-12],OK/OK
+BB-OPT-10,OptionDefinition > multi factory,Creates multi-value option [2026-02-12],OK/OK
+BB-TDF-16,ToolDefinition > visibleCommands,Returns empty list when all hidden [2026-02-12],OK/OK
+BB-OPT-11,OptionDefinition > multi factory,Creates multi-value option with all fields [2026-02-12],OK/OK
+BB-OPT-12,OptionDefinition > usage,Generates usage for flag without abbr [2026-02-12],OK/OK
+BB-TDF-17,ToolDefinition > allGlobalOptions,Includes custom global options [2026-02-12],OK/OK
+BB-TDF-18,ToolDefinition > allGlobalOptions,Includes common options [2026-02-12],OK/OK
+BB-OPT-13,OptionDefinition > usage,Generates usage for flag with abbr [2026-02-12],OK/OK
+BB-TDF-19,ToolDefinition > allGlobalOptions,Includes dry-run when feature enabled [2026-02-12],OK/OK
+BB-OPT-14,OptionDefinition > usage,Generates usage for option with value name [2026-02-12],OK/OK
+BB-TDF-20,ToolDefinition > allGlobalOptions,Dry-run is always present via commonOptions [2026-02-12],OK/OK
+BB-OPT-15,OptionDefinition > usage,Generates usage for option without abbr [2026-02-12],OK/OK
+BB-TDF-21,ToolDefinition > allGlobalOptions,Includes json when feature enabled [2026-02-12],OK/OK
+BB-OPT-16,OptionDefinition > usage,Generates usage for multi option [2026-02-12],OK/OK
+BB-TDF-22,ToolDefinition > allGlobalOptions,Includes interactive when feature enabled [2026-02-12],OK/OK
+BB-TDF-23,ToolDefinition > toString,Returns descriptive string [2026-02-12],OK/OK
+BB-OPT-17,OptionDefinition > toString,Returns descriptive string [2026-02-12],OK/OK
+BB-OPT-18,Standard option definitions,projectTraversalOptions contains expected options [2026-02-12],OK/OK
+BB-TDF-24,Complete tool definition,Creates realistic tool definition [2026-02-12],OK/OK
+BB-OPT-19,Standard option definitions,Scan option has correct attributes [2026-02-12],OK/OK
+BB-OPT-20,Standard option definitions,Recursive option is a flag [2026-02-12],OK/OK
+BB-OPT-21,Standard option definitions,Project option is multi-value [2026-02-12],OK/OK
+BB-OPT-22,Standard option definitions,gitTraversalOptions contains expected options [2026-02-12],OK/OK
+BB-OPT-23,Standard option definitions,Modules option has correct attributes [2026-02-12],OK/OK
+BB-OPT-24,Standard option definitions,Inner-first-git option is a flag [2026-02-12],OK/OK
+BB-OPT-25,Standard option definitions,commonOptions contains exclude option [2026-02-12],OK/OK
+BB-OPT-26,Standard option definitions,Exclude option is multi-value [2026-02-12],OK/OK
+BB-NAT-1,NatureDetector > Flutter project detection,Detects FlutterProjectFolder for zom_test_flutter [2026-02-12],OK/OK
+BB-NAT-2,NatureDetector > Flutter project detection,FlutterProjectFolder has correct metadata [2026-02-12],OK/OK
+BB-NAT-3,NatureDetector > Dart console app detection,Detects DartConsoleFolder for zom_test_standalone [2026-02-12],OK/OK
+BB-NAT-4,NatureDetector > Dart console app detection,DartConsoleFolder has executables [2026-02-12],OK/OK
+BB-INT-22,Workspace VS Code Extension,Traverse finds VS Code extension with TypeScriptFolder nature [2026-02-12],OK/OK
+BB-NAT-6,NatureDetector > Dart package detection,DartPackageFolder has correct metadata [2026-02-12],OK/OK
+BB-TRV-1,GitTraversalMode,Has two values [2026-02-12],OK/OK
+BB-NAT-7,NatureDetector > Dart package detection,DartPackageFolder requires lib/src/ per design spec [2026-02-12],OK/OK
+BB-TRV-2,ProjectTraversalInfo > constructor,Creates info with required fields [2026-02-12],OK/OK
+BB-TRV-3,ProjectTraversalInfo > constructor,Creates info with all fields [2026-02-12],OK/OK
+BB-TRV-4,ProjectTraversalInfo > copyWith,Copies with no changes [2026-02-12],OK/OK
+BB-TRV-5,ProjectTraversalInfo > copyWith,Copies with changed executionRoot [2026-02-12],OK/OK
+BB-NAT-8,NatureDetector > VS Code extension detection,Detects VsCodeExtensionFolder for zom_extension [2026-02-12],OK/OK
+BB-TRV-6,ProjectTraversalInfo > copyWith,Copies with changed scan [2026-02-12],OK/OK
+BB-NAT-9,NatureDetector > VS Code extension detection,VsCodeExtensionFolder has correct metadata [2026-02-12],OK/OK
+BB-TRV-7,ProjectTraversalInfo > copyWith,Copies with changed recursive [2026-02-12],OK/OK
+BB-TRV-8,ProjectTraversalInfo > copyWith,Copies with changed projectPatterns [2026-02-12],OK/OK
+BB-TRV-9,ProjectTraversalInfo > copyWith,Copies with changed buildOrder [2026-02-12],OK/OK
+BB-TRV-10,ProjectTraversalInfo > copyWith,Copies with changed test project flags [2026-02-12],OK/OK
+BB-NAT-10,NatureDetector > TypeScript project detection,Detects TypeScriptFolder for zom_typescript [2026-02-12],OK/OK
+BB-TRV-11,GitTraversalInfo > constructor,Creates info with required fields [2026-02-12],OK/OK
+BB-TRV-12,GitTraversalInfo > constructor,Creates info with all fields [2026-02-12],OK/OK
+BB-TRV-13,GitTraversalInfo > copyWith,Copies with no changes [2026-02-12],OK/OK
+BB-TRV-14,GitTraversalInfo > copyWith,Copies with changed gitMode [2026-02-12],OK/OK
+BB-TRV-15,GitTraversalInfo > copyWith,Copies with changed modules [2026-02-12],OK/OK
+BB-TRV-16,GitTraversalInfo > copyWith,Copies with changed skipModules [2026-02-12],OK/OK
+BB-NAT-11,NatureDetector > TypeScript project detection,Zom_extension also has TypeScriptFolder nature [2026-02-12],OK/OK
+BB-TRV-17,TraversalInfo comparisons,ProjectTraversalInfo and GitTraversalInfo are distinct types [2026-02-12],OK/OK
+BB-TRV-18,TraversalInfo comparisons,Base properties are shared [2026-02-12],OK/OK
+BB-NAT-12,NatureDetector > Git folder detection,Detects GitFolder for workspace root [2026-02-12],OK/OK
+BB-INT-1,BuildBase.traverse with ProjectTraversalInfo,Finds Dart projects with DartProjectFolder nature [2026-02-12],OK/OK
+BB-TRV-19,Realistic traversal configurations,Buildkit recursive project traversal [2026-02-12],OK/OK
+BB-NAT-13,NatureDetector > Git folder detection,GitFolder has branch information [2026-02-12],OK/OK
+BB-TRV-20,Realistic traversal configurations,Buildkit git traversal with submodules [2026-02-12],OK/OK
+BB-TRV-21,Realistic traversal configurations,Testkit test-only project traversal [2026-02-12],OK/OK
+BB-TRV-22,Realistic traversal configurations,Build order with exclusions [2026-02-12],OK/OK
+BB-NAT-14,NatureDetector > TomBuildFolder detection,Detects TomBuildFolder when tom_project.yaml exists [2026-02-12],OK/OK
+BB-NAT-15,NatureDetector > Multiple natures,Folder can have multiple natures [2026-02-12],OK/OK
+BB-NAT-16,NatureDetector > Multiple natures,VS Code extension has multiple natures [2026-02-12],OK/OK
+BB-NAT-17,NatureDetector > Non-project folders,Empty folder has no project natures [2026-02-12],OK/OK
+BB-NAT-18,NatureDetector > Nature type hierarchy,FlutterProjectFolder is a DartProjectFolder [2026-02-12],OK/OK
+BB-NAT-19,NatureDetector > Nature type hierarchy,DartConsoleFolder is a DartProjectFolder [2026-02-12],OK/OK
+BB-NAT-20,NatureDetector > Nature type hierarchy,DartPackageFolder is a DartProjectFolder [2026-02-12],OK/OK
+BB-NAT-21,NatureDetector > Nature type hierarchy,All nature types extend RunFolder [2026-02-12],OK/OK
+BB-NAT-22,DartProjectFolder static methods,IsDartProject returns true for Dart projects [2026-02-12],OK/OK
+BB-NAT-23,DartProjectFolder static methods,IsDartProject returns false for non-Dart projects [2026-02-12],OK/OK
+BB-NAT-24,GitFolder static methods,IsGitFolder returns true for git repos [2026-02-12],OK/OK
+BB-NAT-25,GitFolder static methods,IsGitFolder returns false for non-git folders [2026-02-12],OK/OK
+BB-NAT-26,VsCodeExtensionFolder static methods,IsVsCodeExtension returns true for extensions [2026-02-12],OK/OK
+BB-NAT-27,VsCodeExtensionFolder static methods,IsVsCodeExtension returns false for regular TS projects [2026-02-12],OK/OK
+BB-NAT-28,TypeScriptFolder static methods,IsTypeScriptProject returns true for TS projects [2026-02-12],OK/OK
+BB-NAT-29,TypeScriptFolder static methods,IsTypeScriptProject returns false for Dart projects [2026-02-12],OK/OK
+BB-NAT-30,Design specification: Detection Rules,GitFolder: .git/ directory or .git file exists [2026-02-12],OK/OK
+BB-NAT-31,Design specification: Detection Rules,DartProjectFolder: pubspec.yaml exists [2026-02-12],OK/OK
+BB-NAT-32,Design specification: Detection Rules,FlutterProjectFolder: pubspec.yaml contains sdk: flutter [2026-02-12],OK/OK
+BB-NAT-33,Design specification: Detection Rules,DartConsoleFolder: pubspec.yaml exists AND bin/ exists [2026-02-12],OK/OK
+BB-NAT-34,Design specification: Detection Rules,DartPackageFolder: pubspec.yaml exists AND lib/src/ exists [2026-02-12],OK/OK
+BB-NAT-35,Design specification: Detection Rules,VsCodeExtensionFolder: package.json contains engines.vscode [2026-02-12],OK/OK
+BB-NAT-36,Design specification: Detection Rules,TypeScriptFolder: tsconfig.json exists [2026-02-12],OK/OK
+BB-NAT-37,Design specification: Detection Rules,TomBuildFolder: tom_project.yaml exists [2026-02-12],OK/OK
+BB-NAT-38,Design specification: Detection Rules,BUG: Dart project without bin/ or lib/src/ should NOT be DartP... [2026-02-12],OK/OK
+BB-INT-2,BuildBase.traverse with ProjectTraversalInfo,Finds Flutter projects specifically [2026-02-12],OK/OK
+BB-INT-3,BuildBase.traverse with ProjectTraversalInfo,Finds console apps specifically [2026-02-12],OK/OK
+BB-INT-4,BuildBase.traverse with ProjectTraversalInfo,Finds packages specifically [2026-02-12],OK/OK
+BB-FLT-1,"FilterPipeline.applyProjectFilters > Project include filter (--project, -p)",Filters to matching project names [2026-02-12],OK/OK
+BB-FLT-2,"FilterPipeline.applyProjectFilters > Project include filter (--project, -p)",Filters with exact name match [2026-02-12],OK/OK
+BB-FLT-3,"FilterPipeline.applyProjectFilters > Project include filter (--project, -p)",Filters with multiple patterns [2026-02-12],OK/OK
+BB-FLT-4,"FilterPipeline.applyProjectFilters > Project include filter (--project, -p)",Empty patterns returns all folders [2026-02-12],OK/OK
+BB-FLT-5,"FilterPipeline.applyProjectFilters > Path exclude filter (--exclude, -x)",Excludes paths matching pattern [2026-02-12],OK/OK
+BB-FLT-6,"FilterPipeline.applyProjectFilters > Path exclude filter (--exclude, -x)",Excludes multiple patterns [2026-02-12],OK/OK
+BB-FLT-7,FilterPipeline.applyProjectFilters > Project name exclude filter (--exclude-projects),Excludes specific project names [2026-02-12],OK/OK
+BB-INT-5,BuildBase.traverse with ProjectTraversalInfo,Finds TypeScript projects with TypeScriptFolder nature [2026-02-12],OK/OK
+BB-FLT-8,FilterPipeline.applyProjectFilters > Project name exclude filter (--exclude-projects),Excludes with glob pattern [2026-02-12],OK/OK
+BB-FLT-9,"FilterPipeline.applyProjectFilters > Test project filter (--test, --test-only)",Excludes zom_* by default [2026-02-12],OK/OK
+BB-FLT-10,"FilterPipeline.applyProjectFilters > Test project filter (--test, --test-only)",Includes zom_* with includeTestProjects (--test) [2026-02-12],OK/OK
+BB-FLT-11,"FilterPipeline.applyProjectFilters > Test project filter (--test, --test-only)",IncludeTestProjects keeps both regular AND test projects [2026-02-12],OK/OK
+BB-FLT-12,"FilterPipeline.applyProjectFilters > Test project filter (--test, --test-only)",TestProjectsOnly returns only zom_* folders (--test-only) [2026-02-12],OK/OK
+BB-FLT-13,FilterPipeline.applyProjectFilters > Combined filters,Include + exclude works together [2026-02-12],OK/OK
+BB-FLT-14,FilterPipeline.applyProjectFilters > Combined filters,Path exclude + name include works together [2026-02-12],OK/OK
+BB-INT-6,BuildBase.traverse with ProjectTraversalInfo,Finds VS Code extensions with VsCodeExtensionFolder nature [2026-02-12],OK/OK
+BB-INT-7,BuildBase.traverse with ProjectTraversalInfo,Excludes test projects by default [2026-02-12],OK/OK
+BB-INT-8,BuildBase.traverse with ProjectTraversalInfo,TestProjectsOnly filters to only zom_* projects [2026-02-12],OK/OK
+BB-INT-9,BuildBase.traverse with ProjectTraversalInfo,TestProjectsOnly finds ALL test project types including TypeSc... [2026-02-12],OK/OK
+BB-FLT-15,"FilterPipeline.applyGitFilters > Module filter (--modules, -m)",Filters to specified modules [2026-02-12],OK/OK
+BB-FLT-16,"FilterPipeline.applyGitFilters > Module filter (--modules, -m)",Filters with multiple modules [2026-02-12],OK/OK
+BB-FLT-17,"FilterPipeline.applyGitFilters > Module filter (--modules, -m)",Empty modules returns all [2026-02-12],OK/OK
+BB-FLT-18,FilterPipeline.applyGitFilters > Skip modules filter (--skip-modules),Excludes specified modules [2026-02-12],OK/OK
+BB-FLT-19,FilterPipeline.applyGitFilters > Path exclude filter,Excludes paths matching pattern [2026-02-12],OK/OK
+BB-FLT-20,FilterPipeline.applyGitFilters > Test project filter,Excludes zom_* by default in git mode [2026-02-12],OK/OK
+BB-FLT-21,FolderScanner,Scans recursively when recursive is true [2026-02-12],OK/OK
+BB-FLT-22,FolderScanner,Scans only root when recursive is false [2026-02-12],OK/OK
+BB-FLT-23,FolderScanner,Respects recursionExclude patterns [2026-02-12],OK/OK
+BB-INT-10,BuildBase.traverse with ProjectTraversalInfo,IncludeTestProjects includes BOTH regular and test projects [2026-02-12],OK/OK
+BB-FLT-24,FolderScanner,Skips hidden directories [2026-02-12],OK/OK
+BB-FLT-25,GitRepoFinder,Finds git repositories [2026-02-12],OK/OK
+BB-INT-11,BuildBase.traverse with GitTraversalInfo,Finds git repositories [2026-02-12],OK/OK
+BB-FLT-26,GitRepoFinder,Finds submodules [2026-02-12],OK/OK
+BB-FLT-27,GitRepoFinder,Returns empty list for non-git folder [2026-02-12],OK/OK
+BB-FLT-28,FolderSorter,SortByInnerFirst orders deeper paths first [2026-02-12],OK/OK
+BB-INT-12,BuildBase.traverse with GitTraversalInfo,InnerFirst mode processes inner repos before outer [2026-02-12],OK/OK
+BB-FLT-29,FolderSorter,SortByOuterFirst orders shallower paths first [2026-02-12],OK/OK
+BB-INT-13,BuildBase.traverse with GitTraversalInfo,OuterFirst mode processes outer repos before inner [2026-02-12],OK/OK
+BB-INT-14,BuildBase.findProjects,Returns CommandContext list without executing [2026-02-12],OK/OK
+BB-INT-15,BuildBase.findProjects,Respects include patterns [2026-02-12],OK/OK
+BB-INT-16,BuildBase.findProjects,Respects exclude patterns [2026-02-12],OK/OK
+BB-INT-17,BuildBase.findProjects,Respects requiredNatures filter [2026-02-12],OK/OK
+BB-INT-18,ProcessingResult,Tracks successful operations [2026-02-12],OK/OK
+BB-INT-19,ProcessingResult,Tracks failed operations [2026-02-12],OK/OK
+BB-INT-20,ProcessingResult,Tracks errors [2026-02-12],OK/OK
+BB-INT-21,Workspace VS Code Extension,Detects tom_vscode_extension as both VsCodeExtension and TypeS... [2026-02-12],OK/OK
+BB-NAT-5,NatureDetector > Dart package detection,Detects DartPackageFolder for zom_test_package [2026-02-12],OK/OK

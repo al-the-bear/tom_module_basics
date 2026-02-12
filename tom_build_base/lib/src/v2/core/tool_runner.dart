@@ -158,6 +158,7 @@ class ToolRunner {
         if (tool.defaultCommand != null) {
           return _runCommand(tool.defaultCommand!, cliArgs);
         }
+        output.writeln('No command specified.\n');
         output.writeln(HelpGenerator.generateUsageSummary(tool));
         return const ToolResult.failure('No command specified');
       }

@@ -5,7 +5,9 @@ import '../run_folder.dart';
 /// Base class for Dart project natures.
 ///
 /// Detected when a folder contains `pubspec.yaml`.
-abstract class DartProjectFolder extends RunFolder {
+/// Can be instantiated directly for generic Dart projects that don't fit
+/// specific subtypes (FlutterProjectFolder, DartConsoleFolder, DartPackageFolder).
+class DartProjectFolder extends RunFolder {
   /// Project name from pubspec.yaml.
   final String projectName;
 
@@ -34,6 +36,9 @@ abstract class DartProjectFolder extends RunFolder {
   static bool isDartProject(String dirPath) {
     return File('$dirPath/pubspec.yaml').existsSync();
   }
+
+  @override
+  String toString() => 'DartProjectFolder($path, name: $projectName)';
 }
 
 /// Flutter project nature.
@@ -84,7 +89,7 @@ class DartConsoleFolder extends DartProjectFolder {
 
 /// Dart package nature (library).
 ///
-/// Detected when folder has `pubspec.yaml` but no `bin/` directory and no Flutter SDK.
+/// Detected when folder has `pubspec.yaml` AND `lib/src/` directory exists.
 class DartPackageFolder extends DartProjectFolder {
   /// Whether the package has lib/src/ directory.
   final bool hasLibSrc;

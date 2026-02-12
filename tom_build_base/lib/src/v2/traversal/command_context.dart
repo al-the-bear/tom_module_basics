@@ -1,6 +1,8 @@
 import 'package:path/path.dart' as p;
 
 import '../folder/fs_folder.dart';
+import '../folder/natures/dart_project_folder.dart';
+import '../folder/natures/git_folder.dart';
 import '../folder/run_folder.dart';
 import 'traversal_info.dart';
 
@@ -56,13 +58,10 @@ class CommandContext {
   }
 
   /// Check if this is a Dart project of any kind.
-  bool get isDartProject => natures.any((n) => n.runtimeType.toString().contains('DartProjectFolder') ||
-      n.runtimeType.toString().contains('FlutterProjectFolder') ||
-      n.runtimeType.toString().contains('DartConsoleFolder') ||
-      n.runtimeType.toString().contains('DartPackageFolder'));
+  bool get isDartProject => hasNature<DartProjectFolder>();
 
   /// Check if this is a git repository.
-  bool get isGitRepo => natures.any((n) => n.runtimeType.toString() == 'GitFolder');
+  bool get isGitRepo => hasNature<GitFolder>();
 
   @override
   String toString() => 'CommandContext($path, natures: ${natures.length})';

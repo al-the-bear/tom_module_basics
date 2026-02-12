@@ -19,8 +19,9 @@ abstract class CommandExecutor {
   ///
   /// Called for commands that don't require folder traversal
   /// (e.g., --help, --version, or commands that operate globally).
+  /// Default implementation returns success.
   Future<ToolResult> executeWithoutTraversal(CliArgs args) async {
-    return const ToolResult.failure('Command requires traversal');
+    return const ToolResult.success();
   }
 }
 

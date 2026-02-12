@@ -12,22 +12,21 @@ class FilterPipeline {
   List<FsFolder> applyProjectFilters(List<FsFolder> folders, ProjectTraversalInfo info) {
     var result = folders;
 
-    // 1. Path exclude (--exclude, -x)
+    // 1. Path exclude (--exclude, -x) - matches against full path with substring matching
     if (info.excludePatterns.isNotEmpty) {
-      result = result.where((f) => !_matchesAnyPath(f.path, info.excludePatterns)).toList();
+      result = result.where((f) => !_matchesPathPattern(f.path, info.excludePatterns)).toList();
     }
 
-    // 2. Project include (--project, -p)
+    // 2. Project include (--project, -p) - matches against folder name with glob
     if (info.projectPatterns.isNotEmpty) {
       result = result.where((f) =>
-          _matchesAnyPath(f.path, info.projectPatterns) ||
-          _matchesAnyPath(f.name, info.projectPatterns) ||
+          _matchesNamePattern(f.name, info.projectPatterns) ||
           _matchesProjectId(f, info.projectPatterns)).toList();
     }
 
     // 3. Project name exclude (--exclude-projects)
     if (info.excludeProjects.isNotEmpty) {
-      result = result.where((f) => !_matchesAnyPath(f.name, info.excludeProjects)).toList();
+      result = result.where((f) => !_matchesNamePattern(f.name, info.excludeProjects)).toList();
     }
 
     // 4. Test project filter
@@ -42,7 +41,7 @@ class FilterPipeline {
 
     // 1. Path exclude (--exclude, -x)
     if (info.excludePatterns.isNotEmpty) {
-      result = result.where((f) => !_matchesAnyPath(f.path, info.excludePatterns)).toList();
+      result = result.where((f) => !_matchesPathPattern(f.path, info.excludePatterns)).toList();
     }
 
     // 2. Module filter (--modules, -m)
@@ -73,15 +72,45 @@ class FilterPipeline {
     return folders;
   }
 
-  /// Check if path matches any of the patterns.
-  bool _matchesAnyPath(String value, List<String> patterns) {
+  /// Check if path matches any of the patterns (for exclude filters).
+  /// Uses substring matching - *flutter* matches any path containing 'flutter'.
+  bool _matchesPathPattern(String path, List<String> patterns) {
     for (final pattern in patterns) {
+      // Extract the core pattern by removing wildcards
+      final barePattern = pattern.replaceAll('*', '');
+      if (barePattern.isNotEmpty && path.contains(barePattern)) {
+        return true;
+      }
+      // Also try glob match for full path patterns like **/node_modules/**
       try {
         final glob = Glob(pattern);
-        if (glob.matches(value)) return true;
+        if (glob.matches(path)) return true;
       } catch (_) {
-        // Invalid glob - try simple match
-        if (value.contains(pattern) || value == pattern) return true;
+        // Invalid glob pattern - already handled by substring match
+      }
+    }
+    return false;
+  }
+
+  /// Check if name matches any of the patterns (for include/project filters).
+  /// Uses glob pattern matching on folder name.
+  bool _matchesNamePattern(String name, List<String> patterns) {
+    for (final pattern in patterns) {
+      try {
+        // Convert simple wildcard to regex for name matching
+        if (pattern.contains('*')) {
+          final regexStr = pattern
+              .replaceAll('.', r'\.')
+              .replaceAll('*', '.*');
+          final regex = RegExp('^$regexStr\$', caseSensitive: false);
+          if (regex.hasMatch(name)) return true;
+        } else {
+          // Exact match
+          if (name == pattern) return true;
+        }
+      } catch (_) {
+        // Try exact match as fallback
+        if (name == pattern) return true;
       }
     }
     return false;

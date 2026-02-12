@@ -167,17 +167,10 @@ class ToolDefinition {
   List<OptionDefinition> get allGlobalOptions {
     final result = <OptionDefinition>[...globalOptions];
 
-    // Add common options
+    // Add common options (includes standard options like --help, --version, --dry-run)
     result.addAll(commonOptions);
 
-    // Add feature-specific options
-    if (features.dryRun) {
-      result.add(const OptionDefinition.flag(
-        name: 'dry-run',
-        abbr: 'n',
-        description: 'Show what would be done without doing it',
-      ));
-    }
+    // Add feature-specific options (not in commonOptions)
     if (features.jsonOutput) {
       result.add(const OptionDefinition.flag(
         name: 'json',

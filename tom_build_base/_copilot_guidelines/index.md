@@ -7,6 +7,7 @@ This folder contains project-specific guidelines for the `tom_build_base` packag
 | File | Description |
 |------|-------------|
 | [build_base_projects.md](build_base_projects.md) | List of all projects depending on tom_build_base |
+| [implementation_guidelines.md](implementation_guidelines.md) | Development workflow, test-first approach, naming conventions |
 
 ## Quick Reference
 

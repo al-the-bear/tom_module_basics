@@ -214,6 +214,7 @@ const List<OptionDefinition> commonOptions = [
   ),
   OptionDefinition.flag(
     name: 'dry-run',
+    abbr: 'n',
     description: 'Show what would be done without doing it',
   ),
   OptionDefinition.flag(

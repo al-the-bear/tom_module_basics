@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import '../folder/fs_folder.dart';
+import '../folder/natures/dart_project_folder.dart';
 import 'command_context.dart';
 import 'filter_pipeline.dart';
 import 'folder_scanner.dart';
@@ -106,10 +107,19 @@ abstract class BuildBase {
 
     // Execute on each context
     for (final ctx in ordered) {
-      // Check required natures
+      // Check required natures using type hierarchy (is-a relationship)
       if (requiredNatures != null && requiredNatures.isNotEmpty) {
-        final hasAll = requiredNatures.every((t) =>
-            ctx.natures.any((n) => n.runtimeType == t));
+        final hasAll = requiredNatures.every((requiredType) {
+          return ctx.natures.any((nature) {
+            // Check exact match first
+            if (nature.runtimeType == requiredType) return true;
+            // Handle DartProjectFolder hierarchy - any Dart project type satisfies DartProjectFolder
+            if (requiredType == DartProjectFolder) {
+              return nature is DartProjectFolder;
+            }
+            return false;
+          });
+        });
         if (!hasAll) continue;
       }
 
