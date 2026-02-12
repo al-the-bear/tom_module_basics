@@ -1036,9 +1036,7 @@ String? _getRootValue(String? value) {
 }
 
 void _printVersion() {
-  print('Test Kit ${TestKitVersionInfo.versionShort}');
-  print('Git: ${TestKitVersionInfo.gitCommit}');
-  print('Built: ${TestKitVersionInfo.buildTime}');
+  print('Test Kit ${TestKitVersionInfo.versionLong}');
 }
 
 /// Runs the TUI mode — full-screen interactive dashboard.
