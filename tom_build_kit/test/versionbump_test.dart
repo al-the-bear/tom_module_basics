@@ -117,7 +117,7 @@ void main() {
     final beforeMinor = int.tryParse(versionMatch?.group(2) ?? '0') ?? 0;
 
     final result = await ws.runTool(
-        'versionbump', ['--minor', '_build', '--project', '_build']);
+        'bumpversion', ['--minor', '_build', '--project', '_build']);
     log.capture('versionbump --minor _build --project _build', result);
 
     expect(result.exitCode, equals(0),
@@ -146,7 +146,7 @@ void main() {
     final beforeMajor = int.tryParse(versionMatch?.group(1) ?? '0') ?? 0;
 
     final result = await ws.runTool(
-        'versionbump', ['--major', '_build', '--project', '_build']);
+        'bumpversion', ['--major', '_build', '--project', '_build']);
     log.capture('versionbump --major _build --project _build', result);
 
     expect(result.exitCode, equals(0),
@@ -200,7 +200,7 @@ void main() {
     final beforeContent = File(pubspecPath).readAsStringSync();
 
     final result = await ws.runTool(
-        'versionbump', ['--dry-run', '--project', '_build']);
+        'bumpversion', ['--dry-run', '--project', '_build']);
     log.capture('versionbump --dry-run --project _build', result);
 
     expect(result.exitCode, equals(0),

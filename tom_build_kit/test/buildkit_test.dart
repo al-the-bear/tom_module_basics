@@ -92,9 +92,9 @@ void main() {
     test('direct command execution (:versioner)', () async {
       log.start('BKT_CMD01', 'direct command :versioner');
       final result = await ws.runPipeline(
-          ':versioner', ['--dry-run'],
-          globalArgs: ['--project', '_build']);
-      log.capture('buildkit --project _build :versioner --dry-run', result);
+          ':versioner', [],
+          globalArgs: ['--project', '_build', '--dry-run']);
+      log.capture('buildkit --project _build --dry-run :versioner', result);
 
       final stdout = (result.stdout as String);
       expect(result.exitCode, equals(0));

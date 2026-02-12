@@ -184,18 +184,18 @@ void main() {
     });
 
     // Bug #13 FIXED: -v abbreviation removed from --versioner flag.
-    test('versionbump excludes by basename (bug #13 FIXED)', () async {
-      log.start('EXCL_BN06', 'versionbump excludes by basename (bug #13 fixed)');
+    test('bumpversion excludes by basename (bug #13 FIXED)', () async {
+      log.start('EXCL_BN06', 'bumpversion excludes by basename (bug #13 fixed)');
       final result = await ws.runTool(
-        'versionbump',
+        'bumpversion',
         ['--scan', '.', '--recursive', '--list',
          '--exclude-projects', '_build'],
       );
-      log.capture('versionbump --list --exclude-projects _build', result);
+      log.capture('bumpversion --list --exclude-projects _build', result);
 
       log.expectation('exit code 0', result.exitCode == 0);
       expect(result.exitCode, 0,
-          reason: 'Bug #13 fixed: versionbump should start successfully');
+          reason: 'Bug #13 fixed: bumpversion should start successfully');
 
       final stdout = result.stdout as String;
       log.expectation('_build excluded from output', !stdout.contains('_build/'));
@@ -359,20 +359,20 @@ void main() {
     });
 
     // Bug #13 FIXED: -v abbreviation removed from --versioner flag.
-    test('versionbump skip file excludes project (bug #13 FIXED)',
+    test('bumpversion skip file excludes project (bug #13 FIXED)',
         () async {
-      log.start('EXCL_SF06', 'versionbump skip file excludes project (bug #13 fixed)');
+      log.start('EXCL_SF06', 'bumpversion skip file excludes project (bug #13 fixed)');
       tempSkipFiles.add(ws.placeSkipFile('_build'));
 
       final result = await ws.runTool(
-        'versionbump',
+        'bumpversion',
         ['--scan', '.', '--recursive', '--list'],
       );
-      log.capture('versionbump --list (skip file in _build)', result);
+      log.capture('bumpversion --list (skip file in _build)', result);
 
       log.expectation('exit code 0', result.exitCode == 0);
       expect(result.exitCode, 0,
-          reason: 'Bug #13 fixed: versionbump should start successfully');
+          reason: 'Bug #13 fixed: bumpversion should start successfully');
     });
 
     test('skip file in parent excludes all children', () async {
