@@ -507,21 +507,27 @@ class TestWorkspace {
 
   /// Run a buildkit pipeline.
   ///
-  /// Executes: `dart run <path/to/bin/buildkit.dart> <pipeline> <args>`
+  /// Executes: `dart run <path/to/bin/buildkit.dart> [globalArgs] <pipeline> <args>`
   /// Runs from the workspace root.
+  ///
+  /// [globalArgs] are placed BEFORE the pipeline name to satisfy buildkit's
+  /// requirement that global flags (--project, --dry-run, --scan, etc.)
+  /// precede the pipeline/command name.
   Future<ProcessResult> runPipeline(
     String pipeline,
     List<String> args, {
     String? workingDirectory,
+    List<String> globalArgs = const [],
   }) async {
     final binPath = p.join(buildkitRoot, 'bin', 'buildkit.dart');
-    print('    🔧 Running pipeline: buildkit $pipeline ${args.join(' ')}');
+    final allArgs = [...globalArgs, pipeline, ...args];
+    print('    🔧 Running pipeline: buildkit ${allArgs.join(' ')}');
     final result = await Process.run(
       'dart',
-      ['run', binPath, pipeline, ...args],
+      ['run', binPath, ...allArgs],
       workingDirectory: workingDirectory ?? workspaceRoot,
     );
-    print('    ✓ buildkit $pipeline exited with code ${result.exitCode}');
+    print('    ✓ buildkit ${allArgs.first} exited with code ${result.exitCode}');
     return result;
   }
 

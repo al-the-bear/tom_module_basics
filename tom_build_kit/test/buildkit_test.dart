@@ -92,8 +92,9 @@ void main() {
     test('direct command execution (:versioner)', () async {
       log.start('BKT_CMD01', 'direct command :versioner');
       final result = await ws.runPipeline(
-          ':versioner', ['--project', '_build', '--dry-run']);
-      log.capture('buildkit :versioner --project _build --dry-run', result);
+          ':versioner', ['--dry-run'],
+          globalArgs: ['--project', '_build']);
+      log.capture('buildkit --project _build :versioner --dry-run', result);
 
       final stdout = (result.stdout as String);
       expect(result.exitCode, equals(0));
@@ -110,8 +111,9 @@ void main() {
       log.start('BKT_PIP01', 'pipeline execution');
       // test-simple has two shell echo steps — both should execute
       final result =
-          await ws.runPipeline('test-simple', ['--project', '_build']);
-      log.capture('buildkit test-simple --project _build', result);
+          await ws.runPipeline('test-simple', [],
+              globalArgs: ['--project', '_build']);
+      log.capture('buildkit --project _build test-simple', result);
 
       final stdout = (result.stdout as String);
       expect(result.exitCode, equals(0));
@@ -215,8 +217,9 @@ void main() {
       // Run with scan and suppress scan for the direct command
       // The -s- flag should suppress the global --scan for just that step
       final result = await ws.runPipeline(':versioner',
-          ['-s-', '--project', '_build', '--dry-run']);
-      log.capture('buildkit :versioner -s- --project _build --dry-run',
+          ['-s-'],
+          globalArgs: ['--project', '_build', '--dry-run']);
+      log.capture('buildkit --project _build --dry-run :versioner -s-',
           result);
 
       // Should complete without error (syntax accepted)
@@ -229,8 +232,9 @@ void main() {
       log.start('BKT_SHL01', 'shell command in pipeline');
       // test-shell pipeline has: shell echo "hello from test pipeline"
       final result = await ws.runPipeline(
-          'test-shell', ['--project', '_build']);
-      log.capture('buildkit test-shell --project _build', result);
+          'test-shell', [],
+          globalArgs: ['--project', '_build']);
+      log.capture('buildkit --project _build test-shell', result);
 
       final stdout = (result.stdout as String);
       expect(result.exitCode, equals(0));
@@ -243,16 +247,15 @@ void main() {
 
     test('--exclude-projects filters pipeline targets', () async {
       log.start('BKT_XPJ01', '--exclude-projects in pipeline');
-      final result = await ws.runPipeline('test-simple', [
-        '--scan',
-        '.',
-        '--recursive',
-        '--exclude-projects',
-        '_build',
-        '--dry-run',
-        '--verbose',
-      ]);
-      log.capture('buildkit test-simple --exclude-projects _build --dry-run',
+      final result = await ws.runPipeline('test-simple', [],
+          globalArgs: [
+            '--scan', '.',
+            '--recursive',
+            '--exclude-projects', '_build',
+            '--dry-run',
+            '--verbose',
+          ]);
+      log.capture('buildkit --exclude-projects _build --dry-run test-simple',
           result);
 
       expect(result.exitCode, equals(0));
@@ -263,18 +266,16 @@ void main() {
 
     test('--exclude and --exclude-projects combined', () async {
       log.start('BKT_XPJ02', '--exclude + --exclude-projects');
-      final result = await ws.runPipeline('test-simple', [
-        '--scan',
-        '.',
-        '--recursive',
-        '--exclude',
-        'core/*',
-        '--exclude-projects',
-        '_build',
-        '--dry-run',
-        '--verbose',
-      ]);
-      log.capture('buildkit --exclude core/* --exclude-projects _build',
+      final result = await ws.runPipeline('test-simple', [],
+          globalArgs: [
+            '--scan', '.',
+            '--recursive',
+            '--exclude', 'core/*',
+            '--exclude-projects', '_build',
+            '--dry-run',
+            '--verbose',
+          ]);
+      log.capture('buildkit --exclude core/* --exclude-projects _build test-simple',
           result);
 
       expect(result.exitCode, equals(0));

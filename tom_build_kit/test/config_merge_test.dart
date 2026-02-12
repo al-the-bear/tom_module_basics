@@ -65,19 +65,16 @@ void main() {
       log.start('CFG_DEF01', 'workspace defaults apply');
 
       // The exclusion fixture sets workspace-level versioner prefix to
-      // 'testDefault'. _build has project-level prefix 'tomTools'.
-      // To test workspace defaults, we need a project WITHOUT a versioner
-      // section. We'll modify _build's buildkit.yaml to remove the
-      // versioner section, then run versioner with workspace defaults.
+      // 'testDefault'. We write a complete _build/buildkit.yaml WITHOUT
+      // a versioner section, so the workspace default should apply.
       final buildConfig =
           p.join(ws.workspaceRoot, '_build', 'buildkit.yaml');
-      final originalContent = File(buildConfig).readAsStringSync();
-
-      // Remove the versioner section from project config
-      final modifiedContent =
-          originalContent.replaceAll(RegExp(r'versioner:.*?(?=\n\S|\Z)', dotAll: true), '');
-      File(buildConfig).writeAsStringSync(modifiedContent);
-      print('    📝 Removed versioner section from _build/buildkit.yaml');
+      File(buildConfig).writeAsStringSync(
+        '# Test fixture: no versioner section\n'
+        'cleanup:\n'
+        "  - '**/version.g.dart'\n",
+      );
+      print('    📝 Wrote _build/buildkit.yaml without versioner section');
 
       final result =
           await ws.runTool('versioner', ['--project', '_build']);
@@ -102,8 +99,20 @@ void main() {
       log.start('CFG_OVR01', 'project config overrides workspace');
 
       // Exclusion fixture has workspace prefix 'testDefault'.
-      // _build has project prefix 'tomTools'.
-      // Project should win.
+      // Write a complete _build/buildkit.yaml with project prefix 'tomTools'.
+      // Project should win over workspace.
+      final buildConfig =
+          p.join(ws.workspaceRoot, '_build', 'buildkit.yaml');
+      File(buildConfig).writeAsStringSync(
+        '# Test fixture: project override for versioner prefix\n'
+        'versioner:\n'
+        '  variable-prefix: tomTools\n'
+        '\n'
+        'cleanup:\n'
+        "  - '**/version.g.dart'\n",
+      );
+      print('    📝 Wrote _build/buildkit.yaml with variable-prefix: tomTools');
+
       final result =
           await ws.runTool('versioner', ['--project', '_build']);
       log.capture('versioner with project override', result);
@@ -128,13 +137,15 @@ void main() {
       // Effective set should be: {.git, .github, .vscode, .idea, custom_protected}
       final buildConfig =
           p.join(ws.workspaceRoot, '_build', 'buildkit.yaml');
-      final buildContent = File(buildConfig).readAsStringSync();
-      final modifiedBuild = buildContent.replaceAll(
-        RegExp(r"cleanup:\n  - '\*\*/version\.g\.dart'"),
-        "cleanup:\n  cleanup:\n    - '**/*.g.dart'\n  protected-folders:\n    - 'custom_protected'",
+      File(buildConfig).writeAsStringSync(
+        '# Test fixture: cleanup with protected-folders\n'
+        'cleanup:\n'
+        "  cleanup:\n"
+        "    - '**/*.g.dart'\n"
+        '  protected-folders:\n'
+        "    - 'custom_protected'\n",
       );
-      File(buildConfig).writeAsStringSync(modifiedBuild);
-      print('    📝 Added project protected-folders to _build/buildkit.yaml');
+      print('    📝 Wrote _build/buildkit.yaml with protected-folders');
 
       // Create file in project-level custom protected folder
       final customDir = Directory(

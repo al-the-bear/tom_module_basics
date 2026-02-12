@@ -54,7 +54,7 @@ void main() {
   test('Bug #13 FIXED: --help works after removing -v abbreviation',
       () async {
     log.start('VBM_BUG13', 'versionbump --help works');
-    final result = await ws.runTool('versionbump', ['--help']);
+    final result = await ws.runTool('bumpversion', ['--help']);
     log.capture('versionbump --help', result);
 
     expect(result.exitCode, equals(0),
@@ -83,7 +83,7 @@ void main() {
     print('    Before version: $beforeVersion');
 
     final result =
-        await ws.runTool('versionbump', ['--project', '_build']);
+        await ws.runTool('bumpversion', ['--project', '_build']);
     log.capture('versionbump --project _build', result);
 
     expect(result.exitCode, equals(0),
@@ -168,7 +168,7 @@ void main() {
     log.start('VBM_RST01', 'build counter reset');
 
     final result =
-        await ws.runTool('versionbump', ['--project', '_build']);
+        await ws.runTool('bumpversion', ['--project', '_build']);
     log.capture('versionbump --project _build', result);
 
     expect(result.exitCode, equals(0),
