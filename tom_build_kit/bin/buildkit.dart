@@ -1986,24 +1986,34 @@ const _gitToolCommandNames = {
 void _warnOnMisplacedFlags(List<String> rest) {
   if (rest.isEmpty) return;
 
-  // Check if the first command is a git tool command
+  // Only check flags that appear BEFORE the pipeline/command name.
+  // The first non-flag entry in rest is the pipeline or :command name.
+  // Everything after it is a per-pipeline/per-command argument and should
+  // NOT be treated as a misplaced global flag.
+  final flagsBeforeCommand = <String>[];
   var excludeGitFlags = false;
   for (final item in rest) {
-    if (item.startsWith(':')) {
-      final cmdName = item.substring(1).toLowerCase();
-      if (_gitToolCommandNames.contains(cmdName)) {
-        excludeGitFlags = true;
-        break;
+    if (item.startsWith('-')) {
+      flagsBeforeCommand.add(item);
+    } else {
+      // Hit the pipeline/command name — check for git tool commands
+      if (item.startsWith(':')) {
+        final cmdName = item.substring(1).toLowerCase();
+        if (_gitToolCommandNames.contains(cmdName)) {
+          excludeGitFlags = true;
+        }
       }
+      break;
     }
-    // Stop at first non-flag
-    if (!item.startsWith('-')) break;
   }
+
+  if (flagsBeforeCommand.isEmpty) return;
 
   final flagsToCheck = excludeGitFlags
       ? _knownGlobalFlags.difference(_gitToolFlags)
       : _knownGlobalFlags;
-  final misplaced = rest.where((arg) => flagsToCheck.contains(arg)).toList();
+  final misplaced =
+      flagsBeforeCommand.where((arg) => flagsToCheck.contains(arg)).toList();
   if (misplaced.isEmpty) return;
 
   stderr.writeln('⚠️  Error: The following global flag(s) appear AFTER the '

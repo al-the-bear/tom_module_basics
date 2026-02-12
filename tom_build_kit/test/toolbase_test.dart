@@ -221,15 +221,13 @@ void main() {
     test('basename pattern (no /) matches folder name, path pattern (with /) matches relative path', () async {
       log.start('TB_XPJ06', 'pattern auto-detection: basename vs path');
 
-      // Use dependencies tool — it lists ALL projects (any with pubspec.yaml).
-
-      // Verify baseline DOES include tom_core_kernel
+      // Verify baseline DOES include core/tom_core_kernel
       final baseline = await ws.runTool(
           'dependencies', ['--scan', '.', '--recursive', '--list']);
       log.capture('baseline (no exclusion)', baseline);
       final baselineProjects = parseListOutput(baseline.stdout as String);
       final baselineHasKernel =
-          baselineProjects.any((proj) => proj.contains('tom_core_kernel'));
+          baselineProjects.any((proj) => proj.endsWith('/tom_core_kernel') || proj == 'tom_core_kernel');
       expect(baselineHasKernel, isTrue,
           reason: 'Baseline should include tom_core_kernel');
 
@@ -242,7 +240,7 @@ void main() {
 
       final baseProjects = parseListOutput(byBasename.stdout as String);
       final baseHasKernel =
-          baseProjects.any((proj) => proj.contains('tom_core_kernel'));
+          baseProjects.any((proj) => proj.endsWith('/tom_core_kernel') || proj == 'tom_core_kernel');
       expect(baseHasKernel, isFalse,
           reason: 'Basename pattern should exclude tom_core_kernel');
 
@@ -255,7 +253,7 @@ void main() {
 
       final pathProjects = parseListOutput(byPath.stdout as String);
       final pathHasKernel =
-          pathProjects.any((proj) => proj.contains('tom_core_kernel'));
+          pathProjects.any((proj) => proj.endsWith('/tom_core_kernel') || proj == 'tom_core_kernel');
       expect(pathHasKernel, isFalse,
           reason: 'Path pattern should exclude core/tom_core_kernel');
 

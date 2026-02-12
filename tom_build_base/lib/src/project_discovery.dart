@@ -265,7 +265,7 @@ class ProjectDiscovery {
 
   /// Filename that marks a directory (and all subdirectories) as excluded
   /// from buildkit processing.
-  static const skipFileName = 'tom_build_skip.yaml';
+  static const skipFileName = 'buildkit_skip.yaml';
 
   /// Check if a directory contains a skip marker file.
   static bool hasSkipFile(String dirPath) {
