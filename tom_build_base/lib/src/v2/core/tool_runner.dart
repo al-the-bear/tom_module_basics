@@ -191,6 +191,13 @@ class ToolRunner {
       return ToolResult.failure('Unknown command: $cmdName');
     }
 
+    // Check for per-command --help
+    final cmdArgs = cliArgs.commandArgs[cmdName];
+    if (cmdArgs != null && cmdArgs.options['help'] == true) {
+      output.writeln(HelpGenerator.generateCommandHelp(cmd, tool: tool));
+      return const ToolResult.success();
+    }
+
     final executor = executors[cmdName];
     if (executor == null) {
       return ToolResult.failure('No executor for command: $cmdName');
