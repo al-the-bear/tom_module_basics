@@ -45,3 +45,5 @@ export 'src/v2/core/command_definition.dart';
 export 'src/v2/core/tool_definition.dart';
 export 'src/v2/core/cli_arg_parser.dart';
 export 'src/v2/core/help_generator.dart';
+export 'src/v2/core/command_executor.dart';
+export 'src/v2/core/tool_runner.dart';
