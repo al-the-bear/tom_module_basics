@@ -48,7 +48,9 @@ void main(List<String> args) async {
     // Create runner with all executors
     final runner = ToolRunner(
       tool: issuekitTool,
-      executors: createIssuekitExecutors(service: service),
+      executors: createIssuekitExecutors(
+        service: service,
+      ),
     );
 
     // Run the tool

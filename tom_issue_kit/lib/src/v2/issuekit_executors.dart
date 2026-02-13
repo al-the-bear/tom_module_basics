@@ -305,8 +305,9 @@ class AssignExecutor extends CommandExecutor {
 /// Executor for :testing command.
 ///
 /// Scans the project's test directory for full test IDs matching an issue.
-/// If found, reports the linked tests. The issue number is the first
-/// positional arg.
+/// Per spec, only **full** test IDs (with project-specific part) are accepted
+/// — stubs like `D4-42` are reported separately. The issue number is the
+/// first positional arg.
 class TestingExecutor extends CommandExecutor {
   final TestScanner scanner;
   final IssueService service;
@@ -333,11 +334,30 @@ class TestingExecutor extends CommandExecutor {
       );
     }
 
-    final ids = matches.map((m) => m.testId).join(', ');
+    // Per spec: only full test IDs count (not stubs)
+    final fullTests = matches.where((m) => !m.isStub).toList();
+    final stubs = matches.where((m) => m.isStub).toList();
+
+    if (fullTests.isEmpty) {
+      final stubIds = stubs.map((m) => m.testId).join(', ');
+      return ItemResult.failure(
+        path: context.path,
+        name: context.name,
+        error: 'Only stub(s) found for #$issueNumber: $stubIds '
+            '— create a full dart test with project-specific ID',
+      );
+    }
+
+    final ids = fullTests.map((m) => m.testId).join(', ');
+    final stubNote = stubs.isNotEmpty
+        ? ' (${stubs.length} stub(s) also present)'
+        : '';
     return ItemResult.success(
       path: context.path,
       name: context.name,
-      message: 'Found ${matches.length} test(s) for #$issueNumber: $ids',
+      message:
+          'Found ${fullTests.length} full test(s) for #$issueNumber: '
+          '$ids$stubNote',
     );
   }
 }
@@ -1093,12 +1113,16 @@ class LinkExecutor extends CommandExecutor {
 /// Executor for :sync command.
 ///
 /// Per-project: scans for issue-linked tests, reads baselines, reports
-/// which tests pass/fail. Cross-references with issue states to detect
-/// fixes, regressions, and missing tests.
+/// which tests pass/fail. Groups results by issue number and detects:
+/// - Issues with all tests passing (candidates for VERIFYING)
+/// - Issues with failing tests
+/// - Issues with stubs only (missing full tests)
+/// - Potential regressions (tests that were OK but now fail)
 class SyncExecutor extends CommandExecutor {
   final TestScanner scanner;
+  final IssueService service;
 
-  SyncExecutor(this.scanner);
+  SyncExecutor(this.scanner, this.service);
 
   @override
   Future<ItemResult> execute(CommandContext context, CliArgs args) async {
@@ -1125,31 +1149,74 @@ class SyncExecutor extends CommandExecutor {
     }
 
     final statuses = scanner.parseBaseline(baselineContent);
-    final passing = <String>[];
-    final failing = <String>[];
-    final notRun = <String>[];
 
+    // Group tests by issue number for state transition detection
+    final byIssue = <int, List<TestIdMatch>>{};
     for (final test in allTests) {
-      final status = statuses[test.testId];
-      if (status == null) {
-        notRun.add(test.testId);
-      } else if (status.startsWith('OK')) {
-        passing.add(test.testId);
-      } else {
-        failing.add(test.testId);
+      if (test.issueNumber != null) {
+        byIssue.putIfAbsent(test.issueNumber!, () => []).add(test);
       }
     }
 
+    final passing = <String>[];
+    final failing = <String>[];
+    final notRun = <String>[];
+    final regressions = <String>[];
+    final allPassIssues = <int>[];
+    final failingIssues = <int>[];
+
+    for (final entry in byIssue.entries) {
+      final issueNum = entry.key;
+      var issueAllPass = true;
+      final fullTests = entry.value.where((t) => !t.isStub).toList();
+
+      for (final test in fullTests) {
+        final status = statuses[test.testId];
+        if (status == null) {
+          notRun.add(test.testId);
+          issueAllPass = false;
+        } else if (status.startsWith('OK')) {
+          passing.add(test.testId);
+        } else {
+          failing.add(test.testId);
+          issueAllPass = false;
+          // Detect regression: status contains OK→X pattern
+          if (status.contains('/') && status.contains('OK')) {
+            regressions.add('${test.testId} (#$issueNum)');
+          }
+        }
+      }
+
+      if (fullTests.isNotEmpty && issueAllPass) {
+        allPassIssues.add(issueNum);
+      } else if (!issueAllPass) {
+        failingIssues.add(issueNum);
+      }
+    }
+
+    // Build message
     final parts = <String>[];
     if (passing.isNotEmpty) parts.add('${passing.length} passing');
     if (failing.isNotEmpty) parts.add('${failing.length} failing');
     if (notRun.isNotEmpty) parts.add('${notRun.length} not run');
 
+    final msg = StringBuffer(
+      '${allTests.length} issue-linked test(s): ${parts.join(', ')}',
+    );
+
+    if (allPassIssues.isNotEmpty) {
+      final nums = allPassIssues.map((n) => '#$n').join(', ');
+      msg.write('\nAll pass: $nums (candidates for VERIFYING)');
+    }
+    if (regressions.isNotEmpty) {
+      msg.write('\nRegressions: ${regressions.join(', ')}');
+    }
+
     return ItemResult(
       path: context.path,
       name: context.name,
       success: failing.isEmpty,
-      message: '${allTests.length} issue-linked test(s): ${parts.join(', ')}',
+      message: msg.toString(),
       error: failing.isNotEmpty
           ? 'Failing: ${failing.join(', ')}'
           : null,
@@ -1475,7 +1542,7 @@ Map<String, CommandExecutor> createIssuekitExecutors({
     'validate': ValidateExecutor(testScanner),
     'link': LinkExecutor(service),
     // Workflow Integration
-    'sync': SyncExecutor(testScanner),
+    'sync': SyncExecutor(testScanner, service),
     'aggregate': AggregateExecutor(testScanner),
     'export': ExportExecutor(service),
     'import': ImportExecutor(service),
