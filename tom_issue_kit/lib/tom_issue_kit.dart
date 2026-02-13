@@ -9,6 +9,7 @@
 /// - [IssueTrackingConfig] — Issue tracking repository configuration
 /// - [ProjectConfig] — Project-level configuration from tom_project.yaml
 /// - [GitHubAuthConfig] — GitHub authentication resolution
+/// - [IssueService] — High-level issue operations
 ///
 /// ## CLI Usage
 ///
@@ -25,6 +26,9 @@ library;
 
 // Configuration
 export 'src/config/issuekit_config.dart';
+
+// Services
+export 'src/services/issue_service.dart';
 
 // Utilities
 export 'src/util/output_formatter.dart';
