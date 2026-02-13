@@ -1508,6 +1508,356 @@ void main() {
   });
 
   // ===========================================================================
+  // IK-EXE-NEW-SPEC: NewIssueExecutor spec-driven tests
+  // ===========================================================================
+
+  group('IK-EXE-NEW-SPEC: NewIssueExecutor spec-driven [2026-02-14]', () {
+    late NewIssueExecutor executor;
+
+    setUp(() {
+      executor = NewIssueExecutor(mockService);
+    });
+
+    test('IK-EXE-NEW-5: --project creates test entry and reports it',
+        () async {
+      // Per spec: with --project, issue skips NEW, goes to ASSIGNED,
+      // and a test entry is created in tom_tests
+      when(() => mockService.createIssue(
+            title: any(named: 'title'),
+            severity: any(named: 'severity'),
+            context: any(named: 'context'),
+            expected: any(named: 'expected'),
+            symptom: any(named: 'symptom'),
+            tags: any(named: 'tags'),
+            project: any(named: 'project'),
+            reporter: any(named: 'reporter'),
+          )).thenAnswer((_) async => CreateIssueResult(
+            issue: createTestIssue(
+              number: 42,
+              title: 'Array parser crash',
+              labels: [
+                createTestLabel(name: 'assigned'),
+                createTestLabel(name: 'severity:high'),
+              ],
+            ),
+            testEntry: createTestIssue(
+              number: 1,
+              title: '[D4-42] Array parser crash',
+            ),
+          ));
+
+      final result = await executor.executeWithoutTraversal(
+        const CliArgs(
+          positionalArgs: ['Array parser crash'],
+          extraOptions: {
+            'severity': 'high',
+            'project': 'tom_d4rt',
+          },
+        ),
+      );
+
+      expect(result.success, isTrue);
+      expect(result.itemResults.first.message, contains('#42'));
+      expect(result.itemResults.first.message, contains('Test entry'));
+
+      verify(() => mockService.createIssue(
+            title: 'Array parser crash',
+            severity: 'high',
+            context: null,
+            expected: null,
+            symptom: null,
+            tags: [],
+            project: 'tom_d4rt',
+            reporter: null,
+          )).called(1);
+    });
+
+    test('IK-EXE-NEW-6: --reporter captures filer identity', () async {
+      // Per spec: Copilot files bugs with --reporter copilot
+      when(() => mockService.createIssue(
+            title: any(named: 'title'),
+            severity: any(named: 'severity'),
+            context: any(named: 'context'),
+            expected: any(named: 'expected'),
+            symptom: any(named: 'symptom'),
+            tags: any(named: 'tags'),
+            project: any(named: 'project'),
+            reporter: any(named: 'reporter'),
+          )).thenAnswer((_) async => CreateIssueResult(
+            issue: createTestIssue(
+              number: 103,
+              title: 'Cipher fails on empty input',
+            ),
+          ));
+
+      final result = await executor.executeWithoutTraversal(
+        const CliArgs(
+          positionalArgs: ['Cipher fails on empty input'],
+          extraOptions: {
+            'reporter': 'copilot',
+            'context': 'Found while testing D4RT bridge',
+          },
+        ),
+      );
+
+      expect(result.success, isTrue);
+
+      verify(() => mockService.createIssue(
+            title: 'Cipher fails on empty input',
+            severity: 'normal',
+            context: 'Found while testing D4RT bridge',
+            expected: null,
+            symptom: null,
+            tags: [],
+            project: null,
+            reporter: 'copilot',
+          )).called(1);
+    });
+  });
+
+  // ===========================================================================
+  // IK-EXE-RSV-SPEC: ResolveExecutor spec-driven tests
+  // ===========================================================================
+
+  group('IK-EXE-RSV-SPEC: ResolveExecutor spec-driven [2026-02-14]', () {
+    late ResolveExecutor executor;
+
+    setUp(() {
+      executor = ResolveExecutor(mockService);
+    });
+
+    test('IK-EXE-RSV-5: resolves with both fix and note', () async {
+      // Per spec: --fix and --note are both optional but recommended
+      when(() => mockService.resolveIssue(
+            issueNumber: any(named: 'issueNumber'),
+            fix: any(named: 'fix'),
+            note: any(named: 'note'),
+          )).thenAnswer((_) async => createTestIssue(
+            number: 42,
+            labels: [createTestLabel(name: 'resolved')],
+          ));
+
+      final result = await executor.executeWithoutTraversal(
+        const CliArgs(
+          positionalArgs: ['42'],
+          extraOptions: {
+            'fix': 'Added empty check in ArrayParser',
+            'note': 'Also added documentation for edge cases',
+          },
+        ),
+      );
+
+      expect(result.success, isTrue);
+      expect(result.itemResults.first.message, contains('#42'));
+
+      verify(() => mockService.resolveIssue(
+            issueNumber: 42,
+            fix: 'Added empty check in ArrayParser',
+            note: 'Also added documentation for edge cases',
+          )).called(1);
+    });
+  });
+
+  // ===========================================================================
+  // IK-EXE-CLS-SPEC: CloseExecutor spec-driven tests
+  // ===========================================================================
+
+  group('IK-EXE-CLS-SPEC: CloseExecutor spec-driven [2026-02-14]', () {
+    late CloseExecutor executor;
+
+    setUp(() {
+      executor = CloseExecutor(mockService);
+    });
+
+    test('IK-EXE-CLS-4: handles API error on close', () async {
+      when(() => mockService.closeIssue(any()))
+          .thenThrow(IssueServiceException('Not found', code: 'NOT_FOUND'));
+
+      final result = await executor.executeWithoutTraversal(
+        const CliArgs(positionalArgs: ['999']),
+      );
+
+      expect(result.success, isFalse);
+      expect(result.errorMessage, contains('Not found'));
+    });
+  });
+
+  // ===========================================================================
+  // IK-EXE-EDT-SPEC: EditIssueExecutor spec-driven tests
+  // ===========================================================================
+
+  group('IK-EXE-EDT-SPEC: EditIssueExecutor spec-driven [2026-02-14]', () {
+    late EditIssueExecutor executor;
+
+    setUp(() {
+      executor = EditIssueExecutor(mockService);
+    });
+
+    test('IK-EXE-EDT-5: reassigns to different project', () async {
+      // Per spec: --project changes project assignment
+      when(() => mockService.updateIssue(
+            issueNumber: any(named: 'issueNumber'),
+            title: any(named: 'title'),
+            severity: any(named: 'severity'),
+            context: any(named: 'context'),
+            expected: any(named: 'expected'),
+            symptom: any(named: 'symptom'),
+            tags: any(named: 'tags'),
+            project: any(named: 'project'),
+            assignee: any(named: 'assignee'),
+          )).thenAnswer((_) async => createTestIssue(number: 42));
+
+      final result = await executor.executeWithoutTraversal(
+        const CliArgs(
+          positionalArgs: ['42'],
+          extraOptions: {
+            'project': 'tom_basics',
+          },
+        ),
+      );
+
+      expect(result.success, isTrue);
+
+      verify(() => mockService.updateIssue(
+            issueNumber: 42,
+            title: null,
+            severity: null,
+            context: null,
+            expected: null,
+            symptom: null,
+            tags: null,
+            project: 'tom_basics',
+            assignee: null,
+          )).called(1);
+    });
+  });
+
+  // ===========================================================================
+  // IK-EXE-ANZ-SPEC: AnalyzeExecutor spec-driven tests
+  // ===========================================================================
+
+  group('IK-EXE-ANZ-SPEC: AnalyzeExecutor spec-driven [2026-02-14]', () {
+    late AnalyzeExecutor executor;
+
+    setUp(() {
+      executor = AnalyzeExecutor(mockService);
+    });
+
+    test('IK-EXE-ANZ-5: analyze without --project moves to ANALYZED only',
+        () async {
+      // Per spec: without --project, only records analysis, no assignment
+      when(() => mockService.analyzeIssue(
+            issueNumber: any(named: 'issueNumber'),
+            rootCause: any(named: 'rootCause'),
+            project: any(named: 'project'),
+            module: any(named: 'module'),
+            note: any(named: 'note'),
+          )).thenAnswer((_) async => AnalyzeResult(
+            issue: createTestIssue(
+              number: 42,
+              labels: [createTestLabel(name: 'analyzed')],
+            ),
+          ));
+
+      final result = await executor.executeWithoutTraversal(
+        const CliArgs(
+          positionalArgs: ['42'],
+          extraOptions: {
+            'note':
+                'Likely a parser issue, but could also be in the tokenizer',
+          },
+        ),
+      );
+
+      expect(result.success, isTrue);
+      // No test entry created without --project
+      expect(result.itemResults.length, 1);
+
+      verify(() => mockService.analyzeIssue(
+            issueNumber: 42,
+            rootCause: null,
+            project: null,
+            module: null,
+            note:
+                'Likely a parser issue, but could also be in the tokenizer',
+          )).called(1);
+    });
+
+    test('IK-EXE-ANZ-6: analyze with --project creates test entry',
+        () async {
+      // Per spec: with --project, combines analyze + assign
+      when(() => mockService.analyzeIssue(
+            issueNumber: any(named: 'issueNumber'),
+            rootCause: any(named: 'rootCause'),
+            project: any(named: 'project'),
+            module: any(named: 'module'),
+            note: any(named: 'note'),
+          )).thenAnswer((_) async => AnalyzeResult(
+            issue: createTestIssue(
+              number: 42,
+              labels: [createTestLabel(name: 'assigned')],
+            ),
+            testEntry: createTestIssue(
+              number: 1,
+              title: '[D4-42] Parser crash',
+            ),
+          ));
+
+      final result = await executor.executeWithoutTraversal(
+        const CliArgs(
+          positionalArgs: ['42'],
+          extraOptions: {
+            'root-cause': 'Array parser missing length-0 check',
+            'project': 'tom_d4rt',
+            'module': 'parser',
+          },
+        ),
+      );
+
+      expect(result.success, isTrue);
+      // Should report test entry creation
+      expect(result.processedCount, greaterThanOrEqualTo(1));
+    });
+  });
+
+  // ===========================================================================
+  // IK-EXE-ROP-SPEC: ReopenExecutor spec-driven tests
+  // ===========================================================================
+
+  group('IK-EXE-ROP-SPEC: ReopenExecutor spec-driven [2026-02-14]', () {
+    late ReopenExecutor executor;
+
+    setUp(() {
+      executor = ReopenExecutor(mockService);
+    });
+
+    test('IK-EXE-ROP-5: reopened issue resets to NEW state', () async {
+      // Per spec: after reopening, issue restarts lifecycle at NEW
+      when(() => mockService.reopenIssue(
+            any(),
+            note: any(named: 'note'),
+          )).thenAnswer((_) async => createTestIssue(
+            number: 42,
+            labels: [createTestLabel(name: 'new')],
+          ));
+
+      final result = await executor.executeWithoutTraversal(
+        const CliArgs(
+          positionalArgs: ['42'],
+          extraOptions: {
+            'note':
+                'Fix only addressed empty arrays, not null elements',
+          },
+        ),
+      );
+
+      expect(result.success, isTrue);
+      expect(result.itemResults.first.message, contains('#42'));
+      expect(result.itemResults.first.message, contains('Reopened'));
+    });
+  });
+
+  // ===========================================================================
   // IK-EXE-FAC: Factory function
   // ===========================================================================
 

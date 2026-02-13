@@ -202,7 +202,7 @@ void main() {
       );
 
       expect(result.success, isTrue);
-      expect(result.message, contains('Found 2 test(s) for #42'));
+      expect(result.message, contains('Found 2 full test(s) for #42'));
       expect(result.message, contains('D4-42-PAR-7'));
       expect(result.message, contains('D4-42-PAR-8'));
     });
@@ -228,6 +228,105 @@ void main() {
 
       expect(result.success, isFalse);
       expect(result.error, contains('Missing required argument'));
+    });
+
+    test('IK-EXE-TST-4: rejects stubs, only accepts full test IDs', () async {
+      // Per spec: stubs like D4-42 (no project-specific part) are rejected
+      final matches = [
+        createTestIdMatch(
+          testId: 'D4-42',
+          projectId: 'D4',
+          issueNumber: 42,
+          projectSpecific: '',
+          filePath: '/projects/d4rt/test/stub_test.dart',
+          line: 5,
+          description: 'D4-42: stub entry',
+        ),
+      ];
+
+      when(() => mockScanner.scanForIssue(any(), any()))
+          .thenReturn(matches);
+
+      final result = await executor.execute(
+        context,
+        const CliArgs(positionalArgs: ['42']),
+      );
+
+      expect(result.success, isFalse);
+      expect(result.error, contains('Only stub(s) found'));
+      expect(result.error, contains('D4-42'));
+      expect(result.error,
+          contains('create a full dart test with project-specific ID'));
+    });
+
+    test('IK-EXE-TST-5: reports full tests and notes stubs', () async {
+      // Per spec: when both full tests and stubs exist, count only full tests
+      // but note the existence of stubs
+      final matches = [
+        createTestIdMatch(
+          testId: 'D4-42-PAR-7',
+          projectId: 'D4',
+          issueNumber: 42,
+          projectSpecific: 'PAR-7',
+        ),
+        createTestIdMatch(
+          testId: 'D4-42',
+          projectId: 'D4',
+          issueNumber: 42,
+          projectSpecific: '',
+          filePath: '/projects/d4rt/test/stub_test.dart',
+          line: 5,
+        ),
+      ];
+
+      when(() => mockScanner.scanForIssue(any(), any()))
+          .thenReturn(matches);
+
+      final result = await executor.execute(
+        context,
+        const CliArgs(positionalArgs: ['42']),
+      );
+
+      expect(result.success, isTrue);
+      expect(result.message, contains('Found 1 full test(s) for #42'));
+      expect(result.message, contains('D4-42-PAR-7'));
+      expect(result.message, contains('1 stub(s) also present'));
+    });
+
+    test('IK-EXE-TST-6: multiple full tests reported correctly', () async {
+      final matches = [
+        createTestIdMatch(
+          testId: 'D4-42-PAR-7',
+          issueNumber: 42,
+          projectSpecific: 'PAR-7',
+        ),
+        createTestIdMatch(
+          testId: 'D4-42-PAR-8',
+          issueNumber: 42,
+          projectSpecific: 'PAR-8',
+        ),
+        createTestIdMatch(
+          testId: 'D4-42-LEX-1',
+          issueNumber: 42,
+          projectSpecific: 'LEX-1',
+        ),
+      ];
+
+      when(() => mockScanner.scanForIssue(any(), any()))
+          .thenReturn(matches);
+
+      final result = await executor.execute(
+        context,
+        const CliArgs(positionalArgs: ['42']),
+      );
+
+      expect(result.success, isTrue);
+      expect(result.message, contains('Found 3 full test(s) for #42'));
+      expect(result.message, contains('D4-42-PAR-7'));
+      expect(result.message, contains('D4-42-PAR-8'));
+      expect(result.message, contains('D4-42-LEX-1'));
+      // No stubs → no stub note
+      expect(result.message, isNot(contains('stub')));
     });
   });
 
@@ -336,6 +435,73 @@ void main() {
 
       expect(result.success, isFalse);
       expect(result.error, contains('Missing required argument'));
+    });
+
+    test('IK-EXE-VRF-6: reports NOT RUN when test not in baseline', () async {
+      // Per spec: if testkit hasn't been run recently, report NOT RUN
+      final matches = [
+        createTestIdMatch(testId: 'D4-42-PAR-7', issueNumber: 42),
+        createTestIdMatch(
+          testId: 'D4-42-PAR-8',
+          issueNumber: 42,
+          projectSpecific: 'PAR-8',
+        ),
+      ];
+
+      when(() => mockScanner.scanForIssue(any(), any()))
+          .thenReturn(matches);
+      when(() => mockScanner.readLatestBaseline(any()))
+          .thenReturn('content');
+      // Only one test appears in baseline
+      when(() => mockScanner.parseBaseline(any()))
+          .thenReturn({'D4-42-PAR-7': 'OK'});
+
+      final result = await executor.execute(
+        context,
+        const CliArgs(positionalArgs: ['42']),
+      );
+
+      expect(result.success, isFalse); // NOT RUN counts as failure
+      expect(result.message, contains('SOME FAIL'));
+      expect(result.message, contains('D4-42-PAR-7: OK'));
+      expect(result.message, contains('D4-42-PAR-8: NOT RUN'));
+    });
+
+    test('IK-EXE-VRF-7: reports mixed OK and failure statuses', () async {
+      final matches = [
+        createTestIdMatch(testId: 'D4-42-PAR-7', issueNumber: 42),
+        createTestIdMatch(
+          testId: 'D4-42-PAR-8',
+          issueNumber: 42,
+          projectSpecific: 'PAR-8',
+        ),
+        createTestIdMatch(
+          testId: 'D4-42-LEX-1',
+          issueNumber: 42,
+          projectSpecific: 'LEX-1',
+        ),
+      ];
+
+      when(() => mockScanner.scanForIssue(any(), any()))
+          .thenReturn(matches);
+      when(() => mockScanner.readLatestBaseline(any()))
+          .thenReturn('content');
+      when(() => mockScanner.parseBaseline(any())).thenReturn({
+        'D4-42-PAR-7': 'OK',
+        'D4-42-PAR-8': 'X/OK', // currently failing, was OK → regression
+        'D4-42-LEX-1': 'X',
+      });
+
+      final result = await executor.execute(
+        context,
+        const CliArgs(positionalArgs: ['42']),
+      );
+
+      expect(result.success, isFalse);
+      expect(result.message, contains('SOME FAIL'));
+      expect(result.message, contains('D4-42-PAR-7: OK'));
+      expect(result.message, contains('D4-42-PAR-8: X/OK'));
+      expect(result.message, contains('D4-42-LEX-1: X'));
     });
   });
 
@@ -465,7 +631,7 @@ void main() {
     late ValidateExecutor executor;
 
     setUp(() {
-      executor = ValidateExecutor(mockScanner);
+      executor = ValidateExecutor(mockScanner, mockService);
     });
 
     test('IK-EXE-VAL-1: validates clean project', () async {
@@ -485,6 +651,9 @@ void main() {
       ];
 
       when(() => mockScanner.scanProject(any())).thenReturn(matches);
+      // Check 3: issue #42 exists
+      when(() => mockService.getIssue(42))
+          .thenAnswer((_) async => createTestIssue(number: 42));
 
       final result = await executor.execute(
         context,
@@ -524,7 +693,7 @@ void main() {
       );
 
       expect(result.success, isFalse);
-      expect(result.error, contains('Duplicate D4-PAR-7'));
+      expect(result.message, contains('Duplicate D4-PAR-7'));
     });
 
     test('IK-EXE-VAL-3: detects regular+promoted conflict', () async {
@@ -544,6 +713,9 @@ void main() {
       ];
 
       when(() => mockScanner.scanProject(any())).thenReturn(matches);
+      // Check 3: issue #42 exists (but conflict takes precedence)
+      when(() => mockService.getIssue(42))
+          .thenAnswer((_) async => createTestIssue(number: 42));
 
       final result = await executor.execute(
         context,
@@ -551,9 +723,9 @@ void main() {
       );
 
       expect(result.success, isFalse);
-      expect(result.error, contains('Conflict'));
-      expect(result.error, contains('D4-PAR-7'));
-      expect(result.error, contains('D4-42-PAR-7'));
+      expect(result.message, contains('Conflict'));
+      expect(result.message, contains('D4-PAR-7'));
+      expect(result.message, contains('D4-42-PAR-7'));
     });
 
     test('IK-EXE-VAL-4: returns empty for no tests', () async {
@@ -567,6 +739,110 @@ void main() {
       expect(result.success, isTrue);
       expect(result.message, contains('No tests found'));
     });
+
+    test('IK-EXE-VAL-5: detects invalid issue references (Check 3)',
+        () async {
+      // Per spec: validate that issue numbers in test IDs exist in tom_issues
+      final matches = [
+        createTestIdMatch(
+          testId: 'D4-999-PAR-7',
+          projectId: 'D4',
+          issueNumber: 999,
+          projectSpecific: 'PAR-7',
+        ),
+      ];
+
+      when(() => mockScanner.scanProject(any())).thenReturn(matches);
+      // Issue #999 doesn't exist
+      when(() => mockService.getIssue(999))
+          .thenThrow(Exception('Issue not found'));
+
+      final result = await executor.execute(
+        context,
+        const CliArgs(),
+      );
+
+      // Warnings don't cause failure, but are reported
+      expect(result.success, isTrue);
+      expect(result.message, contains('Issue #999 not found'));
+      expect(result.message, contains('warning'));
+    });
+
+    test('IK-EXE-VAL-6: reports both errors and warnings together', () async {
+      // Per spec: output has Errors section and Warnings section
+      final matches = [
+        createTestIdMatch(
+          testId: 'D4-PAR-7',
+          projectId: 'D4',
+          issueNumber: null,
+          projectSpecific: 'PAR-7',
+          filePath: '/projects/d4rt/test/parser_test.dart',
+          line: 10,
+        ),
+        createTestIdMatch(
+          testId: 'D4-PAR-7',
+          projectId: 'D4',
+          issueNumber: null,
+          projectSpecific: 'PAR-7',
+          filePath: '/projects/d4rt/test/other_test.dart',
+          line: 20,
+        ),
+        createTestIdMatch(
+          testId: 'D4-999-LEX-3',
+          projectId: 'D4',
+          issueNumber: 999,
+          projectSpecific: 'LEX-3',
+        ),
+      ];
+
+      when(() => mockScanner.scanProject(any())).thenReturn(matches);
+      when(() => mockService.getIssue(999))
+          .thenThrow(Exception('Issue not found'));
+
+      final result = await executor.execute(
+        context,
+        const CliArgs(),
+      );
+
+      // Has errors → failure
+      expect(result.success, isFalse);
+      expect(result.message, contains('error(s)'));
+      expect(result.message, contains('Duplicate D4-PAR-7'));
+      expect(result.message, contains('warning(s)'));
+      expect(result.message, contains('Issue #999 not found'));
+    });
+
+    test('IK-EXE-VAL-7: valid issue refs pass Check 3', () async {
+      final matches = [
+        createTestIdMatch(
+          testId: 'D4-42-PAR-7',
+          projectId: 'D4',
+          issueNumber: 42,
+          projectSpecific: 'PAR-7',
+        ),
+        createTestIdMatch(
+          testId: 'D4-99-LEX-3',
+          projectId: 'D4',
+          issueNumber: 99,
+          projectSpecific: 'LEX-3',
+        ),
+      ];
+
+      when(() => mockScanner.scanProject(any())).thenReturn(matches);
+      when(() => mockService.getIssue(42))
+          .thenAnswer((_) async => createTestIssue(number: 42));
+      when(() => mockService.getIssue(99))
+          .thenAnswer((_) async => createTestIssue(number: 99));
+
+      final result = await executor.execute(
+        context,
+        const CliArgs(),
+      );
+
+      expect(result.success, isTrue);
+      expect(result.message, contains('2 tests validated'));
+      expect(result.message, contains('no issues'));
+    });
   });
 
   // ===========================================================================
@@ -577,7 +853,7 @@ void main() {
     late SyncExecutor executor;
 
     setUp(() {
-      executor = SyncExecutor(mockScanner);
+      executor = SyncExecutor(mockScanner, mockService);
     });
 
     test('IK-EXE-SYN-1: reports passing/failing/not-run', () async {
@@ -676,6 +952,137 @@ void main() {
       expect(result.message, contains('1 passing'));
       expect(result.error, isNull);
     });
+
+    test('IK-EXE-SYN-5: identifies issues as VERIFYING candidates', () async {
+      // Per spec: when all tests for an issue pass, suggest VERIFYING
+      final matches = [
+        createTestIdMatch(
+          testId: 'D4-42-PAR-7',
+          issueNumber: 42,
+          projectSpecific: 'PAR-7',
+        ),
+        createTestIdMatch(
+          testId: 'D4-42-PAR-8',
+          issueNumber: 42,
+          projectSpecific: 'PAR-8',
+        ),
+      ];
+
+      when(() => mockScanner.scanProject(any())).thenReturn(matches);
+      when(() => mockScanner.readLatestBaseline(any()))
+          .thenReturn('content');
+      when(() => mockScanner.parseBaseline(any())).thenReturn({
+        'D4-42-PAR-7': 'OK',
+        'D4-42-PAR-8': 'OK',
+      });
+
+      final result = await executor.execute(
+        context,
+        const CliArgs(),
+      );
+
+      expect(result.success, isTrue);
+      expect(result.message, contains('candidates for VERIFYING'));
+      expect(result.message, contains('#42'));
+    });
+
+    test('IK-EXE-SYN-6: detects regressions (OK→X)', () async {
+      // Per spec: detect regressions in baseline status
+      final matches = [
+        createTestIdMatch(
+          testId: 'D4-42-PAR-7',
+          issueNumber: 42,
+          projectSpecific: 'PAR-7',
+        ),
+      ];
+
+      when(() => mockScanner.scanProject(any())).thenReturn(matches);
+      when(() => mockScanner.readLatestBaseline(any()))
+          .thenReturn('content');
+      when(() => mockScanner.parseBaseline(any())).thenReturn({
+        'D4-42-PAR-7': 'X/OK', // regression: was OK now X
+      });
+
+      final result = await executor.execute(
+        context,
+        const CliArgs(),
+      );
+
+      expect(result.success, isFalse);
+      expect(result.message, contains('Regressions'));
+      expect(result.message, contains('D4-42-PAR-7 (#42)'));
+    });
+
+    test('IK-EXE-SYN-7: groups multiple issues separately', () async {
+      // Per spec: group by issue number for per-issue state transitions
+      final matches = [
+        createTestIdMatch(
+          testId: 'D4-42-PAR-7',
+          issueNumber: 42,
+          projectSpecific: 'PAR-7',
+        ),
+        createTestIdMatch(
+          testId: 'D4-99-LEX-3',
+          issueNumber: 99,
+          projectSpecific: 'LEX-3',
+        ),
+      ];
+
+      when(() => mockScanner.scanProject(any())).thenReturn(matches);
+      when(() => mockScanner.readLatestBaseline(any()))
+          .thenReturn('content');
+      when(() => mockScanner.parseBaseline(any())).thenReturn({
+        'D4-42-PAR-7': 'OK',
+        'D4-99-LEX-3': 'X',
+      });
+
+      final result = await executor.execute(
+        context,
+        const CliArgs(),
+      );
+
+      expect(result.success, isFalse); // has failures
+      expect(result.message, contains('1 passing'));
+      expect(result.message, contains('1 failing'));
+      // Issue #42 all pass → VERIFYING candidate
+      expect(result.message, contains('#42'));
+      expect(result.message, contains('candidates for VERIFYING'));
+    });
+
+    test('IK-EXE-SYN-8: skips stubs in per-issue grouping', () async {
+      // Per spec: stubs should not contribute to pass/fail counts
+      final matches = [
+        createTestIdMatch(
+          testId: 'D4-42-PAR-7',
+          issueNumber: 42,
+          projectSpecific: 'PAR-7',
+        ),
+        createTestIdMatch(
+          testId: 'D4-42',
+          issueNumber: 42,
+          projectSpecific: '',
+          filePath: '/projects/d4rt/test/stub_test.dart',
+          line: 5,
+        ),
+      ];
+
+      when(() => mockScanner.scanProject(any())).thenReturn(matches);
+      when(() => mockScanner.readLatestBaseline(any()))
+          .thenReturn('content');
+      when(() => mockScanner.parseBaseline(any())).thenReturn({
+        'D4-42-PAR-7': 'OK',
+      });
+
+      final result = await executor.execute(
+        context,
+        const CliArgs(),
+      );
+
+      expect(result.success, isTrue);
+      expect(result.message, contains('1 passing'));
+      // Issue #42 full test passes → VERIFYING candidate
+      expect(result.message, contains('candidates for VERIFYING'));
+    });
   });
 
   // ===========================================================================
@@ -749,6 +1156,119 @@ void main() {
       expect(result.success, isTrue);
       expect(result.message, contains('NOT RUN'));
       expect(result.message, contains('#42'));
+    });
+
+    test('IK-EXE-AGG-4: produces CSV-formatted output with Project column',
+        () async {
+      // Per spec: output has Project, Test ID, Description, Issue#, Status
+      final matches = [
+        createTestIdMatch(
+          testId: 'D4-42-PAR-7',
+          issueNumber: 42,
+          projectSpecific: 'PAR-7',
+          description: 'D4-42-PAR-7: Parser handles arrays',
+        ),
+      ];
+
+      when(() => mockScanner.scanProject(any())).thenReturn(matches);
+      when(() => mockScanner.readLatestBaseline(any()))
+          .thenReturn('content');
+      when(() => mockScanner.parseBaseline(any())).thenReturn({
+        'D4-42-PAR-7': 'OK',
+      });
+
+      final result = await executor.execute(
+        context,
+        const CliArgs(),
+      );
+
+      expect(result.success, isTrue);
+      // CSV format: Project,TestID,Description,Issue,Status
+      expect(result.message, contains('D4,D4-42-PAR-7,'));
+      expect(result.message, contains('#42'));
+      expect(result.message, contains('OK'));
+    });
+
+    test('IK-EXE-AGG-5: detects regressions in baseline', () async {
+      // Per spec: detect OK→X (regression) and X→OK (fix)
+      final matches = [
+        createTestIdMatch(
+          testId: 'D4-42-PAR-7',
+          issueNumber: 42,
+          projectSpecific: 'PAR-7',
+          description: 'D4-42-PAR-7: Parser test',
+        ),
+        createTestIdMatch(
+          testId: 'D4-99-LEX-3',
+          issueNumber: 99,
+          projectSpecific: 'LEX-3',
+          description: 'D4-99-LEX-3: Lexer test',
+        ),
+      ];
+
+      when(() => mockScanner.scanProject(any())).thenReturn(matches);
+      when(() => mockScanner.readLatestBaseline(any()))
+          .thenReturn('content');
+      when(() => mockScanner.parseBaseline(any())).thenReturn({
+        'D4-42-PAR-7': 'X/OK', // regression
+        'D4-99-LEX-3': 'OK/X', // fix
+      });
+
+      final result = await executor.execute(
+        context,
+        const CliArgs(),
+      );
+
+      expect(result.success, isTrue);
+      expect(result.message, contains('Regressions'));
+      expect(result.message, contains('D4-42-PAR-7 (#42)'));
+      expect(result.message, contains('Fixes'));
+      expect(result.message, contains('D4-99-LEX-3 (#99)'));
+    });
+
+    test('IK-EXE-AGG-6: aggregates multiple tests with mixed statuses',
+        () async {
+      final matches = [
+        createTestIdMatch(
+          testId: 'D4-42-PAR-7',
+          issueNumber: 42,
+          projectSpecific: 'PAR-7',
+          description: 'Parser test',
+        ),
+        createTestIdMatch(
+          testId: 'D4-42-PAR-8',
+          issueNumber: 42,
+          projectSpecific: 'PAR-8',
+          description: 'Parser test 2',
+        ),
+        createTestIdMatch(
+          testId: 'D4-99-LEX-3',
+          issueNumber: 99,
+          projectSpecific: 'LEX-3',
+          description: 'Lexer test',
+        ),
+      ];
+
+      when(() => mockScanner.scanProject(any())).thenReturn(matches);
+      when(() => mockScanner.readLatestBaseline(any()))
+          .thenReturn('content');
+      when(() => mockScanner.parseBaseline(any())).thenReturn({
+        'D4-42-PAR-7': 'OK',
+        'D4-42-PAR-8': 'X',
+        'D4-99-LEX-3': 'OK',
+      });
+
+      final result = await executor.execute(
+        context,
+        const CliArgs(),
+      );
+
+      expect(result.success, isTrue);
+      expect(result.message, contains('3 issue-linked test(s)'));
+      // Each entry has CSV format
+      expect(result.message, contains('D4,D4-42-PAR-7'));
+      expect(result.message, contains('D4,D4-42-PAR-8'));
+      expect(result.message, contains('D4,D4-99-LEX-3'));
     });
   });
 

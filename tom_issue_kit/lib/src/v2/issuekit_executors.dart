@@ -981,11 +981,13 @@ class PromoteExecutor extends CommandExecutor {
 /// Executor for :validate command.
 ///
 /// Checks test ID uniqueness within a project: no duplicate project-specific
-/// IDs, no regular+promoted conflicts.
+/// IDs, no regular+promoted conflicts, and that all issue numbers in test IDs
+/// reference existing issues in tom_issues.
 class ValidateExecutor extends CommandExecutor {
   final TestScanner scanner;
+  final IssueService service;
 
-  ValidateExecutor(this.scanner);
+  ValidateExecutor(this.scanner, this.service);
 
   @override
   Future<ItemResult> execute(CommandContext context, CliArgs args) async {
@@ -999,6 +1001,7 @@ class ValidateExecutor extends CommandExecutor {
     }
 
     final errors = <String>[];
+    final warnings = <String>[];
 
     // Check 1: Duplicate project-specific IDs within a project
     final byProjectSpecific = <String, List<TestIdMatch>>{};
@@ -1030,7 +1033,23 @@ class ValidateExecutor extends CommandExecutor {
       }
     }
 
-    if (errors.isEmpty) {
+    // Check 3: Invalid issue references
+    // Collect unique issue numbers and verify they exist
+    final issueNumbers = <int>{};
+    for (final test in allTests) {
+      if (test.issueNumber != null) {
+        issueNumbers.add(test.issueNumber!);
+      }
+    }
+    for (final num in issueNumbers) {
+      try {
+        await service.getIssue(num);
+      } on Exception {
+        warnings.add('Issue #$num not found in tom_issues');
+      }
+    }
+
+    if (errors.isEmpty && warnings.isEmpty) {
       return ItemResult.success(
         path: context.path,
         name: context.name,
@@ -1038,10 +1057,20 @@ class ValidateExecutor extends CommandExecutor {
       );
     }
 
-    return ItemResult.failure(
+    final parts = <String>[];
+    if (errors.isNotEmpty) {
+      parts.add('${errors.length} error(s):\n${errors.join('\n')}');
+    }
+    if (warnings.isNotEmpty) {
+      parts.add('${warnings.length} warning(s):\n${warnings.join('\n')}');
+    }
+
+    return ItemResult(
       path: context.path,
       name: context.name,
-      error: '${errors.length} validation error(s):\n${errors.join('\n')}',
+      success: errors.isEmpty,
+      message: parts.join('\n'),
+      error: errors.isNotEmpty ? '${errors.length} validation error(s)' : null,
     );
   }
 }
@@ -1226,8 +1255,10 @@ class SyncExecutor extends CommandExecutor {
 
 /// Executor for :aggregate command.
 ///
-/// Per-project: reads testkit baselines and reports issue-linked test results
-/// for aggregation into a consolidated view.
+/// Per spec: reads each project's most recent testkit baseline, extracts
+/// issue-linked test results, and produces a consolidated view with Project,
+/// Test ID, Description, Issue#, and Status. Detects regressions (OK→X)
+/// and fixes (X→OK) in baseline status columns.
 class AggregateExecutor extends CommandExecutor {
   final TestScanner scanner;
 
@@ -1253,15 +1284,45 @@ class AggregateExecutor extends CommandExecutor {
         ? scanner.parseBaseline(baselineContent)
         : <String, String>{};
 
-    final lines = allTests.map((t) {
+    // Per spec: CSV-compatible output with Project column
+    final lines = <String>[];
+    final regressions = <String>[];
+    final fixes = <String>[];
+
+    for (final t in allTests) {
       final status = statuses[t.testId] ?? 'NOT RUN';
-      return '${t.testId.padRight(20)} ${status.padRight(8)} #${t.issueNumber}';
-    }).join('\n');
+      lines.add(
+        '${t.projectId},${t.testId},${t.description},#${t.issueNumber},$status',
+      );
+      // Detect regressions (OK→X) and fixes (X→OK) in status
+      if (status.contains('/')) {
+        final parts = status.split('/');
+        if (parts.length == 2) {
+          final current = parts[0].trim();
+          final previous = parts[1].trim();
+          if (current == 'X' && previous == 'OK') {
+            regressions.add('${t.testId} (#${t.issueNumber})');
+          } else if (current == 'OK' && previous == 'X') {
+            fixes.add('${t.testId} (#${t.issueNumber})');
+          }
+        }
+      }
+    }
+
+    final msg = StringBuffer(
+      '${allTests.length} issue-linked test(s):\n${lines.join('\n')}',
+    );
+    if (regressions.isNotEmpty) {
+      msg.write('\nRegressions: ${regressions.join(', ')}');
+    }
+    if (fixes.isNotEmpty) {
+      msg.write('\nFixes: ${fixes.join(', ')}');
+    }
 
     return ItemResult.success(
       path: context.path,
       name: context.name,
-      message: '${allTests.length} issue-linked test(s):\n$lines',
+      message: msg.toString(),
     );
   }
 }
@@ -1539,7 +1600,7 @@ Map<String, CommandExecutor> createIssuekitExecutors({
     'summary': SummaryExecutor(service),
     // Test Management
     'promote': PromoteExecutor(testScanner),
-    'validate': ValidateExecutor(testScanner),
+    'validate': ValidateExecutor(testScanner, service),
     'link': LinkExecutor(service),
     // Workflow Integration
     'sync': SyncExecutor(testScanner, service),
