@@ -637,6 +637,76 @@ void main() {
       expect(result.success, isFalse);
       expect(result.error, contains('Missing required option: --issue'));
     });
+
+    test('IK-EXE-PRM-6: handles already-promoted test ID', () async {
+      // Trying to promote a test that already has an issue number
+      final match = createTestIdMatch(
+        testId: 'D4-42-PAR-7',
+        projectId: 'D4',
+        issueNumber: 42,
+        projectSpecific: 'PAR-7',
+        filePath: '/projects/d4rt/test/parser_test.dart',
+        line: 15,
+      );
+
+      when(() => mockScanner.scanProject(any())).thenReturn([match]);
+
+      // Try to promote to a different issue
+      final result = await executor.execute(
+        context,
+        const CliArgs(
+          positionalArgs: ['D4-42-PAR-7'],
+          extraOptions: {'issue': 99},
+          dryRun: true,
+        ),
+      );
+
+      // Current impl will create D4-99-PAR-7 from the projectSpecific part
+      expect(result.success, isTrue);
+      expect(result.message, contains('Would rename'));
+      // New ID: D4-99-PAR-7 (replaces the original issue number)
+      expect(result.message, contains('D4-99-PAR-7'));
+    });
+
+    test('IK-EXE-PRM-7: handles multiple occurrences in file', () async {
+      // Create a temp test file with the test ID used multiple times
+      final testFile = File('${tempDir.path}/test/parser_test.dart');
+      testFile.parent.createSync(recursive: true);
+      testFile.writeAsStringSync(
+        "// Reference: D4-PAR-7\n"
+        "test('D4-PAR-7: Parser handles arrays', () {\n"
+        "  // linked to D4-PAR-7\n"
+        "});\n",
+      );
+
+      final tempContext = createTestContext(path: tempDir.path);
+      final match = createTestIdMatch(
+        testId: 'D4-PAR-7',
+        projectId: 'D4',
+        issueNumber: null,
+        projectSpecific: 'PAR-7',
+        filePath: testFile.path,
+        line: 2,
+      );
+
+      when(() => mockScanner.scanProject(any())).thenReturn([match]);
+
+      final result = await executor.execute(
+        tempContext,
+        const CliArgs(
+          positionalArgs: ['D4-PAR-7'],
+          extraOptions: {'issue': 42},
+        ),
+      );
+
+      expect(result.success, isTrue);
+
+      // All occurrences should be replaced
+      final content = testFile.readAsStringSync();
+      expect(content.contains('D4-42-PAR-7'), isTrue);
+      // Original ID should not appear
+      expect(content.contains("'D4-PAR-7"), isFalse);
+    });
   });
 
   // ===========================================================================
@@ -858,6 +928,149 @@ void main() {
       expect(result.success, isTrue);
       expect(result.message, contains('2 tests validated'));
       expect(result.message, contains('no issues'));
+    });
+
+    test('IK-EXE-VAL-8: reports multiple duplicate groups separately', () async {
+      // Multiple groups of duplicates should all be reported
+      final matches = [
+        createTestIdMatch(
+          testId: 'D4-PAR-7',
+          projectId: 'D4',
+          issueNumber: null,
+          projectSpecific: 'PAR-7',
+          filePath: '/projects/d4rt/test/file_a.dart',
+          line: 10,
+        ),
+        createTestIdMatch(
+          testId: 'D4-PAR-7',
+          projectId: 'D4',
+          issueNumber: null,
+          projectSpecific: 'PAR-7',
+          filePath: '/projects/d4rt/test/file_b.dart',
+          line: 20,
+        ),
+        createTestIdMatch(
+          testId: 'D4-LEX-3',
+          projectId: 'D4',
+          issueNumber: null,
+          projectSpecific: 'LEX-3',
+          filePath: '/projects/d4rt/test/file_a.dart',
+          line: 30,
+        ),
+        createTestIdMatch(
+          testId: 'D4-LEX-3',
+          projectId: 'D4',
+          issueNumber: null,
+          projectSpecific: 'LEX-3',
+          filePath: '/projects/d4rt/test/file_c.dart',
+          line: 40,
+        ),
+      ];
+
+      when(() => mockScanner.scanProject(any())).thenReturn(matches);
+
+      final result = await executor.execute(
+        context,
+        const CliArgs(),
+      );
+
+      expect(result.success, isFalse);
+      expect(result.message, contains('Duplicate D4-PAR-7'));
+      expect(result.message, contains('Duplicate D4-LEX-3'));
+      expect(result.message, contains('2 error(s)'));
+    });
+
+    test('IK-EXE-VAL-9: multiple conflicts reported separately', () async {
+      // Multiple regular+promoted conflicts - different file paths
+      final matches = [
+        createTestIdMatch(
+          testId: 'D4-PAR-7',
+          projectId: 'D4',
+          issueNumber: null,
+          projectSpecific: 'PAR-7',
+          filePath: '/projects/d4rt/test/parser_a.dart',
+          line: 10,
+        ),
+        createTestIdMatch(
+          testId: 'D4-42-PAR-7',
+          projectId: 'D4',
+          issueNumber: 42,
+          projectSpecific: 'PAR-7',
+          filePath: '/projects/d4rt/test/parser_b.dart',
+          line: 20,
+        ),
+        createTestIdMatch(
+          testId: 'D4-LEX-3',
+          projectId: 'D4',
+          issueNumber: null,
+          projectSpecific: 'LEX-3',
+          filePath: '/projects/d4rt/test/lexer_a.dart',
+          line: 30,
+        ),
+        createTestIdMatch(
+          testId: 'D4-99-LEX-3',
+          projectId: 'D4',
+          issueNumber: 99,
+          projectSpecific: 'LEX-3',
+          filePath: '/projects/d4rt/test/lexer_b.dart',
+          line: 40,
+        ),
+      ];
+
+      when(() => mockScanner.scanProject(any())).thenReturn(matches);
+      when(() => mockService.getIssue(42))
+          .thenAnswer((_) async => createTestIssue(number: 42));
+      when(() => mockService.getIssue(99))
+          .thenAnswer((_) async => createTestIssue(number: 99));
+
+      final result = await executor.execute(
+        context,
+        const CliArgs(),
+      );
+
+      expect(result.success, isFalse);
+      expect(result.message, contains('Conflict: regular D4-PAR-7'));
+      expect(result.message, contains('Conflict: regular D4-LEX-3'));
+      // Also detects duplicates since regular+promoted share projectSpecific
+      expect(result.message, contains('Duplicate D4-PAR-7'));
+      expect(result.message, contains('Duplicate D4-LEX-3'));
+      expect(result.message, contains('4 error(s)'));
+    });
+
+    test('IK-EXE-VAL-10: warnings-only does not cause failure', () async {
+      // Only warnings (invalid issue refs), no errors
+      final matches = [
+        createTestIdMatch(
+          testId: 'D4-999-PAR-7',
+          projectId: 'D4',
+          issueNumber: 999,
+          projectSpecific: 'PAR-7',
+        ),
+        createTestIdMatch(
+          testId: 'D4-888-LEX-3',
+          projectId: 'D4',
+          issueNumber: 888,
+          projectSpecific: 'LEX-3',
+        ),
+      ];
+
+      when(() => mockScanner.scanProject(any())).thenReturn(matches);
+      when(() => mockService.getIssue(999))
+          .thenThrow(Exception('Issue not found'));
+      when(() => mockService.getIssue(888))
+          .thenThrow(Exception('Issue not found'));
+
+      final result = await executor.execute(
+        context,
+        const CliArgs(),
+      );
+
+      // Warnings don't cause failure
+      expect(result.success, isTrue);
+      expect(result.message, contains('warning(s)'));
+      expect(result.message, contains('Issue #999 not found'));
+      expect(result.message, contains('Issue #888 not found'));
+      expect(result.error, isNull);
     });
   });
 

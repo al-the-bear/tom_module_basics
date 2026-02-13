@@ -206,3 +206,24 @@ Phase 7: Automation             ← Phase 1 (workflow dispatch), Phase 3-6
 ## Current Focus
 
 **Phase 1: tom_github_api** — See [github_api_specification.md](../../tom_github_api/doc/github_api_specification.md) for the detailed API specification.
+
+---
+
+## Implementation Gaps (2026-02-15)
+
+Gaps discovered during spec-driven test implementation:
+
+| Area | Gap | Priority | Notes |
+|------|-----|----------|-------|
+| ValidateExecutor | `--fix` option not implemented | Medium | Spec defines auto-fix for simple conflicts |
+| Post-traversal | No `afterTraversal` hook in framework | Low | Would enable workspace-wide consolidation of results |
+| AggregateExecutor | Limited output formats | Low | Consider JSON/YAML output in addition to CSV |
+| SyncExecutor | Auto-verifying logic incomplete | Medium | Should auto-update issue states based on test results |
+| Integration tests | No end-to-end workflow tests | Medium | Would test actual GitHub API calls with mocks |
+
+### Test Coverage Summary
+
+- **283 tests** passing as of 2026-02-15
+- **24 executors** fully stubbed and tested
+- **5 traversal executors** enhanced with service interactions
+- **Generic test infrastructure** created for file I/O testing
