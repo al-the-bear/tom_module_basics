@@ -5,8 +5,8 @@
 ///
 /// This class contains static fields and methods for accessing
 /// version information embedded during the build process.
-class TestDefaultVersionInfo {
-  TestDefaultVersionInfo._();
+class IssueKitVersionInfo {
+  IssueKitVersionInfo._();
 
   /// Package version from pubspec.yaml
   static const String version = '1.0.0';

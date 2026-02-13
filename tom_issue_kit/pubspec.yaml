@@ -1,15 +1,19 @@
 name: tom_issue_kit
 description: Issue tracking CLI for the Tom Framework.
 version: 1.0.0
-# repository: https://github.com/my_org/my_repo
+publish_to: none
 
 environment:
   sdk: ^3.10.4
 
-# Add regular dependencies here.
 dependencies:
   path: ^1.9.0
+  tom_build_base:
+    path: ../tom_build_base
+  tom_github_api:
+    path: ../tom_github_api
 
 dev_dependencies:
   lints: ^6.0.0
   test: ^1.25.6
+  mocktail: ^1.0.4
