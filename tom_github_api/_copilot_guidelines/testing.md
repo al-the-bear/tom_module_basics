@@ -111,6 +111,26 @@ Integration tests run against the **real GitHub API** to verify end-to-end funct
 | `GITHUB_TEST_TOKEN` | Personal access token | (required) |
 | `GITHUB_TEST_REPO` | Test repository slug | `al-the-bear/tom_github_api_test` |
 
+**How configuration works in code:**
+
+```dart
+final _token = Platform.environment['GITHUB_TEST_TOKEN'] ?? '';
+final _repo = Platform.environment['GITHUB_TEST_REPO'] ?? 'al-the-bear/tom_github_api_test';
+```
+
+- `GITHUB_TEST_TOKEN`: If not set, returns empty string → test exits with error
+- `GITHUB_TEST_REPO`: If not set, falls back to the default test repo
+
+**Usage examples:**
+
+```bash
+# Uses your token + default repo (al-the-bear/tom_github_api_test)
+dart run tool/api_integration_test.dart
+
+# Uses your token + custom repo
+GITHUB_TEST_REPO=myuser/myrepo dart run tool/api_integration_test.dart
+```
+
 The test token needs these permissions:
 - **Issues**: Read and write
 - **Metadata**: Read (usually auto-granted)
