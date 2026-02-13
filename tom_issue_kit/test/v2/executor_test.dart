@@ -1538,7 +1538,7 @@ void main() {
       expect(executors['run-tests'], isA<RunTestsExecutor>());
     });
 
-    test('IK-EXE-FAC-3: stub executors are still present', () {
+    test('IK-EXE-FAC-3: traversal executors have correct types', () {
       final executors = createIssuekitExecutors(service: mockService);
       expect(executors['testing'], isA<TestingExecutor>());
       expect(executors['verify'], isA<VerifyExecutor>());
@@ -1546,6 +1546,7 @@ void main() {
       expect(executors['promote'], isA<PromoteExecutor>());
       expect(executors['validate'], isA<ValidateExecutor>());
       expect(executors['sync'], isA<SyncExecutor>());
+      expect(executors['aggregate'], isA<AggregateExecutor>());
     });
   });
 }

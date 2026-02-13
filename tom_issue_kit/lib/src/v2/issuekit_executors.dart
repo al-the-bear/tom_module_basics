@@ -5,9 +5,12 @@
 /// :reopen) are wired to [IssueService]. Remaining commands are stubs.
 library;
 
+import 'dart:io';
+
 import 'package:tom_build_base/tom_build_base_v2.dart';
 
 import '../services/issue_service.dart';
+import '../services/test_scanner.dart';
 
 // =============================================================================
 // Helper Functions
@@ -300,18 +303,108 @@ class AssignExecutor extends CommandExecutor {
 }
 
 /// Executor for :testing command.
+///
+/// Scans the project's test directory for full test IDs matching an issue.
+/// If found, reports the linked tests. The issue number is the first
+/// positional arg.
 class TestingExecutor extends CommandExecutor {
+  final TestScanner scanner;
+  final IssueService service;
+
+  TestingExecutor(this.scanner, this.service);
+
   @override
   Future<ItemResult> execute(CommandContext context, CliArgs args) async {
-    return _notImplemented(context, 'testing');
+    final issueNumber = _parseIssueNumber(args);
+    if (issueNumber == null) {
+      return ItemResult.failure(
+        path: context.path,
+        name: context.name,
+        error: 'Missing required argument: issue number',
+      );
+    }
+
+    final matches = scanner.scanForIssue(context.path, issueNumber);
+    if (matches.isEmpty) {
+      return ItemResult.success(
+        path: context.path,
+        name: context.name,
+        message: 'No tests for issue #$issueNumber',
+      );
+    }
+
+    final ids = matches.map((m) => m.testId).join(', ');
+    return ItemResult.success(
+      path: context.path,
+      name: context.name,
+      message: 'Found ${matches.length} test(s) for #$issueNumber: $ids',
+    );
   }
 }
 
 /// Executor for :verify command.
+///
+/// Checks whether all reproduction tests for an issue now pass by reading
+/// testkit baselines. Reports per-project test status.
 class VerifyExecutor extends CommandExecutor {
+  final TestScanner scanner;
+
+  VerifyExecutor(this.scanner);
+
   @override
   Future<ItemResult> execute(CommandContext context, CliArgs args) async {
-    return _notImplemented(context, 'verify');
+    final issueNumber = _parseIssueNumber(args);
+    if (issueNumber == null) {
+      return ItemResult.failure(
+        path: context.path,
+        name: context.name,
+        error: 'Missing required argument: issue number',
+      );
+    }
+
+    final matches = scanner.scanForIssue(context.path, issueNumber);
+    if (matches.isEmpty) {
+      return ItemResult.success(
+        path: context.path,
+        name: context.name,
+        message: 'No tests for issue #$issueNumber',
+      );
+    }
+
+    // Read baseline and check status
+    final baselineContent = scanner.readLatestBaseline(context.path);
+    if (baselineContent == null) {
+      return ItemResult.failure(
+        path: context.path,
+        name: context.name,
+        error: 'No testkit baseline found — run testkit :test first',
+      );
+    }
+
+    final statuses = scanner.parseBaseline(baselineContent);
+    final results = <String>[];
+    var allPass = true;
+
+    for (final match in matches) {
+      final status = statuses[match.testId];
+      if (status == null) {
+        results.add('${match.testId}: NOT RUN');
+        allPass = false;
+      } else if (status.startsWith('OK')) {
+        results.add('${match.testId}: OK');
+      } else {
+        results.add('${match.testId}: $status');
+        allPass = false;
+      }
+    }
+
+    final statusLine = allPass ? 'ALL PASS' : 'SOME FAIL';
+    return ItemResult(
+      path: context.path,
+      name: context.name,
+      success: allPass,
+      message: '$statusLine — ${results.join(', ')}',
+    );
   }
 }
 
@@ -661,10 +754,54 @@ class SearchExecutor extends CommandExecutor {
 }
 
 /// Executor for :scan command.
+///
+/// Scans the project's test directory for issue-linked test IDs.
+/// Optionally filters to a specific issue number or reports stubs only.
 class ScanExecutor extends CommandExecutor {
+  final TestScanner scanner;
+
+  ScanExecutor(this.scanner);
+
   @override
   Future<ItemResult> execute(CommandContext context, CliArgs args) async {
-    return _notImplemented(context, 'scan');
+    final issueNumber = _parseIssueNumber(args);
+    final opts = args.extraOptions;
+    final missingTests = opts['missing-tests'] == true;
+
+    List<TestIdMatch> matches;
+    if (issueNumber != null) {
+      matches = scanner.scanForIssue(context.path, issueNumber);
+    } else {
+      matches = scanner.scanProject(context.path)
+          .where((m) => m.isIssueLinked)
+          .toList();
+    }
+
+    if (missingTests) {
+      // Only report issue-linked stubs (no full test ID found)
+      matches = matches.where((m) => m.isStub).toList();
+    }
+
+    if (matches.isEmpty) {
+      return ItemResult.success(
+        path: context.path,
+        name: context.name,
+        message: issueNumber != null
+            ? 'No tests for issue #$issueNumber'
+            : 'No issue-linked tests found',
+      );
+    }
+
+    final lines = matches.map((m) {
+      final file = m.filePath.replaceFirst('${context.path}/', '');
+      return '${m.testId.padRight(16)} $file:${m.line}';
+    }).join('\n');
+
+    return ItemResult.success(
+      path: context.path,
+      name: context.name,
+      message: 'Found ${matches.length} test(s):\n$lines',
+    );
   }
 }
 
@@ -753,18 +890,139 @@ class SummaryExecutor extends CommandExecutor {
 // =============================================================================
 
 /// Executor for :promote command.
+///
+/// Promotes a regular test to an issue-linked test by inserting the issue
+/// number into the test ID. The first positional arg is the current test ID,
+/// --issue is the issue number.
 class PromoteExecutor extends CommandExecutor {
+  final TestScanner scanner;
+
+  PromoteExecutor(this.scanner);
+
   @override
   Future<ItemResult> execute(CommandContext context, CliArgs args) async {
-    return _notImplemented(context, 'promote');
+    if (args.positionalArgs.isEmpty) {
+      return ItemResult.failure(
+        path: context.path,
+        name: context.name,
+        error: 'Missing required argument: test-id',
+      );
+    }
+    final testId = args.positionalArgs.first;
+    final issueNumber = args.extraOptions['issue'] as int?;
+    if (issueNumber == null) {
+      return ItemResult.failure(
+        path: context.path,
+        name: context.name,
+        error: 'Missing required option: --issue',
+      );
+    }
+    final dryRun = args.dryRun;
+
+    // Search for the test ID in this project
+    final allTests = scanner.scanProject(context.path);
+    final match = allTests.where((m) => m.testId == testId).toList();
+
+    if (match.isEmpty) {
+      return ItemResult.success(
+        path: context.path,
+        name: context.name,
+        message: 'Test $testId not found in project',
+      );
+    }
+
+    // Build new ID: insert issue number after project ID
+    // D4-PAR-15 → D4-42-PAR-15
+    final m = match.first;
+    final newId = '${m.projectId}-$issueNumber-${m.projectSpecific}';
+
+    if (dryRun) {
+      return ItemResult.success(
+        path: context.path,
+        name: context.name,
+        message: 'Would rename $testId → $newId in ${m.filePath}:${m.line}',
+      );
+    }
+
+    // Apply the rename in the source file
+    final file = File(m.filePath);
+    final content = file.readAsStringSync();
+    final updated = content.replaceAll(testId, newId);
+    file.writeAsStringSync(updated);
+
+    return ItemResult.success(
+      path: context.path,
+      name: context.name,
+      message: 'Promoted $testId → $newId in ${m.filePath}:${m.line}',
+    );
   }
 }
 
 /// Executor for :validate command.
+///
+/// Checks test ID uniqueness within a project: no duplicate project-specific
+/// IDs, no regular+promoted conflicts.
 class ValidateExecutor extends CommandExecutor {
+  final TestScanner scanner;
+
+  ValidateExecutor(this.scanner);
+
   @override
   Future<ItemResult> execute(CommandContext context, CliArgs args) async {
-    return _notImplemented(context, 'validate');
+    final allTests = scanner.scanProject(context.path);
+    if (allTests.isEmpty) {
+      return ItemResult.success(
+        path: context.path,
+        name: context.name,
+        message: 'No tests found',
+      );
+    }
+
+    final errors = <String>[];
+
+    // Check 1: Duplicate project-specific IDs within a project
+    final byProjectSpecific = <String, List<TestIdMatch>>{};
+    for (final test in allTests) {
+      final key = '${test.projectId}-${test.projectSpecific}';
+      byProjectSpecific.putIfAbsent(key, () => []).add(test);
+    }
+    for (final entry in byProjectSpecific.entries) {
+      if (entry.value.length > 1) {
+        final locations = entry.value
+            .map((m) => '${m.filePath}:${m.line}')
+            .join(' AND ');
+        errors.add('Duplicate ${entry.key}: $locations');
+      }
+    }
+
+    // Check 2: Regular + promoted conflict
+    // If D4-PAR-15 and D4-42-PAR-15 both exist, that's a conflict
+    final regularIds = allTests.where((t) => !t.isIssueLinked).toSet();
+    final issueLinkedIds = allTests.where((t) => t.isIssueLinked).toSet();
+    for (final regular in regularIds) {
+      for (final linked in issueLinkedIds) {
+        if (regular.projectId == linked.projectId &&
+            regular.projectSpecific == linked.projectSpecific) {
+          errors.add(
+            'Conflict: regular ${regular.testId} AND promoted ${linked.testId}',
+          );
+        }
+      }
+    }
+
+    if (errors.isEmpty) {
+      return ItemResult.success(
+        path: context.path,
+        name: context.name,
+        message: '${allTests.length} tests validated — no issues',
+      );
+    }
+
+    return ItemResult.failure(
+      path: context.path,
+      name: context.name,
+      error: '${errors.length} validation error(s):\n${errors.join('\n')}',
+    );
   }
 }
 
@@ -833,18 +1091,111 @@ class LinkExecutor extends CommandExecutor {
 // =============================================================================
 
 /// Executor for :sync command.
+///
+/// Per-project: scans for issue-linked tests, reads baselines, reports
+/// which tests pass/fail. Cross-references with issue states to detect
+/// fixes, regressions, and missing tests.
 class SyncExecutor extends CommandExecutor {
+  final TestScanner scanner;
+
+  SyncExecutor(this.scanner);
+
   @override
   Future<ItemResult> execute(CommandContext context, CliArgs args) async {
-    return _notImplemented(context, 'sync');
+    final allTests = scanner.scanProject(context.path)
+        .where((m) => m.isIssueLinked)
+        .toList();
+
+    if (allTests.isEmpty) {
+      return ItemResult.success(
+        path: context.path,
+        name: context.name,
+        message: 'No issue-linked tests found',
+      );
+    }
+
+    // Read baseline
+    final baselineContent = scanner.readLatestBaseline(context.path);
+    if (baselineContent == null) {
+      return ItemResult.success(
+        path: context.path,
+        name: context.name,
+        message: '${allTests.length} issue-linked test(s) — no baseline',
+      );
+    }
+
+    final statuses = scanner.parseBaseline(baselineContent);
+    final passing = <String>[];
+    final failing = <String>[];
+    final notRun = <String>[];
+
+    for (final test in allTests) {
+      final status = statuses[test.testId];
+      if (status == null) {
+        notRun.add(test.testId);
+      } else if (status.startsWith('OK')) {
+        passing.add(test.testId);
+      } else {
+        failing.add(test.testId);
+      }
+    }
+
+    final parts = <String>[];
+    if (passing.isNotEmpty) parts.add('${passing.length} passing');
+    if (failing.isNotEmpty) parts.add('${failing.length} failing');
+    if (notRun.isNotEmpty) parts.add('${notRun.length} not run');
+
+    return ItemResult(
+      path: context.path,
+      name: context.name,
+      success: failing.isEmpty,
+      message: '${allTests.length} issue-linked test(s): ${parts.join(', ')}',
+      error: failing.isNotEmpty
+          ? 'Failing: ${failing.join(', ')}'
+          : null,
+    );
   }
 }
 
 /// Executor for :aggregate command.
+///
+/// Per-project: reads testkit baselines and reports issue-linked test results
+/// for aggregation into a consolidated view.
 class AggregateExecutor extends CommandExecutor {
+  final TestScanner scanner;
+
+  AggregateExecutor(this.scanner);
+
   @override
   Future<ItemResult> execute(CommandContext context, CliArgs args) async {
-    return _notImplemented(context, 'aggregate');
+    final allTests = scanner.scanProject(context.path)
+        .where((m) => m.isIssueLinked)
+        .toList();
+
+    if (allTests.isEmpty) {
+      return ItemResult.success(
+        path: context.path,
+        name: context.name,
+        message: 'No issue-linked tests to aggregate',
+      );
+    }
+
+    // Read baseline and match
+    final baselineContent = scanner.readLatestBaseline(context.path);
+    final statuses = baselineContent != null
+        ? scanner.parseBaseline(baselineContent)
+        : <String, String>{};
+
+    final lines = allTests.map((t) {
+      final status = statuses[t.testId] ?? 'NOT RUN';
+      return '${t.testId.padRight(20)} ${status.padRight(8)} #${t.issueNumber}';
+    }).join('\n');
+
+    return ItemResult.success(
+      path: context.path,
+      name: context.name,
+      message: '${allTests.length} issue-linked test(s):\n$lines',
+    );
   }
 }
 
@@ -1099,15 +1450,17 @@ class RunTestsExecutor extends CommandExecutor {
 /// Requires an [IssueService] for commands that interact with the GitHub API.
 Map<String, CommandExecutor> createIssuekitExecutors({
   required IssueService service,
+  TestScanner? scanner,
 }) {
+  final testScanner = scanner ?? TestScanner();
   return {
     // Issue Management (wired to IssueService)
     'new': NewIssueExecutor(service),
     'edit': EditIssueExecutor(service),
     'analyze': AnalyzeExecutor(service),
     'assign': AssignExecutor(service),
-    'testing': TestingExecutor(),
-    'verify': VerifyExecutor(),
+    'testing': TestingExecutor(testScanner, service),
+    'verify': VerifyExecutor(testScanner),
     'resolve': ResolveExecutor(service),
     'close': CloseExecutor(service),
     'reopen': ReopenExecutor(service),
@@ -1115,15 +1468,15 @@ Map<String, CommandExecutor> createIssuekitExecutors({
     'list': ListExecutor(service),
     'show': ShowExecutor(service),
     'search': SearchExecutor(service),
-    'scan': ScanExecutor(),
+    'scan': ScanExecutor(testScanner),
     'summary': SummaryExecutor(service),
     // Test Management
-    'promote': PromoteExecutor(),
-    'validate': ValidateExecutor(),
+    'promote': PromoteExecutor(testScanner),
+    'validate': ValidateExecutor(testScanner),
     'link': LinkExecutor(service),
     // Workflow Integration
-    'sync': SyncExecutor(),
-    'aggregate': AggregateExecutor(),
+    'sync': SyncExecutor(testScanner),
+    'aggregate': AggregateExecutor(testScanner),
     'export': ExportExecutor(service),
     'import': ImportExecutor(service),
     'init': InitExecutor(service),
