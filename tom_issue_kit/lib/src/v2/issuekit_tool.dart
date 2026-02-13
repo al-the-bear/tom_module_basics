@@ -451,6 +451,7 @@ const newCommand = CommandDefinition(
   name: 'new',
   description: 'Create a new issue in tom_issues via GitHub API',
   options: newOptions,
+  requiresTraversal: false,
   supportsProjectTraversal: false,
   examples: [
     'issuekit :new "Memory leak in server"',
@@ -463,6 +464,7 @@ const editCommand = CommandDefinition(
   name: 'edit',
   description: 'Edit an existing issue\'s fields',
   options: editOptions,
+  requiresTraversal: false,
   supportsProjectTraversal: false,
   examples: [
     'issuekit :edit 42 --severity critical',
@@ -474,6 +476,7 @@ const analyzeCommand = CommandDefinition(
   name: 'analyze',
   description: 'Record analysis results (root cause, affected project)',
   options: analyzeOptions,
+  requiresTraversal: false,
   supportsProjectTraversal: false,
   examples: [
     'issuekit :analyze 42 --root-cause "Missing null check" '
@@ -486,6 +489,7 @@ const assignCommand = CommandDefinition(
   name: 'assign',
   description: 'Assign an issue to a project (creates stub test ID)',
   options: assignOptions,
+  requiresTraversal: false,
   supportsProjectTraversal: false,
   examples: [
     'issuekit :assign 42 --project tom_d4rt',
@@ -517,6 +521,7 @@ const resolveCommand = CommandDefinition(
   name: 'resolve',
   description: 'Confirm the original issue is fixed after verification',
   options: resolveOptions,
+  requiresTraversal: false,
   supportsProjectTraversal: false,
   examples: [
     'issuekit :resolve 42 --fix "Added null check in parser"',
@@ -527,6 +532,7 @@ const closeCommand = CommandDefinition(
   name: 'close',
   description: 'Close and archive a resolved issue',
   options: [],
+  requiresTraversal: false,
   supportsProjectTraversal: false,
   examples: [
     'issuekit :close 42',
@@ -537,6 +543,7 @@ const reopenCommand = CommandDefinition(
   name: 'reopen',
   description: 'Reopen a closed or resolved issue',
   options: reopenOptions,
+  requiresTraversal: false,
   supportsProjectTraversal: false,
   examples: [
     'issuekit :reopen 42 --note "Regression detected"',
@@ -548,6 +555,7 @@ const listCommand = CommandDefinition(
   name: 'list',
   description: 'List issues with filtering and sorting',
   options: listOptions,
+  requiresTraversal: false,
   supportsProjectTraversal: false,
   examples: [
     'issuekit :list --state new',
@@ -570,6 +578,7 @@ const searchCommand = CommandDefinition(
   name: 'search',
   description: 'Full-text search across all issues',
   options: searchOptions,
+  requiresTraversal: false,
   supportsProjectTraversal: false,
   examples: [
     'issuekit :search "RangeError"',
@@ -593,6 +602,7 @@ const summaryCommand = CommandDefinition(
   name: 'summary',
   description: 'Dashboard: counts by state, severity, project',
   options: outputOptions,
+  requiresTraversal: false,
   supportsProjectTraversal: false,
   examples: [
     'issuekit :summary',
@@ -627,6 +637,7 @@ const linkCommand = CommandDefinition(
   name: 'link',
   description: 'Explicitly link a test to an issue (override for non-standard)',
   options: linkOptions,
+  requiresTraversal: false,
   supportsProjectTraversal: false,
   examples: [
     'issuekit :link 42 --test-id "legacy_parser_test"',
@@ -661,6 +672,7 @@ const exportCommand = CommandDefinition(
   name: 'export',
   description: 'Export issues as CSV, JSON, or Markdown',
   options: exportOptions,
+  requiresTraversal: false,
   supportsProjectTraversal: false,
   examples: [
     'issuekit :export --output=csv:issues.csv',
@@ -672,6 +684,7 @@ const importCommand = CommandDefinition(
   name: 'import',
   description: 'Import issues from a file',
   options: importOptions,
+  requiresTraversal: false,
   supportsProjectTraversal: false,
   examples: [
     'issuekit :import issues.json',
@@ -683,6 +696,7 @@ const initCommand = CommandDefinition(
   name: 'init',
   description: 'Initialize repos for issue tracking (set up labels, templates)',
   options: initOptions,
+  requiresTraversal: false,
   supportsProjectTraversal: false,
   examples: [
     'issuekit :init',
@@ -695,6 +709,7 @@ const snapshotCommand = CommandDefinition(
   name: 'snapshot',
   description: 'Export issues to timestamped JSON files for backup',
   options: snapshotOptions,
+  requiresTraversal: false,
   supportsProjectTraversal: false,
   examples: [
     'issuekit :snapshot',
@@ -706,6 +721,7 @@ const runTestsCommand = CommandDefinition(
   name: 'run-tests',
   description: 'Trigger nightly test workflow in tom_tests via GitHub API',
   options: runTestsOptions,
+  requiresTraversal: false,
   supportsProjectTraversal: false,
   examples: [
     'issuekit :run-tests',

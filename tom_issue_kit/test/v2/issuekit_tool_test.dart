@@ -4,10 +4,15 @@
 @TestOn('vm')
 library;
 
+import 'package:mocktail/mocktail.dart';
 import 'package:test/test.dart';
 import 'package:tom_build_base/tom_build_base_v2.dart';
+import 'package:tom_issue_kit/src/services/issue_service.dart';
 import 'package:tom_issue_kit/src/v2/issuekit_tool.dart';
 import 'package:tom_issue_kit/src/v2/issuekit_executors.dart';
+
+/// Mock IssueService for executor registration tests.
+class _MockIssueService extends Mock implements IssueService {}
 
 void main() {
   group('IK-CLI-1: Tool Definition [2026-02-13]', () {
@@ -170,8 +175,14 @@ void main() {
   });
 
   group('IK-CLI-3: Executor Registration [2026-02-13]', () {
+    late _MockIssueService mockService;
+
+    setUp(() {
+      mockService = _MockIssueService();
+    });
+
     test('IK-CLI-10: All commands have executors', () {
-      final executors = createIssuekitExecutors();
+      final executors = createIssuekitExecutors(service: mockService);
       final commandNames = issuekitTool.commands.map((c) => c.name).toSet();
 
       for (final name in commandNames) {
@@ -184,7 +195,7 @@ void main() {
     });
 
     test('IK-CLI-11: Executor count matches command count', () {
-      final executors = createIssuekitExecutors();
+      final executors = createIssuekitExecutors(service: mockService);
       expect(executors.length, issuekitTool.commands.length);
     });
   });

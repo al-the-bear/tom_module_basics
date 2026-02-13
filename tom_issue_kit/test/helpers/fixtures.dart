@@ -4,6 +4,7 @@ library;
 import 'package:mocktail/mocktail.dart';
 import 'package:tom_github_api/tom_github_api.dart';
 import 'package:tom_issue_kit/src/config/issuekit_config.dart';
+import 'package:tom_issue_kit/src/services/issue_service.dart';
 
 // =============================================================================
 // Mock Classes
@@ -11,6 +12,9 @@ import 'package:tom_issue_kit/src/config/issuekit_config.dart';
 
 /// Mock GitHubApiClient for unit testing.
 class MockGitHubApiClient extends Mock implements GitHubApiClient {}
+
+/// Mock IssueService for executor unit testing.
+class MockIssueService extends Mock implements IssueService {}
 
 // =============================================================================
 // Fixture Factories
