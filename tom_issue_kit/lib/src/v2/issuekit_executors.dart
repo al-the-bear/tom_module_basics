@@ -1057,6 +1057,9 @@ class PromoteExecutor extends CommandExecutor {
 /// Checks test ID uniqueness within a project: no duplicate project-specific
 /// IDs, no regular+promoted conflicts, and that all issue numbers in test IDs
 /// reference existing issues in tom_issues.
+///
+/// With --fix option, automatically removes regular IDs when a promoted version
+/// exists (e.g., removes D4-PAR-15 when D4-42-PAR-15 exists).
 class ValidateExecutor extends CommandExecutor {
   final TestScanner scanner;
   final IssueService service;
@@ -1074,10 +1077,30 @@ class ValidateExecutor extends CommandExecutor {
       );
     }
 
+    final fix = args.extraOptions['fix'] == true;
+    final dryRun = args.dryRun;
     final errors = <String>[];
     final warnings = <String>[];
+    final fixed = <String>[];
+
+    // Identify regular + promoted conflicts first (for Check 2)
+    // These should not be reported as duplicates in Check 1 when --fix is used
+    final regularIds = allTests.where((t) => !t.isIssueLinked).toList();
+    final issueLinkedIds = allTests.where((t) => t.isIssueLinked).toSet();
+    final conflictPairs = <String, (TestIdMatch, TestIdMatch)>{};
+
+    for (final regular in regularIds) {
+      for (final linked in issueLinkedIds) {
+        if (regular.projectId == linked.projectId &&
+            regular.projectSpecific == linked.projectSpecific) {
+          final key = '${regular.projectId}-${regular.projectSpecific}';
+          conflictPairs[key] = (regular, linked);
+        }
+      }
+    }
 
     // Check 1: Duplicate project-specific IDs within a project
+    // Skip pairs that are regular+promoted conflicts (handled in Check 2)
     final byProjectSpecific = <String, List<TestIdMatch>>{};
     for (final test in allTests) {
       final key = '${test.projectId}-${test.projectSpecific}';
@@ -1085,6 +1108,10 @@ class ValidateExecutor extends CommandExecutor {
     }
     for (final entry in byProjectSpecific.entries) {
       if (entry.value.length > 1) {
+        // Skip if this is a regular+promoted conflict pair (handled in Check 2)
+        if (conflictPairs.containsKey(entry.key) && entry.value.length == 2) {
+          continue;
+        }
         final locations = entry.value
             .map((m) => '${m.filePath}:${m.line}')
             .join(' AND ');
@@ -1094,16 +1121,32 @@ class ValidateExecutor extends CommandExecutor {
 
     // Check 2: Regular + promoted conflict
     // If D4-PAR-15 and D4-42-PAR-15 both exist, that's a conflict
-    final regularIds = allTests.where((t) => !t.isIssueLinked).toSet();
-    final issueLinkedIds = allTests.where((t) => t.isIssueLinked).toSet();
-    for (final regular in regularIds) {
-      for (final linked in issueLinkedIds) {
-        if (regular.projectId == linked.projectId &&
-            regular.projectSpecific == linked.projectSpecific) {
-          errors.add(
-            'Conflict: regular ${regular.testId} AND promoted ${linked.testId}',
+    // With --fix, remove the regular ID from source
+    for (final pair in conflictPairs.values) {
+      final (regular, linked) = pair;
+      if (fix) {
+        // Auto-fix: remove regular ID, keep promoted
+        if (dryRun) {
+          fixed.add(
+            'Would remove ${regular.testId} (promoted ${linked.testId} '
+            'exists) from ${regular.filePath}:${regular.line}',
           );
+        } else {
+          final result = _removeTestId(regular);
+          if (result != null) {
+            fixed.add(
+              'Removed ${regular.testId} from ${regular.filePath}:${regular.line}',
+            );
+          } else {
+            errors.add(
+              'Failed to fix: ${regular.testId} at ${regular.filePath}:${regular.line}',
+            );
+          }
         }
+      } else {
+        errors.add(
+          'Conflict: regular ${regular.testId} AND promoted ${linked.testId}',
+        );
       }
     }
 
@@ -1123,7 +1166,7 @@ class ValidateExecutor extends CommandExecutor {
       }
     }
 
-    if (errors.isEmpty && warnings.isEmpty) {
+    if (errors.isEmpty && warnings.isEmpty && fixed.isEmpty) {
       return ItemResult.success(
         path: context.path,
         name: context.name,
@@ -1132,6 +1175,9 @@ class ValidateExecutor extends CommandExecutor {
     }
 
     final parts = <String>[];
+    if (fixed.isNotEmpty) {
+      parts.add('${fixed.length} fix(es):\n${fixed.join('\n')}');
+    }
     if (errors.isNotEmpty) {
       parts.add('${errors.length} error(s):\n${errors.join('\n')}');
     }
@@ -1146,6 +1192,35 @@ class ValidateExecutor extends CommandExecutor {
       message: parts.join('\n'),
       error: errors.isNotEmpty ? '${errors.length} validation error(s)' : null,
     );
+  }
+
+  /// Removes a test ID from its source file by commenting out the test.
+  /// Returns the new content if successful, null on failure.
+  String? _removeTestId(TestIdMatch match) {
+    try {
+      final file = File(match.filePath);
+      if (!file.existsSync()) return null;
+
+      final lines = file.readAsLinesSync();
+      if (match.line < 1 || match.line > lines.length) return null;
+
+      // Comment out the line containing the test ID
+      final lineIndex = match.line - 1;
+      final line = lines[lineIndex];
+
+      // Check if this line contains the test definition
+      if (!line.contains(match.testId)) return null;
+
+      // Comment out the line with a note about why
+      lines[lineIndex] =
+          '// REMOVED by :validate --fix (promoted version exists): $line';
+
+      final newContent = lines.join('\n');
+      file.writeAsStringSync(newContent);
+      return newContent;
+    } catch (_) {
+      return null;
+    }
   }
 }
 

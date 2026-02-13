@@ -715,9 +715,15 @@ void main() {
 
   group('IK-EXE-VAL: ValidateExecutor [2026-02-14]', () {
     late ValidateExecutor executor;
+    late Directory tempDir;
 
     setUp(() {
       executor = ValidateExecutor(mockScanner, mockService);
+      tempDir = Directory.systemTemp.createTempSync('issuekit_validate_');
+    });
+
+    tearDown(() {
+      tempDir.deleteSync(recursive: true);
     });
 
     test('IK-EXE-VAL-1: validates clean project', () async {
@@ -1031,10 +1037,8 @@ void main() {
       expect(result.success, isFalse);
       expect(result.message, contains('Conflict: regular D4-PAR-7'));
       expect(result.message, contains('Conflict: regular D4-LEX-3'));
-      // Also detects duplicates since regular+promoted share projectSpecific
-      expect(result.message, contains('Duplicate D4-PAR-7'));
-      expect(result.message, contains('Duplicate D4-LEX-3'));
-      expect(result.message, contains('4 error(s)'));
+      // Regular+promoted pairs are reported as conflicts only, not duplicates
+      expect(result.message, contains('2 error(s)'));
     });
 
     test('IK-EXE-VAL-10: warnings-only does not cause failure', () async {
@@ -1071,6 +1075,127 @@ void main() {
       expect(result.message, contains('Issue #999 not found'));
       expect(result.message, contains('Issue #888 not found'));
       expect(result.error, isNull);
+    });
+
+    test('IK-EXE-VAL-11: --fix with dry-run reports would-remove', () async {
+      // Regular+promoted conflict with --fix and --dry-run
+      final matches = [
+        createTestIdMatch(
+          testId: 'D4-PAR-7',
+          projectId: 'D4',
+          issueNumber: null,
+          projectSpecific: 'PAR-7',
+          filePath: '/projects/d4rt/test/parser_a.dart',
+          line: 10,
+        ),
+        createTestIdMatch(
+          testId: 'D4-42-PAR-7',
+          projectId: 'D4',
+          issueNumber: 42,
+          projectSpecific: 'PAR-7',
+          filePath: '/projects/d4rt/test/parser_b.dart',
+          line: 20,
+        ),
+      ];
+
+      when(() => mockScanner.scanProject(any())).thenReturn(matches);
+      when(() => mockService.getIssue(42))
+          .thenAnswer((_) async => createTestIssue(number: 42));
+
+      final result = await executor.execute(
+        context,
+        const CliArgs(
+          extraOptions: {'fix': true},
+          dryRun: true,
+        ),
+      );
+
+      expect(result.success, isTrue);
+      expect(result.message, contains('fix(es)'));
+      expect(result.message, contains('Would remove D4-PAR-7'));
+      expect(result.message, contains('promoted D4-42-PAR-7 exists'));
+    });
+
+    test('IK-EXE-VAL-12: --fix applies to source file', () async {
+      // Create a temp test file with regular ID
+      final testFile = File('${tempDir.path}/test/parser_test.dart');
+      testFile.parent.createSync(recursive: true);
+      testFile.writeAsStringSync(
+        "test('D4-PAR-7: Parser handles arrays', () {});\n",
+      );
+
+      final tempContext = createTestContext(path: tempDir.path);
+
+      final regularMatch = createTestIdMatch(
+        testId: 'D4-PAR-7',
+        projectId: 'D4',
+        issueNumber: null,
+        projectSpecific: 'PAR-7',
+        filePath: testFile.path,
+        line: 1,
+      );
+      final promotedMatch = createTestIdMatch(
+        testId: 'D4-42-PAR-7',
+        projectId: 'D4',
+        issueNumber: 42,
+        projectSpecific: 'PAR-7',
+        filePath: '${tempDir.path}/test/other_test.dart',
+        line: 5,
+      );
+
+      when(() => mockScanner.scanProject(any()))
+          .thenReturn([regularMatch, promotedMatch]);
+      when(() => mockService.getIssue(42))
+          .thenAnswer((_) async => createTestIssue(number: 42));
+
+      final result = await executor.execute(
+        tempContext,
+        const CliArgs(extraOptions: {'fix': true}),
+      );
+
+      expect(result.success, isTrue);
+      expect(result.message, contains('fix(es)'));
+      expect(result.message, contains('Removed D4-PAR-7'));
+
+      // Verify file was modified
+      final content = testFile.readAsStringSync();
+      expect(content, contains('// REMOVED by :validate --fix'));
+      expect(content, contains('promoted version exists'));
+    });
+
+    test('IK-EXE-VAL-13: --fix without conflicts has no fixes', () async {
+      // No conflicts to fix
+      final matches = [
+        createTestIdMatch(
+          testId: 'D4-PAR-7',
+          projectId: 'D4',
+          issueNumber: null,
+          projectSpecific: 'PAR-7',
+          filePath: '/projects/d4rt/test/parser_a.dart',
+          line: 10,
+        ),
+        createTestIdMatch(
+          testId: 'D4-42-LEX-3',
+          projectId: 'D4',
+          issueNumber: 42,
+          projectSpecific: 'LEX-3',
+          filePath: '/projects/d4rt/test/lexer_b.dart',
+          line: 20,
+        ),
+      ];
+
+      when(() => mockScanner.scanProject(any())).thenReturn(matches);
+      when(() => mockService.getIssue(42))
+          .thenAnswer((_) async => createTestIssue(number: 42));
+
+      final result = await executor.execute(
+        context,
+        const CliArgs(extraOptions: {'fix': true}),
+      );
+
+      expect(result.success, isTrue);
+      expect(result.message, contains('validated'));
+      expect(result.message, contains('no issues'));
     });
   });
 
