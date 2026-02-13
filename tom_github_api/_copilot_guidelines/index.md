@@ -5,6 +5,7 @@
 | Document | Purpose |
 |----------|---------|
 | [implementation_guidelines.md](implementation_guidelines.md) | Development workflow, TDD, test naming conventions |
+| [testing.md](testing.md) | Unit and integration testing strategy |
 
 ## Key Documents
 
