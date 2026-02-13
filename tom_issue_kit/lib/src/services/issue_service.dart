@@ -161,6 +161,183 @@ class IssueService {
     return _client.searchIssues(query: fullQuery);
   }
 
+  /// Analyze an issue — record root cause and optionally assign to a project.
+  ///
+  /// Posts a structured analysis comment. If [project] is provided, also
+  /// assigns the issue (state → ASSIGNED) and creates a stub test entry.
+  /// Without [project], moves the issue to ANALYZED state.
+  Future<AnalyzeResult> analyzeIssue({
+    required int issueNumber,
+    String? rootCause,
+    String? project,
+    String? module,
+    String? note,
+  }) async {
+    // Build analysis comment
+    final comment = StringBuffer('## Analysis\n\n');
+    if (rootCause != null) {
+      comment.writeln('**Root Cause:** $rootCause\n');
+    }
+    if (project != null) {
+      comment.writeln('**Target Project:** $project');
+      if (module != null) {
+        comment.writeln('**Target Module:** $module');
+      }
+      comment.writeln();
+    }
+    if (note != null) {
+      comment.writeln('**Notes:** $note\n');
+    }
+
+    // Post the analysis comment
+    await _client.addComment(
+      repoSlug: _issuesRepo,
+      issueNumber: issueNumber,
+      body: comment.toString().trim(),
+    );
+
+    // Determine target state
+    final targetState = project != null ? 'assigned' : 'analyzed';
+
+    // Get current issue and update labels
+    final current = await _client.getIssue(
+      repoSlug: _issuesRepo,
+      number: issueNumber,
+    );
+
+    final newLabels = _updateLabels(
+      current: current.labels.map((l) => l.name).toList(),
+      newState: targetState,
+      newProject: project,
+    );
+
+    final updated = await _client.updateIssue(
+      repoSlug: _issuesRepo,
+      number: issueNumber,
+      labels: newLabels,
+    );
+
+    // If project provided, create stub test entry
+    GitHubIssue? testEntry;
+    if (project != null) {
+      testEntry = await _createTestEntry(
+        issueNumber: issueNumber,
+        title: current.title,
+        project: project,
+        module: module,
+      );
+    }
+
+    return AnalyzeResult(
+      issue: updated,
+      testEntry: testEntry,
+    );
+  }
+
+  /// Assign an issue to a project.
+  ///
+  /// Creates a stub test entry in tom_tests and transitions the issue
+  /// to ASSIGNED state with the project label.
+  Future<AssignResult> assignIssue({
+    required int issueNumber,
+    required String project,
+    String? module,
+    String? assignee,
+  }) async {
+    // Get current issue
+    final current = await _client.getIssue(
+      repoSlug: _issuesRepo,
+      number: issueNumber,
+    );
+
+    // Update labels to ASSIGNED state with project
+    final newLabels = _updateLabels(
+      current: current.labels.map((l) => l.name).toList(),
+      newState: 'assigned',
+      newProject: project,
+    );
+
+    final updated = await _client.updateIssue(
+      repoSlug: _issuesRepo,
+      number: issueNumber,
+      labels: newLabels,
+      assignee: assignee,
+    );
+
+    // Create stub test entry in tom_tests
+    final testEntry = await _createTestEntry(
+      issueNumber: issueNumber,
+      title: current.title,
+      project: project,
+      module: module,
+    );
+
+    // Post assignment comment
+    await _client.addComment(
+      repoSlug: _issuesRepo,
+      issueNumber: issueNumber,
+      body: '**Assigned** to project `$project`'
+          '${module != null ? ' (module: `$module`)' : ''}'
+          '${assignee != null ? ' — assignee: @$assignee' : ''}',
+    );
+
+    return AssignResult(
+      issue: updated,
+      testEntry: testEntry,
+    );
+  }
+
+  /// Resolve an issue — human confirmation that the fix works.
+  ///
+  /// The issue must be in VERIFYING state (has 'verifying' label).
+  /// Transitions to RESOLVED state with optional fix description.
+  Future<GitHubIssue> resolveIssue({
+    required int issueNumber,
+    String? fix,
+    String? note,
+  }) async {
+    final issue = await getIssue(issueNumber);
+
+    // Verify it's in VERIFYING state
+    final hasVerifying = issue.labels.any((l) => l.name == 'verifying');
+    if (!hasVerifying) {
+      throw IssueServiceException(
+        'Cannot resolve issue #$issueNumber: must be in VERIFYING state',
+        code: 'NOT_VERIFYING',
+      );
+    }
+
+    // Update labels to RESOLVED
+    final newLabels = _updateLabels(
+      current: issue.labels.map((l) => l.name).toList(),
+      newState: 'resolved',
+    );
+
+    final updated = await _client.updateIssue(
+      repoSlug: _issuesRepo,
+      number: issueNumber,
+      labels: newLabels,
+    );
+
+    // Post resolution comment
+    final comment = StringBuffer('## Resolved\n\n');
+    if (fix != null) {
+      comment.writeln('**Fix:** $fix\n');
+    }
+    if (note != null) {
+      comment.writeln('**Notes:** $note\n');
+    }
+    comment.writeln('Issue confirmed fixed.');
+
+    await _client.addComment(
+      repoSlug: _issuesRepo,
+      issueNumber: issueNumber,
+      body: comment.toString().trim(),
+    );
+
+    return updated;
+  }
+
   /// Close an issue.
   ///
   /// The issue must be in RESOLVED state (has 'resolved' label).
@@ -214,6 +391,278 @@ class IssueService {
     }
 
     return updated;
+  }
+
+  /// Get a summary of all issues by state, severity, and project.
+  ///
+  /// Returns counts aggregated from all open issues in tom_issues.
+  Future<IssueSummary> getSummary() async {
+    final issues = await _client.listAllIssues(
+      repoSlug: _issuesRepo,
+      state: 'all',
+    );
+
+    final byState = <String, int>{};
+    final bySeverity = <String, int>{};
+    final byProject = <String, int>{};
+    var missingTests = 0;
+    var awaitingVerify = 0;
+
+    for (final issue in issues) {
+      final labels = issue.labels.map((l) => l.name).toList();
+
+      // Count by state
+      const stateLabels = ['new', 'analyzed', 'assigned', 'testing', 'verifying', 'resolved'];
+      for (final state in stateLabels) {
+        if (labels.contains(state)) {
+          byState[state] = (byState[state] ?? 0) + 1;
+        }
+      }
+
+      // Count by severity
+      for (final label in labels) {
+        if (label.startsWith('severity:')) {
+          final sev = label.replaceFirst('severity:', '');
+          bySeverity[sev] = (bySeverity[sev] ?? 0) + 1;
+        }
+      }
+
+      // Count by project
+      for (final label in labels) {
+        if (label.startsWith('project:')) {
+          final proj = label.replaceFirst('project:', '');
+          byProject[proj] = (byProject[proj] ?? 0) + 1;
+        }
+      }
+
+      // Count attention items
+      if (labels.contains('assigned') && !labels.contains('testing')) {
+        missingTests++;
+      }
+      if (labels.contains('verifying')) {
+        awaitingVerify++;
+      }
+    }
+
+    return IssueSummary(
+      totalCount: issues.length,
+      byState: byState,
+      bySeverity: bySeverity,
+      byProject: byProject,
+      missingTests: missingTests,
+      awaitingVerify: awaitingVerify,
+    );
+  }
+
+  /// Initialize labels in the issue/test repositories.
+  ///
+  /// Creates standard state and severity labels in tom_issues,
+  /// and project/status labels in tom_tests.
+  Future<InitResult> initLabels({
+    String repo = 'both',
+    bool force = false,
+  }) async {
+    var issuesCreated = 0;
+    var testsCreated = 0;
+
+    if (repo == 'issues' || repo == 'both') {
+      // Create state labels in tom_issues
+      const issueLabels = {
+        'new': '5319e7',
+        'analyzed': '0052cc',
+        'assigned': '006b75',
+        'testing': '1d76db',
+        'verifying': '0e8a16',
+        'resolved': '2cbe4e',
+        'blocked': 'b60205',
+        'duplicate': 'cccccc',
+        'wontfix': 'cccccc',
+        'severity:critical': 'd93f0b',
+        'severity:high': 'e99695',
+        'severity:normal': 'fef2c0',
+        'severity:low': 'c5def5',
+        'reporter:copilot': '5319e7',
+      };
+
+      for (final entry in issueLabels.entries) {
+        try {
+          await _client.createLabel(
+            repoSlug: _issuesRepo,
+            name: entry.key,
+            color: entry.value,
+          );
+          issuesCreated++;
+        } on Exception {
+          if (force) {
+            try {
+              await _client.updateLabel(
+                repoSlug: _issuesRepo,
+                name: entry.key,
+                color: entry.value,
+              );
+              issuesCreated++;
+            } on Exception {
+              // Label update failed, skip
+            }
+          }
+        }
+      }
+    }
+
+    if (repo == 'tests' || repo == 'both') {
+      // Create standard test labels in tom_tests
+      const testLabels = {
+        'stub': 'fbca04',
+        'has-tests': '0e8a16',
+        'all-pass': '0e8a16',
+        'some-fail': 'b60205',
+      };
+
+      for (final entry in testLabels.entries) {
+        try {
+          await _client.createLabel(
+            repoSlug: _testsRepo,
+            name: entry.key,
+            color: entry.value,
+          );
+          testsCreated++;
+        } on Exception {
+          if (force) {
+            try {
+              await _client.updateLabel(
+                repoSlug: _testsRepo,
+                name: entry.key,
+                color: entry.value,
+              );
+              testsCreated++;
+            } on Exception {
+              // Label update failed, skip
+            }
+          }
+        }
+      }
+    }
+
+    return InitResult(
+      issuesLabelsCreated: issuesCreated,
+      testsLabelsCreated: testsCreated,
+    );
+  }
+
+  /// Explicitly link a test to an issue via a comment.
+  ///
+  /// Posts a structured comment on the issue with the test link info.
+  Future<GitHubComment> linkTest({
+    required int issueNumber,
+    required String testId,
+    String? testFile,
+    String? note,
+  }) async {
+    final comment = StringBuffer('## Test Link\n\n');
+    comment.writeln('**Test ID:** `$testId`');
+    if (testFile != null) {
+      comment.writeln('**File:** `$testFile`');
+    }
+    if (note != null) {
+      comment.writeln('**Note:** $note');
+    }
+
+    return _client.addComment(
+      repoSlug: _issuesRepo,
+      issueNumber: issueNumber,
+      body: comment.toString().trim(),
+    );
+  }
+
+  /// Export issues from the specified repository.
+  ///
+  /// Returns all issues matching the given filters.
+  Future<List<GitHubIssue>> exportIssues({
+    String repo = 'issues',
+    String? state,
+    String? severity,
+    String? project,
+    List<String>? tags,
+    bool includeAll = false,
+  }) {
+    final targetRepo = repo == 'tests' ? _testsRepo : _issuesRepo;
+    final labels = <String>[
+      ?state,
+      if (severity != null) 'severity:$severity',
+      if (project != null) 'project:$project',
+      ...?tags,
+    ];
+
+    return _client.listAllIssues(
+      repoSlug: targetRepo,
+      state: includeAll ? 'all' : 'open',
+      labels: labels.isEmpty ? null : labels,
+    );
+  }
+
+  /// Import issues from parsed data.
+  ///
+  /// Creates issues in bulk from a list of maps with title, body, labels.
+  Future<List<GitHubIssue>> importIssues({
+    required List<Map<String, dynamic>> entries,
+    String repo = 'issues',
+    bool dryRun = false,
+  }) async {
+    if (dryRun) return [];
+    final targetRepo = repo == 'tests' ? _testsRepo : _issuesRepo;
+    final created = <GitHubIssue>[];
+
+    for (final entry in entries) {
+      final issue = await _client.createIssue(
+        repoSlug: targetRepo,
+        title: entry['title'] as String,
+        body: entry['body'] as String?,
+        labels: (entry['labels'] as List<dynamic>?)?.cast<String>(),
+      );
+      created.add(issue);
+    }
+
+    return created;
+  }
+
+  /// Create a snapshot of all issues and/or tests.
+  ///
+  /// Returns maps suitable for JSON serialization.
+  Future<SnapshotResult> createSnapshot({
+    bool issuesOnly = false,
+    bool testsOnly = false,
+  }) async {
+    List<GitHubIssue>? issues;
+    List<GitHubIssue>? tests;
+
+    if (!testsOnly) {
+      issues = await _client.listAllIssues(
+        repoSlug: _issuesRepo,
+        state: 'all',
+      );
+    }
+
+    if (!issuesOnly) {
+      tests = await _client.listAllIssues(
+        repoSlug: _testsRepo,
+        state: 'all',
+      );
+    }
+
+    return SnapshotResult(
+      issues: issues,
+      tests: tests,
+      snapshotDate: DateTime.now(),
+    );
+  }
+
+  /// Trigger the nightly test workflow via GitHub Actions.
+  Future<void> triggerTestWorkflow({bool wait = false}) async {
+    await _client.dispatchWorkflow(
+      repoSlug: _testsRepo,
+      workflowId: 'nightly_tests.yml',
+      ref: 'main',
+    );
   }
 
   /// Release client resources.
@@ -305,9 +754,15 @@ class IssueService {
     required int issueNumber,
     required String title,
     required String project,
+    String? module,
   }) {
     // Test entry ID format: PROJECT-ISSUE (e.g., D4-42)
     final testId = '$project-$issueNumber';
+    final labels = <String>[
+      'stub',
+      'project:$project',
+      if (module != null) 'module:$module',
+    ];
     
     return _client.createIssue(
       repoSlug: _testsRepo,
@@ -317,13 +772,13 @@ class IssueService {
 
 - **Issue**: #$issueNumber
 - **Project**: $project
-- **Status**: Stub (no dart test yet)
+${module != null ? '- **Module**: $module\n' : ''}- **Status**: Stub (no dart test yet)
 
 ## Linked Tests
 
 _No dart tests linked yet. Create a test with ID `$testId-XXX-N` to link it._
 ''',
-      labels: ['stub', 'project:$project'],
+      labels: labels,
     );
   }
 }
@@ -339,6 +794,28 @@ class CreateIssueResult {
   });
 }
 
+/// Result of analyzing an issue.
+class AnalyzeResult {
+  final GitHubIssue issue;
+  final GitHubIssue? testEntry;
+
+  const AnalyzeResult({
+    required this.issue,
+    this.testEntry,
+  });
+}
+
+/// Result of assigning an issue.
+class AssignResult {
+  final GitHubIssue issue;
+  final GitHubIssue testEntry;
+
+  const AssignResult({
+    required this.issue,
+    required this.testEntry,
+  });
+}
+
 /// Exception thrown by IssueService operations.
 class IssueServiceException implements Exception {
   final String message;
@@ -348,4 +825,49 @@ class IssueServiceException implements Exception {
 
   @override
   String toString() => 'IssueServiceException: $message';
+}
+
+/// Summary of issues aggregated by state, severity, and project.
+class IssueSummary {
+  final int totalCount;
+  final Map<String, int> byState;
+  final Map<String, int> bySeverity;
+  final Map<String, int> byProject;
+  final int missingTests;
+  final int awaitingVerify;
+
+  const IssueSummary({
+    required this.totalCount,
+    required this.byState,
+    required this.bySeverity,
+    required this.byProject,
+    required this.missingTests,
+    required this.awaitingVerify,
+  });
+}
+
+/// Result of initializing labels.
+class InitResult {
+  final int issuesLabelsCreated;
+  final int testsLabelsCreated;
+
+  const InitResult({
+    required this.issuesLabelsCreated,
+    required this.testsLabelsCreated,
+  });
+
+  int get totalCreated => issuesLabelsCreated + testsLabelsCreated;
+}
+
+/// Result of creating a snapshot.
+class SnapshotResult {
+  final List<GitHubIssue>? issues;
+  final List<GitHubIssue>? tests;
+  final DateTime snapshotDate;
+
+  const SnapshotResult({
+    this.issues,
+    this.tests,
+    required this.snapshotDate,
+  });
 }
