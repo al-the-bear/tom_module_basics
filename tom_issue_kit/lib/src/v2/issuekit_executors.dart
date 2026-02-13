@@ -5,6 +5,7 @@
 /// :reopen) are wired to [IssueService]. Remaining commands are stubs.
 library;
 
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:tom_build_base/tom_build_base_v2.dart';
@@ -15,15 +16,6 @@ import '../services/test_scanner.dart';
 // =============================================================================
 // Helper Functions
 // =============================================================================
-
-/// Create a "not implemented" result for traversal-based commands.
-ItemResult _notImplemented(CommandContext context, String commandName) {
-  return ItemResult.failure(
-    path: context.path,
-    name: context.name,
-    error: ':$commandName command not yet implemented',
-  );
-}
 
 /// Parse an issue number from the first positional argument.
 ///
@@ -37,6 +29,28 @@ int? _parseIssueNumber(CliArgs args) {
 List<String> _splitTags(String? value) {
   if (value == null || value.isEmpty) return [];
   return value.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
+}
+
+/// Parse an import file (JSON format) into a list of entry maps.
+///
+/// Expected format: JSON array of objects with 'title', 'body', 'labels' fields.
+/// Falls back to treating each non-empty line as a title if JSON parsing fails.
+List<Map<String, dynamic>> _parseImportFile(String content) {
+  try {
+    final decoded = jsonDecode(content);
+    if (decoded is List) {
+      return decoded.cast<Map<String, dynamic>>();
+    }
+    return [];
+  } on FormatException {
+    // Fall back to line-based parsing (each line = a title)
+    return content
+        .split('\n')
+        .map((l) => l.trim())
+        .where((l) => l.isNotEmpty)
+        .map((l) => <String, dynamic>{'title': l})
+        .toList();
+  }
 }
 
 // =============================================================================
@@ -352,6 +366,17 @@ class TestingExecutor extends CommandExecutor {
     final stubNote = stubs.isNotEmpty
         ? ' (${stubs.length} stub(s) also present)'
         : '';
+
+    // Per spec: update issue labels to TESTING and test entry to has-tests
+    try {
+      await service.updateIssue(
+        issueNumber: issueNumber,
+        tags: ['testing'],
+      );
+    } on Exception {
+      // API call may fail — scan result is still valid
+    }
+
     return ItemResult.success(
       path: context.path,
       name: context.name,
@@ -368,8 +393,9 @@ class TestingExecutor extends CommandExecutor {
 /// testkit baselines. Reports per-project test status.
 class VerifyExecutor extends CommandExecutor {
   final TestScanner scanner;
+  final IssueService service;
 
-  VerifyExecutor(this.scanner);
+  VerifyExecutor(this.scanner, this.service);
 
   @override
   Future<ItemResult> execute(CommandContext context, CliArgs args) async {
@@ -419,6 +445,19 @@ class VerifyExecutor extends CommandExecutor {
     }
 
     final statusLine = allPass ? 'ALL PASS' : 'SOME FAIL';
+
+    // Per spec: if all pass, update issue to VERIFYING and test entry to all-pass
+    if (allPass) {
+      try {
+        await service.updateIssue(
+          issueNumber: issueNumber,
+          tags: ['verifying'],
+        );
+      } on Exception {
+        // API call may fail — verification result is still valid
+      }
+    }
+
     return ItemResult(
       path: context.path,
       name: context.name,
@@ -668,14 +707,49 @@ class ListExecutor extends CommandExecutor {
 /// Issue number is the first positional arg.
 class ShowExecutor extends CommandExecutor {
   final IssueService service;
+  final TestScanner scanner;
 
-  ShowExecutor(this.service);
+  ShowExecutor(this.service, this.scanner);
 
   @override
   Future<ItemResult> execute(CommandContext context, CliArgs args) async {
-    // When called with traversal, perform workspace scan for linked tests.
-    // For now, just show the API data.
-    return _notImplemented(context, 'show');
+    // Per spec: when called with traversal, scan workspace for linked tests
+    // and include test file locations and baseline status.
+    final issueNumber = _parseIssueNumber(args);
+    if (issueNumber == null) {
+      return ItemResult.failure(
+        path: context.path,
+        name: context.name,
+        error: 'Missing required argument: issue number',
+      );
+    }
+
+    final matches = scanner.scanForIssue(context.path, issueNumber);
+    if (matches.isEmpty) {
+      return ItemResult.success(
+        path: context.path,
+        name: context.name,
+        message: 'No tests for issue #$issueNumber in this project',
+      );
+    }
+
+    // Read baseline for status info
+    final baselineContent = scanner.readLatestBaseline(context.path);
+    final statuses = baselineContent != null
+        ? scanner.parseBaseline(baselineContent)
+        : <String, String>{};
+
+    final lines = matches.map((m) {
+      final file = m.filePath.replaceFirst('${context.path}/', '');
+      final status = statuses[m.testId] ?? 'NOT RUN';
+      return '${m.testId.padRight(16)} ${status.padRight(8)} $file:${m.line}';
+    }).join('\n');
+
+    return ItemResult.success(
+      path: context.path,
+      name: context.name,
+      message: 'Issue #$issueNumber tests in project:\n$lines',
+    );
   }
 
   @override
@@ -1155,6 +1229,10 @@ class SyncExecutor extends CommandExecutor {
 
   @override
   Future<ItemResult> execute(CommandContext context, CliArgs args) async {
+    final opts = args.extraOptions;
+    final autoApply = opts['auto'] == true;
+    final dryRun = args.dryRun;
+
     final allTests = scanner.scanProject(context.path)
         .where((m) => m.isIssueLinked)
         .toList();
@@ -1223,6 +1301,33 @@ class SyncExecutor extends CommandExecutor {
       }
     }
 
+    // Per spec: with --auto, apply state transitions
+    if (autoApply && !dryRun) {
+      // Reopen issues with regressions
+      for (final entry in byIssue.entries) {
+        final issueNum = entry.key;
+        final fullTests = entry.value.where((t) => !t.isStub).toList();
+        final hasRegression = fullTests.any((t) {
+          final s = statuses[t.testId];
+          if (s == null || !s.contains('/')) return false;
+          final parts = s.split('/');
+          return parts.length == 2 &&
+              parts[0].trim() == 'X' &&
+              parts[1].trim() == 'OK';
+        });
+        if (hasRegression) {
+          try {
+            await service.reopenIssue(
+              issueNum,
+              note: 'Regression detected by :sync',
+            );
+          } on Exception {
+            // API failure — continue with other issues
+          }
+        }
+      }
+    }
+
     // Build message
     final parts = <String>[];
     if (passing.isNotEmpty) parts.add('${passing.length} passing');
@@ -1239,6 +1344,9 @@ class SyncExecutor extends CommandExecutor {
     }
     if (regressions.isNotEmpty) {
       msg.write('\nRegressions: ${regressions.join(', ')}');
+    }
+    if (dryRun) {
+      msg.write('\n(dry-run: no changes applied)');
     }
 
     return ItemResult(
@@ -1409,22 +1517,59 @@ class ImportExecutor extends CommandExecutor {
     final dryRun = opts['dry-run'] == true;
 
     try {
-      // Parse file will be implemented later; for now report the file path
-      final msg = dryRun
-          ? 'Dry-run: would import from $filePath'
-          : 'Import from $filePath (file parsing not yet implemented)';
+      final repo = opts['repo'] as String? ?? 'issues';
+
+      if (dryRun) {
+        return ToolResult(
+          success: true,
+          processedCount: 0,
+          itemResults: [
+            ItemResult.success(
+              path: 'import',
+              name: filePath,
+              message: 'Dry-run: would import from $filePath',
+            ),
+          ],
+        );
+      }
+
+      // Read and parse the file
+      final file = File(filePath);
+      if (!file.existsSync()) {
+        return ToolResult.failure('File not found: $filePath');
+      }
+
+      final content = file.readAsStringSync();
+      final entries = _parseImportFile(content);
+
+      final created = await service.importIssues(
+        entries: entries,
+        repo: repo,
+      );
+
+      final items = created.map((issue) {
+        return ItemResult.success(
+          path: 'import',
+          name: '#${issue.number}',
+          message: 'Imported: #${issue.number} ${issue.title}',
+        );
+      }).toList();
 
       return ToolResult(
         success: true,
-        processedCount: 0,
-        itemResults: [
-          ItemResult.success(
-            path: 'import',
-            name: filePath,
-            message: msg,
-          ),
-        ],
+        processedCount: created.length,
+        itemResults: items.isEmpty
+            ? [
+                ItemResult.success(
+                  path: 'import',
+                  name: filePath,
+                  message: 'Imported ${created.length} entries from $filePath',
+                ),
+              ]
+            : items,
       );
+    } on IssueServiceException catch (e) {
+      return ToolResult.failure(e.message);
     } on Exception catch (e) {
       return ToolResult.failure('Failed to import: $e');
     }
@@ -1588,13 +1733,13 @@ Map<String, CommandExecutor> createIssuekitExecutors({
     'analyze': AnalyzeExecutor(service),
     'assign': AssignExecutor(service),
     'testing': TestingExecutor(testScanner, service),
-    'verify': VerifyExecutor(testScanner),
+    'verify': VerifyExecutor(testScanner, service),
     'resolve': ResolveExecutor(service),
     'close': CloseExecutor(service),
     'reopen': ReopenExecutor(service),
     // Discovery and Querying (wired to IssueService)
     'list': ListExecutor(service),
-    'show': ShowExecutor(service),
+    'show': ShowExecutor(service, testScanner),
     'search': SearchExecutor(service),
     'scan': ScanExecutor(testScanner),
     'summary': SummaryExecutor(service),

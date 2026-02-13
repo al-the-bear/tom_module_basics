@@ -195,6 +195,10 @@ void main() {
 
       when(() => mockScanner.scanForIssue(any(), any()))
           .thenReturn(matches);
+      when(() => mockService.updateIssue(
+            issueNumber: any(named: 'issueNumber'),
+            tags: any(named: 'tags'),
+          )).thenAnswer((_) async => createTestIssue());
 
       final result = await executor.execute(
         context,
@@ -281,6 +285,10 @@ void main() {
 
       when(() => mockScanner.scanForIssue(any(), any()))
           .thenReturn(matches);
+      when(() => mockService.updateIssue(
+            issueNumber: any(named: 'issueNumber'),
+            tags: any(named: 'tags'),
+          )).thenAnswer((_) async => createTestIssue());
 
       final result = await executor.execute(
         context,
@@ -314,6 +322,10 @@ void main() {
 
       when(() => mockScanner.scanForIssue(any(), any()))
           .thenReturn(matches);
+      when(() => mockService.updateIssue(
+            issueNumber: any(named: 'issueNumber'),
+            tags: any(named: 'tags'),
+          )).thenAnswer((_) async => createTestIssue());
 
       final result = await executor.execute(
         context,
@@ -338,7 +350,7 @@ void main() {
     late VerifyExecutor executor;
 
     setUp(() {
-      executor = VerifyExecutor(mockScanner);
+      executor = VerifyExecutor(mockScanner, mockService);
     });
 
     test('IK-EXE-VRF-1: verifies all tests pass', () async {
@@ -357,6 +369,10 @@ void main() {
           .thenReturn('ID,Groups,Description,Run1\nD4-42-PAR-7,,test,OK\nD4-42-PAR-8,,test,OK');
       when(() => mockScanner.parseBaseline(any()))
           .thenReturn({'D4-42-PAR-7': 'OK', 'D4-42-PAR-8': 'OK'});
+      when(() => mockService.updateIssue(
+            issueNumber: any(named: 'issueNumber'),
+            tags: any(named: 'tags'),
+          )).thenAnswer((_) async => createTestIssue());
 
       final result = await executor.execute(
         context,
@@ -1269,6 +1285,544 @@ void main() {
       expect(result.message, contains('D4,D4-42-PAR-7'));
       expect(result.message, contains('D4,D4-42-PAR-8'));
       expect(result.message, contains('D4,D4-99-LEX-3'));
+    });
+  });
+
+  // ===========================================================================
+  // IK-EXE-SHW-TRV: ShowExecutor (traversal path)
+  // ===========================================================================
+
+  group('IK-EXE-SHW-TRV: ShowExecutor traversal [2026-02-15]', () {
+    late ShowExecutor executor;
+
+    setUp(() {
+      executor = ShowExecutor(mockService, mockScanner);
+    });
+
+    test('IK-EXE-SHW-5: scans project for linked tests with file paths',
+        () async {
+      final matches = [
+        createTestIdMatch(
+          testId: 'D4-42-PAR-7',
+          issueNumber: 42,
+          filePath: '/projects/d4rt/test/parser_test.dart',
+          line: 15,
+        ),
+        createTestIdMatch(
+          testId: 'D4-42-LEX-3',
+          issueNumber: 42,
+          projectSpecific: 'LEX-3',
+          filePath: '/projects/d4rt/test/lexer_test.dart',
+          line: 42,
+        ),
+      ];
+
+      when(() => mockScanner.scanForIssue(any(), any()))
+          .thenReturn(matches);
+      when(() => mockScanner.readLatestBaseline(any()))
+          .thenReturn(null);
+
+      final result = await executor.execute(
+        context,
+        const CliArgs(positionalArgs: ['42']),
+      );
+
+      expect(result.success, isTrue);
+      expect(result.message, contains('Issue #42 tests in project'));
+      expect(result.message, contains('D4-42-PAR-7'));
+      expect(result.message, contains('D4-42-LEX-3'));
+      expect(result.message, contains('test/parser_test.dart:15'));
+      expect(result.message, contains('test/lexer_test.dart:42'));
+      verify(() => mockScanner.scanForIssue('/projects/d4rt', 42)).called(1);
+    });
+
+    test('IK-EXE-SHW-6: no tests found in project', () async {
+      when(() => mockScanner.scanForIssue(any(), any())).thenReturn([]);
+
+      final result = await executor.execute(
+        context,
+        const CliArgs(positionalArgs: ['42']),
+      );
+
+      expect(result.success, isTrue);
+      expect(result.message, contains('No tests for issue #42'));
+    });
+
+    test('IK-EXE-SHW-7: shows baseline status per test', () async {
+      final matches = [
+        createTestIdMatch(
+          testId: 'D4-42-PAR-7',
+          issueNumber: 42,
+          filePath: '/projects/d4rt/test/parser_test.dart',
+          line: 15,
+        ),
+        createTestIdMatch(
+          testId: 'D4-42-PAR-8',
+          issueNumber: 42,
+          projectSpecific: 'PAR-8',
+          filePath: '/projects/d4rt/test/parser_test.dart',
+          line: 30,
+        ),
+      ];
+
+      when(() => mockScanner.scanForIssue(any(), any()))
+          .thenReturn(matches);
+      when(() => mockScanner.readLatestBaseline(any()))
+          .thenReturn('content');
+      when(() => mockScanner.parseBaseline(any()))
+          .thenReturn({'D4-42-PAR-7': 'OK', 'D4-42-PAR-8': 'X'});
+
+      final result = await executor.execute(
+        context,
+        const CliArgs(positionalArgs: ['42']),
+      );
+
+      expect(result.success, isTrue);
+      expect(result.message, contains('OK'));
+      expect(result.message, contains('X'));
+    });
+
+    test('IK-EXE-SHW-8: missing baseline shows NOT RUN', () async {
+      final matches = [
+        createTestIdMatch(
+          testId: 'D4-42-PAR-7',
+          issueNumber: 42,
+          filePath: '/projects/d4rt/test/parser_test.dart',
+          line: 15,
+        ),
+      ];
+
+      when(() => mockScanner.scanForIssue(any(), any()))
+          .thenReturn(matches);
+      when(() => mockScanner.readLatestBaseline(any()))
+          .thenReturn(null);
+
+      final result = await executor.execute(
+        context,
+        const CliArgs(positionalArgs: ['42']),
+      );
+
+      expect(result.success, isTrue);
+      expect(result.message, contains('NOT RUN'));
+    });
+
+    test('IK-EXE-SHW-9: traversal fails without issue number', () async {
+      final result = await executor.execute(
+        context,
+        const CliArgs(),
+      );
+
+      expect(result.success, isFalse);
+      expect(result.error, contains('Missing required argument'));
+    });
+  });
+
+  // ===========================================================================
+  // IK-EXE-TST: TestingExecutor (additional spec-driven tests)
+  // ===========================================================================
+
+  group('IK-EXE-TST: TestingExecutor service interactions [2026-02-15]', () {
+    late TestingExecutor executor;
+
+    setUp(() {
+      executor = TestingExecutor(mockScanner, mockService);
+    });
+
+    test('IK-EXE-TST-7: non-numeric issue number fails', () async {
+      final result = await executor.execute(
+        context,
+        const CliArgs(positionalArgs: ['abc']),
+      );
+
+      expect(result.success, isFalse);
+      expect(result.error, contains('Missing required argument'));
+    });
+
+    test('IK-EXE-TST-8: service.updateIssue failure handled gracefully',
+        () async {
+      final matches = [
+        createTestIdMatch(testId: 'D4-42-PAR-7', issueNumber: 42),
+      ];
+
+      when(() => mockScanner.scanForIssue(any(), any()))
+          .thenReturn(matches);
+      when(() => mockService.updateIssue(
+            issueNumber: any(named: 'issueNumber'),
+            tags: any(named: 'tags'),
+          )).thenThrow(Exception('API unavailable'));
+
+      final result = await executor.execute(
+        context,
+        const CliArgs(positionalArgs: ['42']),
+      );
+
+      // Per spec: scan result is still valid even if API call fails
+      expect(result.success, isTrue);
+      expect(result.message, contains('Found 1 full test(s) for #42'));
+    });
+
+    test('IK-EXE-TST-9: verifies service.updateIssue called with testing tag',
+        () async {
+      final matches = [
+        createTestIdMatch(testId: 'D4-42-PAR-7', issueNumber: 42),
+      ];
+
+      when(() => mockScanner.scanForIssue(any(), any()))
+          .thenReturn(matches);
+      when(() => mockService.updateIssue(
+            issueNumber: any(named: 'issueNumber'),
+            tags: any(named: 'tags'),
+          )).thenAnswer((_) async => createTestIssue());
+
+      await executor.execute(
+        context,
+        const CliArgs(positionalArgs: ['42']),
+      );
+
+      verify(() => mockService.updateIssue(
+            issueNumber: 42,
+            tags: ['testing'],
+          )).called(1);
+    });
+  });
+
+  // ===========================================================================
+  // IK-EXE-VRF: VerifyExecutor (additional spec-driven tests)
+  // ===========================================================================
+
+  group('IK-EXE-VRF: VerifyExecutor service interactions [2026-02-15]', () {
+    late VerifyExecutor executor;
+
+    setUp(() {
+      executor = VerifyExecutor(mockScanner, mockService);
+    });
+
+    test('IK-EXE-VRF-8: non-numeric issue number fails', () async {
+      final result = await executor.execute(
+        context,
+        const CliArgs(positionalArgs: ['abc']),
+      );
+
+      expect(result.success, isFalse);
+      expect(result.error, contains('Missing required argument'));
+    });
+
+    test('IK-EXE-VRF-9: service.updateIssue called with verifying on all-pass',
+        () async {
+      final matches = [
+        createTestIdMatch(testId: 'D4-42-PAR-7', issueNumber: 42),
+      ];
+
+      when(() => mockScanner.scanForIssue(any(), any()))
+          .thenReturn(matches);
+      when(() => mockScanner.readLatestBaseline(any()))
+          .thenReturn('content');
+      when(() => mockScanner.parseBaseline(any()))
+          .thenReturn({'D4-42-PAR-7': 'OK'});
+      when(() => mockService.updateIssue(
+            issueNumber: any(named: 'issueNumber'),
+            tags: any(named: 'tags'),
+          )).thenAnswer((_) async => createTestIssue());
+
+      await executor.execute(
+        context,
+        const CliArgs(positionalArgs: ['42']),
+      );
+
+      verify(() => mockService.updateIssue(
+            issueNumber: 42,
+            tags: ['verifying'],
+          )).called(1);
+    });
+
+    test('IK-EXE-VRF-10: service.updateIssue NOT called when some fail',
+        () async {
+      final matches = [
+        createTestIdMatch(testId: 'D4-42-PAR-7', issueNumber: 42),
+        createTestIdMatch(
+          testId: 'D4-42-PAR-8',
+          issueNumber: 42,
+          projectSpecific: 'PAR-8',
+        ),
+      ];
+
+      when(() => mockScanner.scanForIssue(any(), any()))
+          .thenReturn(matches);
+      when(() => mockScanner.readLatestBaseline(any()))
+          .thenReturn('content');
+      when(() => mockScanner.parseBaseline(any()))
+          .thenReturn({'D4-42-PAR-7': 'OK', 'D4-42-PAR-8': 'X'});
+
+      await executor.execute(
+        context,
+        const CliArgs(positionalArgs: ['42']),
+      );
+
+      verifyNever(() => mockService.updateIssue(
+            issueNumber: any(named: 'issueNumber'),
+            tags: any(named: 'tags'),
+          ));
+    });
+
+    test('IK-EXE-VRF-11: service.updateIssue failure does not break result',
+        () async {
+      final matches = [
+        createTestIdMatch(testId: 'D4-42-PAR-7', issueNumber: 42),
+      ];
+
+      when(() => mockScanner.scanForIssue(any(), any()))
+          .thenReturn(matches);
+      when(() => mockScanner.readLatestBaseline(any()))
+          .thenReturn('content');
+      when(() => mockScanner.parseBaseline(any()))
+          .thenReturn({'D4-42-PAR-7': 'OK'});
+      when(() => mockService.updateIssue(
+            issueNumber: any(named: 'issueNumber'),
+            tags: any(named: 'tags'),
+          )).thenThrow(Exception('API unavailable'));
+
+      final result = await executor.execute(
+        context,
+        const CliArgs(positionalArgs: ['42']),
+      );
+
+      // Per spec: verification result is still valid even if API call fails
+      expect(result.success, isTrue);
+      expect(result.message, contains('ALL PASS'));
+    });
+  });
+
+  // ===========================================================================
+  // IK-EXE-SYN: SyncExecutor (additional spec-driven tests)
+  // ===========================================================================
+
+  group('IK-EXE-SYN: SyncExecutor --auto/--dry-run [2026-02-15]', () {
+    late SyncExecutor executor;
+
+    setUp(() {
+      executor = SyncExecutor(mockScanner, mockService);
+    });
+
+    test('IK-EXE-SYN-9: --auto reopens on regression', () async {
+      final tests = [
+        createTestIdMatch(
+          testId: 'D4-42-PAR-7',
+          issueNumber: 42,
+          filePath: '/projects/d4rt/test/parser_test.dart',
+          line: 15,
+        ),
+      ];
+
+      when(() => mockScanner.scanProject(any())).thenReturn(tests);
+      when(() => mockScanner.readLatestBaseline(any()))
+          .thenReturn('content');
+      when(() => mockScanner.parseBaseline(any()))
+          .thenReturn({'D4-42-PAR-7': 'X/OK'});
+      when(() => mockService.reopenIssue(any(), note: any(named: 'note')))
+          .thenAnswer((_) async => createTestIssue());
+
+      await executor.execute(
+        context,
+        const CliArgs(extraOptions: {'auto': true}),
+      );
+
+      verify(() => mockService.reopenIssue(
+            42,
+            note: 'Regression detected by :sync',
+          )).called(1);
+    });
+
+    test('IK-EXE-SYN-10: --auto with --dry-run does not reopen', () async {
+      final tests = [
+        createTestIdMatch(
+          testId: 'D4-42-PAR-7',
+          issueNumber: 42,
+          filePath: '/projects/d4rt/test/parser_test.dart',
+          line: 15,
+        ),
+      ];
+
+      when(() => mockScanner.scanProject(any())).thenReturn(tests);
+      when(() => mockScanner.readLatestBaseline(any()))
+          .thenReturn('content');
+      when(() => mockScanner.parseBaseline(any()))
+          .thenReturn({'D4-42-PAR-7': 'X/OK'});
+
+      final result = await executor.execute(
+        context,
+        const CliArgs(
+          extraOptions: {'auto': true},
+          dryRun: true,
+        ),
+      );
+
+      verifyNever(
+          () => mockService.reopenIssue(any(), note: any(named: 'note')));
+      expect(result.message, contains('dry-run'));
+    });
+
+    test('IK-EXE-SYN-11: --auto with service failure continues gracefully',
+        () async {
+      final tests = [
+        createTestIdMatch(
+          testId: 'D4-42-PAR-7',
+          issueNumber: 42,
+          filePath: '/projects/d4rt/test/parser_test.dart',
+          line: 15,
+        ),
+        createTestIdMatch(
+          testId: 'D4-99-LEX-3',
+          issueNumber: 99,
+          projectSpecific: 'LEX-3',
+          filePath: '/projects/d4rt/test/lexer_test.dart',
+          line: 42,
+        ),
+      ];
+
+      when(() => mockScanner.scanProject(any())).thenReturn(tests);
+      when(() => mockScanner.readLatestBaseline(any()))
+          .thenReturn('content');
+      when(() => mockScanner.parseBaseline(any()))
+          .thenReturn({
+        'D4-42-PAR-7': 'X/OK',
+        'D4-99-LEX-3': 'X/OK',
+      });
+      // First call fails, second succeeds
+      var callCount = 0;
+      when(() => mockService.reopenIssue(any(), note: any(named: 'note')))
+          .thenAnswer((_) async {
+        callCount++;
+        if (callCount == 1) throw Exception('API error');
+        return createTestIssue();
+      });
+
+      final result = await executor.execute(
+        context,
+        const CliArgs(extraOptions: {'auto': true}),
+      );
+
+      // Should continue despite first failure
+      expect(result.message, contains('Regressions'));
+    });
+
+    test('IK-EXE-SYN-12: dry-run appends message note', () async {
+      final tests = [
+        createTestIdMatch(
+          testId: 'D4-42-PAR-7',
+          issueNumber: 42,
+          filePath: '/projects/d4rt/test/parser_test.dart',
+          line: 15,
+        ),
+      ];
+
+      when(() => mockScanner.scanProject(any())).thenReturn(tests);
+      when(() => mockScanner.readLatestBaseline(any()))
+          .thenReturn('content');
+      when(() => mockScanner.parseBaseline(any()))
+          .thenReturn({'D4-42-PAR-7': 'OK'});
+
+      final result = await executor.execute(
+        context,
+        const CliArgs(dryRun: true),
+      );
+
+      expect(result.message, contains('(dry-run: no changes applied)'));
+    });
+
+    test('IK-EXE-SYN-13: --auto with all passing does not reopen', () async {
+      final tests = [
+        createTestIdMatch(
+          testId: 'D4-42-PAR-7',
+          issueNumber: 42,
+          filePath: '/projects/d4rt/test/parser_test.dart',
+          line: 15,
+        ),
+      ];
+
+      when(() => mockScanner.scanProject(any())).thenReturn(tests);
+      when(() => mockScanner.readLatestBaseline(any()))
+          .thenReturn('content');
+      when(() => mockScanner.parseBaseline(any()))
+          .thenReturn({'D4-42-PAR-7': 'OK'});
+
+      await executor.execute(
+        context,
+        const CliArgs(extraOptions: {'auto': true}),
+      );
+
+      verifyNever(
+          () => mockService.reopenIssue(any(), note: any(named: 'note')));
+    });
+  });
+
+  // ===========================================================================
+  // IK-EXE-SCN: ScanExecutor (additional spec-driven tests)
+  // ===========================================================================
+
+  group('IK-EXE-SCN: ScanExecutor additional [2026-02-15]', () {
+    late ScanExecutor executor;
+
+    setUp(() {
+      executor = ScanExecutor(mockScanner);
+    });
+
+    test('IK-EXE-SCN-5: non-numeric issue number falls through to full scan',
+        () async {
+      when(() => mockScanner.scanProject(any())).thenReturn([]);
+
+      final result = await executor.execute(
+        context,
+        const CliArgs(positionalArgs: ['abc']),
+      );
+
+      // 'abc' is not a valid issue number; scanProject (full scan) should be called
+      expect(result.success, isTrue);
+      verify(() => mockScanner.scanProject('/projects/d4rt')).called(1);
+      verifyNever(() => mockScanner.scanForIssue(any(), any()));
+    });
+
+    test('IK-EXE-SCN-6: output contains relative file paths', () async {
+      final matches = [
+        createTestIdMatch(
+          testId: 'D4-42-PAR-7',
+          issueNumber: 42,
+          filePath: '/projects/d4rt/test/parser_test.dart',
+          line: 15,
+        ),
+      ];
+
+      when(() => mockScanner.scanProject(any())).thenReturn(matches);
+
+      final result = await executor.execute(
+        context,
+        const CliArgs(),
+      );
+
+      expect(result.success, isTrue);
+      // File path should be relative (stripped of context.path prefix)
+      expect(result.message, contains('test/parser_test.dart'));
+      expect(result.message, contains(':15'));
+    });
+
+    test('IK-EXE-SCN-7: output contains line numbers', () async {
+      final matches = [
+        createTestIdMatch(
+          testId: 'D4-42-PAR-7',
+          issueNumber: 42,
+          filePath: '/projects/d4rt/test/parser_test.dart',
+          line: 42,
+        ),
+      ];
+
+      when(() => mockScanner.scanProject(any())).thenReturn(matches);
+
+      final result = await executor.execute(
+        context,
+        const CliArgs(),
+      );
+
+      expect(result.success, isTrue);
+      expect(result.message, contains(':42'));
     });
   });
 

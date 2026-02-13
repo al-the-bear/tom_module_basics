@@ -5,6 +5,8 @@
 @TestOn('vm')
 library;
 
+import 'dart:io';
+
 import 'package:mocktail/mocktail.dart';
 import 'package:test/test.dart';
 import 'package:tom_build_base/tom_build_base_v2.dart' hide ListExecutor, SyncExecutor;
@@ -262,9 +264,11 @@ void main() {
 
   group('IK-EXE-SHW: ShowExecutor [2026-02-13]', () {
     late ShowExecutor executor;
+    late MockTestScanner mockScanner;
 
     setUp(() {
-      executor = ShowExecutor(mockService);
+      mockScanner = MockTestScanner();
+      executor = ShowExecutor(mockService, mockScanner);
     });
 
     test('IK-EXE-SHW-1: shows issue details', () async {
@@ -1286,15 +1290,16 @@ void main() {
       executor = ImportExecutor(mockService);
     });
 
-    test('IK-EXE-IMP-1: reports file path in result', () async {
+    test('IK-EXE-IMP-1: fails when file not found', () async {
       final result = await executor.executeWithoutTraversal(
         const CliArgs(
           positionalArgs: ['issues.yaml'],
         ),
       );
 
-      expect(result.success, isTrue);
-      expect(result.itemResults.first.message, contains('issues.yaml'));
+      expect(result.success, isFalse);
+      expect(result.errorMessage, contains('File not found'));
+      expect(result.errorMessage, contains('issues.yaml'));
     });
 
     test('IK-EXE-IMP-2: fails without file path', () async {
@@ -1504,6 +1509,810 @@ void main() {
 
       expect(result.success, isFalse);
       expect(result.errorMessage, contains('workflow'));
+    });
+  });
+
+  // ===========================================================================
+  // IK-EXE-NEW: NewIssueExecutor (generic exception path)
+  // ===========================================================================
+
+  group('IK-EXE-NEW: NewIssueExecutor additional [2026-02-15]', () {
+    late NewIssueExecutor executor;
+
+    setUp(() {
+      executor = NewIssueExecutor(mockService);
+    });
+
+    test('IK-EXE-NEW-7: generic Exception wraps in error message', () async {
+      when(() => mockService.createIssue(
+            title: any(named: 'title'),
+            severity: any(named: 'severity'),
+            context: any(named: 'context'),
+            expected: any(named: 'expected'),
+            symptom: any(named: 'symptom'),
+            tags: any(named: 'tags'),
+            project: any(named: 'project'),
+            reporter: any(named: 'reporter'),
+          )).thenThrow(Exception('Connection refused'));
+
+      final result = await executor.executeWithoutTraversal(
+        const CliArgs(positionalArgs: ['Test title']),
+      );
+
+      expect(result.success, isFalse);
+      expect(result.errorMessage, contains('Failed to create issue'));
+    });
+
+    test('IK-EXE-NEW-8: result without test entry excludes Test entry text',
+        () async {
+      when(() => mockService.createIssue(
+            title: any(named: 'title'),
+            severity: any(named: 'severity'),
+            context: any(named: 'context'),
+            expected: any(named: 'expected'),
+            symptom: any(named: 'symptom'),
+            tags: any(named: 'tags'),
+            project: any(named: 'project'),
+            reporter: any(named: 'reporter'),
+          )).thenAnswer((_) async => CreateIssueResult(
+            issue: createTestIssue(number: 50, title: 'Simple bug'),
+          ));
+
+      final result = await executor.executeWithoutTraversal(
+        const CliArgs(positionalArgs: ['Simple bug']),
+      );
+
+      expect(result.success, isTrue);
+      expect(result.itemResults.first.message, isNot(contains('Test entry')));
+    });
+  });
+
+  // ===========================================================================
+  // IK-EXE-EDT: EditIssueExecutor (exception paths + edge cases)
+  // ===========================================================================
+
+  group('IK-EXE-EDT: EditIssueExecutor additional [2026-02-15]', () {
+    late EditIssueExecutor executor;
+
+    setUp(() {
+      executor = EditIssueExecutor(mockService);
+    });
+
+    test('IK-EXE-EDT-6: handles IssueServiceException', () async {
+      when(() => mockService.updateIssue(
+            issueNumber: any(named: 'issueNumber'),
+            title: any(named: 'title'),
+            severity: any(named: 'severity'),
+            context: any(named: 'context'),
+            expected: any(named: 'expected'),
+            symptom: any(named: 'symptom'),
+            tags: any(named: 'tags'),
+            project: any(named: 'project'),
+            assignee: any(named: 'assignee'),
+          )).thenThrow(IssueServiceException('Issue #999 not found'));
+
+      final result = await executor.executeWithoutTraversal(
+        const CliArgs(
+          positionalArgs: ['999'],
+          extraOptions: {'title': 'New title'},
+        ),
+      );
+
+      expect(result.success, isFalse);
+      expect(result.errorMessage, contains('Issue #999 not found'));
+    });
+
+    test('IK-EXE-EDT-7: handles generic Exception', () async {
+      when(() => mockService.updateIssue(
+            issueNumber: any(named: 'issueNumber'),
+            title: any(named: 'title'),
+            severity: any(named: 'severity'),
+            context: any(named: 'context'),
+            expected: any(named: 'expected'),
+            symptom: any(named: 'symptom'),
+            tags: any(named: 'tags'),
+            project: any(named: 'project'),
+            assignee: any(named: 'assignee'),
+          )).thenThrow(Exception('Network timeout'));
+
+      final result = await executor.executeWithoutTraversal(
+        const CliArgs(
+          positionalArgs: ['42'],
+          extraOptions: {'title': 'Updated'},
+        ),
+      );
+
+      expect(result.success, isFalse);
+      expect(result.errorMessage, contains('Failed to update issue'));
+    });
+
+    test('IK-EXE-EDT-8: edit with no field options still calls service',
+        () async {
+      when(() => mockService.updateIssue(
+            issueNumber: any(named: 'issueNumber'),
+            title: any(named: 'title'),
+            severity: any(named: 'severity'),
+            context: any(named: 'context'),
+            expected: any(named: 'expected'),
+            symptom: any(named: 'symptom'),
+            tags: any(named: 'tags'),
+            project: any(named: 'project'),
+            assignee: any(named: 'assignee'),
+          )).thenAnswer((_) async => createTestIssue(number: 42));
+
+      final result = await executor.executeWithoutTraversal(
+        const CliArgs(positionalArgs: ['42']),
+      );
+
+      expect(result.success, isTrue);
+      verify(() => mockService.updateIssue(
+            issueNumber: 42,
+            title: null,
+            severity: null,
+            context: null,
+            expected: null,
+            symptom: null,
+            tags: null,
+            project: null,
+            assignee: null,
+          )).called(1);
+    });
+  });
+
+  // ===========================================================================
+  // IK-EXE-SHW: ShowExecutor (output format)
+  // ===========================================================================
+
+  group('IK-EXE-SHW: ShowExecutor additional [2026-02-15]', () {
+    late ShowExecutor executor;
+    late MockTestScanner mockScanner;
+
+    setUp(() {
+      mockScanner = MockTestScanner();
+      executor = ShowExecutor(mockService, mockScanner);
+    });
+
+    test('IK-EXE-SHW-10: IssueServiceException uses direct message', () async {
+      when(() => mockService.getIssue(any()))
+          .thenThrow(IssueServiceException('Issue #42 not found'));
+
+      final result = await executor.executeWithoutTraversal(
+        const CliArgs(positionalArgs: ['42']),
+      );
+
+      expect(result.success, isFalse);
+      expect(result.errorMessage, contains('Issue #42 not found'));
+    });
+
+    test('IK-EXE-SHW-11: output contains State/Created/Updated fields',
+        () async {
+      when(() => mockService.getIssue(any()))
+          .thenAnswer((_) async => createTestIssue(
+                number: 42,
+                title: 'Bug',
+                state: 'open',
+              ));
+
+      final result = await executor.executeWithoutTraversal(
+        const CliArgs(positionalArgs: ['42']),
+      );
+
+      expect(result.success, isTrue);
+      final msg = result.itemResults.first.message!;
+      expect(msg, contains('State:'));
+      expect(msg, contains('Created:'));
+      expect(msg, contains('Updated:'));
+    });
+  });
+
+  // ===========================================================================
+  // IK-EXE-SRC: SearchExecutor (exception paths)
+  // ===========================================================================
+
+  group('IK-EXE-SRC: SearchExecutor additional [2026-02-15]', () {
+    late SearchExecutor executor;
+
+    setUp(() {
+      executor = SearchExecutor(mockService);
+    });
+
+    test('IK-EXE-SRC-5: handles IssueServiceException', () async {
+      when(() => mockService.searchIssues(
+            query: any(named: 'query'),
+            repo: any(named: 'repo'),
+          )).thenThrow(IssueServiceException('Search API unavailable'));
+
+      final result = await executor.executeWithoutTraversal(
+        const CliArgs(positionalArgs: ['query']),
+      );
+
+      expect(result.success, isFalse);
+      expect(result.errorMessage, contains('Search API unavailable'));
+    });
+  });
+
+  // ===========================================================================
+  // IK-EXE-CLS: CloseExecutor (non-numeric)
+  // ===========================================================================
+
+  group('IK-EXE-CLS: CloseExecutor additional [2026-02-15]', () {
+    late CloseExecutor executor;
+
+    setUp(() {
+      executor = CloseExecutor(mockService);
+    });
+
+    test('IK-EXE-CLS-5: non-numeric issue number fails', () async {
+      final result = await executor.executeWithoutTraversal(
+        const CliArgs(positionalArgs: ['abc']),
+      );
+
+      expect(result.success, isFalse);
+      expect(result.errorMessage, contains('issue number'));
+    });
+  });
+
+  // ===========================================================================
+  // IK-EXE-ROP: ReopenExecutor (non-numeric)
+  // ===========================================================================
+
+  group('IK-EXE-ROP: ReopenExecutor additional [2026-02-15]', () {
+    late ReopenExecutor executor;
+
+    setUp(() {
+      executor = ReopenExecutor(mockService);
+    });
+
+    test('IK-EXE-ROP-6: non-numeric issue number fails', () async {
+      final result = await executor.executeWithoutTraversal(
+        const CliArgs(positionalArgs: ['abc']),
+      );
+
+      expect(result.success, isFalse);
+      expect(result.errorMessage, contains('issue number'));
+    });
+  });
+
+  // ===========================================================================
+  // IK-EXE-ANZ: AnalyzeExecutor (non-numeric)
+  // ===========================================================================
+
+  group('IK-EXE-ANZ: AnalyzeExecutor additional [2026-02-15]', () {
+    late AnalyzeExecutor executor;
+
+    setUp(() {
+      executor = AnalyzeExecutor(mockService);
+    });
+
+    test('IK-EXE-ANZ-7: non-numeric issue number fails', () async {
+      final result = await executor.executeWithoutTraversal(
+        const CliArgs(positionalArgs: ['xyz']),
+      );
+
+      expect(result.success, isFalse);
+      expect(result.errorMessage, contains('issue number'));
+    });
+  });
+
+  // ===========================================================================
+  // IK-EXE-SUM: SummaryExecutor (edge cases)
+  // ===========================================================================
+
+  group('IK-EXE-SUM: SummaryExecutor additional [2026-02-15]', () {
+    late SummaryExecutor executor;
+
+    setUp(() {
+      executor = SummaryExecutor(mockService);
+    });
+
+    test('IK-EXE-SUM-3: empty summary handles zero counts', () async {
+      when(() => mockService.getSummary())
+          .thenAnswer((_) async => IssueSummary(
+                totalCount: 0,
+                byState: {},
+                bySeverity: {},
+                byProject: {},
+                missingTests: 0,
+                awaitingVerify: 0,
+              ));
+
+      final result = await executor.executeWithoutTraversal(
+        const CliArgs(),
+      );
+
+      expect(result.success, isTrue);
+      expect(result.processedCount, 0);
+      expect(result.itemResults.first.message, contains('Total: 0'));
+    });
+
+    test('IK-EXE-SUM-4: no attention items omits attention section',
+        () async {
+      when(() => mockService.getSummary())
+          .thenAnswer((_) async => IssueSummary(
+                totalCount: 3,
+                byState: {'testing': 2, 'verifying': 1},
+                bySeverity: {'normal': 3},
+                byProject: {'D4': 3},
+                missingTests: 0,
+                awaitingVerify: 0,
+              ));
+
+      final result = await executor.executeWithoutTraversal(
+        const CliArgs(),
+      );
+
+      expect(result.success, isTrue);
+      final msg = result.itemResults.first.message!;
+      expect(msg, isNot(contains('Missing tests')));
+      expect(msg, isNot(contains('Awaiting verify')));
+    });
+  });
+
+  // ===========================================================================
+  // IK-EXE-LNK: LinkExecutor (additional)
+  // ===========================================================================
+
+  group('IK-EXE-LNK: LinkExecutor additional [2026-02-15]', () {
+    late LinkExecutor executor;
+
+    setUp(() {
+      executor = LinkExecutor(mockService);
+    });
+
+    test('IK-EXE-LNK-5: --note option passed to service', () async {
+      when(() => mockService.linkTest(
+            issueNumber: any(named: 'issueNumber'),
+            testId: any(named: 'testId'),
+            testFile: any(named: 'testFile'),
+            note: any(named: 'note'),
+          )).thenAnswer((_) async => createTestComment());
+
+      await executor.executeWithoutTraversal(
+        const CliArgs(
+          positionalArgs: ['42'],
+          extraOptions: {
+            'test-id': 'D4-42-PAR-7',
+            'note': 'Pre-convention test',
+          },
+        ),
+      );
+
+      verify(() => mockService.linkTest(
+            issueNumber: 42,
+            testId: 'D4-42-PAR-7',
+            testFile: null,
+            note: 'Pre-convention test',
+          )).called(1);
+    });
+
+    test('IK-EXE-LNK-6: non-numeric issue number fails', () async {
+      final result = await executor.executeWithoutTraversal(
+        const CliArgs(
+          positionalArgs: ['abc'],
+          extraOptions: {'test-id': 'D4-1-PAR-7'},
+        ),
+      );
+
+      expect(result.success, isFalse);
+      expect(result.errorMessage, contains('issue number'));
+    });
+
+    test('IK-EXE-LNK-7: links without --test-file', () async {
+      when(() => mockService.linkTest(
+            issueNumber: any(named: 'issueNumber'),
+            testId: any(named: 'testId'),
+            testFile: any(named: 'testFile'),
+            note: any(named: 'note'),
+          )).thenAnswer((_) async => createTestComment());
+
+      await executor.executeWithoutTraversal(
+        const CliArgs(
+          positionalArgs: ['42'],
+          extraOptions: {'test-id': 'D4-42-PAR-7'},
+        ),
+      );
+
+      verify(() => mockService.linkTest(
+            issueNumber: 42,
+            testId: 'D4-42-PAR-7',
+            testFile: null,
+            note: null,
+          )).called(1);
+    });
+  });
+
+  // ===========================================================================
+  // IK-EXE-EXP: ExportExecutor (additional)
+  // ===========================================================================
+
+  group('IK-EXE-EXP: ExportExecutor additional [2026-02-15]', () {
+    late ExportExecutor executor;
+
+    setUp(() {
+      executor = ExportExecutor(mockService);
+    });
+
+    test('IK-EXE-EXP-4: --state filter passed to service', () async {
+      when(() => mockService.exportIssues(
+            repo: any(named: 'repo'),
+            state: any(named: 'state'),
+            severity: any(named: 'severity'),
+            project: any(named: 'project'),
+            tags: any(named: 'tags'),
+            includeAll: any(named: 'includeAll'),
+          )).thenAnswer((_) async => []);
+
+      await executor.executeWithoutTraversal(
+        const CliArgs(extraOptions: {'state': 'testing'}),
+      );
+
+      verify(() => mockService.exportIssues(
+            repo: 'issues',
+            state: 'testing',
+            severity: null,
+            project: null,
+            tags: null,
+            includeAll: false,
+          )).called(1);
+    });
+
+    test('IK-EXE-EXP-5: --tags with comma-separated parsing', () async {
+      when(() => mockService.exportIssues(
+            repo: any(named: 'repo'),
+            state: any(named: 'state'),
+            severity: any(named: 'severity'),
+            project: any(named: 'project'),
+            tags: any(named: 'tags'),
+            includeAll: any(named: 'includeAll'),
+          )).thenAnswer((_) async => []);
+
+      await executor.executeWithoutTraversal(
+        const CliArgs(extraOptions: {'tags': 'parser,regression'}),
+      );
+
+      verify(() => mockService.exportIssues(
+            repo: 'issues',
+            state: null,
+            severity: null,
+            project: null,
+            tags: ['parser', 'regression'],
+            includeAll: false,
+          )).called(1);
+    });
+
+    test('IK-EXE-EXP-6: empty export result', () async {
+      when(() => mockService.exportIssues(
+            repo: any(named: 'repo'),
+            state: any(named: 'state'),
+            severity: any(named: 'severity'),
+            project: any(named: 'project'),
+            tags: any(named: 'tags'),
+            includeAll: any(named: 'includeAll'),
+          )).thenAnswer((_) async => []);
+
+      final result = await executor.executeWithoutTraversal(
+        const CliArgs(),
+      );
+
+      expect(result.success, isTrue);
+      expect(result.processedCount, 0);
+    });
+
+    test('IK-EXE-EXP-7: default options verified', () async {
+      when(() => mockService.exportIssues(
+            repo: any(named: 'repo'),
+            state: any(named: 'state'),
+            severity: any(named: 'severity'),
+            project: any(named: 'project'),
+            tags: any(named: 'tags'),
+            includeAll: any(named: 'includeAll'),
+          )).thenAnswer((_) async => []);
+
+      await executor.executeWithoutTraversal(
+        const CliArgs(),
+      );
+
+      verify(() => mockService.exportIssues(
+            repo: 'issues',
+            state: null,
+            severity: null,
+            project: null,
+            tags: null,
+            includeAll: false,
+          )).called(1);
+    });
+  });
+
+  // ===========================================================================
+  // IK-EXE-IMP: ImportExecutor (additional)
+  // ===========================================================================
+
+  group('IK-EXE-IMP: ImportExecutor additional [2026-02-15]', () {
+    late ImportExecutor executor;
+    late Directory tempDir;
+
+    setUp(() {
+      executor = ImportExecutor(mockService);
+      tempDir = Directory.systemTemp.createTempSync('issuekit_test_');
+    });
+
+    tearDown(() {
+      tempDir.deleteSync(recursive: true);
+    });
+
+    test('IK-EXE-IMP-4: successful import from JSON file', () async {
+      final file = File('${tempDir.path}/issues.json');
+      file.writeAsStringSync('[{"title":"Bug A"},{"title":"Bug B"}]');
+
+      when(() => mockService.importIssues(
+            entries: any(named: 'entries'),
+            repo: any(named: 'repo'),
+          )).thenAnswer((_) async => [
+            createTestIssue(number: 1, title: 'Bug A'),
+            createTestIssue(number: 2, title: 'Bug B'),
+          ]);
+
+      final result = await executor.executeWithoutTraversal(
+        CliArgs(positionalArgs: [file.path]),
+      );
+
+      expect(result.success, isTrue);
+      expect(result.processedCount, 2);
+      verify(() => mockService.importIssues(
+            entries: any(named: 'entries'),
+            repo: 'issues',
+          )).called(1);
+    });
+
+    test('IK-EXE-IMP-6: --repo option passed to service', () async {
+      final file = File('${tempDir.path}/tests.json');
+      file.writeAsStringSync('[{"title":"Test entry"}]');
+
+      when(() => mockService.importIssues(
+            entries: any(named: 'entries'),
+            repo: any(named: 'repo'),
+          )).thenAnswer((_) async => [
+            createTestIssue(number: 1, title: 'Test entry'),
+          ]);
+
+      await executor.executeWithoutTraversal(
+        CliArgs(
+          positionalArgs: [file.path],
+          extraOptions: {'repo': 'tests'},
+        ),
+      );
+
+      verify(() => mockService.importIssues(
+            entries: any(named: 'entries'),
+            repo: 'tests',
+          )).called(1);
+    });
+
+    test('IK-EXE-IMP-7: IssueServiceException during import', () async {
+      final file = File('${tempDir.path}/issues.json');
+      file.writeAsStringSync('[{"title":"Bug"}]');
+
+      when(() => mockService.importIssues(
+            entries: any(named: 'entries'),
+            repo: any(named: 'repo'),
+          )).thenThrow(IssueServiceException('Import quota exceeded'));
+
+      final result = await executor.executeWithoutTraversal(
+        CliArgs(positionalArgs: [file.path]),
+      );
+
+      expect(result.success, isFalse);
+      expect(result.errorMessage, contains('Import quota exceeded'));
+    });
+
+    test('IK-EXE-IMP-9: empty JSON file imports zero entries', () async {
+      final file = File('${tempDir.path}/empty.json');
+      file.writeAsStringSync('[]');
+
+      when(() => mockService.importIssues(
+            entries: any(named: 'entries'),
+            repo: any(named: 'repo'),
+          )).thenAnswer((_) async => []);
+
+      final result = await executor.executeWithoutTraversal(
+        CliArgs(positionalArgs: [file.path]),
+      );
+
+      expect(result.success, isTrue);
+      expect(result.processedCount, 0);
+    });
+  });
+
+  // ===========================================================================
+  // IK-EXE-INIT: InitExecutor (defaults)
+  // ===========================================================================
+
+  group('IK-EXE-INIT: InitExecutor additional [2026-02-15]', () {
+    late InitExecutor executor;
+
+    setUp(() {
+      executor = InitExecutor(mockService);
+    });
+
+    test('IK-EXE-INIT-4: default options verified', () async {
+      when(() => mockService.initLabels(
+            repo: any(named: 'repo'),
+            force: any(named: 'force'),
+          )).thenAnswer((_) async => InitResult(
+            issuesLabelsCreated: 14,
+            testsLabelsCreated: 4,
+          ));
+
+      await executor.executeWithoutTraversal(
+        const CliArgs(),
+      );
+
+      verify(() => mockService.initLabels(
+            repo: 'both',
+            force: false,
+          )).called(1);
+    });
+  });
+
+  // ===========================================================================
+  // IK-EXE-SNP: SnapshotExecutor (additional)
+  // ===========================================================================
+
+  group('IK-EXE-SNP: SnapshotExecutor additional [2026-02-15]', () {
+    late SnapshotExecutor executor;
+
+    setUp(() {
+      executor = SnapshotExecutor(mockService);
+    });
+
+    test('IK-EXE-SNP-4: tests-only filter', () async {
+      when(() => mockService.createSnapshot(
+            issuesOnly: any(named: 'issuesOnly'),
+            testsOnly: any(named: 'testsOnly'),
+          )).thenAnswer((_) async => SnapshotResult(
+            issues: null,
+            tests: [createTestIssue()],
+            snapshotDate: DateTime(2026, 2, 13),
+          ));
+
+      await executor.executeWithoutTraversal(
+        const CliArgs(extraOptions: {'tests-only': true}),
+      );
+
+      verify(() => mockService.createSnapshot(
+            issuesOnly: false,
+            testsOnly: true,
+          )).called(1);
+    });
+
+    test('IK-EXE-SNP-5: default options verified', () async {
+      when(() => mockService.createSnapshot(
+            issuesOnly: any(named: 'issuesOnly'),
+            testsOnly: any(named: 'testsOnly'),
+          )).thenAnswer((_) async => SnapshotResult(
+            issues: [],
+            tests: [],
+            snapshotDate: DateTime(2026, 2, 13),
+          ));
+
+      await executor.executeWithoutTraversal(
+        const CliArgs(),
+      );
+
+      verify(() => mockService.createSnapshot(
+            issuesOnly: false,
+            testsOnly: false,
+          )).called(1);
+    });
+  });
+
+  // ===========================================================================
+  // IK-EXE-RT: RunTestsExecutor (defaults)
+  // ===========================================================================
+
+  group('IK-EXE-RT: RunTestsExecutor additional [2026-02-15]', () {
+    late RunTestsExecutor executor;
+
+    setUp(() {
+      executor = RunTestsExecutor(mockService);
+    });
+
+    test('IK-EXE-RT-4: default wait=false verified', () async {
+      when(() => mockService.triggerTestWorkflow(
+            wait: any(named: 'wait'),
+          )).thenAnswer((_) async {});
+
+      final result = await executor.executeWithoutTraversal(
+        const CliArgs(),
+      );
+
+      expect(result.success, isTrue);
+      expect(result.itemResults.first.message, isNot(contains('waiting')));
+
+      verify(() => mockService.triggerTestWorkflow(wait: false)).called(1);
+    });
+  });
+
+  // ===========================================================================
+  // IK-EXE-LST: ListExecutor (additional)
+  // ===========================================================================
+
+  group('IK-EXE-LST: ListExecutor additional [2026-02-15]', () {
+    late ListExecutor executor;
+
+    setUp(() {
+      executor = ListExecutor(mockService);
+    });
+
+    test('IK-EXE-LST-7: --reporter filter passed to service', () async {
+      when(() => mockService.listIssues(
+            state: any(named: 'state'),
+            severity: any(named: 'severity'),
+            project: any(named: 'project'),
+            tags: any(named: 'tags'),
+            reporter: any(named: 'reporter'),
+            includeAll: any(named: 'includeAll'),
+            sort: any(named: 'sort'),
+          )).thenAnswer((_) async => []);
+
+      await executor.executeWithoutTraversal(
+        const CliArgs(extraOptions: {'reporter': 'copilot'}),
+      );
+
+      verify(() => mockService.listIssues(
+            state: null,
+            severity: null,
+            project: null,
+            tags: null,
+            reporter: 'copilot',
+            includeAll: false,
+            sort: null,
+          )).called(1);
+    });
+
+    test('IK-EXE-LST-9: IssueServiceException uses direct message', () async {
+      when(() => mockService.listIssues(
+            state: any(named: 'state'),
+            severity: any(named: 'severity'),
+            project: any(named: 'project'),
+            tags: any(named: 'tags'),
+            reporter: any(named: 'reporter'),
+            includeAll: any(named: 'includeAll'),
+            sort: any(named: 'sort'),
+          )).thenThrow(IssueServiceException('API rate limit exceeded'));
+
+      final result = await executor.executeWithoutTraversal(
+        const CliArgs(),
+      );
+
+      expect(result.success, isFalse);
+      expect(result.errorMessage, contains('API rate limit exceeded'));
+    });
+
+    test('IK-EXE-LST-10: issue with no labels handled gracefully', () async {
+      when(() => mockService.listIssues(
+            state: any(named: 'state'),
+            severity: any(named: 'severity'),
+            project: any(named: 'project'),
+            tags: any(named: 'tags'),
+            reporter: any(named: 'reporter'),
+            includeAll: any(named: 'includeAll'),
+            sort: any(named: 'sort'),
+          )).thenAnswer((_) async => [
+            createTestIssue(
+              number: 42,
+              title: 'No labels issue',
+              labels: [],
+            ),
+          ]);
+
+      final result = await executor.executeWithoutTraversal(
+        const CliArgs(),
+      );
+
+      expect(result.success, isTrue);
+      expect(result.itemResults, hasLength(1));
+      expect(result.itemResults.first.message, contains('#42'));
     });
   });
 
