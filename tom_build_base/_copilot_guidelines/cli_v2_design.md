@@ -783,10 +783,10 @@ flowchart TB
 | 0 | Skip Markers | (automatic) | **During scan** | `buildkit_skip.yaml` skips entire subtree |
 | 1 | Recursion Exclude | `--recursion-exclude` | During scan | Prevents descending into matched dirs |
 | 2 | Path Exclude | `--exclude`, `-x` | After scan | Removes folders matching path patterns |
-| 3 | Project Include | `--project`, `-p` | After scan | Keeps only folders matching patterns or project IDs |
-| 4 | Project Name Exclude | `--exclude-projects` | After scan | Removes folders by name (not path) |
-| 5 | Module Filter | `--modules`, `-m` | After scan | Keeps folders in specified git submodules |
-| 6 | Skip Modules | `--skip-modules` | After scan | Excludes specific git submodules |
+| 3 | Project Include | `--project`, `-p` | After scan | Keeps folders by project ID, name, or folder pattern |
+| 4 | Project Name Exclude | `--exclude-projects` | After scan | Removes folders by project ID, name, or folder name |
+| 5 | Module Filter | `--modules`, `-m` | After scan | Keeps folders by repository ID, name, or path |
+| 6 | Skip Modules | `--skip-modules` | After scan | Excludes by repository ID, name, or path |
 | 7 | Test Project | `--test` / `--test-only` | After scan | Controls zom_* project inclusion |
 
 **Filter implementation:**
@@ -1132,27 +1132,40 @@ bool _isGitFolder(String dirPath) {
 
 #### Module Filters in Git Traversal
 
-The `--modules` and `--skip-modules` options filter by **git submodule name**:
+The `--modules` and `--skip-modules` options filter by **repository name or ID**:
 
 ```
 workspace/
 ├── .git/                          # Main repo
 ├── xternal/
 │   ├── tom_module_basics/
-│   │   └── .git/                  # Submodule: basics
+│   │   └── .git/                  # Submodule: basics (ID: BSC)
 │   ├── tom_module_d4rt/
-│   │   └── .git/                  # Submodule: d4rt
+│   │   └── .git/                  # Submodule: d4rt (ID: D4)
 │   └── tom_module_crypto/
-│       └── .git/                  # Submodule: crypto
+│       └── .git/                  # Submodule: crypto (ID: CRPT)
 ```
+
+**Global reference:** See `_copilot_guidelines/projects_and_repos.md` for the complete list of repository names and IDs.
 
 ```bash
-# Only process the basics and d4rt submodules
+# Filter by repository name (detected from folder/submodule config)
 buildkit -s . -r --modules=basics,d4rt --inner-first-git :gitstatus
 
-# Process all except crypto
+# Filter by repository ID (from projects_and_repos.md lookup)
+buildkit -s . -r --modules=BSC,D4 --inner-first-git :gitstatus
+
+# Process all except crypto (by name or ID)
 buildkit -s . -r --skip-modules=crypto --inner-first-git :commit :push
+buildkit -s . -r --skip-modules=CRPT --inner-first-git :commit :push
 ```
+
+**Resolution hierarchy for `--modules` / `-m` and `--skip-modules`:**
+1. Check if value matches a repository ID (from `projects_and_repos.md`)
+2. Check if value matches a repository name (detected from folder/submodule)
+3. Check if value is a path substring match (current behavior)
+
+**Note:** Pattern matching is not supported for repository filters; use exact names or IDs.
 
 #### Git Traversal Order
 
@@ -1647,28 +1660,36 @@ class ToolDefinition {
 }
 ```
 
-### Project IDs
+### Project Names and IDs
 
-Short mnemonics for projects, defined in `buildkit.yaml`:
+Short mnemonics and display names for projects, defined in `tom_project.yaml`:
 
 ```yaml
-# In tom_build_base/buildkit.yaml
-project-id: BB
+# In tom_build_base/tom_project.yaml
+name: buildkit        # Lowercase display name
+short-id: BK          # Short uppercase identifier
 
-# In tom_d4rt_generator/buildkit.yaml
-project-id: D4G
+# In tom_d4rt_generator/tom_project.yaml
+name: d4rt-gen
+short-id: D4G
 ```
+
+**Global reference:** See `_copilot_guidelines/projects_and_repos.md` for the complete list of project names and IDs.
 
 **Usage:**
 ```bash
-buildkit -p BB,D4G :compile   # Only these two projects
-buildkit -x D4 :cleanup       # Exclude tom_d4rt
+buildkit -p BK,D4G :compile     # Filter by project IDs
+buildkit -p buildkit :compile   # Filter by project name
+buildkit -p tom_* :compile      # Filter by folder name pattern (glob)
+buildkit -x d4rt :cleanup       # Exclude by project name
 ```
 
-**Resolution hierarchy:**
-1. Check if pattern matches a project ID
-2. Check if pattern matches a project name
-3. Check if pattern matches a path glob
+**Resolution hierarchy for `--project` / `-p`:**
+1. Check if value matches a project ID (from `tom_project.yaml` `short-id`)
+2. Check if value matches a project name (from `tom_project.yaml` `name`)
+3. Check if value matches a folder name pattern (glob on folder name)
+
+**Note:** Pattern matching (with `*`, `?`, `**`) only works on folder names, not on project names or IDs.
 
 ### Test Project Modes
 

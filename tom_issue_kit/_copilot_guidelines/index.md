@@ -1,6 +1,23 @@
-# Tom Issue Kit — Copilot Guidelines Index
+# Tom Issue Kit Project Guidelines
 
-## Guidelines
+**Project:** `tom_issue_kit`  
+**Type:** CLI Tool
+
+## Global Guidelines
+
+| Document | Purpose |
+|----------|---------|
+| [Documentation Guidelines](/_copilot_guidelines/documentation_guidelines.md) | Where to place user docs vs development docs |
+
+## Dart Guidelines
+
+| Document | Purpose |
+|----------|---------|
+| [Coding Guidelines](/_copilot_guidelines/dart/coding_guidelines.md) | Naming conventions, error handling, patterns |
+| [Unit Tests](/_copilot_guidelines/dart/unit_tests.md) | Test structure, matchers, mocking patterns |
+| [Examples](/_copilot_guidelines/dart/examples.md) | Example file creation guidelines |
+
+## Project-Specific Guidelines
 
 | Document | Purpose |
 |----------|---------|

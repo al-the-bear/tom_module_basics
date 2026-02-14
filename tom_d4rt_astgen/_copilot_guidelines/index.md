@@ -1,8 +1,23 @@
-# Tom D4rt AST Generator Project Guidelines - Index
+# Tom D4rt AST Generator Project Guidelines
 
-This folder contains project-specific guidelines for the `tom_d4rt_astgen` package.
+**Project:** `tom_d4rt_astgen`  
+**Type:** CLI Tool
 
-## Files
+## Global Guidelines
+
+| Document | Purpose |
+|----------|---------|
+| [Documentation Guidelines](/_copilot_guidelines/documentation_guidelines.md) | Where to place user docs vs development docs |
+
+## Dart Guidelines
+
+| Document | Purpose |
+|----------|---------|
+| [Coding Guidelines](/_copilot_guidelines/dart/coding_guidelines.md) | Naming conventions, error handling, patterns |
+| [Unit Tests](/_copilot_guidelines/dart/unit_tests.md) | Test structure, matchers, mocking patterns |
+| [Examples](/_copilot_guidelines/dart/examples.md) | Example file creation guidelines |
+
+## Project-Specific Guidelines
 
 | File | Description |
 |------|-------------|
@@ -10,7 +25,6 @@ This folder contains project-specific guidelines for the `tom_d4rt_astgen` packa
 
 ## Quick Reference
 
-**Package:** `tom_d4rt_astgen`  
 **Purpose:** Convert Dart source files to serialized AST YAML files
 
 **Key Components:**

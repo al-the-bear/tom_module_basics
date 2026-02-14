@@ -1,0 +1,8 @@
+# Tom Repository Configuration
+# This file identifies the repository for git traversal commands
+
+repository_id: BSC
+name: basics
+description: >-
+  Core Dart utilities: tom_basics, build tools, analyzer, test kit, issue kit, and AST libraries.
+github: al-the-bear/tom_module_basics
