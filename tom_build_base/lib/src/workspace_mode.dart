@@ -71,6 +71,12 @@ class WorkspaceNavigationArgs {
   /// Use "root" or "tom" to reference the main repository.
   final List<String> modules;
 
+  /// Active modes for configuration processing.
+  ///
+  /// Modes are workspace-wide configuration dimensions (e.g., DEV, CI, PROD).
+  /// They affect how MODE-prefixed keys in config files are processed.
+  final List<String> modes;
+
   WorkspaceNavigationArgs({
     this.scan,
     this.recursive = false,
@@ -86,6 +92,7 @@ class WorkspaceNavigationArgs {
     this.excludeProjects = const [],
     this.recursionExclude = const [],
     this.modules = const [],
+    this.modes = const [],
   });
 
   /// Determines the execution mode based on parsed arguments.
@@ -144,6 +151,7 @@ class WorkspaceNavigationArgs {
       excludeProjects: excludeProjects,
       recursionExclude: recursionExclude,
       modules: modules,
+      modes: modes,
     );
   }
 
@@ -178,6 +186,7 @@ class WorkspaceNavigationArgs {
       excludeProjects: excludeProjects,
       recursionExclude: recursionExclude,
       modules: modules,
+      modes: modes,
     );
   }
 
@@ -197,6 +206,7 @@ class WorkspaceNavigationArgs {
     List<String>? excludeProjects,
     List<String>? recursionExclude,
     List<String>? modules,
+    List<String>? modes,
   }) {
     return WorkspaceNavigationArgs(
       scan: scan ?? this.scan,
@@ -213,6 +223,7 @@ class WorkspaceNavigationArgs {
       excludeProjects: excludeProjects ?? this.excludeProjects,
       recursionExclude: recursionExclude ?? this.recursionExclude,
       modules: modules ?? this.modules,
+      modes: modes ?? this.modes,
     );
   }
 
@@ -281,6 +292,9 @@ void addNavigationOptions(ArgParser parser) {
       abbr: 'm',
       help:
           'Include only projects within specified git modules (comma-separated, e.g. tom_module_d4rt,tom_module_basics)');
+  parser.addOption('modes',
+      help:
+          'Active modes for config processing (comma-separated, e.g. DEV,CI). Overrides tom_workspace.yaml default.');
 }
 
 /// Preprocess command-line arguments to handle special -R behavior.
@@ -401,7 +415,20 @@ WorkspaceNavigationArgs parseNavigationArgs(
     excludeProjects: results['exclude-projects'] as List<String>? ?? [],
     recursionExclude: results['recursion-exclude'] as List<String>? ?? [],
     modules: _parseModulesOption(results['modules'] as String?),
+    modes: _parseModesOption(results['modes'] as String?),
   );
+}
+
+/// Parse comma-separated modes option into a list.
+///
+/// Modes are UPPERCASE identifiers (e.g., DEV, CI, PROD).
+List<String> _parseModesOption(String? value) {
+  if (value == null || value.isEmpty) return const [];
+  return value
+      .split(',')
+      .map((s) => s.trim().toUpperCase())
+      .where((s) => s.isNotEmpty)
+      .toList();
 }
 
 /// Parse comma-separated modules option into a list.

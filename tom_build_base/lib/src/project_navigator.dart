@@ -207,10 +207,15 @@ class ProjectNavigator {
   /// Output function for messages.
   final void Function(String) log;
 
+  /// Tool basename for skip file resolution (e.g., 'buildkit', 'testkit').
+  /// If null, defaults to 'buildkit' for backwards compatibility.
+  final String? toolBasename;
+
   ProjectNavigator({
     this.config = const NavigationConfig.all(),
     this.verbose = false,
     void Function(String)? log,
+    this.toolBasename,
   }) : log = log ?? print;
 
   void _log(String message) {
@@ -286,7 +291,12 @@ class ProjectNavigator {
 
     // Apply skip files filter
     if (config.useSkipFiles) {
-      repos = filterSkippedProjects(repos);
+      repos = filterSkippedProjects(
+        repos,
+        verbose: verbose,
+        log: log,
+        basename: toolBasename,
+      );
     }
 
     // Apply project filter to git repo roots (filter repos that are valid projects)
@@ -305,7 +315,11 @@ class ProjectNavigator {
     WorkspaceNavigationArgs navArgs,
     String basePath,
   ) async {
-    final discovery = ProjectDiscovery(verbose: verbose, log: log);
+    final discovery = ProjectDiscovery(
+      verbose: verbose,
+      log: log,
+      toolBasename: toolBasename,
+    );
 
     // Effective values (may be overridden by master config defaults)
     var project = navArgs.project;
@@ -413,7 +427,12 @@ class ProjectNavigator {
 
     // Phase 3: Remove skipped projects
     if (config.useSkipFiles) {
-      results = filterSkippedProjects(results);
+      results = filterSkippedProjects(
+        results,
+        verbose: verbose,
+        log: log,
+        basename: toolBasename,
+      );
     }
 
     // Phase 4: Apply modules filter
@@ -489,7 +508,10 @@ class ProjectNavigator {
             // Skip excluded directories
             if (_isExcludedDirectory(name)) continue;
             // Check for skip file if enabled
-            if (config.useSkipFiles && hasSkipFile(entity.path)) continue;
+            if (config.useSkipFiles &&
+                hasSkipFile(entity.path, basename: toolBasename)) {
+              continue;
+            }
 
             scanDirectory(entity);
           }
@@ -698,17 +720,24 @@ class ProjectNavigator {
     }).toList();
   }
 
-  /// Remove projects that contain a `buildkit_skip.yaml` file.
+  /// Remove projects that contain a skip file.
+  ///
+  /// Checks for `tom_skip.yaml` (global) and `{basename}_skip.yaml` (tool-specific).
   static List<String> filterSkippedProjects(
     List<String> projects, {
     bool verbose = false,
     void Function(String)? log,
+    String? basename,
   }) {
     final logFn = log ?? print;
     return projects.where((projectPath) {
-      if (hasSkipFile(projectPath)) {
+      final skipFileName = ProjectDiscovery.getSkipFileName(
+        projectPath,
+        basename: basename,
+      );
+      if (skipFileName != null) {
         if (verbose) {
-          logFn('  Skipping ($kBuildkitSkipYaml): $projectPath');
+          logFn('  Skipping ($skipFileName): $projectPath');
         }
         return false;
       }
@@ -716,9 +745,11 @@ class ProjectNavigator {
     }).toList();
   }
 
-  /// Check if a directory contains a `buildkit_skip.yaml` file.
-  static bool hasSkipFile(String dirPath) {
-    return File(p.join(dirPath, kBuildkitSkipYaml)).existsSync();
+  /// Check if a directory contains a skip file.
+  ///
+  /// Checks for `tom_skip.yaml` (global) and `{basename}_skip.yaml` (tool-specific).
+  static bool hasSkipFile(String dirPath, {String? basename}) {
+    return ProjectDiscovery.hasSkipFile(dirPath, basename: basename);
   }
 
   // ===========================================================================

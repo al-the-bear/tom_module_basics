@@ -21,9 +21,14 @@ class ProjectDiscovery {
   /// Output function for verbose messages.
   final void Function(String) log;
 
+  /// Tool basename for skip file resolution (e.g., 'buildkit', 'testkit').
+  /// If null, defaults to 'buildkit' for backwards compatibility.
+  final String? toolBasename;
+
   ProjectDiscovery({
     this.verbose = false,
     void Function(String)? log,
+    this.toolBasename,
   }) : log = log ?? print;
 
   void _log(String message) {
@@ -263,13 +268,39 @@ class ProjectDiscovery {
     return projects;
   }
 
-  /// Filename that marks a directory (and all subdirectories) as excluded
-  /// from buildkit processing.
+  /// Global skip file that blocks all tools.
+  static const globalSkipFileName = 'tom_skip.yaml';
+
+  /// Legacy/default skip file name for backwards compatibility.
   static const skipFileName = 'buildkit_skip.yaml';
 
   /// Check if a directory contains a skip marker file.
-  static bool hasSkipFile(String dirPath) {
-    return File(p.join(dirPath, skipFileName)).existsSync();
+  ///
+  /// Checks in order:
+  /// 1. tom_skip.yaml (global skip for all tools)
+  /// 2. {basename}_skip.yaml (tool-specific skip)
+  ///
+  /// If [basename] is not provided, falls back to 'buildkit' for backwards compatibility.
+  static bool hasSkipFile(String dirPath, {String? basename}) {
+    // Check global skip first
+    if (File(p.join(dirPath, globalSkipFileName)).existsSync()) {
+      return true;
+    }
+    // Check tool-specific skip
+    final toolSkipFileName = '${basename ?? 'buildkit'}_skip.yaml';
+    return File(p.join(dirPath, toolSkipFileName)).existsSync();
+  }
+
+  /// Get the skip file name that was found, or null if none.
+  static String? getSkipFileName(String dirPath, {String? basename}) {
+    if (File(p.join(dirPath, globalSkipFileName)).existsSync()) {
+      return globalSkipFileName;
+    }
+    final toolSkipFileName = '${basename ?? 'buildkit'}_skip.yaml';
+    if (File(p.join(dirPath, toolSkipFileName)).existsSync()) {
+      return toolSkipFileName;
+    }
+    return null;
   }
 
   Future<void> _scanDirectory(
@@ -283,10 +314,11 @@ class ProjectDiscovery {
   }) async {
     final dirName = p.basename(dir.path);
 
-    // Skip directories that contain a tom_build_skip.yaml marker file
-    if (hasSkipFile(dir.path)) {
+    // Skip directories that contain a skip marker file
+    if (hasSkipFile(dir.path, basename: toolBasename)) {
       if (verbose) {
-        _log('  Skipping ($skipFileName): ${dir.path}');
+        final skipFile = getSkipFileName(dir.path, basename: toolBasename);
+        _log('  Skipping ($skipFile): ${dir.path}');
       }
       return;
     }
