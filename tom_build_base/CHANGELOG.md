@@ -1,3 +1,40 @@
+## 1.8.0
+
+### Features
+
+- **`ConfigLoader` class** — New unified configuration loader with mode processing and placeholder resolution.
+  - Loads `{basename}_master.yaml` (workspace) and `{basename}.yaml` (project) configuration files.
+  - Processes mode-prefixed keys (e.g., `DEV-target`, `CI-enabled`) with merging behavior.
+  - Resolves `@[...]` define placeholders from the `defines:` section.
+  - Resolves `@{...}` tool placeholders (project-path, project-name, workspace-root, etc.).
+  - Custom tool placeholders via `PlaceholderDefinition`.
+
+- **Mode system** — Workspace-wide configuration dimensions.
+  - `--modes` CLI option to override active modes (e.g., `--modes=DEV,CI`).
+  - Mode sources: CLI option (highest) → `tom_workspace.yaml` default.
+  - UPPERCASE mode prefixes merge in order, later modes override earlier.
+
+- **Skip file system** — Directory-level skip markers.
+  - `tom_skip.yaml` — Skips directory for ALL tools.
+  - `{basename}_skip.yaml` — Skips directory for specific tool only.
+  - Skip reason readable from YAML `reason:` field.
+
+- **`resolvePlaceholders()` function** — Standalone placeholder resolution utility.
+  - Supports `@[...]` defines, `@{...}` tool placeholders.
+  - Environment variable resolution with `$VAR` and `$[VAR]` syntax.
+  - Recursive resolution (max depth 10).
+
+### API Changes
+
+- New `config_loader.dart` exported from `tom_build_base.dart`.
+- `WorkspaceNavigationArgs.modes` — New field for active modes.
+- `addNavigationOptions()` registers `--modes` option.
+- `parseNavigationArgs()` parses modes as comma-separated, uppercased values.
+- `ProjectNavigator` accepts optional `toolBasename` parameter for tool-specific skip files.
+- `ProjectDiscovery.hasSkipFile(basename)` — Updated signature with basename parameter.
+- `ProjectDiscovery.getSkipFileName(basename)` — Returns tool-specific skip filename.
+- `ProjectDiscovery.globalSkipFileName` — Constant for `tom_skip.yaml`.
+
 ## 1.7.1
 
 - Changelog update for 1.7.0 features.
