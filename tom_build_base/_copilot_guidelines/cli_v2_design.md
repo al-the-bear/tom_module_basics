@@ -798,15 +798,21 @@ class FilterPipeline {
     if (info.excludePatterns.isNotEmpty)  // --exclude, -x
       result = result.where((f) => !_matchesAny(f.path, info.excludePatterns)).toList();
     if (info.projectPatterns.isNotEmpty)  // --project, -p
-      result = result.where((f) => _matchesAny(f.path, info.projectPatterns) ||
-          _matchesAny(f.name, info.projectPatterns) ||
-          _matchesProjectId(f, info.projectPatterns)).toList();
+      result = result.where((f) => 
+          _matchesProjectId(f, info.projectPatterns) ||    // Check project ID first
+          _matchesProjectName(f, info.projectPatterns) ||  // Then project name
+          _matchesAny(f.name, info.projectPatterns)        // Then folder name pattern
+      ).toList();
     if (info.excludeProjects.isNotEmpty)  // --exclude-projects
-      result = result.where((f) => !_matchesAny(f.name, info.excludeProjects)).toList();
+      result = result.where((f) => 
+          !_matchesProjectId(f, info.excludeProjects) &&
+          !_matchesProjectName(f, info.excludeProjects) &&
+          !_matchesAny(f.name, info.excludeProjects)
+      ).toList();
     if (info.modules.isNotEmpty)          // --modules, -m
-      result = _applyModulesFilter(result, info.modules);
+      result = _applyModulesFilter(result, info.modules);  // Supports repo ID, name, path
     if (info.skipModules.isNotEmpty)      // --skip-modules
-      result = _applySkipModulesFilter(result, info.skipModules);
+      result = _applySkipModulesFilter(result, info.skipModules);  // Supports repo ID, name, path
     if (info.testProjectsOnly)            // --test-only
       result = result.where((f) => f.name.startsWith('zom_')).toList();
     else if (!info.includeTestProjects)   // exclude zom_* by default
@@ -848,41 +854,61 @@ class NatureDetector {
 
   BuildkitFolder _createBuildkitNature(FsFolder folder) {
     final yaml = loadYaml(File(p.join(folder.path, 'buildkit.yaml')).readAsStringSync()) as Map?;
-    return BuildkitFolder(folder, projectId: yaml?['project-id'] as String?, config: yaml ?? {});
+    return BuildkitFolder(folder, config: yaml ?? {});
+  }
+  
+  TomProjectFolder _createTomProjectNature(FsFolder folder) {
+    final yaml = loadYaml(File(p.join(folder.path, 'tom_project.yaml')).readAsStringSync()) as Map?;
+    return TomProjectFolder(
+      folder, 
+      name: yaml?['name'] as String?,
+      shortId: yaml?['short-id'] as String?,
+      config: yaml ?? {},
+    );
   }
 }
 ```
 
-**Project ID extraction:**
+**Project ID and Name extraction:**
 
-Project IDs are short mnemonics defined in `buildkit.yaml`:
+Project names and IDs are short identifiers defined in `tom_project.yaml`:
 
 ```yaml
-# buildkit.yaml
-project-id: BB
+# tom_project.yaml
+name: buildkit     # Display name (lowercase, hyphen-separated)
+short-id: BK       # Short identifier (uppercase)
 # ... other config
 ```
 
-When scanning, the `NatureDetector` extracts this ID and stores it in `BuildkitFolder`. The filter pipeline then uses this for `--project` matching:
+When scanning, the `NatureDetector` extracts these and stores them in `TomProjectFolder`. The filter pipeline uses this for `--project` and `--exclude-projects` matching:
 
 ```dart
+/// Check if folder matches by project ID (exact match, case-insensitive)
 bool _matchesProjectId(FsFolder folder, List<String> patterns) {
-  // First check if folder has a BuildkitFolder nature with projectId
-  final buildkit = folder.natures.whereType<BuildkitFolder>().firstOrNull;
-  if (buildkit?.projectId != null) {
-    return patterns.any((p) => 
-      buildkit!.projectId! == p ||
-      buildkit.projectId!.startsWith(p)
-    );
+  final tomProject = folder.natures.whereType<TomProjectFolder>().firstOrNull;
+  if (tomProject?.shortId != null) {
+    final id = tomProject!.shortId!.toLowerCase();
+    return patterns.any((p) => id == p.toLowerCase());
+  }
+  return false;
+}
+
+/// Check if folder matches by project name (exact match, case-insensitive)
+bool _matchesProjectName(FsFolder folder, List<String> patterns) {
+  final tomProject = folder.natures.whereType<TomProjectFolder>().firstOrNull;
+  if (tomProject?.name != null) {
+    final name = tomProject!.name!.toLowerCase();
+    return patterns.any((p) => name == p.toLowerCase());
   }
   return false;
 }
 ```
 
-This allows filtering by project ID:
+This allows filtering by project ID or name:
 ```bash
-buildkit -p BB,D4G :compile   # Only projects with ID "BB" or "D4G"
-buildkit -p D4 :cleanup       # Projects starting with "D4"
+buildkit -p BK,D4G :compile         # By project ID
+buildkit -p buildkit :compile       # By project name  
+buildkit -p tom_build_* :compile    # By folder name pattern (glob)
 ```
 
 ### Phase 6: Command Execution
