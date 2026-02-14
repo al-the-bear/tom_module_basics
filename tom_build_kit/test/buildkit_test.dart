@@ -10,6 +10,9 @@
 @Timeout(Duration(seconds: 180))
 library;
 
+import 'dart:io';
+
+import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 import 'helpers/test_workspace.dart';
@@ -38,6 +41,9 @@ void main() {
   tearDown(() async {
     log.finish();
     await ws.revertAll();
+    // Clean up macro persistence file (untracked, not removed by git checkout)
+    final macroFile = File(p.join(ws.workspaceRoot, '.buildkit_macros'));
+    if (macroFile.existsSync()) macroFile.deleteSync();
   });
 
   tearDownAll(() async {

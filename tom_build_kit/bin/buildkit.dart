@@ -20,6 +20,7 @@
 /// - `--outer-first-git` - Process outermost git repos first
 library;
 
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:args/args.dart';
@@ -38,6 +39,40 @@ bool _verbose = false;
 
 /// Dry-run flag.
 bool _dryRun = false;
+
+/// Workspace root path (set during initialization).
+String _rootPath = '';
+
+/// Get the macros file path (.buildkit_macros in workspace root).
+String get _macrosFilePath => p.join(_rootPath, '.buildkit_macros');
+
+/// Load macros from disk.
+void _loadMacros() {
+  final file = File(_macrosFilePath);
+  if (!file.existsSync()) return;
+  try {
+    final content = file.readAsStringSync();
+    final data = json.decode(content);
+    if (data is Map) {
+      _macros.clear();
+      for (final entry in data.entries) {
+        _macros[entry.key.toString()] = entry.value.toString();
+      }
+    }
+  } catch (_) {
+    // Ignore corrupt macro files
+  }
+}
+
+/// Save macros to disk.
+void _saveMacros() {
+  final file = File(_macrosFilePath);
+  if (_macros.isEmpty) {
+    if (file.existsSync()) file.deleteSync();
+    return;
+  }
+  file.writeAsStringSync(json.encode(_macros));
+}
 
 Future<void> main(List<String> args) async {
   // Check for version command early
@@ -82,6 +117,10 @@ Future<void> main(List<String> args) async {
       : (globalResults['root'] as String?) ?? 
         (isWorkspaceMode ? _findWorkspaceRoot(currentDir) : currentDir);
   
+  // Initialize macro persistence
+  _rootPath = rootPath;
+  _loadMacros();
+
   // Get the command/pipeline and its args
   final rest = globalResults.rest;
   if (rest.isEmpty) {
@@ -105,8 +144,15 @@ Future<void> main(List<String> args) async {
   
   // Create tool runner for direct commands
   final executors = createBuildkitExecutors(
-    onDefine: (name, value) => _macros[name] = value,
-    onUndefine: (name) => _macros.remove(name) != null,
+    onDefine: (name, value) {
+      _macros[name] = value;
+      _saveMacros();
+    },
+    onUndefine: (name) {
+      final removed = _macros.remove(name) != null;
+      if (removed) _saveMacros();
+      return removed;
+    },
     getMacros: () => Map.unmodifiable(_macros),
   );
   
@@ -446,6 +492,16 @@ Future<bool> _executePipeline(
 ) async {
   final scanPath = global['scan'] as String?;
   final recursive = global['recursive'] as bool;
+  final project = global['project'] as String?;
+  
+  // Validate project directory when --project is used without --scan
+  if (project != null && scanPath == null) {
+    final projectDir = Directory(p.join(rootPath, project));
+    if (!projectDir.existsSync()) {
+      print('Error: project directory does not exist: ${projectDir.path}');
+      return false;
+    }
+  }
   
   if (scanPath != null) {
     // Execute pipeline across scanned projects

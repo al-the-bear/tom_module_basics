@@ -278,7 +278,7 @@ class DefineExecutor extends CommandExecutor {
     ].join(' ').trim();
 
     onDefine(name, value);
-    print('Defined: @$name = $value');
+    print('Defined macro: $name');
     return const ToolResult.success(processedCount: 1);
   }
 }
@@ -308,7 +308,7 @@ class UndefineExecutor extends CommandExecutor {
     final removed = onUndefine(name);
 
     if (removed) {
-      print('Removed macro: @$name');
+      print('Removed macro: $name');
       return const ToolResult.success(processedCount: 1);
     } else {
       return ToolResult.failure('Macro not found: $name');
