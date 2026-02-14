@@ -305,11 +305,40 @@ void _printUsage(ArgParser parser) {
 | `useNameExclude` | `bool` | `true` | Apply `--exclude-projects` patterns |
 | `useModulesFilter` | `bool` | `true` | Apply `--modules` filter |
 | `useRecursionExclude` | `bool` | `true` | Apply `--recursion-exclude` |
-| `useSkipFiles` | `bool` | `true` | Skip dirs with `buildkit_skip.yaml` |
-| `useMasterConfigDefaults` | `bool` | `true` | Load defaults from `buildkit_master.yaml` |
+| `useSkipFiles` | `bool` | `true` | Skip dirs with `tom_skip.yaml` or `{basename}_skip.yaml` |
+| `useMasterConfigDefaults` | `bool` | `true` | Load defaults from `{basename}_master.yaml` |
 | `useBuildOrder` | `bool` | `true` | Sort by dependency order |
 | `useGitTraversal` | `bool` | `true` | Support git-based traversal |
 | `projectFilter` | `Function?` | `null` | Custom project filter callback |
+
+### Skip Files
+
+Skip files allow directories to be excluded from tool processing without command-line options.
+
+| Skip File | Scope | Description |
+|-----------|-------|-------------|
+| `tom_skip.yaml` | **Global** | Skips directory for ALL tools |
+| `{basename}_skip.yaml` | **Tool-specific** | Skips directory for one tool only |
+
+**Tool-specific skip files:**
+
+| Tool | Skip file |
+|------|-----------|
+| `buildkit` | `buildkit_skip.yaml` |
+| `testkit` | `testkit_skip.yaml` |
+| `issuekit` | `issuekit_skip.yaml` |
+| `linkkit` | `linkkit_skip.yaml` |
+
+**Resolution order:** When scanning a directory, tools check for:
+1. `tom_skip.yaml` — if present, skip for ALL tools
+2. `{basename}_skip.yaml` — if present, skip for this tool only
+
+**Skip file format:** The file can be empty (presence is sufficient) or contain optional skip reasons:
+
+```yaml
+# Optional skip reason
+reason: "Legacy project, not actively maintained"
+```
 
 ### NavigationResult Properties
 
