@@ -1,0 +1,598 @@
+/// Native v2 executor for the compiler command.
+///
+/// Cross-platform Dart compilation with pre/post-compile command sequences,
+/// placeholder resolution, platform filtering, and multi-target compilation.
+///
+/// Reuses existing utility files for config parsing, platform detection,
+/// and built-in command dispatch.
+library;
+
+import 'dart:io';
+
+import 'package:path/path.dart' as p;
+import 'package:tom_build_base/tom_build_base.dart' show findWorkspaceRoot;
+import 'package:tom_build_base/tom_build_base_v2.dart';
+import 'package:yaml/yaml.dart';
+
+import '../../builtin_commands.dart';
+import '../../compiler_config.dart';
+import '../../platform_utils.dart';
+import '../../script_utils.dart' as script_utils;
+
+// =============================================================================
+// CompilerConfig (v2 version)
+// =============================================================================
+
+/// Configuration for the compiler tool, merging workspace + project configs.
+class _CompilerConfig {
+  final List<String> targetFilter;
+  final List<CommandSection> precompileSections;
+  final List<CompileSection> compileSections;
+  final List<CommandSection> postcompileSections;
+
+  const _CompilerConfig({
+    this.targetFilter = const [],
+    this.precompileSections = const [],
+    this.compileSections = const [],
+    this.postcompileSections = const [],
+  });
+
+  /// Load compile sections from buildkit.yaml compiler section.
+  static _CompilerConfig? loadFromYaml(String dir) {
+    final file = File('$dir/buildkit.yaml');
+    if (!file.existsSync()) return null;
+
+    try {
+      final content = file.readAsStringSync();
+      final yaml = loadYaml(content) as YamlMap?;
+      if (yaml == null) return null;
+
+      final compilerYaml = yaml['compiler'] as YamlMap?;
+      if (compilerYaml == null) return null;
+
+      final precompile = <CommandSection>[];
+      final preRaw = compilerYaml['precompile'];
+      if (preRaw is List) {
+        for (final item in preRaw) {
+          precompile.add(CommandSection.fromJson(item));
+        }
+      }
+
+      final compiles = <CompileSection>[];
+      final compilesRaw = compilerYaml['compiles'];
+      if (compilesRaw is List) {
+        for (final item in compilesRaw) {
+          compiles.add(CompileSection.fromJson(item));
+        }
+      }
+
+      final postcompile = <CommandSection>[];
+      final postRaw = compilerYaml['postcompile'];
+      if (postRaw is List) {
+        for (final item in postRaw) {
+          postcompile.add(CommandSection.fromJson(item));
+        }
+      }
+
+      return _CompilerConfig(
+        precompileSections: precompile,
+        compileSections: compiles,
+        postcompileSections: postcompile,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  _CompilerConfig merge(_CompilerConfig other) {
+    return _CompilerConfig(
+      targetFilter: other.targetFilter.isNotEmpty
+          ? other.targetFilter
+          : targetFilter,
+      precompileSections: other.precompileSections.isNotEmpty
+          ? other.precompileSections
+          : precompileSections,
+      compileSections: other.compileSections.isNotEmpty
+          ? other.compileSections
+          : compileSections,
+      postcompileSections: other.postcompileSections.isNotEmpty
+          ? other.postcompileSections
+          : postcompileSections,
+    );
+  }
+}
+
+// =============================================================================
+// Executor
+// =============================================================================
+
+/// Native v2 executor for the `:compiler` command.
+class CompilerExecutor extends CommandExecutor {
+  @override
+  Future<ItemResult> execute(CommandContext context, CliArgs args) async {
+    final projectPath = context.path;
+
+    // Check if project has compiler config
+    if (!_hasCompilerConfig(projectPath)) {
+      return ItemResult.success(
+        path: projectPath,
+        name: context.name,
+        message: 'skipped (no compiler config)',
+      );
+    }
+
+    final cmdOpts = _getCmdOpts(args);
+
+    // Parse target filter from CLI
+    final targetFilter = <String>[];
+    final targetsArg = cmdOpts['targets'];
+    if (targetsArg is String) {
+      targetFilter.addAll(targetsArg.split(',').map((s) => s.trim()));
+    } else if (targetsArg is List) {
+      for (final t in targetsArg) {
+        targetFilter.addAll(t.toString().split(',').map((s) => s.trim()));
+      }
+    }
+
+    // Load workspace config then merge project config
+    var config = _CompilerConfig.loadFromYaml(context.executionRoot) ??
+        const _CompilerConfig();
+    final projectConfig = _CompilerConfig.loadFromYaml(projectPath);
+    if (projectConfig != null) {
+      config = config.merge(projectConfig);
+    }
+    if (targetFilter.isNotEmpty) {
+      config = config.merge(_CompilerConfig(targetFilter: targetFilter));
+    }
+
+    if (config.compileSections.isEmpty) {
+      if (args.verbose) print('  No compile sections configured');
+      return ItemResult.success(
+        path: projectPath,
+        name: context.name,
+        message: 'no compile sections',
+      );
+    }
+
+    final currentPlatform = PlatformUtils.getCurrentPlatform();
+    if (args.verbose) print('  Current platform: $currentPlatform');
+
+    final savedDir = Directory.current.path;
+    Directory.current = projectPath;
+
+    try {
+      var compilationCount = 0;
+
+      // Precompile
+      for (final section in config.precompileSections) {
+        await _runCommandSection(
+          section: section,
+          currentPlatform: currentPlatform,
+          projectPath: projectPath,
+          sectionName: 'precompile',
+          args: args,
+        );
+      }
+
+      // Compile
+      for (final section in config.compileSections) {
+        if (section.platforms.isNotEmpty) {
+          final matches = section.platforms.any(
+              (pl) => PlatformUtils.matchesPlatform(pl, currentPlatform));
+          if (!matches) {
+            if (args.verbose) {
+              print('  Skipping compile section (platform: '
+                  '${section.platforms.join(', ')})');
+            }
+            continue;
+          }
+        }
+
+        var targets = section.targets.isNotEmpty
+            ? _expandTargets(section.targets)
+            : [currentPlatform];
+
+        if (config.targetFilter.isNotEmpty) {
+          targets = targets.where((t) {
+            return config.targetFilter.any(
+                (f) => PlatformUtils.matchesPlatform(f, t));
+          }).toList();
+          if (targets.isEmpty) {
+            if (args.verbose) print('  No targets match filter');
+            continue;
+          }
+        }
+
+        for (final file in section.files) {
+          for (final target in targets) {
+            final success = section.isBuiltinCommand
+                ? await _compileFileBuiltin(
+                    file: file,
+                    targetPlatform: target,
+                    currentPlatform: currentPlatform,
+                    commandTemplates: section.commands,
+                    projectPath: projectPath,
+                    args: args,
+                  )
+                : await _compileFile(
+                    file: file,
+                    targetPlatform: target,
+                    currentPlatform: currentPlatform,
+                    commandTemplates: section.commandlines,
+                    projectPath: projectPath,
+                    args: args,
+                  );
+            if (success) compilationCount++;
+          }
+        }
+      }
+
+      // Postcompile
+      for (final section in config.postcompileSections) {
+        await _runCommandSection(
+          section: section,
+          currentPlatform: currentPlatform,
+          projectPath: projectPath,
+          sectionName: 'postcompile',
+          args: args,
+        );
+      }
+
+      if (compilationCount > 0) {
+        print('  Completed $compilationCount compilation(s)');
+      }
+
+      return ItemResult.success(
+        path: projectPath,
+        name: context.name,
+        message: '$compilationCount compilations',
+      );
+    } catch (e) {
+      return ItemResult.failure(
+        path: projectPath,
+        name: context.name,
+        error: 'Compilation failed: $e',
+      );
+    } finally {
+      Directory.current = savedDir;
+    }
+  }
+
+  bool _hasCompilerConfig(String dir) {
+    final file = File('$dir/buildkit.yaml');
+    if (!file.existsSync()) return false;
+    try {
+      final yaml = loadYaml(file.readAsStringSync()) as YamlMap?;
+      return yaml != null && yaml['compiler'] is YamlMap;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Map<String, dynamic> _getCmdOpts(CliArgs args) {
+    for (final cmd in args.commands) {
+      if (cmd == 'compiler' || cmd == 'c' || cmd == 'comp') {
+        final cmdArgs = args.commandArgs[cmd];
+        if (cmdArgs != null) return cmdArgs.options;
+      }
+    }
+    return args.extraOptions;
+  }
+
+  Future<bool> _runCommandSection({
+    required CommandSection section,
+    required String currentPlatform,
+    required String projectPath,
+    required String sectionName,
+    required CliArgs args,
+  }) async {
+    if (section.platforms.isNotEmpty) {
+      final matches = section.platforms.any(
+          (pl) => PlatformUtils.matchesPlatform(pl, currentPlatform));
+      if (!matches) {
+        if (args.verbose) {
+          print('  Skipping $sectionName (platform: '
+              '${section.platforms.join(', ')})');
+        }
+        return true;
+      }
+    }
+
+    if (section.isBuiltinCommand) {
+      for (final commandRef in section.commands) {
+        if (args.dryRun) {
+          print('  [DRY RUN] $sectionName (builtin): $commandRef');
+          continue;
+        }
+        if (args.verbose) print('  $sectionName (builtin): $commandRef');
+
+        final builtinCommands = BuiltinCommands(
+          projectPath: projectPath,
+          rootPath: findWorkspaceRoot(projectPath),
+          verbose: args.verbose,
+          dryRun: args.dryRun,
+        );
+
+        if (!builtinCommands.isBuiltin(commandRef)) {
+          print('  Error: "$commandRef" is not a recognized built-in command.');
+          return false;
+        }
+
+        final result = await builtinCommands.execute(commandRef);
+        if (!result) {
+          print('  Error: $sectionName built-in command failed: $commandRef');
+        }
+      }
+      return true;
+    }
+
+    for (final commandTemplate in section.commandlines) {
+      var command = commandTemplate
+          .replaceAll(r'${current-os}',
+              PlatformUtils.getTargetOS(currentPlatform))
+          .replaceAll(r'${current-arch}',
+              PlatformUtils.getTargetArch(currentPlatform))
+          .replaceAll(r'${current-platform}',
+              PlatformUtils.vsCodeToDartTarget(currentPlatform))
+          .replaceAll(r'${current-platform-vs}', currentPlatform);
+
+      if (script_utils.isStdinCommand(command)) {
+        final parsed = script_utils.parseStdinCommand(command);
+        if (parsed != null) {
+          final expandedCmd = _replaceEnvVars(parsed.command);
+          final result = await script_utils.executeWithStdin(
+            command: expandedCmd,
+            stdinContent: parsed.stdinContent,
+            environment: Platform.environment,
+            dryRun: args.dryRun,
+            verbose: args.verbose,
+          );
+          if (!result) {
+            print('  Error: $sectionName stdin command failed');
+          }
+          continue;
+        }
+      }
+
+      command = _replaceEnvVars(command);
+
+      if (args.dryRun) {
+        print('  [DRY RUN] $sectionName: $command');
+        continue;
+      }
+      if (args.verbose) print('  $sectionName: $command');
+
+      final result = await Process.run(
+        '/bin/sh',
+        ['-c', command],
+        environment: Platform.environment,
+      );
+      if (result.stdout.toString().isNotEmpty) stdout.write(result.stdout);
+      if (result.stderr.toString().isNotEmpty) stderr.write(result.stderr);
+      if (result.exitCode != 0) {
+        print('  Error: $sectionName command failed (exit ${result.exitCode})');
+      }
+    }
+    return true;
+  }
+
+  Future<bool> _compileFile({
+    required String file,
+    required String targetPlatform,
+    required String currentPlatform,
+    required List<String> commandTemplates,
+    required String projectPath,
+    required CliArgs args,
+  }) async {
+    final filePath = p.normalize(file);
+    final fileName = p.basenameWithoutExtension(filePath);
+    final fileBasename = p.basename(filePath);
+    final fileExtension = p.extension(filePath);
+    final fileDir = p.dirname(filePath);
+
+    final targetOS = PlatformUtils.getTargetOS(targetPlatform);
+    final targetArch = PlatformUtils.getTargetArch(targetPlatform);
+    final targetDart = PlatformUtils.vsCodeToDartTarget(targetPlatform);
+    final currentOS = PlatformUtils.getTargetOS(currentPlatform);
+    final currentArch = PlatformUtils.getTargetArch(currentPlatform);
+
+    for (final template in commandTemplates) {
+      var command = _resolvePlaceholders(
+        template,
+        filePath: filePath,
+        fileName: fileName,
+        fileBasename: fileBasename,
+        fileExtension: fileExtension,
+        fileDir: fileDir,
+        targetOS: targetOS,
+        targetArch: targetArch,
+        targetDart: targetDart,
+        targetPlatform: targetPlatform,
+        currentOS: currentOS,
+        currentArch: currentArch,
+        currentPlatform: currentPlatform,
+      );
+
+      if (script_utils.isStdinCommand(command)) {
+        final parsed = script_utils.parseStdinCommand(command);
+        if (parsed != null) {
+          if (args.dryRun) {
+            print('  [DRY RUN] compile stdin ($targetPlatform): '
+                '${parsed.command}');
+            continue;
+          }
+          print('  Compiling $fileName for $targetPlatform (stdin)');
+          final result = await script_utils.executeWithStdin(
+            command: _replaceEnvVars(parsed.command),
+            stdinContent: parsed.stdinContent,
+            workingDirectory: projectPath,
+            environment: Platform.environment,
+            dryRun: args.dryRun,
+            verbose: args.verbose,
+          );
+          if (!result) {
+            print('  Error: Compilation failed for $fileName ($targetPlatform)');
+            return false;
+          }
+          continue;
+        }
+      }
+
+      command = _replaceEnvVars(command);
+
+      if (args.dryRun) {
+        print('  [DRY RUN] compile ($targetPlatform): $command');
+        continue;
+      }
+
+      if (args.verbose) {
+        print('  Compiling $fileName for $targetPlatform...');
+        print('    Command: $command');
+      } else {
+        print('  Compiling $fileName for $targetPlatform');
+      }
+
+      final result = await Process.run(
+        '/bin/sh',
+        ['-c', command],
+        workingDirectory: projectPath,
+        environment: Platform.environment,
+      );
+      if (result.stdout.toString().isNotEmpty) stdout.write(result.stdout);
+      if (result.stderr.toString().isNotEmpty) stderr.write(result.stderr);
+      if (result.exitCode != 0) {
+        print('  Error: Compilation failed for $fileName ($targetPlatform)');
+        return false;
+      }
+    }
+    return true;
+  }
+
+  Future<bool> _compileFileBuiltin({
+    required String file,
+    required String targetPlatform,
+    required String currentPlatform,
+    required List<String> commandTemplates,
+    required String projectPath,
+    required CliArgs args,
+  }) async {
+    final filePath = p.normalize(file);
+    final fileName = p.basenameWithoutExtension(filePath);
+    final fileBasename = p.basename(filePath);
+    final fileExtension = p.extension(filePath);
+    final fileDir = p.dirname(filePath);
+
+    final targetOS = PlatformUtils.getTargetOS(targetPlatform);
+    final targetArch = PlatformUtils.getTargetArch(targetPlatform);
+    final targetDart = PlatformUtils.vsCodeToDartTarget(targetPlatform);
+    final currentOS = PlatformUtils.getTargetOS(currentPlatform);
+    final currentArch = PlatformUtils.getTargetArch(currentPlatform);
+
+    for (final template in commandTemplates) {
+      var command = _resolvePlaceholders(
+        template,
+        filePath: filePath,
+        fileName: fileName,
+        fileBasename: fileBasename,
+        fileExtension: fileExtension,
+        fileDir: fileDir,
+        targetOS: targetOS,
+        targetArch: targetArch,
+        targetDart: targetDart,
+        targetPlatform: targetPlatform,
+        currentOS: currentOS,
+        currentArch: currentArch,
+        currentPlatform: currentPlatform,
+      );
+
+      if (args.dryRun) {
+        print('  [DRY RUN] compile builtin ($targetPlatform): $command');
+        continue;
+      }
+      print('  Compiling $fileName for $targetPlatform (builtin)');
+
+      final builtinCommands = BuiltinCommands(
+        projectPath: projectPath,
+        rootPath: findWorkspaceRoot(projectPath),
+        verbose: args.verbose,
+        dryRun: args.dryRun,
+      );
+
+      if (!builtinCommands.isBuiltin(command)) {
+        print('  Error: "$command" is not a recognized built-in command.');
+        return false;
+      }
+      if (!await builtinCommands.execute(command)) {
+        print('  Error: Compilation failed for $fileName ($targetPlatform)');
+        return false;
+      }
+    }
+    return true;
+  }
+
+  String _resolvePlaceholders(
+    String template, {
+    required String filePath,
+    required String fileName,
+    required String fileBasename,
+    required String fileExtension,
+    required String fileDir,
+    required String targetOS,
+    required String targetArch,
+    required String targetDart,
+    required String targetPlatform,
+    required String currentOS,
+    required String currentArch,
+    required String currentPlatform,
+  }) {
+    return template
+        .replaceAll(r'${file}', filePath)
+        .replaceAll(r'${file.path}', filePath)
+        .replaceAll(r'${file.name}', fileName)
+        .replaceAll(r'${file.basename}', fileBasename)
+        .replaceAll(r'${file.extension}', fileExtension)
+        .replaceAll(r'${file.dir}', fileDir)
+        .replaceAll(r'${target-os}', targetOS)
+        .replaceAll(r'${target-arch}', targetArch)
+        .replaceAll(r'${target-platform}', targetDart)
+        .replaceAll(r'${target-platform-vs}', targetPlatform)
+        .replaceAll(r'${current-os}', currentOS)
+        .replaceAll(r'${current-arch}', currentArch)
+        .replaceAll(r'${current-platform}', currentPlatform)
+        .replaceAll(r'${current-platform-vs}', currentPlatform)
+        .replaceAll('[file]', filePath)
+        .replaceAll('[file.name]', fileName)
+        .replaceAll('[target-os]', targetOS)
+        .replaceAll('[target-arch]', targetArch)
+        .replaceAll('[target-platform]', targetDart)
+        .replaceAll('[target-platform-vs]', targetPlatform);
+  }
+
+  List<String> _expandTargets(List<String> targets) {
+    final expanded = <String>[];
+    for (final target in targets) {
+      expanded.addAll(PlatformUtils.normalizePlatform(target));
+    }
+    return expanded;
+  }
+
+  String _replaceEnvVars(String command) {
+    var result = command;
+    result = result.replaceAllMapped(
+      RegExp(r'\$(\w+)'),
+      (match) {
+        final varName = match.group(1)!;
+        if (varName.startsWith('{')) return match.group(0)!;
+        return Platform.environment[varName] ?? '';
+      },
+    );
+    result = result.replaceAllMapped(
+      RegExp(r'\[(\w+)\]'),
+      (match) {
+        final varName = match.group(1)!;
+        return Platform.environment[varName] ?? '';
+      },
+    );
+    return result;
+  }
+}

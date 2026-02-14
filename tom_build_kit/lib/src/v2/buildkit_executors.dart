@@ -1,189 +1,28 @@
 /// Buildkit v2 command executors.
 ///
-/// These executors implement the buildkit commands using the v2 ToolRunner
-/// framework. They wrap the existing v1 tool implementations from
-/// lib/src/commands/ as passthrough executors, allowing them to handle their
-/// own traversal/discovery while the v2 framework handles command routing,
-/// arg parsing, and macro substitution.
+/// All buildkit commands are implemented as native v2 [CommandExecutor]s.
+/// Project/git traversal is handled by the v2 ToolRunner framework based
+/// on each command's [CommandDefinition.requiresTraversal] flag.
 ///
-/// Strategy: All v1 tool executors use [executeWithoutTraversal] to bypass
-/// the v2 ToolRunner's traversal. The v1 tools handle their own project
-/// discovery internally. This allows a clean v2 command routing layer
-/// while preserving all existing v1 tool behavior.
+/// - Traversal executors implement [execute] (called per folder).
+/// - Non-traversal executors implement [executeWithoutTraversal].
 library;
 
 import 'dart:io';
 
 import 'package:tom_build_base/tom_build_base_v2.dart';
 
-import '../commands/buildsorter_tool.dart';
-import '../commands/bumpversion_tool.dart';
-import '../commands/cleanup_tool.dart';
-import '../commands/compiler_tool.dart';
-import '../commands/dependencies_tool.dart';
-import '../commands/git_tool.dart';
-import '../commands/gitbranch_tool.dart';
-import '../commands/gitcheckout_tool.dart';
-import '../commands/gitclean_tool.dart';
-import '../commands/gitcommit_tool.dart';
-import '../commands/gitcompare_tool.dart';
-import '../commands/gitmerge_tool.dart';
-import '../commands/gitprune_tool.dart';
-import '../commands/gitpull_tool.dart';
-import '../commands/gitrebase_tool.dart';
-import '../commands/gitreset_tool.dart';
-import '../commands/gitstash_tool.dart';
-import '../commands/gitstatus_tool.dart';
-import '../commands/gitsync_tool.dart';
-import '../commands/gitsquash_tool.dart';
-import '../commands/gittag_tool.dart';
-import '../commands/gitunstash_tool.dart';
-import '../commands/publisher_tool.dart';
-import '../commands/runner_tool.dart';
-import '../commands/tool_base.dart';
 import '../pubget_command.dart';
 import '../pubupdate_command.dart';
+import 'executors/buildsorter_executor.dart';
+import 'executors/bumpversion_executor.dart';
+import 'executors/cleanup_executor.dart';
+import 'executors/compiler_executor.dart';
+import 'executors/dependencies_executor.dart';
+import 'executors/git_executors.dart';
+import 'executors/publisher_executor.dart';
+import 'executors/runner_executor.dart';
 import 'executors/versioner_executor.dart';
-
-// =============================================================================
-// V1 Tool Passthrough Executor
-// =============================================================================
-
-/// Passthrough executor that delegates to a v1 ToolBase.
-///
-/// Rebuilds command-line args from the parsed [CliArgs] and passes them
-/// to the v1 tool's `run()` method. The v1 tool handles its own traversal
-/// and project discovery.
-class V1ToolPassthroughExecutor extends CommandExecutor {
-  /// Factory function to create the v1 tool.
-  final ToolBase Function() toolFactory;
-
-  /// Fixed git traversal flags to inject (e.g., '--inner-first-git').
-  final List<String> fixedGitFlags;
-
-  V1ToolPassthroughExecutor({
-    required this.toolFactory,
-    this.fixedGitFlags = const [],
-  });
-
-  @override
-  Future<ItemResult> execute(CommandContext context, CliArgs args) async {
-    // Not used - all v1 tools handle their own traversal
-    return ItemResult.failure(
-      path: context.path,
-      name: context.name,
-      error: 'V1 tools use executeWithoutTraversal',
-    );
-  }
-
-  @override
-  Future<ToolResult> executeWithoutTraversal(CliArgs args) async {
-    final tool = toolFactory();
-    final toolArgs = _buildToolArgs(args);
-
-    try {
-      final success = await tool.run(toolArgs);
-      return success
-          ? const ToolResult.success()
-          : const ToolResult.failure('Command failed');
-    } catch (e) {
-      return ToolResult.failure(e.toString());
-    }
-  }
-
-  /// Build v1-compatible argument list from parsed CliArgs.
-  List<String> _buildToolArgs(CliArgs args) {
-    final toolArgs = <String>[];
-
-    // Inject fixed git flags first
-    toolArgs.addAll(fixedGitFlags);
-
-    // Standard options
-    if (args.verbose) toolArgs.add('--verbose');
-    if (args.dryRun) toolArgs.add('--dry-run');
-    if (args.listOnly) toolArgs.add('--list');
-
-    // Navigation options
-    if (args.scan != null) {
-      toolArgs.addAll(['--scan', args.scan!]);
-    }
-    if (args.root != null) {
-      toolArgs.addAll(['--root', args.root!]);
-    } else if (args.bareRoot) {
-      toolArgs.add('-R');
-    }
-    if (args.effectiveRecursive) toolArgs.add('--recursive');
-    if (args.innerFirstGit && !fixedGitFlags.contains('--inner-first-git')) {
-      toolArgs.add('--inner-first-git');
-    }
-    if (args.outerFirstGit && !fixedGitFlags.contains('--outer-first-git')) {
-      toolArgs.add('--outer-first-git');
-    }
-    if (args.workspaceRecursion) toolArgs.add('--workspace-recursion');
-    if (args.buildOrder) toolArgs.add('--build-order');
-    if (args.force) toolArgs.add('--force');
-
-    // Project/exclude patterns
-    for (final p in args.projectPatterns) {
-      toolArgs.addAll(['--project', p]);
-    }
-    for (final x in args.excludePatterns) {
-      toolArgs.addAll(['--exclude', x]);
-    }
-    for (final x in args.excludeProjects) {
-      toolArgs.addAll(['--exclude-projects', x]);
-    }
-    for (final m in args.modules) {
-      toolArgs.addAll(['--modules', m]);
-    }
-    for (final m in args.skipModules) {
-      toolArgs.addAll(['--skip-modules', m]);
-    }
-
-    // Extra options (command-specific)
-    for (final entry in args.extraOptions.entries) {
-      final key = entry.key;
-      final val = entry.value;
-      if (val is bool && val) {
-        toolArgs.add('--$key');
-      } else if (val is String) {
-        toolArgs.addAll(['--$key', val]);
-      } else if (val is List) {
-        for (final v in val) {
-          toolArgs.addAll(['--$key', v.toString()]);
-        }
-      }
-    }
-
-    // Per-command args (from first command in multi-command)
-    if (args.commands.isNotEmpty) {
-      final cmdName = args.commands.first;
-      final cmdArgs = args.commandArgs[cmdName];
-      if (cmdArgs != null) {
-        for (final p in cmdArgs.projectPatterns) {
-          toolArgs.addAll(['--project', p]);
-        }
-        for (final x in cmdArgs.excludePatterns) {
-          toolArgs.addAll(['--exclude', x]);
-        }
-        for (final entry in cmdArgs.options.entries) {
-          final key = entry.key;
-          final val = entry.value;
-          if (val is bool && val) {
-            toolArgs.add('--$key');
-          } else if (val is String) {
-            toolArgs.addAll(['--$key', val]);
-          }
-        }
-      }
-    }
-
-    // Positional args
-    toolArgs.addAll(args.positionalArgs);
-
-    return toolArgs;
-  }
-}
 
 // =============================================================================
 // Pub Command Executors
@@ -517,11 +356,9 @@ class DefinesExecutor extends CommandExecutor {
 
 /// Create all buildkit executors.
 ///
-/// All v1 tool executors use [V1ToolPassthroughExecutor] which delegates
-/// to the v1 tool's `run()` method, allowing it to handle its own traversal.
-///
-/// Git tool executors inject fixed git traversal flags based on the
-/// documented default order for each git operation.
+/// All tool commands use native v2 executors. Git executors are defined
+/// in [git_executors.dart]. Project tool executors are in individual files
+/// under `executors/`.
 ///
 /// The macro callbacks are used for define/undefine/defines commands.
 Map<String, CommandExecutor> createBuildkitExecutors({
@@ -532,13 +369,13 @@ Map<String, CommandExecutor> createBuildkitExecutors({
   return {
     // Build tools
     'versioner': VersionerExecutor(),
-    'bumpversion': V1ToolPassthroughExecutor(toolFactory: BumpVersionTool.new),
-    'compiler': V1ToolPassthroughExecutor(toolFactory: CompilerTool.new),
-    'runner': V1ToolPassthroughExecutor(toolFactory: RunnerTool.new),
-    'cleanup': V1ToolPassthroughExecutor(toolFactory: CleanupTool.new),
-    'dependencies': V1ToolPassthroughExecutor(toolFactory: DependenciesTool.new),
-    'publisher': V1ToolPassthroughExecutor(toolFactory: PublisherTool.new),
-    'buildsorter': V1ToolPassthroughExecutor(toolFactory: BuildSorterTool.new),
+    'bumpversion': BumpVersionExecutor(),
+    'compiler': CompilerExecutor(),
+    'runner': RunnerExecutor(),
+    'cleanup': CleanupExecutor(),
+    'dependencies': DependenciesExecutor(),
+    'publisher': PublisherExecutor(),
+    'buildsorter': BuildSorterExecutor(),
 
     // Pub commands (have their own non-ToolBase API)
     'pubget': PubGetExecutor(),
@@ -546,73 +383,24 @@ Map<String, CommandExecutor> createBuildkitExecutors({
     'pubupdate': PubUpdateExecutor(),
     'pubupdateall': PubUpdateAllExecutor(),
 
-    // Git tools - inner first (operations that start from leaves)
-    'git': V1ToolPassthroughExecutor(toolFactory: GitTool.new),
-    'gitstatus': V1ToolPassthroughExecutor(
-      toolFactory: () => GitStatusTool()..autoInnerFirst = true,
-    ),
-    'gitcommit': V1ToolPassthroughExecutor(
-      toolFactory: GitCommitTool.new,
-      fixedGitFlags: ['--inner-first-git'],
-    ),
-    'gitbranch': V1ToolPassthroughExecutor(
-      toolFactory: GitBranchTool.new,
-      fixedGitFlags: ['--inner-first-git'],
-    ),
-    'gittag': V1ToolPassthroughExecutor(
-      toolFactory: GitTagTool.new,
-      fixedGitFlags: ['--inner-first-git'],
-    ),
-    'gitclean': V1ToolPassthroughExecutor(
-      toolFactory: GitCleanTool.new,
-      fixedGitFlags: ['--inner-first-git'],
-    ),
-    'gitcompare': V1ToolPassthroughExecutor(
-      toolFactory: GitCompareTool.new,
-      fixedGitFlags: ['--inner-first-git'],
-    ),
-    'gitmerge': V1ToolPassthroughExecutor(
-      toolFactory: GitMergeTool.new,
-      fixedGitFlags: ['--inner-first-git'],
-    ),
-    'gitsquash': V1ToolPassthroughExecutor(
-      toolFactory: GitSquashTool.new,
-      fixedGitFlags: ['--inner-first-git'],
-    ),
-    'gitrebase': V1ToolPassthroughExecutor(
-      toolFactory: GitRebaseTool.new,
-      fixedGitFlags: ['--inner-first-git'],
-    ),
-    'gitstash': V1ToolPassthroughExecutor(
-      toolFactory: GitStashTool.new,
-      fixedGitFlags: ['--inner-first-git'],
-    ),
-
-    // Git tools - outer first (operations that start from root)
-    'gitpull': V1ToolPassthroughExecutor(
-      toolFactory: GitPullTool.new,
-      fixedGitFlags: ['--outer-first-git'],
-    ),
-    'gitcheckout': V1ToolPassthroughExecutor(
-      toolFactory: GitCheckoutTool.new,
-      fixedGitFlags: ['--outer-first-git'],
-    ),
-    'gitreset': V1ToolPassthroughExecutor(
-      toolFactory: GitResetTool.new,
-      fixedGitFlags: ['--outer-first-git'],
-    ),
-    'gitsync': V1ToolPassthroughExecutor(
-      toolFactory: GitSyncTool.new,
-      fixedGitFlags: ['--outer-first-git'],
-    ),
-    'gitprune': V1ToolPassthroughExecutor(
-      toolFactory: GitPruneTool.new,
-      fixedGitFlags: ['--outer-first-git'],
-    ),
-    'gitunstash': V1ToolPassthroughExecutor(
-      toolFactory: GitUnstashTool.new,
-      fixedGitFlags: ['--outer-first-git'],
-    ),
+    // Git tools
+    'git': GitPassthroughExecutor(),
+    'gitstatus': GitStatusExecutor(),
+    'gitcommit': GitCommitExecutor(),
+    'gitpull': GitPullExecutor(),
+    'gitbranch': GitBranchExecutor(),
+    'gittag': GitTagExecutor(),
+    'gitcheckout': GitCheckoutExecutor(),
+    'gitreset': GitResetExecutor(),
+    'gitclean': GitCleanExecutor(),
+    'gitsync': GitSyncExecutor(),
+    'gitprune': GitPruneExecutor(),
+    'gitstash': GitStashExecutor(),
+    'gitunstash': GitUnstashExecutor(),
+    'gitcompare': GitCompareExecutor(),
+    'gitmerge': GitMergeExecutor(),
+    'gitsquash': GitSquashExecutor(),
+    'gitrebase': GitRebaseExecutor(),
 
     // Other
     'dcli': DcliExecutor(),
