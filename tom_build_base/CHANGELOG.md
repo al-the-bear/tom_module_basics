@@ -34,6 +34,12 @@
 - `ProjectDiscovery.hasSkipFile(basename)` — Updated signature with basename parameter.
 - `ProjectDiscovery.getSkipFileName(basename)` — Returns tool-specific skip filename.
 - `ProjectDiscovery.globalSkipFileName` — Constant for `tom_skip.yaml`.
+- **v2 `FolderScanner`** — Now supports tool-specific skip files:
+  - Constructor accepts `toolBasename` parameter (defaults to 'buildkit').
+  - Checks for `tom_skip.yaml` (global skip for all tools).
+  - Checks for `{toolBasename}_skip.yaml` (tool-specific skip).
+  - New `skipFilename` getter returns tool-specific skip filename.
+  - New `kTomSkipYaml` constant exported.
 
 ## 1.7.1
 

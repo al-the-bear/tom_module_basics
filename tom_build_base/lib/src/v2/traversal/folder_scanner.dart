@@ -5,10 +5,24 @@ import 'package:path/path.dart' as p;
 
 import '../folder/fs_folder.dart';
 
+/// Global skip file that blocks all tools.
+const kTomSkipYaml = 'tom_skip.yaml';
+
 /// Scans directories and builds a list of FsFolders.
 ///
 /// Handles recursive scanning, skip markers, and recursion exclusions.
 class FolderScanner {
+  /// Tool basename for tool-specific skip files (e.g., 'issuekit' → 'issuekit_skip.yaml').
+  final String toolBasename;
+
+  /// Create a FolderScanner.
+  ///
+  /// [toolBasename] - Tool name for tool-specific skip files. Defaults to 'buildkit'.
+  FolderScanner({this.toolBasename = 'buildkit'});
+
+  /// Tool-specific skip filename.
+  String get skipFilename => '${toolBasename}_skip.yaml';
+
   /// Scan for folders starting from [root].
   ///
   /// [recursive] - If true, descend into subdirectories.
@@ -52,8 +66,8 @@ class FolderScanner {
     
     if (!recursive) return;
     
-    // Check if this directory has buildkit.yaml with recursive: false
-    if (_hasBuildkitRecursiveFalse(dir.path)) return;
+    // Check if this directory has {toolBasename}.yaml with recursive: false
+    if (_hasToolConfigRecursiveFalse(dir.path)) return;
     
     // Descend into subdirectories
     try {
@@ -81,23 +95,32 @@ class FolderScanner {
   }
 
   /// Check for skip markers that exclude entire subtrees.
+  ///
+  /// Checks for:
+  /// - `tom_skip.yaml` — Global skip file for all tools
+  /// - `{toolBasename}_skip.yaml` — Tool-specific skip file
+  /// - Workspace boundaries (nested workspaces)
   bool _hasSkipMarker(String dirPath) {
-    // buildkit_skip.yaml - skip this folder and all descendants
-    if (File(p.join(dirPath, 'buildkit_skip.yaml')).existsSync()) {
+    // Global skip file - blocks all tools
+    if (File(p.join(dirPath, kTomSkipYaml)).existsSync()) {
+      return true;
+    }
+    // Tool-specific skip file
+    if (File(p.join(dirPath, skipFilename)).existsSync()) {
       return true;
     }
     // Workspace boundaries - stop descending into nested workspaces
-    if (File(p.join(dirPath, 'buildkit_master.yaml')).existsSync() ||
+    if (File(p.join(dirPath, '${toolBasename}_master.yaml')).existsSync() ||
         File(p.join(dirPath, 'tom_workspace.yaml')).existsSync()) {
       return true;
     }
     return false;
   }
 
-  /// Check if buildkit.yaml exists and has recursive: false.
-  bool _hasBuildkitRecursiveFalse(String dirPath) {
-    final buildkitPath = p.join(dirPath, 'buildkit.yaml');
-    final file = File(buildkitPath);
+  /// Check if {toolBasename}.yaml exists and has recursive: false.
+  bool _hasToolConfigRecursiveFalse(String dirPath) {
+    final configPath = p.join(dirPath, '$toolBasename.yaml');
+    final file = File(configPath);
     if (!file.existsSync()) return false;
     
     try {
