@@ -392,7 +392,7 @@ class CliArgParser {
   }
 
   bool _optionExpectsValue(String name) {
-    // Options that expect values
+    // Known global options that expect values
     const valueOptions = {
       'scan',
       's',
@@ -409,7 +409,35 @@ class CliArgParser {
       'skip-modules',
       'config',
     };
-    return valueOptions.contains(name);
+    if (valueOptions.contains(name)) return true;
+
+    // Check allowed options
+    for (final opt in allowedOptions) {
+      if ((opt.name == name || opt.abbr == name) &&
+          opt.type != OptionType.flag) {
+        return true;
+      }
+    }
+
+    // Check tool definition global options and command options
+    if (toolDefinition != null) {
+      for (final opt in toolDefinition!.globalOptions) {
+        if ((opt.name == name || opt.abbr == name) &&
+            opt.type != OptionType.flag) {
+          return true;
+        }
+      }
+      for (final cmd in toolDefinition!.commands) {
+        for (final opt in cmd.options) {
+          if ((opt.name == name || opt.abbr == name) &&
+              opt.type != OptionType.flag) {
+            return true;
+          }
+        }
+      }
+    }
+
+    return false;
   }
 
   String _shortToLong(String short) {
@@ -430,7 +458,26 @@ class CliArgParser {
       'h': 'help',
       'V': 'version',
     };
-    return mapping[short] ?? short;
+    if (mapping.containsKey(short)) return mapping[short]!;
+
+    // Check tool definition for abbreviation mapping
+    if (toolDefinition != null) {
+      for (final opt in toolDefinition!.globalOptions) {
+        if (opt.abbr == short) return opt.name;
+      }
+      for (final cmd in toolDefinition!.commands) {
+        for (final opt in cmd.options) {
+          if (opt.abbr == short) return opt.name;
+        }
+      }
+    }
+
+    // Check allowed options
+    for (final opt in allowedOptions) {
+      if (opt.abbr == short) return opt.name;
+    }
+
+    return short;
   }
 
   List<String> _splitValue(String value) {
