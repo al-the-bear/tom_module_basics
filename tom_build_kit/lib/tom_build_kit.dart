@@ -15,6 +15,10 @@ export 'src/builtin_commands.dart';
 export 'src/pubget_command.dart';
 export 'src/pubupdate_command.dart';
 
+// V2 API
+export 'src/v2/buildkit_tool.dart';
+export 'src/v2/buildkit_executors.dart';
+
 // Integrated tool commands
 export 'src/commands/tool_base.dart';
 export 'src/commands/cleanup_tool.dart';
