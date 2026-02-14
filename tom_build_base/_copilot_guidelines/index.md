@@ -7,6 +7,7 @@ This folder contains project-specific guidelines for the `tom_build_base` packag
 | File | Description |
 |------|-------------|
 | [build_base_projects.md](build_base_projects.md) | List of all projects depending on tom_build_base |
+| [cli_v2_design.md](cli_v2_design.md) | V2 CLI framework architecture and design specification |
 | [implementation_guidelines.md](implementation_guidelines.md) | Development workflow, test-first approach, naming conventions |
 
 ## Quick Reference
@@ -23,6 +24,7 @@ This folder contains project-specific guidelines for the `tom_build_base` packag
 **Documentation:**
 - [Build Base User Guide](../doc/build_base_user_guide.md) — Full API documentation
 - [CLI Tools Navigation](../doc/cli_tools_navigation.md) — Navigation options reference
+- [Modes and Placeholders](../doc/modes_and_placeholders.md) — Mode system and placeholder resolution
 - [README](../README.md) — Quick start guide
 
 ## Dependent Projects

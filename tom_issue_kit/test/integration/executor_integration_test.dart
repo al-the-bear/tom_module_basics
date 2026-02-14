@@ -203,7 +203,7 @@ void main() {
       final result = await executor.execute(context, const CliArgs());
 
       expect(result.success, isTrue);
-      expect(result.message, contains('0 error(s)'));
+      expect(result.message, contains('validated'));
     });
 
     test('IK-INT-VAL-2: detects duplicate test IDs', () async {
@@ -285,7 +285,7 @@ void main() {
       final context = contextFor(project);
       final result = await executor.execute(
         context,
-        const CliArgs(extraOptions: {'fix': true, 'dry-run': true}),
+        const CliArgs(dryRun: true, extraOptions: {'fix': true}),
       );
 
       expect(result.success, isTrue);
@@ -359,7 +359,8 @@ void main() {
         context,
         const CliArgs(
           positionalArgs: ['PR-FTR-1'],
-          extraOptions: {'issue': 42, 'dry-run': true},
+          dryRun: true,
+          extraOptions: {'issue': 42},
         ),
       );
 
@@ -414,7 +415,7 @@ void main() {
     test('IK-INT-AGG-1: aggregates tests from project', () async {
       // Create project with tests
       final proj = workspace.addProject(name: 'proj_one', projectId: 'P1');
-      proj.addTestFile('test1.dart', r'''
+      proj.addTestFile('proj_one_test.dart', r'''
 import 'package:test/test.dart';
 
 void main() {
@@ -438,7 +439,7 @@ P1-1-FTR-2,,test 2,OK
 
     test('IK-INT-AGG-2: filters by issue number', () async {
       final proj = workspace.addProject(name: 'filter_proj', projectId: 'FP');
-      proj.addTestFile('mixed.dart', r'''
+      proj.addTestFile('filter_proj_test.dart', r'''
 import 'package:test/test.dart';
 
 void main() {
@@ -468,7 +469,7 @@ FP-10-A-2,,test,X
 
     test('IK-INT-AGG-3: detects regressions in baseline results', () async {
       final proj = workspace.addProject(name: 'regress_proj', projectId: 'RG');
-      proj.addTestFile('tests.dart', r'''
+      proj.addTestFile('regress_proj_test.dart', r'''
 import 'package:test/test.dart';
 
 void main() {
@@ -591,7 +592,7 @@ void main() {
       context = contextForWorkspace(workspace, projGood);
       result = await validateExecutor.execute(context, const CliArgs());
       expect(result.success, isTrue);
-      expect(result.message, contains('0 error(s)'));
+      expect(result.message, contains('validated'));
     });
 
     test('IK-INT-WS-3: handles nested project directories', () async {
@@ -704,7 +705,7 @@ void main() {
       // Step 2: Dry-run fix
       result = await validateExecutor.execute(
         context,
-        const CliArgs(extraOptions: {'fix': true, 'dry-run': true}),
+        const CliArgs(dryRun: true, extraOptions: {'fix': true}),
       );
       expect(result.success, isTrue);
       expect(result.message, contains('Would remove'));
@@ -724,7 +725,7 @@ void main() {
       // Step 4: Validate again - should pass now
       result = await validateExecutor.execute(context, const CliArgs());
       expect(result.success, isTrue);
-      expect(result.message, contains('0 error(s)'));
+      expect(result.message, contains('validated'));
 
       // Verify promoted version is kept, regular is commented out
       content = project.readFile('test/conflict_workflow_test.dart');
