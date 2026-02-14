@@ -233,6 +233,7 @@ class ToolRunner {
 
     await BuildBase.traverse(
       info: traversalInfo,
+      verbose: verbose,
       run: (context) async {
         // Apply per-command filters for project traversal
         if (traversalInfo is ProjectTraversalInfo) {

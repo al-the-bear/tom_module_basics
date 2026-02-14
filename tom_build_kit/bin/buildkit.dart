@@ -138,6 +138,11 @@ Future<void> main(List<String> args) async {
       exit(1);
     }
   }
+
+  // Print overall success summary
+  if (steps.length > 1 || steps.any((s) => !s.isCommand)) {
+    print('Pipeline completed: SUCCESS');
+  }
 }
 
 /// Create the global argument parser.
@@ -254,7 +259,9 @@ List<_ExecutionStep> _parseExecutionSteps(List<String> rest, ArgResults global) 
         suppressedOptions: suppressions,
       ));
     } else if (!arg.startsWith('-')) {
-      // Pipeline name
+      // Check if this is a macro keyword (handled as a command)
+      const macroKeywords = {'define', 'defines', 'undefine'};
+      final isCommand = macroKeywords.contains(arg);
       final name = arg;
       final stepArgs = <String>[];
       i++;
@@ -290,7 +297,7 @@ List<_ExecutionStep> _parseExecutionSteps(List<String> rest, ArgResults global) 
       }
       
       steps.add(_ExecutionStep(
-        isCommand: false,
+        isCommand: isCommand,
         name: name,
         args: stepArgs,
       ));
@@ -386,6 +393,11 @@ Future<bool> _executeCommand(
   final project = global['project'] as String?;
   if (project != null && !step.suppressedOptions.contains('p')) {
     globalArgs.addAll(['--project', project]);
+    // When --project is specified without --scan, enable recursive scanning
+    // so the project can be found by the traversal engine.
+    if (scanPath == null && !isWorkspaceMode) {
+      globalArgs.addAll(['--scan', '.', '--recursive']);
+    }
   }
   
   final excludes = global['exclude'] as List<String>?;
@@ -465,7 +477,7 @@ Future<bool> _executePipelineAcrossProjects({
   required bool recursive,
   required String rootPath,
 }) async {
-  final scanner = FolderScanner(toolBasename: 'buildkit');
+  final scanner = FolderScanner(toolBasename: 'buildkit', verbose: _verbose);
   final folders = await scanner.scan(scanPath, recursive: recursive);
   
   var allSuccess = true;

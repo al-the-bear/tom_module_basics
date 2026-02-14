@@ -27,10 +27,14 @@ class FolderScanner {
   /// Tool basename for tool-specific skip files (e.g., 'issuekit' → 'issuekit_skip.yaml').
   final String toolBasename;
 
+  /// Whether to print verbose messages for skipped directories.
+  final bool verbose;
+
   /// Create a FolderScanner.
   ///
   /// [toolBasename] - Tool name for tool-specific skip files. Defaults to 'buildkit'.
-  FolderScanner({this.toolBasename = 'buildkit'});
+  /// [verbose] - If true, print messages when directories are skipped.
+  FolderScanner({this.toolBasename = 'buildkit', this.verbose = false});
 
   /// Tool-specific skip filename.
   String get skipFilename => '${toolBasename}_skip.yaml';
@@ -83,6 +87,12 @@ class FolderScanner {
     if (skipMarker == null) {
       // No skip marker — add this directory
       results.add(FsFolder(path: dir.path));
+    } else if (verbose) {
+      // Log skip message in verbose mode
+      final skipFile = skipMarker == _SkipType.globalSkip
+          ? kTomSkipYaml
+          : skipFilename;
+      print('Skipping ($skipFile): ${p.basename(dir.path)}');
     }
     // If skip marker is toolSkip or globalSkip, we skip adding this directory
     // but still recurse into children below.

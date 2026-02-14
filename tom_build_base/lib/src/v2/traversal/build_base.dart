@@ -59,6 +59,7 @@ abstract class BuildBase {
     required Future<bool> Function(CommandContext) run,
     Set<Type>? requiredNatures,
     Set<Type> worksWithNatures = const {},
+    bool verbose = false,
   }) async {
     final detector = NatureDetector();
     final filter = FilterPipeline();
@@ -69,7 +70,7 @@ abstract class BuildBase {
     List<FsFolder> folders;
     switch (info) {
       case ProjectTraversalInfo pi:
-        folders = await _scanProjects(pi);
+        folders = await _scanProjects(pi, verbose: verbose);
         folders = filter.applyProjectFilters(folders, pi);
       case GitTraversalInfo gi:
         folders = await _findGitRepos(gi);
@@ -135,8 +136,8 @@ abstract class BuildBase {
   }
 
   /// Scan for projects based on ProjectTraversalInfo.
-  static Future<List<FsFolder>> _scanProjects(ProjectTraversalInfo info) async {
-    final scanner = FolderScanner();
+  static Future<List<FsFolder>> _scanProjects(ProjectTraversalInfo info, {bool verbose = false}) async {
+    final scanner = FolderScanner(verbose: verbose);
     return await scanner.scan(
       info.scan,
       recursive: info.recursive,
