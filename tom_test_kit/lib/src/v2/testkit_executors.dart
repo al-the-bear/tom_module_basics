@@ -4,8 +4,6 @@
 /// to work with the v2 ToolRunner framework.
 library;
 
-import 'dart:io';
-
 import 'package:tom_build_base/tom_build_base_v2.dart';
 
 import '../tracking/basediff_command.dart';
@@ -25,11 +23,6 @@ import '../util/output_formatter.dart';
 // =============================================================================
 // Helper Functions
 // =============================================================================
-
-/// Check if the given path is a Dart project (has pubspec.yaml).
-bool _isDartProject(String path) {
-  return File('$path/pubspec.yaml').existsSync();
-}
 
 /// Parse test-args from CLI args.
 List<String> _parseTestArgs(CliArgs args) {
