@@ -41,9 +41,9 @@ import '../commands/gitunstash_tool.dart';
 import '../commands/publisher_tool.dart';
 import '../commands/runner_tool.dart';
 import '../commands/tool_base.dart';
-import '../commands/versioner_tool.dart';
 import '../pubget_command.dart';
 import '../pubupdate_command.dart';
+import 'executors/versioner_executor.dart';
 
 // =============================================================================
 // V1 Tool Passthrough Executor
@@ -531,7 +531,7 @@ Map<String, CommandExecutor> createBuildkitExecutors({
 }) {
   return {
     // Build tools
-    'versioner': V1ToolPassthroughExecutor(toolFactory: VersionerTool.new),
+    'versioner': VersionerExecutor(),
     'bumpversion': V1ToolPassthroughExecutor(toolFactory: BumpVersionTool.new),
     'compiler': V1ToolPassthroughExecutor(toolFactory: CompilerTool.new),
     'runner': V1ToolPassthroughExecutor(toolFactory: RunnerTool.new),

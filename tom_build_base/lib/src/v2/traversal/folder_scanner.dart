@@ -8,6 +8,18 @@ import '../folder/fs_folder.dart';
 /// Global skip file that blocks all tools.
 const kTomSkipYaml = 'tom_skip.yaml';
 
+/// Type of skip marker found in a directory.
+enum _SkipType {
+  /// `tom_skip.yaml` — global skip for all tools.
+  globalSkip,
+
+  /// `{toolBasename}_skip.yaml` — tool-specific skip.
+  toolSkip,
+
+  /// Nested workspace boundary (e.g., `buildkit_master.yaml`).
+  workspaceBoundary,
+}
+
 /// Scans directories and builds a list of FsFolders.
 ///
 /// Handles recursive scanning, skip markers, and recursion exclusions.
@@ -57,12 +69,23 @@ class FolderScanner {
     required List<String> recursionExclude,
     bool isRoot = false,
   }) async {
-    // Check for skip markers BEFORE adding or descending
-    // Exception: don't skip the root directory (only skip nested workspaces)
-    if (!isRoot && _hasSkipMarker(dir.path)) return;
+    // Check for skip markers.
+    // Skip markers mean "don't include this folder as a project"
+    // but we still descend into children (except for workspace boundaries
+    // which represent separate workspaces).
+    final skipMarker = !isRoot ? _getSkipMarker(dir.path) : null;
     
-    // Add this directory
-    results.add(FsFolder(path: dir.path));
+    if (skipMarker == _SkipType.workspaceBoundary) {
+      // Workspace boundary — stop descending entirely
+      return;
+    }
+    
+    if (skipMarker == null) {
+      // No skip marker — add this directory
+      results.add(FsFolder(path: dir.path));
+    }
+    // If skip marker is toolSkip or globalSkip, we skip adding this directory
+    // but still recurse into children below.
     
     if (!recursive) return;
     
@@ -94,27 +117,28 @@ class FolderScanner {
     }
   }
 
-  /// Check for skip markers that exclude entire subtrees.
+  /// Determine skip marker type for a directory.
   ///
-  /// Checks for:
-  /// - `tom_skip.yaml` — Global skip file for all tools
-  /// - `{toolBasename}_skip.yaml` — Tool-specific skip file
-  /// - Workspace boundaries (nested workspaces)
-  bool _hasSkipMarker(String dirPath) {
-    // Global skip file - blocks all tools
+  /// Returns:
+  /// - [_SkipType.globalSkip] for `tom_skip.yaml`
+  /// - [_SkipType.toolSkip] for `{toolBasename}_skip.yaml`
+  /// - [_SkipType.workspaceBoundary] for nested workspace markers
+  /// - null if no skip marker found
+  _SkipType? _getSkipMarker(String dirPath) {
+    // Workspace boundaries — separate workspaces, stop descending
+    if (File(p.join(dirPath, '${toolBasename}_master.yaml')).existsSync() ||
+        File(p.join(dirPath, 'tom_workspace.yaml')).existsSync()) {
+      return _SkipType.workspaceBoundary;
+    }
+    // Global skip file — blocks all tools
     if (File(p.join(dirPath, kTomSkipYaml)).existsSync()) {
-      return true;
+      return _SkipType.globalSkip;
     }
     // Tool-specific skip file
     if (File(p.join(dirPath, skipFilename)).existsSync()) {
-      return true;
+      return _SkipType.toolSkip;
     }
-    // Workspace boundaries - stop descending into nested workspaces
-    if (File(p.join(dirPath, '${toolBasename}_master.yaml')).existsSync() ||
-        File(p.join(dirPath, 'tom_workspace.yaml')).existsSync()) {
-      return true;
-    }
-    return false;
+    return null;
   }
 
   /// Check if {toolBasename}.yaml exists and has recursive: false.

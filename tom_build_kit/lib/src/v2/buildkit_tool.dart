@@ -14,14 +14,25 @@ import '../version.g.dart';
 /// Options for versioner command.
 const versionerOptions = <OptionDefinition>[
   OptionDefinition.option(
-    name: 'prefix',
-    description: 'Variable prefix for generated version files',
-    valueName: 'name',
+    name: 'output',
+    abbr: 'O',
+    description: 'Output file path relative to project',
+    defaultValue: 'lib/src/version.g.dart',
+    valueName: 'path',
   ),
   OptionDefinition.flag(
-    name: 'force',
-    abbr: 'f',
-    description: 'Force regeneration even if no changes detected',
+    name: 'no-git',
+    description: 'Skip git commit hash in version file',
+  ),
+  OptionDefinition.option(
+    name: 'version',
+    description: 'Override version string (instead of pubspec.yaml)',
+    valueName: 'version',
+  ),
+  OptionDefinition.option(
+    name: 'variable-prefix',
+    description: 'Prefix for generated class name (e.g., "myApp" → MyAppVersionInfo)',
+    valueName: 'name',
   ),
 ];
 
@@ -428,11 +439,12 @@ const versionerCommand = CommandDefinition(
   options: versionerOptions,
   supportsProjectTraversal: true,
   supportsGitTraversal: false,
-  requiresTraversal: false,
+  requiresTraversal: true,
   canRunStandalone: true,
   examples: [
     'buildkit :versioner',
-    'versioner --force',
+    'buildkit :versioner --output lib/src/version.g.dart',
+    'buildkit :versioner --variable-prefix myApp',
   ],
 );
 

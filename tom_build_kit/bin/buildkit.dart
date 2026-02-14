@@ -334,73 +334,82 @@ Future<bool> _executeCommand(
   String rootPath,
   bool isWorkspaceMode,
 ) async {
-  // Build args for the command
-  final cmdArgs = <String>[':${step.name}'];
+  // Build args for the command.
+  // Global options MUST come BEFORE the :command, because CliArgParser treats
+  // all options after a :command as per-command options.
+  final globalArgs = <String>[];
+  final cmdArgs = <String>[];
   
-  // Pass --root only in workspace mode (user used -R, --root, -i, or -o).
-  // This matches v1 behavior where git tools always received --root.
+  // Global navigation options first
   if (isWorkspaceMode) {
-    cmdArgs.addAll(['--root', rootPath]);
-  }
-  
-  // Add global options (unless suppressed)
-  if (_verbose && !step.suppressedOptions.contains('v')) {
-    cmdArgs.add('--verbose');
-  }
-  if (_dryRun && !step.suppressedOptions.contains('n')) {
-    cmdArgs.add('--dry-run');
+    globalArgs.addAll(['--root', rootPath]);
   }
   
   final scanPath = global['scan'] as String?;
   if (scanPath != null && !step.suppressedOptions.contains('s')) {
-    cmdArgs.addAll(['--scan', scanPath]);
+    globalArgs.addAll(['--scan', scanPath]);
+  } else if (isWorkspaceMode) {
+    // In workspace mode, default to scanning from workspace root recursively.
+    globalArgs.addAll(['--scan', rootPath]);
   }
   
   if (global['recursive'] == true && !step.suppressedOptions.contains('r')) {
-    cmdArgs.add('--recursive');
+    globalArgs.add('--recursive');
+  } else if (isWorkspaceMode && scanPath == null) {
+    globalArgs.add('--recursive');
   }
   
   if (global['inner-first-git'] == true) {
-    cmdArgs.add('--inner-first-git');
+    globalArgs.add('--inner-first-git');
   }
   
   if (global['outer-first-git'] == true) {
-    cmdArgs.add('--outer-first-git');
+    globalArgs.add('--outer-first-git');
   }
   
   if (global['workspace-recursion'] == true) {
-    cmdArgs.add('--workspace-recursion');
+    globalArgs.add('--workspace-recursion');
   }
   
   if (global['build-order'] == true) {
-    cmdArgs.add('--build-order');
+    globalArgs.add('--build-order');
+  }
+  
+  // Global common options
+  if (_verbose && !step.suppressedOptions.contains('v')) {
+    globalArgs.add('--verbose');
+  }
+  if (_dryRun && !step.suppressedOptions.contains('n')) {
+    globalArgs.add('--dry-run');
   }
   
   final project = global['project'] as String?;
   if (project != null && !step.suppressedOptions.contains('p')) {
-    cmdArgs.addAll(['--project', project]);
+    globalArgs.addAll(['--project', project]);
   }
   
   final excludes = global['exclude'] as List<String>?;
   if (excludes != null) {
     for (final x in excludes) {
-      cmdArgs.addAll(['--exclude', x]);
+      globalArgs.addAll(['--exclude', x]);
     }
   }
   
   final excludeProjects = global['exclude-projects'] as List<String>?;
   if (excludeProjects != null) {
     for (final x in excludeProjects) {
-      cmdArgs.addAll(['--exclude-projects', x]);
+      globalArgs.addAll(['--exclude-projects', x]);
     }
   }
   
   final modules = global['modules'] as String?;
   if (modules != null) {
-    cmdArgs.addAll(['--modules', modules]);
+    globalArgs.addAll(['--modules', modules]);
   }
   
-  // Add command-specific args
+  // Command comes after global args, followed by command-specific args
+  cmdArgs.addAll(globalArgs);
+  cmdArgs.add(':${step.name}');
   cmdArgs.addAll(step.args);
   
   // Apply macro substitution
