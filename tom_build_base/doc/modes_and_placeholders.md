@@ -458,6 +458,57 @@ When a command is also available as a standalone executable, modes only apply to
 compiler --modes=CI
 ```
 
+### Standalone Tool Configuration Inheritance
+
+A command can be exposed both as a subcommand of the parent tool (e.g., `buildkit :deploy`) and as a standalone executable (e.g., `deployer`). **Standalone tools inherit configuration from the parent tool's config file**, not their own separate config file.
+
+**Key principle:** The standalone tool knows it's logically part of the parent tool, so it reads from:
+- `{parent-basename}_master.yaml` — for workspace configuration
+- `{parent-basename}.yaml` — for project configuration
+
+**Example:**
+
+The `deployer` standalone executable is also available as `buildkit :deploy`. Both read configuration from `buildkit_master.yaml` and project `buildkit.yaml`:
+
+```yaml
+# buildkit_master.yaml
+deploy:
+  target: production
+  region: us-east-1
+  DEV-target: staging
+  DEV-region: us-west-2
+```
+
+```bash
+# These are equivalent — both read from buildkit config
+buildkit :deploy --modes=DEV
+deployer --modes=DEV
+```
+
+**Implementation pattern:**
+
+```dart
+class DeployerStandalone {
+  final String basename = 'buildkit';  // Parent tool basename
+  final String commandName = 'deploy'; // Command section in config
+  
+  Future<void> run() async {
+    final loader = ConfigLoader(basename: basename);
+    final loaded = await loader.load(...);
+    
+    // Extract command-specific configuration
+    final deployConfig = loaded.masterConfig[commandName];
+    // ...
+  }
+}
+```
+
+This pattern ensures:
+- Consistent configuration between tool and standalone modes
+- Modes work the same way in both execution contexts
+- Skip files apply based on the parent tool's basename
+
+
 ---
 
 ## Target Restrictions (Buildkit-Specific)
