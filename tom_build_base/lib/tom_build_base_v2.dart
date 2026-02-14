@@ -38,6 +38,7 @@ export 'src/v2/traversal/folder_scanner.dart';
 export 'src/v2/traversal/filter_pipeline.dart';
 export 'src/v2/traversal/nature_detector.dart';
 export 'src/v2/traversal/build_base.dart';
+export 'src/v2/traversal/repository_id_lookup.dart';
 
 // Tool Framework (Phase 2)
 export 'src/v2/core/option_definition.dart';

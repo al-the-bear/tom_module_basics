@@ -56,11 +56,19 @@ class BuildRunnerFolder extends RunFolder {
 ///
 /// Detected when folder contains `tom_project.yaml`.
 class TomBuildFolder extends RunFolder {
+  /// Project name from tom_project.yaml (e.g., "buildkit", "core-kernel").
+  final String? projectName;
+
+  /// Short project ID from tom_project.yaml (e.g., "BK", "CK").
+  final String? shortId;
+
   /// Raw config map from tom_project.yaml.
   final Map<String, dynamic> config;
 
   TomBuildFolder(
     super.fsFolder, {
+    this.projectName,
+    this.shortId,
     this.config = const {},
   });
 
@@ -70,7 +78,7 @@ class TomBuildFolder extends RunFolder {
   }
 
   @override
-  String toString() => 'TomBuildFolder($path)';
+  String toString() => 'TomBuildFolder($path, name: $projectName, id: $shortId)';
 }
 
 /// Tom build master configuration nature.

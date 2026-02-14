@@ -5,6 +5,7 @@ import '../folder/fs_folder.dart';
 import '../folder/natures/buildkit_folder.dart';
 import '../folder/natures/git_folder.dart';
 import 'traversal_info.dart';
+import 'repository_id_lookup.dart';
 
 /// Applies filters to folder lists based on TraversalInfo configuration.
 class FilterPipeline {
@@ -17,16 +18,22 @@ class FilterPipeline {
       result = result.where((f) => !_matchesPathPattern(f.path, info.excludePatterns)).toList();
     }
 
-    // 2. Project include (--project, -p) - matches against folder name with glob
+    // 2. Project include (--project, -p)
+    // Resolution order: project ID → project name → folder name pattern (glob)
     if (info.projectPatterns.isNotEmpty) {
       result = result.where((f) =>
-          _matchesNamePattern(f.name, info.projectPatterns) ||
-          _matchesProjectId(f, info.projectPatterns)).toList();
+          _matchesProjectId(f, info.projectPatterns) ||
+          _matchesProjectName(f, info.projectPatterns) ||
+          _matchesNamePattern(f.name, info.projectPatterns)).toList();
     }
 
     // 3. Project name exclude (--exclude-projects)
+    // Resolution order: project ID → project name → folder name
     if (info.excludeProjects.isNotEmpty) {
-      result = result.where((f) => !_matchesNamePattern(f.name, info.excludeProjects)).toList();
+      result = result.where((f) =>
+          !_matchesProjectId(f, info.excludeProjects) &&
+          !_matchesProjectName(f, info.excludeProjects) &&
+          !_matchesNamePattern(f.name, info.excludeProjects)).toList();
     }
 
     // 4. Test project filter
@@ -118,12 +125,38 @@ class FilterPipeline {
 
   /// Check if folder has a matching project ID in buildkit.yaml.
   bool _matchesProjectId(FsFolder folder, List<String> patterns) {
-    // Look for BuildkitFolder nature if detected
+    // First check TomBuildFolder for short-id
+    for (final nature in folder.natures) {
+      if (nature is TomBuildFolder && nature.shortId != null) {
+        final id = nature.shortId!.toLowerCase();
+        for (final pattern in patterns) {
+          if (id == pattern.toLowerCase()) {
+            return true;
+          }
+        }
+      }
+    }
+    // Fallback: check BuildkitFolder for project-id
     for (final nature in folder.natures) {
       if (nature is BuildkitFolder && nature.projectId != null) {
+        final id = nature.projectId!.toLowerCase();
         for (final pattern in patterns) {
-          if (nature.projectId == pattern ||
-              nature.projectId!.startsWith(pattern)) {
+          if (id == pattern.toLowerCase()) {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
+
+  /// Check if folder has a matching project name in tom_project.yaml.
+  bool _matchesProjectName(FsFolder folder, List<String> patterns) {
+    for (final nature in folder.natures) {
+      if (nature is TomBuildFolder && nature.projectName != null) {
+        final name = nature.projectName!.toLowerCase();
+        for (final pattern in patterns) {
+          if (name == pattern.toLowerCase()) {
             return true;
           }
         }
@@ -133,15 +166,24 @@ class FilterPipeline {
   }
 
   /// Filter to keep only folders within specified git submodules.
+  ///
+  /// Accepts repository IDs (e.g., "BSC", "D4"), repository names (e.g., "tom_module_basics"),
+  /// or path substrings.
   List<FsFolder> _applyModulesFilter(List<FsFolder> folders, List<String> modules) {
+    // Resolve IDs to names
+    final resolvedModules = modules.map(RepositoryIdLookup.resolveToName).toList();
+    
     return folders.where((f) {
       // Check if this folder is within any of the specified modules
-      for (final module in modules) {
+      for (final module in resolvedModules) {
         if (f.path.contains(module)) return true;
         // Also check natures for submodule name
         for (final nature in f.natures) {
           if (nature is GitFolder && nature.submoduleName != null) {
-            if (modules.any((m) => nature.submoduleName!.contains(m))) {
+            final submoduleName = nature.submoduleName!.toLowerCase();
+            if (resolvedModules.any((m) => 
+                submoduleName.contains(m.toLowerCase()) ||
+                submoduleName == m.toLowerCase())) {
               return true;
             }
           }
@@ -152,14 +194,23 @@ class FilterPipeline {
   }
 
   /// Filter to exclude folders within specified git submodules.
+  ///
+  /// Accepts repository IDs (e.g., "BSC", "D4"), repository names (e.g., "tom_module_basics"),
+  /// or path substrings.
   List<FsFolder> _applySkipModulesFilter(List<FsFolder> folders, List<String> skipModules) {
+    // Resolve IDs to names
+    final resolvedModules = skipModules.map(RepositoryIdLookup.resolveToName).toList();
+    
     return folders.where((f) {
       // Exclude if this folder is within any of the specified modules
-      for (final module in skipModules) {
+      for (final module in resolvedModules) {
         if (f.path.contains(module)) return false;
         for (final nature in f.natures) {
           if (nature is GitFolder && nature.submoduleName != null) {
-            if (skipModules.any((m) => nature.submoduleName!.contains(m))) {
+            final submoduleName = nature.submoduleName!.toLowerCase();
+            if (resolvedModules.any((m) => 
+                submoduleName.contains(m.toLowerCase()) ||
+                submoduleName == m.toLowerCase())) {
               return false;
             }
           }

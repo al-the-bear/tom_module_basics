@@ -24,6 +24,13 @@ void main() {
     // Scan all folders to use in filter tests
     final scanner = FolderScanner();
     allFolders = await scanner.scan(zomTestRoot, recursive: true);
+    
+    // Detect natures for each folder
+    final detector = NatureDetector();
+    for (final folder in allFolders) {
+      final natures = detector.detectNatures(folder);
+      folder.natures.addAll(natures);
+    }
   });
 
   setUp(() {
@@ -88,6 +95,106 @@ void main() {
 
         // Should return same count (test filter will still apply)
         expect(filtered.length, equals(allFolders.length));
+      });
+    });
+
+    group('Project ID and Name filtering (--project, -p)', () {
+      test('BB-FLT-30: Filters by project short-id from tom_project.yaml [2026-02-14]', () {
+        final info = ProjectTraversalInfo(
+          executionRoot: zomTestRoot,
+          projectPatterns: ['ZTF'], // short-id for zom_test_flutter
+          includeTestProjects: true,
+        );
+
+        final filtered = filter.applyProjectFilters(allFolders, info);
+
+        expect(filtered.length, equals(1));
+        expect(filtered.first.name, equals('zom_test_flutter'));
+      });
+
+      test('BB-FLT-31: Filters by project short-id case-insensitive [2026-02-14]', () {
+        final info = ProjectTraversalInfo(
+          executionRoot: zomTestRoot,
+          projectPatterns: ['ztf'], // lowercase
+          includeTestProjects: true,
+        );
+
+        final filtered = filter.applyProjectFilters(allFolders, info);
+
+        expect(filtered.length, equals(1));
+        expect(filtered.first.name, equals('zom_test_flutter'));
+      });
+
+      test('BB-FLT-32: Filters by project name from tom_project.yaml [2026-02-14]', () {
+        final info = ProjectTraversalInfo(
+          executionRoot: zomTestRoot,
+          projectPatterns: ['test-flutter'], // name field
+          includeTestProjects: true,
+        );
+
+        final filtered = filter.applyProjectFilters(allFolders, info);
+
+        expect(filtered.length, equals(1));
+        expect(filtered.first.name, equals('zom_test_flutter'));
+      });
+
+      test('BB-FLT-33: Filters by multiple project IDs [2026-02-14]', () {
+        final info = ProjectTraversalInfo(
+          executionRoot: zomTestRoot,
+          projectPatterns: ['ZTF', 'ZTP'], // flutter and package
+          includeTestProjects: true,
+        );
+
+        final filtered = filter.applyProjectFilters(allFolders, info);
+
+        final names = filtered.map((f) => f.name).toSet();
+        expect(names, contains('zom_test_flutter'));
+        expect(names, contains('zom_test_package'));
+        expect(filtered.length, equals(2));
+      });
+
+      test('BB-FLT-34: Mixed ID, name, and folder pattern [2026-02-14]', () {
+        final info = ProjectTraversalInfo(
+          executionRoot: zomTestRoot,
+          projectPatterns: ['ZTF', 'test-cli', 'zom_test_*'], // ID, name, glob
+          includeTestProjects: true,
+        );
+
+        final filtered = filter.applyProjectFilters(allFolders, info);
+
+        // Should find all three test projects
+        final names = filtered.map((f) => f.name).toSet();
+        expect(names, contains('zom_test_flutter'));
+        expect(names, contains('zom_test_standalone'));
+        expect(names, contains('zom_test_package'));
+      });
+    });
+
+    group('Project exclude with ID and Name (--exclude-projects)', () {
+      test('BB-FLT-35: Excludes by project short-id [2026-02-14]', () {
+        final info = ProjectTraversalInfo(
+          executionRoot: zomTestRoot,
+          excludeProjects: ['ZTF'], // exclude flutter by ID
+          includeTestProjects: true,
+        );
+
+        final filtered = filter.applyProjectFilters(allFolders, info);
+
+        expect(filtered.any((f) => f.name == 'zom_test_flutter'), isFalse);
+        expect(filtered.any((f) => f.name == 'zom_test_package'), isTrue);
+      });
+
+      test('BB-FLT-36: Excludes by project name [2026-02-14]', () {
+        final info = ProjectTraversalInfo(
+          executionRoot: zomTestRoot,
+          excludeProjects: ['test-pkg'], // exclude package by name
+          includeTestProjects: true,
+        );
+
+        final filtered = filter.applyProjectFilters(allFolders, info);
+
+        expect(filtered.any((f) => f.name == 'zom_test_package'), isFalse);
+        expect(filtered.any((f) => f.name == 'zom_test_flutter'), isTrue);
       });
     });
 
@@ -494,6 +601,36 @@ void main() {
       expect(sorted.indexOf('/a'), lessThan(sorted.indexOf('/a/b')));
       expect(sorted.indexOf('/a/b'), lessThan(sorted.indexOf('/a/b/c')));
       expect(sorted.indexOf('/x'), lessThan(sorted.indexOf('/x/y')));
+    });
+  });
+
+  group('RepositoryIdLookup', () {
+    test('BB-FLT-37: Resolves known repository ID to name [2026-02-14]', () {
+      expect(
+          RepositoryIdLookup.resolveToName('BSC'), equals('tom_module_basics'));
+      expect(RepositoryIdLookup.resolveToName('D4'), equals('tom_module_d4rt'));
+      expect(RepositoryIdLookup.resolveToName('CRPT'),
+          equals('tom_module_crypto'));
+    });
+
+    test('BB-FLT-38: Repository ID resolution is case-insensitive [2026-02-14]', () {
+      expect(
+          RepositoryIdLookup.resolveToName('bsc'), equals('tom_module_basics'));
+      expect(
+          RepositoryIdLookup.resolveToName('Bsc'), equals('tom_module_basics'));
+    });
+
+    test('BB-FLT-39: Unknown ID returns unchanged [2026-02-14]', () {
+      expect(RepositoryIdLookup.resolveToName('unknown'), equals('unknown'));
+      expect(RepositoryIdLookup.resolveToName('tom_module_basics'),
+          equals('tom_module_basics'));
+    });
+
+    test('BB-FLT-40: isRepositoryId identifies known IDs [2026-02-14]', () {
+      expect(RepositoryIdLookup.isRepositoryId('BSC'), isTrue);
+      expect(RepositoryIdLookup.isRepositoryId('bsc'), isTrue); // case-insensitive
+      expect(RepositoryIdLookup.isRepositoryId('unknown'), isFalse);
+      expect(RepositoryIdLookup.isRepositoryId('tom_module_basics'), isFalse);
     });
   });
 }

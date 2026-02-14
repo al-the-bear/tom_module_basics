@@ -23,7 +23,7 @@ class NatureDetector {
     if (_isTypeScriptProject(folder.path)) natures.add(_createTypeScriptNature(folder));
     if (_hasBuildkitYaml(folder.path)) natures.add(_createBuildkitNature(folder));
     if (_hasBuildYaml(folder.path)) natures.add(BuildRunnerFolder(folder));
-    if (_hasTomProjectYaml(folder.path)) natures.add(TomBuildFolder(folder));
+    if (_hasTomProjectYaml(folder.path)) natures.add(_createTomProjectNature(folder));
     if (_hasTomMasterYaml(folder.path)) natures.add(TomBuildMasterFolder(folder));
 
     return natures;
@@ -70,6 +70,7 @@ class NatureDetector {
     bool hasUncommittedChanges = false;
     bool hasUnpushedCommits = false;
     List<String> remotes = [];
+    String? submoduleName;
 
     try {
       // Get current branch
@@ -98,6 +99,11 @@ class NatureDetector {
       // Ignore errors reading git info
     }
 
+    // For submodules, extract module name from .git file content or folder name
+    if (isSubmodule) {
+      submoduleName = _extractSubmoduleName(folder.path);
+    }
+
     return GitFolder(
       folder,
       currentBranch: currentBranch,
@@ -105,7 +111,28 @@ class NatureDetector {
       hasUnpushedCommits: hasUnpushedCommits,
       isSubmodule: isSubmodule,
       remotes: remotes,
+      submoduleName: submoduleName,
     );
+  }
+
+  /// Extract submodule name from the gitdir path or folder name.
+  String? _extractSubmoduleName(String path) {
+    try {
+      final gitFile = File(p.join(path, '.git'));
+      if (gitFile.existsSync()) {
+        final content = gitFile.readAsStringSync().trim();
+        // gitdir: ../.git/modules/<name>
+        if (content.startsWith('gitdir: ')) {
+          final gitDir = content.substring('gitdir: '.length);
+          final modulesIndex = gitDir.indexOf('/modules/');
+          if (modulesIndex != -1) {
+            return gitDir.substring(modulesIndex + '/modules/'.length);
+          }
+        }
+      }
+    } catch (_) {}
+    // Fallback: use folder name
+    return p.basename(path);
   }
 
   File _resolveSubmoduleHead(String path) {
@@ -292,6 +319,30 @@ class NatureDetector {
       folder,
       projectName: projectName,
       isNodeProject: isNodeProject,
+    );
+  }
+
+  TomBuildFolder _createTomProjectNature(FsFolder folder) {
+    String? projectName;
+    String? shortId;
+    Map<String, dynamic> config = {};
+
+    try {
+      final tomProjectFile = File(p.join(folder.path, 'tom_project.yaml'));
+      final content = tomProjectFile.readAsStringSync();
+      final yaml = loadYaml(content);
+      if (yaml is Map) {
+        config = Map<String, dynamic>.from(yaml);
+        projectName = config['name'] as String?;
+        shortId = config['short-id'] as String?;
+      }
+    } catch (_) {}
+
+    return TomBuildFolder(
+      folder,
+      projectName: projectName,
+      shortId: shortId,
+      config: config,
     );
   }
 
