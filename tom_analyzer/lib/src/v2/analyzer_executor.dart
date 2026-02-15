@@ -95,9 +95,14 @@ Future<bool> _processProject({
     workspaceRoot: config.workspaceRoot ?? projectPath,
   );
 
+  // Resolve barrel path relative to project directory
+  final resolvedBarrel = p.isAbsolute(barrel)
+      ? barrel
+      : p.join(projectPath, barrel);
+
   final analyzer = TomAnalyzer();
   final analysis = await analyzer.analyzeBarrel(
-    barrelPath: barrel,
+    barrelPath: resolvedBarrel,
     workspaceRoot: config.workspaceRoot,
     followReExports: config.followReExports,
     followReExportPackages: config.followReExportPackages,

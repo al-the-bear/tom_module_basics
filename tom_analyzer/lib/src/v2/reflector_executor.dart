@@ -107,7 +107,7 @@ Future<bool> _processProject({
 
   return _runLegacyReflect(
     projectPath: projectPath,
-    barrelPath: barrel,
+    barrelPath: p.isAbsolute(barrel) ? barrel : p.join(projectPath, barrel),
     config: config,
     outputPath: outputPath,
     verbose: verbose,
