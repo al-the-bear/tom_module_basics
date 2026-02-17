@@ -1,5 +1,4 @@
-import 'dart:io';
-
+import 'package:dcli/dcli.dart';
 import 'package:path/path.dart' as p;
 import 'package:yaml/yaml.dart';
 
@@ -107,12 +106,10 @@ class TomBuildConfig {
     required String filePath,
     required String toolKey,
   }) {
-    final yamlFile = File(filePath);
-
-    if (!yamlFile.existsSync()) return null;
+    if (!exists(filePath)) return null;
 
     try {
-      final content = yamlFile.readAsStringSync();
+      final content = read(filePath).toParagraph();
       final rootYaml = loadYaml(content) as YamlMap?;
       if (rootYaml == null) return null;
 
@@ -236,11 +233,10 @@ class TomBuildConfig {
 /// to be activated with just the key present, using workspace or default config.
 bool hasTomBuildConfig(String dirPath, String toolKey) {
   final yamlPath = p.join(dirPath, TomBuildConfig.projectFilename);
-  final yamlFile = File(yamlPath);
-  if (!yamlFile.existsSync()) return false;
+  if (!exists(yamlPath)) return false;
 
   try {
-    final content = yamlFile.readAsStringSync();
+    final content = read(yamlPath).toParagraph();
     final yaml = loadYaml(content) as YamlMap?;
     // Check containsKey instead of != null to support bare keys (cleanup:)
     return yaml != null && yaml.containsKey(toolKey);

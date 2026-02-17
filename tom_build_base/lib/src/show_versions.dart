@@ -1,5 +1,4 @@
-import 'dart:io';
-
+import 'package:dcli/dcli.dart';
 import 'package:path/path.dart' as p;
 import 'package:yaml/yaml.dart';
 
@@ -134,7 +133,7 @@ Future<ShowVersionsResult> showVersions(ShowVersionsOptions options) async {
       verbose: effectiveVerbose,
       log: (msg) => log('[scanner] $msg'),
       projectValidator: (dirPath, _) =>
-          File(p.join(dirPath, 'pubspec.yaml')).existsSync(),
+          exists(p.join(dirPath, 'pubspec.yaml')),
     );
 
     projectPaths = scanner.scanForProjects(basePath, mergedExclude);
@@ -203,11 +202,11 @@ Future<ShowVersionsResult> showVersions(ShowVersionsOptions options) async {
 ///
 /// Returns `null` if the file doesn't exist or can't be parsed.
 String? readPubspecVersion(String projectPath) {
-  final pubspecFile = File(p.join(projectPath, 'pubspec.yaml'));
-  if (!pubspecFile.existsSync()) return null;
+  final pubspecPath = p.join(projectPath, 'pubspec.yaml');
+  if (!exists(pubspecPath)) return null;
 
   try {
-    final content = pubspecFile.readAsStringSync();
+    final content = read(pubspecPath).toParagraph();
     final yaml = loadYaml(content) as YamlMap?;
     return yaml?['version']?.toString();
   } catch (_) {

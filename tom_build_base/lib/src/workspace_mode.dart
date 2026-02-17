@@ -1,6 +1,5 @@
-import 'dart:io';
-
 import 'package:args/args.dart';
+import 'package:dcli/dcli.dart';
 import 'package:path/path.dart' as p;
 
 /// Constants for workspace configuration files.
@@ -448,13 +447,13 @@ List<String> _parseModulesOption(String? value) {
 /// Returns the directory containing `buildkit_master.yaml`, `tom_workspace.yaml`,
 /// or `tom.code-workspace`, or [startPath] if none is found.
 String findWorkspaceRoot(String startPath) {
-  var current = p.normalize(p.absolute(startPath));
+  var current = truepath(startPath);
   final root = p.rootPrefix(current);
 
   while (current != root) {
-    if (File(p.join(current, kBuildkitMasterYaml)).existsSync() ||
-        File(p.join(current, kTomWorkspaceYaml)).existsSync() ||
-        File(p.join(current, kTomCodeWorkspace)).existsSync()) {
+    if (exists(p.join(current, kBuildkitMasterYaml)) ||
+        exists(p.join(current, kTomWorkspaceYaml)) ||
+        exists(p.join(current, kTomCodeWorkspace))) {
       return current;
     }
     current = p.dirname(current);
@@ -468,7 +467,7 @@ String findWorkspaceRoot(String startPath) {
 /// Workspace boundaries are treated similarly to buildkit_skip.yaml - they
 /// mark directories that should be processed separately unless -w is used.
 bool isWorkspaceBoundary(String dirPath) {
-  return File(p.join(dirPath, kBuildkitMasterYaml)).existsSync();
+  return exists(p.join(dirPath, kBuildkitMasterYaml));
 }
 
 /// Determine the execution root based on navigation args.
@@ -489,9 +488,9 @@ String resolveExecutionRoot(
     // -R <path>: validate specified workspace
     final specifiedPath =
         p.isAbsolute(navArgs.root!) ? navArgs.root! : p.join(currentDir, navArgs.root!);
-    final resolved = p.normalize(specifiedPath);
+    final resolved = truepath(specifiedPath);
 
-    if (!Directory(resolved).existsSync()) {
+    if (!exists(resolved) || !isDirectory(resolved)) {
       throw ArgumentError('Specified workspace does not exist: ${navArgs.root}');
     }
     if (!isWorkspaceBoundary(resolved)) {

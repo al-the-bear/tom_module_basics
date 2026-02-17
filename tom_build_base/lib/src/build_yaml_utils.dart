@@ -1,5 +1,4 @@
-import 'dart:io';
-
+import 'package:dcli/dcli.dart';
 import 'package:path/path.dart' as p;
 import 'package:yaml/yaml.dart';
 
@@ -21,12 +20,11 @@ import 'yaml_utils.dart';
 /// Returns true if build.yaml exists and contains a top-level `builders:` key.
 bool isBuildYamlBuilderDefinition(String dirPath) {
   final buildYamlPath = p.join(dirPath, 'build.yaml');
-  final buildYamlFile = File(buildYamlPath);
 
-  if (!buildYamlFile.existsSync()) return false;
+  if (!exists(buildYamlPath)) return false;
 
   try {
-    final content = buildYamlFile.readAsStringSync();
+    final content = read(buildYamlPath).toParagraph();
     final yaml = loadYaml(content) as YamlMap?;
     if (yaml == null) return false;
 
@@ -47,12 +45,11 @@ bool isBuildYamlBuilderDefinition(String dirPath) {
 /// Returns true if build.yaml has consumer config for the specified builder.
 bool hasBuildYamlConsumerConfig(String dirPath, String builderName) {
   final buildYamlPath = p.join(dirPath, 'build.yaml');
-  final buildYamlFile = File(buildYamlPath);
 
-  if (!buildYamlFile.existsSync()) return false;
+  if (!exists(buildYamlPath)) return false;
 
   try {
-    final content = buildYamlFile.readAsStringSync();
+    final content = read(buildYamlPath).toParagraph();
     final yaml = loadYaml(content) as YamlMap?;
     if (yaml == null) return false;
 
@@ -85,12 +82,11 @@ Map<String, dynamic>? getBuildYamlBuilderOptions(
   String builderName,
 ) {
   final buildYamlPath = p.join(dirPath, 'build.yaml');
-  final buildYamlFile = File(buildYamlPath);
 
-  if (!buildYamlFile.existsSync()) return null;
+  if (!exists(buildYamlPath)) return null;
 
   try {
-    final content = buildYamlFile.readAsStringSync();
+    final content = read(buildYamlPath).toParagraph();
     final yaml = loadYaml(content) as YamlMap?;
     if (yaml == null) return null;
 
@@ -126,12 +122,11 @@ Map<String, dynamic>? getBuildYamlBuilderOptions(
 /// [builderName] - Full builder name
 bool isBuildYamlBuilderEnabled(String dirPath, String builderName) {
   final buildYamlPath = p.join(dirPath, 'build.yaml');
-  final buildYamlFile = File(buildYamlPath);
 
-  if (!buildYamlFile.existsSync()) return false;
+  if (!exists(buildYamlPath)) return false;
 
   try {
-    final content = buildYamlFile.readAsStringSync();
+    final content = read(buildYamlPath).toParagraph();
     final yaml = loadYaml(content) as YamlMap?;
     if (yaml == null) return false;
 

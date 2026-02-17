@@ -1,5 +1,6 @@
-import 'dart:io';
+import 'dart:io' show Platform;
 
+import 'package:dcli/dcli.dart';
 import 'package:path/path.dart' as p;
 import 'package:yaml/yaml.dart';
 
@@ -173,11 +174,10 @@ class ConfigLoader {
 
   /// Load YAML file and return as Map, or empty map if not found.
   Map<String, dynamic> _loadYamlFile(String path) {
-    final file = File(path);
-    if (!file.existsSync()) return {};
+    if (!exists(path)) return {};
 
     try {
-      final content = file.readAsStringSync();
+      final content = read(path).toParagraph();
       final yaml = loadYaml(content);
       if (yaml is YamlMap) {
         return yamlToMap(yaml);
@@ -437,11 +437,11 @@ class ConfigLoader {
   /// - {basename}_skip.yaml exists (tool-specific skip)
   bool shouldSkipDirectory(String dirPath) {
     // Check global skip first
-    if (File(p.join(dirPath, kTomSkipYaml)).existsSync()) {
+    if (exists(p.join(dirPath, kTomSkipYaml))) {
       return true;
     }
     // Check tool-specific skip
-    if (File(p.join(dirPath, skipFilename)).existsSync()) {
+    if (exists(p.join(dirPath, skipFilename))) {
       return true;
     }
     return false;
@@ -450,23 +450,23 @@ class ConfigLoader {
   /// Get the skip reason if a skip file exists.
   String? getSkipReason(String dirPath) {
     // Check global skip first
-    final globalSkip = File(p.join(dirPath, kTomSkipYaml));
-    if (globalSkip.existsSync()) {
-      return _readSkipReason(globalSkip) ?? 'tom_skip.yaml (all tools)';
+    final globalSkipPath = p.join(dirPath, kTomSkipYaml);
+    if (exists(globalSkipPath)) {
+      return _readSkipReason(globalSkipPath) ?? 'tom_skip.yaml (all tools)';
     }
 
     // Check tool-specific skip
-    final toolSkip = File(p.join(dirPath, skipFilename));
-    if (toolSkip.existsSync()) {
-      return _readSkipReason(toolSkip) ?? skipFilename;
+    final toolSkipPath = p.join(dirPath, skipFilename);
+    if (exists(toolSkipPath)) {
+      return _readSkipReason(toolSkipPath) ?? skipFilename;
     }
 
     return null;
   }
 
-  String? _readSkipReason(File file) {
+  String? _readSkipReason(String filePath) {
     try {
-      final content = file.readAsStringSync();
+      final content = read(filePath).toParagraph();
       if (content.trim().isEmpty) return null;
 
       final yaml = loadYaml(content);

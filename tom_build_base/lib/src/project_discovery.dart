@@ -1,5 +1,6 @@
-import 'dart:io';
+import 'dart:io' show Directory, File;
 
+import 'package:dcli/dcli.dart';
 import 'package:glob/glob.dart';
 import 'package:glob/list_local_fs.dart';
 import 'package:path/path.dart' as p;
@@ -126,7 +127,7 @@ class ProjectDiscovery {
     }
 
     // Simple path - check if it's a valid project
-    final fullPath = p.normalize(p.isAbsolute(resolvedPattern)
+    final fullPath = truepath(p.isAbsolute(resolvedPattern)
         ? resolvedPattern
         : p.join(basePath, resolvedPattern));
 
@@ -158,24 +159,26 @@ class ProjectDiscovery {
     String projectName,
     bool Function(String)? projectFilter,
   ) async {
-    final dir = Directory(rootDir);
-    if (!dir.existsSync()) return null;
+    if (!exists(rootDir) || !isDirectory(rootDir)) return null;
 
     try {
-      await for (final entity in dir.list(recursive: true, followLinks: false)) {
-        if (entity is Directory) {
-          final dirName = p.basename(entity.path);
-          
-          // Skip hidden directories and known non-project directories
-          if (dirName.startsWith('.') || alwaysSkipDirectories.contains(dirName)) {
-            continue;
-          }
-          
-          // Check if this directory matches the project name and is a valid project
-          if (dirName == projectName && _isProject(entity.path)) {
-            if (projectFilter == null || projectFilter(entity.path)) {
-              return p.normalize(entity.path);
-            }
+      // Use DCli find to search recursively for directories
+      for (final dirPath in find('*',
+              workingDirectory: rootDir,
+              recursive: true,
+              types: [Find.directory])
+          .toList()) {
+        final dirName = p.basename(dirPath);
+
+        // Skip hidden directories and known non-project directories
+        if (dirName.startsWith('.') || alwaysSkipDirectories.contains(dirName)) {
+          continue;
+        }
+
+        // Check if this directory matches the project name and is a valid project
+        if (dirName == projectName && _isProject(dirPath)) {
+          if (projectFilter == null || projectFilter(dirPath)) {
+            return truepath(dirPath);
           }
         }
       }
@@ -204,7 +207,7 @@ class ProjectDiscovery {
       
       await for (final entity in glob.list(root: basePath)) {
         if (entity is Directory) {
-          final path = p.normalize(entity.path);
+          final path = truepath(entity.path);
           if (_isProject(path) &&
               (projectFilter == null || projectFilter(path))) {
             results.add(path);
@@ -220,7 +223,7 @@ class ProjectDiscovery {
 
   /// Check if a directory is a Dart project (has pubspec.yaml).
   bool _isProject(String dirPath) {
-    return File(p.join(dirPath, 'pubspec.yaml')).existsSync();
+    return exists(p.join(dirPath, 'pubspec.yaml'));
   }
 
   /// Scan for projects in a directory.
@@ -237,9 +240,8 @@ class ProjectDiscovery {
     List<String> recursionExclude = const [],
   }) async {
     final projects = <String>[];
-    final dir = Directory(scanDir);
 
-    if (!dir.existsSync()) {
+    if (!exists(scanDir) || !isDirectory(scanDir)) {
       _log('Error: Directory does not exist: $scanDir');
       return projects;
     }
@@ -257,7 +259,7 @@ class ProjectDiscovery {
         .toList();
 
     await _scanDirectory(
-      dir,
+      scanDir,
       projects,
       recursive: recursive,
       insideProject: false,
@@ -283,28 +285,28 @@ class ProjectDiscovery {
   /// If [basename] is not provided, falls back to 'buildkit' for backwards compatibility.
   static bool hasSkipFile(String dirPath, {String? basename}) {
     // Check global skip first
-    if (File(p.join(dirPath, globalSkipFileName)).existsSync()) {
+    if (exists(p.join(dirPath, globalSkipFileName))) {
       return true;
     }
     // Check tool-specific skip
     final toolSkipFileName = '${basename ?? 'buildkit'}_skip.yaml';
-    return File(p.join(dirPath, toolSkipFileName)).existsSync();
+    return exists(p.join(dirPath, toolSkipFileName));
   }
 
   /// Get the skip file name that was found, or null if none.
   static String? getSkipFileName(String dirPath, {String? basename}) {
-    if (File(p.join(dirPath, globalSkipFileName)).existsSync()) {
+    if (exists(p.join(dirPath, globalSkipFileName))) {
       return globalSkipFileName;
     }
     final toolSkipFileName = '${basename ?? 'buildkit'}_skip.yaml';
-    if (File(p.join(dirPath, toolSkipFileName)).existsSync()) {
+    if (exists(p.join(dirPath, toolSkipFileName))) {
       return toolSkipFileName;
     }
     return null;
   }
 
   Future<void> _scanDirectory(
-    Directory dir,
+    String dirPath,
     List<String> projects, {
     required bool recursive,
     required bool insideProject,
@@ -312,13 +314,13 @@ class ProjectDiscovery {
     List<Glob> recursionGlobs = const [],
     String? scanRoot,
   }) async {
-    final dirName = p.basename(dir.path);
+    final dirName = p.basename(dirPath);
 
     // Skip directories that contain a skip marker file
-    if (hasSkipFile(dir.path, basename: toolBasename)) {
+    if (hasSkipFile(dirPath, basename: toolBasename)) {
       if (verbose) {
-        final skipFile = getSkipFileName(dir.path, basename: toolBasename);
-        _log('  Skipping ($skipFile): ${dir.path}');
+        final skipFile = getSkipFileName(dirPath, basename: toolBasename);
+        _log('  Skipping ($skipFile): $dirPath');
       }
       return;
     }
@@ -339,7 +341,7 @@ class ProjectDiscovery {
 
     // Check recursion exclusions (relative path from scan root)
     if (recursionGlobs.isNotEmpty && scanRoot != null) {
-      final relativePath = p.relative(dir.path, from: scanRoot);
+      final relativePath = p.relative(dirPath, from: scanRoot);
       for (final glob in recursionGlobs) {
         if (glob.matches(relativePath) || glob.matches(dirName)) {
           if (verbose) {
@@ -351,21 +353,20 @@ class ProjectDiscovery {
     }
 
     // Check if this directory is a project
-    final pubspecFile = File(p.join(dir.path, 'pubspec.yaml'));
-    final isProject = pubspecFile.existsSync();
+    final isProject = exists(p.join(dirPath, 'pubspec.yaml'));
 
     if (isProject) {
-      projects.add(dir.path);
+      projects.add(dirPath);
 
       // Check if we should recurse into this project
       bool shouldRecurseIntoProject = recursive;
 
       // Check for project-level override in tom_build.yaml
-      final projectRecursive = getProjectRecursiveSetting(dir.path, toolKey);
+      final projectRecursive = getProjectRecursiveSetting(dirPath, toolKey);
       if (projectRecursive != null) {
         shouldRecurseIntoProject = projectRecursive;
         if (verbose) {
-          _log('  Project override: recursive=$projectRecursive for ${dir.path}');
+          _log('  Project override: recursive=$projectRecursive for $dirPath');
         }
       }
 
@@ -376,7 +377,7 @@ class ProjectDiscovery {
 
       // Recurse into project, but now we're "inside" a project
       await _scanSubdirectories(
-        dir,
+        dirPath,
         projects,
         recursive: recursive,
         insideProject: true,
@@ -387,7 +388,7 @@ class ProjectDiscovery {
     } else {
       // Not a project - continue scanning subfolders
       await _scanSubdirectories(
-        dir,
+        dirPath,
         projects,
         recursive: recursive,
         insideProject: insideProject,
@@ -399,7 +400,7 @@ class ProjectDiscovery {
   }
 
   Future<void> _scanSubdirectories(
-    Directory dir,
+    String dirPath,
     List<String> projects, {
     required bool recursive,
     required bool insideProject,
@@ -408,21 +409,24 @@ class ProjectDiscovery {
     String? scanRoot,
   }) async {
     try {
-      await for (final entity in dir.list()) {
-        if (entity is Directory) {
-          await _scanDirectory(
-            entity,
-            projects,
-            recursive: recursive,
-            insideProject: insideProject,
-            toolKey: toolKey,
-            recursionGlobs: recursionGlobs,
-            scanRoot: scanRoot,
-          );
-        }
+      // Use DCli find to get immediate subdirectories
+      for (final subDirPath in find('*',
+              workingDirectory: dirPath,
+              recursive: false,
+              types: [Find.directory])
+          .toList()) {
+        await _scanDirectory(
+          subDirPath,
+          projects,
+          recursive: recursive,
+          insideProject: insideProject,
+          toolKey: toolKey,
+          recursionGlobs: recursionGlobs,
+          scanRoot: scanRoot,
+        );
       }
     } catch (e) {
-      _log('Warning: Cannot scan ${dir.path}: $e');
+      _log('Warning: Cannot scan $dirPath: $e');
     }
   }
 

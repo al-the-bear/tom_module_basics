@@ -1,5 +1,6 @@
-import 'dart:io';
+import 'dart:io' show Directory;
 
+import 'package:dcli/dcli.dart';
 import 'package:glob/glob.dart';
 import 'package:glob/list_local_fs.dart';
 import 'package:path/path.dart' as p;
@@ -21,14 +22,14 @@ typedef ProjectValidator = bool Function(String dirPath, String toolKey);
 /// - pubspec.yaml AND
 /// - build.yaml with the tool section OR tom_build.yaml with the tool section
 bool defaultProjectValidator(String dirPath, String toolKey) {
-  final pubspecFile = File(p.join(dirPath, 'pubspec.yaml'));
-  if (!pubspecFile.existsSync()) return false;
+  final pubspecPath = p.join(dirPath, 'pubspec.yaml');
+  if (!exists(pubspecPath)) return false;
 
   // Check for build.yaml with tool configuration
-  final buildFile = File(p.join(dirPath, 'build.yaml'));
-  if (buildFile.existsSync()) {
+  final buildPath = p.join(dirPath, 'build.yaml');
+  if (exists(buildPath)) {
     try {
-      final content = buildFile.readAsStringSync();
+      final content = read(buildPath).toParagraph();
       // Simple check: does build.yaml contain the tool key?
       if (content.contains('$toolKey:')) {
         return true;
@@ -81,30 +82,31 @@ class ProjectScanner {
   /// 
   /// Excludes directories matching the [exclude] patterns.
   List<String> findSubprojects(String projectDir, List<String> exclude) {
-    final dir = Directory(projectDir);
-    if (!dir.existsSync()) {
+    if (!exists(projectDir) || !isDirectory(projectDir)) {
       return [];
     }
 
     final projects = <String>[];
 
-    for (final entity in dir.listSync()) {
-      if (entity is! Directory) continue;
-
-      final dirPath = entity.path;
+    // Use DCli find to get immediate subdirectories
+    find('*',
+            workingDirectory: projectDir,
+            recursive: false,
+            types: [Find.directory])
+        .forEach((dirPath) {
       final dirName = p.basename(dirPath);
 
       // Check exclusions
       if (_matchesExclusion(dirName, dirPath, exclude)) {
         _log('Excluding subdirectory: $dirPath');
-        continue;
+        return;
       }
 
       // Check if it's a valid project
       if (projectValidator(dirPath, toolKey)) {
         projects.add(dirPath);
       }
-    }
+    });
 
     return projects;
   }
@@ -172,8 +174,7 @@ class ProjectScanner {
   }
 
   void _scanDirectory(String dirPath, List<String> projects, List<String> exclude) {
-    final dir = Directory(dirPath);
-    if (!dir.existsSync()) return;
+    if (!exists(dirPath) || !isDirectory(dirPath)) return;
 
     // Check if this directory is a project
     if (projectValidator(dirPath, toolKey)) {
@@ -182,25 +183,26 @@ class ProjectScanner {
       return;
     }
 
-    // Recurse into subdirectories
+    // Recurse into subdirectories using DCli find
     try {
-      for (final entity in dir.listSync()) {
-        if (entity is! Directory) continue;
-
-        final subDirPath = entity.path;
+      find('*',
+              workingDirectory: dirPath,
+              recursive: false,
+              types: [Find.directory])
+          .forEach((subDirPath) {
         final dirName = p.basename(subDirPath);
 
         // Skip hidden directories
-        if (dirName.startsWith('.')) continue;
+        if (dirName.startsWith('.')) return;
 
         // Check exclusions
         if (_matchesExclusion(dirName, subDirPath, exclude)) {
           _log('Excluding: $subDirPath');
-          continue;
+          return;
         }
 
         _scanDirectory(subDirPath, projects, exclude);
-      }
+      });
     } catch (e) {
       _log('Error scanning directory "$dirPath": $e');
     }
