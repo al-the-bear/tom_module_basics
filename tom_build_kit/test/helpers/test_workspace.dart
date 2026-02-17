@@ -187,10 +187,39 @@ class TestWorkspace {
   /// Skip file name that marks a repo as excluded from test git operations.
   static const skipFileName = 'buildkit_skip.yaml';
 
+  /// Files that are known to be modified by test fixtures and safe to auto-revert.
+  /// Pattern matching: full path must match for buildkit_master.yaml,
+  /// path suffix for buildkit.yaml in any project.
+  static const _knownFixturePatterns = [
+    'buildkit_master.yaml',
+    'buildkit.yaml', // In any project directory
+    'version.g.dart', // Generated version files
+    'tom_build_state.json', // Build state files
+  ];
+
+  /// Check if a dirty file is a known fixture file safe to auto-revert.
+  bool _isKnownFixtureFile(String statusLine) {
+    // Parse git status format: "XY filename" or "XY  orig -> renamed"
+    // We're looking at the filename part
+    final parts = statusLine.split(RegExp(r'\s+'));
+    if (parts.length < 2) return false;
+
+    final filename = parts.last;
+    for (final pattern in _knownFixturePatterns) {
+      if (filename == pattern || filename.endsWith('/$pattern')) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   /// Fail the test suite if the workspace has uncommitted changes.
   ///
   /// Call this in `setUpAll` before running any integration tests.
   /// Excludes submodule pointer changes in the main repo.
+  ///
+  /// If only known fixture files are dirty (e.g., buildkit_master.yaml from
+  /// an interrupted test run), they will be auto-reverted before failing.
   ///
   /// All diagnostic info is embedded in the `fail()` message so it is
   /// visible regardless of which test reporter is active (expanded, compact,
@@ -199,6 +228,32 @@ class TestWorkspace {
     print('    🔍 Checking workspace cleanliness...');
     final dirty = await hasUncommittedChanges();
     if (dirty.isNotEmpty) {
+      // Check if ALL dirty files are known fixture files
+      final knownFixtures = dirty.where(_isKnownFixtureFile).toList();
+      final unknownFiles = dirty.where((f) => !_isKnownFixtureFile(f)).toList();
+
+      if (unknownFiles.isEmpty && knownFixtures.isNotEmpty) {
+        // All dirty files are known fixture files — auto-revert them
+        print('    ⚠️  Found leftover fixture files from interrupted test:');
+        for (final f in knownFixtures) {
+          print('       $f');
+        }
+        print('    🔄 Auto-reverting fixture files...');
+        await _git(['checkout', '--', '.'], workingDirectory: workspaceRoot);
+
+        // Verify it worked
+        final stillDirty = await hasUncommittedChanges();
+        if (stillDirty.isEmpty) {
+          print('    ✓ Auto-revert successful — workspace is clean');
+          return;
+        } else {
+          print('    ❌ Auto-revert failed, some files still dirty:');
+          for (final f in stillDirty) {
+            print('       $f');
+          }
+        }
+      }
+
       final fileList = dirty.map((f) => '  $f').join('\n');
       final message = '\n'
           '╔══════════════════════════════════════════════════════╗\n'
