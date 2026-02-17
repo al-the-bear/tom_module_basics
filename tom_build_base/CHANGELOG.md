@@ -1,3 +1,29 @@
+## 1.9.0
+
+### Features
+
+- **DCli integration** — Refactored file operations to use DCli library for improved code readability.
+  - `File(path).existsSync()` → `exists(path)`
+  - `File(path).readAsStringSync()` → `read(path).toParagraph()`
+  - `Directory(path).listSync()` → `find('*', types: [Find.directory])`
+  - Improved directory filtering with DCli's `find()` type filtering.
+
+### Dependencies
+
+- Added `dcli` package as dependency for file and directory operations.
+
+### Files Refactored
+
+- `build_config.dart` — Config file loading
+- `build_yaml_utils.dart` — Build.yaml utilities
+- `config_loader.dart` — Configuration loading with placeholders
+- `project_discovery.dart` — Project discovery and scanning
+- `project_scanner.dart` — Project validation and scanning
+- `show_versions.dart` — Version display functionality
+- `workspace_mode.dart` — Workspace navigation utilities
+
+---
+
 ## 1.8.0
 
 ### Features
