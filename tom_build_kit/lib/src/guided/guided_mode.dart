@@ -1,9 +1,12 @@
-/// Guided mode utilities using the interact package.
+/// Guided mode utilities using DCli package.
 ///
 /// Provides interactive prompts for BuildKit CLI tools.
+/// This is a DCli-based replacement for the interact package.
 library;
 
-import 'package:interact/interact.dart';
+import 'dart:io';
+
+import 'package:dcli/dcli.dart' as dcli;
 
 /// Result of a guided mode operation.
 enum GuidedResult {
@@ -19,7 +22,7 @@ enum GuidedResult {
 
 /// Helper class for guided mode interactions.
 ///
-/// Uses the `interact` package for cross-platform interactive prompts.
+/// Uses DCli for cross-platform interactive prompts.
 class GuidedMode {
   /// Show a single-select menu and return selected index.
   ///
@@ -30,25 +33,28 @@ class GuidedMode {
     int defaultIndex = 0,
     bool showCancel = true,
   }) {
-    final allOptions =
-        showCancel ? [...options, 'Cancel'] : options;
+    final allOptions = showCancel ? [...options, 'Cancel'] : options;
 
-    final result = Select(
-      prompt: prompt,
+    // DCli menu returns the selected item, not the index
+    final result = dcli.menu(
+      prompt,
       options: allOptions,
-      initialIndex: defaultIndex,
-    ).interact();
+      defaultOption: allOptions[defaultIndex],
+    );
+
+    final index = allOptions.indexOf(result);
 
     // If Cancel was selected
-    if (showCancel && result == allOptions.length - 1) {
+    if (showCancel && index == allOptions.length - 1) {
       return -1;
     }
 
-    return result;
+    return index;
   }
 
   /// Show a multi-select menu with checkboxes.
   ///
+  /// Uses a looping menu approach since DCli doesn't have native multi-select.
   /// Returns list of selected indices, or empty list if cancelled.
   List<int> multiSelect(
     String prompt,
@@ -56,23 +62,56 @@ class GuidedMode {
     List<bool>? defaults,
     bool showInstructions = true,
   }) {
-    if (showInstructions) {
-      print('  (Space to toggle, Enter to confirm)');
+    final selected = <int>{};
+    
+    // Initialize with defaults
+    if (defaults != null) {
+      for (var i = 0; i < defaults.length && i < options.length; i++) {
+        if (defaults[i]) selected.add(i);
+      }
     }
 
-    return MultiSelect(
-      prompt: prompt,
-      options: options,
-      defaults: defaults ?? List.filled(options.length, false),
-    ).interact();
+    if (showInstructions) {
+      print('  (Select options one by one, choose "Done" when finished)');
+    }
+
+    while (true) {
+      // Build display options with checkmarks
+      final displayOptions = options
+          .asMap()
+          .entries
+          .map((e) => '${selected.contains(e.key) ? "[✓]" : "[ ]"} ${e.value}')
+          .toList();
+      displayOptions.add('── Done ──');
+      displayOptions.add('── Cancel ──');
+
+      final result = dcli.menu(
+        prompt,
+        options: displayOptions,
+      );
+
+      final idx = displayOptions.indexOf(result);
+
+      if (idx == displayOptions.length - 1) {
+        // Cancel
+        return [];
+      } else if (idx == displayOptions.length - 2) {
+        // Done
+        return selected.toList()..sort();
+      } else {
+        // Toggle selection
+        if (selected.contains(idx)) {
+          selected.remove(idx);
+        } else {
+          selected.add(idx);
+        }
+      }
+    }
   }
 
   /// Show a confirmation prompt (Y/n or y/N).
   bool confirm(String prompt, {bool defaultYes = true}) {
-    return Confirm(
-      prompt: prompt,
-      defaultValue: defaultYes,
-    ).interact();
+    return dcli.confirm(prompt, defaultValue: defaultYes);
   }
 
   /// Show a text input prompt.
@@ -82,23 +121,26 @@ class GuidedMode {
     bool Function(String)? validator,
     String? validationError,
   }) {
-    return Input(
-      prompt: prompt,
-      defaultValue: defaultValue ?? '',
-      validator: validator != null
-          ? (s) {
-              if (validator(s)) return true;
-              throw ValidationError(validationError ?? 'Invalid input');
-            }
-          : null,
-    ).interact();
+    // DCli's ask doesn't support custom validators directly,
+    // so we implement validation manually
+    while (true) {
+      final result = dcli.ask(
+        prompt,
+        defaultValue: defaultValue,
+      );
+      if (validator == null || validator(result)) {
+        return result;
+      }
+      print(validationError ?? 'Invalid input, please try again.');
+    }
   }
 
   /// Show a password input prompt (hidden text).
   String password(String prompt) {
-    return Password(
-      prompt: prompt,
-    ).interact();
+    return dcli.ask(
+      prompt,
+      hidden: true,
+    );
   }
 
   /// Show a command preview box before execution.
@@ -137,13 +179,23 @@ class GuidedMode {
 
   /// Show a spinner during a long-running operation.
   ///
-  /// Returns a [SpinnerState] that must be stopped when done.
-  SpinnerState showSpinner(String message) {
-    final spinner = Spinner(
-      icon: '✓',
-      rightPrompt: (done) => done ? '✓ $message' : message,
-    ).interact();
-    return spinner;
+  /// Note: DCli doesn't have the same spinner API as interact.
+  /// This prints a message instead. Use waitForSpinner for async operations.
+  void showSpinner(String message) {
+    print('⏳ $message...');
+  }
+
+  /// Run a task with a progress indicator.
+  Future<T> waitForSpinner<T>(String message, Future<T> Function() task) async {
+    stdout.write('⏳ $message...');
+    try {
+      final result = await task();
+      stdout.write('\r✓ $message     \n');
+      return result;
+    } catch (e) {
+      stdout.write('\r✗ $message     \n');
+      rethrow;
+    }
   }
 
   /// Show a success message.
@@ -182,6 +234,6 @@ class GuidedMode {
 
   /// Wait for Enter key to continue.
   void waitForEnter([String message = 'Press Enter to continue...']) {
-    Input(prompt: message, defaultValue: '').interact();
+    dcli.ask(message, defaultValue: '');
   }
 }

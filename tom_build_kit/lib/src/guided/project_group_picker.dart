@@ -5,8 +5,51 @@ library;
 
 import 'dart:io';
 
-import 'package:interact/interact.dart';
+import 'package:dcli/dcli.dart' as dcli;
 import 'package:path/path.dart' as p;
+
+/// Multi-select using DCli menu with toggle pattern.
+///
+/// Returns list of selected indices.
+List<int> _multiSelect({
+  required String prompt,
+  required List<String> options,
+  List<bool>? defaults,
+}) {
+  final selected = List<bool>.filled(options.length, false);
+  if (defaults != null && defaults.length == options.length) {
+    for (var i = 0; i < defaults.length; i++) {
+      selected[i] = defaults[i];
+    }
+  }
+
+  print('$prompt (toggle with Enter, type "done" when finished)');
+
+  while (true) {
+    final menuOptions = <String>[
+      ...options.asMap().entries.map(
+            (e) => '${selected[e.key] ? "[x]" : "[ ]"} ${e.value}',
+          ),
+      '--- Done ---',
+    ];
+
+    final choice = dcli.menu(
+      'Toggle selection:',
+      options: menuOptions,
+      defaultOption: menuOptions.last,
+    );
+
+    if (choice == '--- Done ---') break;
+
+    // Find which option was selected and toggle it
+    final index = menuOptions.indexOf(choice);
+    if (index >= 0 && index < options.length) {
+      selected[index] = !selected[index];
+    }
+  }
+
+  return [for (var i = 0; i < selected.length; i++) if (selected[i]) i];
+}
 
 /// Represents a project scope group for git operations.
 enum ProjectScope {
@@ -108,16 +151,17 @@ class ProjectGroupPicker {
   ProjectGroupSelection? pick() {
     // Step 1: Project scope selection
     print('');
-    final scopeChoice = Select(
-      prompt: 'What to include?',
-      options: [
-        'All changed projects (complete)',
-        'All changed projects (select scope per project)',
-        'Select specific projects',
-        'Cancel',
-      ],
-      initialIndex: 0,
-    ).interact();
+    final scopeOptions = [
+      'All changed projects (complete)',
+      'All changed projects (select scope per project)',
+      'Select specific projects',
+      'Cancel',
+    ];
+    final scopeChoice = scopeOptions.indexOf(dcli.menu(
+      'What to include?',
+      options: scopeOptions,
+      defaultOption: scopeOptions[0],
+    ));
 
     if (scopeChoice == 3) return null;
 
@@ -148,21 +192,21 @@ class ProjectGroupPicker {
           return null;
         }
 
-        final selected = MultiSelect(
+        final selected = _multiSelect(
           prompt: 'Select projects',
           options: changedProjects!.map((p) => _formatProjectName(p)).toList(),
           defaults: List.filled(changedProjects!.length, true),
-        ).interact();
+        );
 
         if (selected.isEmpty) return null;
 
         selectedProjects = selected.map((i) => changedProjects![i]).toList();
 
         // Ask for scope selection mode
-        final perProject = Confirm(
-          prompt: 'Select scope per project?',
+        final perProject = dcli.confirm(
+          'Select scope per project?',
           defaultValue: false,
-        ).interact();
+        );
 
         if (perProject) {
           for (final proj in selectedProjects) {
@@ -228,11 +272,11 @@ class ProjectGroupPicker {
       return [ProjectScope.complete];
     }
 
-    final selected = MultiSelect(
+    final selected = _multiSelect(
       prompt: prompt,
       options: options,
       defaults: [true, ...List.filled(options.length - 1, false)],
-    ).interact();
+    );
 
     if (selected.isEmpty) return null;
 
@@ -262,23 +306,23 @@ List<ProjectScope>? pickProjectScopes({
   options.add('Cancel');
 
   if (allowMultiple) {
-    print('  (Space to toggle, Enter to confirm)');
-    final selected = MultiSelect(
+    final selected = _multiSelect(
       prompt: prompt,
       options: options.sublist(0, options.length - 1), // Exclude Cancel
       defaults: [true, false, false, false],
-    ).interact();
+    );
 
     if (selected.isEmpty) return null;
     return selected.map((i) => ProjectScope.values[i]).toList();
   } else {
-    final selected = Select(
-      prompt: prompt,
+    final choice = dcli.menu(
+      prompt,
       options: options,
-      initialIndex: 0,
-    ).interact();
+      defaultOption: options[0],
+    );
 
-    if (selected == options.length - 1) return null;
-    return [ProjectScope.values[selected]];
+    final selectedIndex = options.indexOf(choice);
+    if (selectedIndex == options.length - 1) return null;
+    return [ProjectScope.values[selectedIndex]];
   }
 }
