@@ -3,6 +3,36 @@
 **Project:** `tom_build_kit`  
 **Type:** CLI Tool
 
+## Essential: DCli for File/Directory Operations
+
+> **IMPORTANT:** Use DCli for ALL file and directory manipulation. Do not use `dart:io` directly.
+
+DCli provides Dart equivalents for Unix commands: `cp`, `mv`, `rm`, `mkdir`, `cat`, `find`, `head`, `tail`, `which`, `chmod`, `touch`, `ln -s`, and more.
+
+| Document | Purpose |
+|----------|----------|
+| [DCli Overview](/_copilot_guidelines/d4rt/dcli_overview.md) | Introduction, command equivalents table, examples |
+| [DCli Scripting Guide](/_copilot_guidelines/d4rt/dcli_scripting_guide.md) | Complete API reference |
+| [dcli_usage.md](dcli_usage.md) | Project-specific DCli patterns |
+
+**Quick Start:**
+```dart
+import 'package:dcli/dcli.dart';
+
+// File operations: copy, move, delete, cat, read, head, tail, touch, replace
+copy('src.txt', 'dst.txt');
+cat('file.txt');
+final lines = read('file.txt').toList();
+
+// Directory operations: createDir, deleteDir, find, exists, isDirectory
+createDir('path/to/dir', recursive: true);
+find('*.dart', recursive: true).forEach((f) => print(f.path));
+
+// Command execution
+'dart --version'.run;
+final output = 'ls -la'.toList();
+```
+
 ## Global Guidelines
 
 | Document | Purpose |
