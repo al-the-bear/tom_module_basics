@@ -1,6 +1,0 @@
-# Buildkit configuration for tom_reflector standalone reflection generation
-
-tom_reflector:
-  barrels:
-    - lib/main.dart
-  follow_re_exports: true
