@@ -26,6 +26,7 @@ void main() {
         expect(args.skipModules, isEmpty);
         expect(args.innerFirstGit, isFalse);
         expect(args.outerFirstGit, isFalse);
+        expect(args.topRepo, isFalse);
         expect(args.buildOrder, isFalse);
         expect(args.workspaceRecursion, isFalse);
         expect(args.verbose, isFalse);
@@ -253,6 +254,11 @@ void main() {
         expect(args.outerFirstGit, isTrue);
       });
 
+      test('BB-CLI-31b: Parses --top-repo [2026-02-14]', () {
+        final args = parser.parse(['--top-repo']);
+        expect(args.topRepo, isTrue);
+      });
+
       test('BB-CLI-32: Parses --build-order [2026-02-12]', () {
         final args = parser.parse(['--build-order']);
         expect(args.buildOrder, isTrue);
@@ -313,6 +319,11 @@ void main() {
       test('BB-CLI-43: Parses -o [2026-02-12]', () {
         final args = parser.parse(['-o']);
         expect(args.outerFirstGit, isTrue);
+      });
+
+      test('BB-CLI-43b: Parses -T [2026-02-14]', () {
+        final args = parser.parse(['-T']);
+        expect(args.topRepo, isTrue);
       });
 
       test('BB-CLI-44: Parses -b [2026-02-12]', () {

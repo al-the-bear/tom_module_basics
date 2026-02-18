@@ -55,6 +55,13 @@ class WorkspaceNavigationArgs {
   /// Scan git repos, process outermost (shallowest) first.
   final bool outerFirstGit;
 
+  /// Find topmost git repo by traversing up from current directory.
+  ///
+  /// When set, traverses up the directory tree to find the outermost
+  /// git repository and uses that as the root for subsequent traversal.
+  /// Can be combined with [innerFirstGit] or [outerFirstGit].
+  final bool topRepo;
+
   /// Exclude patterns (path-based globs).
   final List<String> exclude;
 
@@ -87,6 +94,7 @@ class WorkspaceNavigationArgs {
     this.workspaceRecursion = false,
     this.innerFirstGit = false,
     this.outerFirstGit = false,
+    this.topRepo = false,
     this.exclude = const [],
     this.excludeProjects = const [],
     this.recursionExclude = const [],
@@ -101,12 +109,14 @@ class WorkspaceNavigationArgs {
   /// - `-s <path>` where path is not "."
   /// - `-i` (inner-first-git)
   /// - `-o` (outer-first-git)
+  /// - `-T` (top-repo)
   ExecutionMode get executionMode {
     if (bareRoot) return ExecutionMode.workspace;
     if (root != null) return ExecutionMode.workspace;
     if (scan != null && scan != '.') return ExecutionMode.workspace;
     if (innerFirstGit) return ExecutionMode.workspace;
     if (outerFirstGit) return ExecutionMode.workspace;
+    if (topRepo) return ExecutionMode.workspace;
     return ExecutionMode.project;
   }
 
@@ -146,6 +156,7 @@ class WorkspaceNavigationArgs {
       workspaceRecursion: workspaceRecursion,
       innerFirstGit: innerFirstGit,
       outerFirstGit: outerFirstGit,
+      topRepo: topRepo,
       exclude: exclude,
       excludeProjects: excludeProjects,
       recursionExclude: recursionExclude,
@@ -181,6 +192,7 @@ class WorkspaceNavigationArgs {
       workspaceRecursion: workspaceRecursion,
       innerFirstGit: innerFirstGit,
       outerFirstGit: outerFirstGit,
+      topRepo: topRepo,
       exclude: exclude,
       excludeProjects: excludeProjects,
       recursionExclude: recursionExclude,
@@ -201,6 +213,7 @@ class WorkspaceNavigationArgs {
     bool? workspaceRecursion,
     bool? innerFirstGit,
     bool? outerFirstGit,
+    bool? topRepo,
     List<String>? exclude,
     List<String>? excludeProjects,
     List<String>? recursionExclude,
@@ -218,6 +231,7 @@ class WorkspaceNavigationArgs {
       workspaceRecursion: workspaceRecursion ?? this.workspaceRecursion,
       innerFirstGit: innerFirstGit ?? this.innerFirstGit,
       outerFirstGit: outerFirstGit ?? this.outerFirstGit,
+      topRepo: topRepo ?? this.topRepo,
       exclude: exclude ?? this.exclude,
       excludeProjects: excludeProjects ?? this.excludeProjects,
       recursionExclude: recursionExclude ?? this.recursionExclude,
@@ -232,7 +246,7 @@ class WorkspaceNavigationArgs {
       'recursive=$recursive${recursiveExplicitlySet ? '(explicit)' : ''}, '
       'buildOrder=$buildOrder, project=$project, '
       'root=$root, bareRoot=$bareRoot, workspaceRecursion=$workspaceRecursion, '
-      'innerFirstGit=$innerFirstGit, outerFirstGit=$outerFirstGit)';
+      'innerFirstGit=$innerFirstGit, outerFirstGit=$outerFirstGit, topRepo=$topRepo)';
 }
 
 /// Add common workspace navigation options to an ArgParser.
@@ -246,6 +260,7 @@ class WorkspaceNavigationArgs {
 /// - `-w, --workspace-recursion` - Shell out to sub-workspaces instead of skipping
 /// - `-i, --inner-first-git` - Scan git repos, process innermost first
 /// - `-o, --outer-first-git` - Scan git repos, process outermost first
+/// - `-T, --top-repo` - Find topmost git repo by traversing up
 /// - `-x, --exclude` - Exclude patterns (path-based globs)
 /// - `--exclude-projects` - Exclude projects by name or path
 /// - `--recursion-exclude` - Exclude patterns during recursive scan
@@ -280,6 +295,10 @@ void addNavigationOptions(ArgParser parser) {
       abbr: 'o',
       negatable: false,
       help: 'Scan git repos, process outermost (shallowest) first');
+  parser.addFlag('top-repo',
+      abbr: 'T',
+      negatable: false,
+      help: 'Find topmost git repo by traversing up from current directory');
   parser.addMultiOption('exclude',
       abbr: 'x', help: 'Exclude patterns (path-based globs)');
   parser.addMultiOption('exclude-projects',
@@ -410,6 +429,7 @@ WorkspaceNavigationArgs parseNavigationArgs(
     workspaceRecursion: results['workspace-recursion'] as bool? ?? false,
     innerFirstGit: results['inner-first-git'] as bool? ?? false,
     outerFirstGit: results['outer-first-git'] as bool? ?? false,
+    topRepo: results['top-repo'] as bool? ?? false,
     exclude: results['exclude'] as List<String>? ?? [],
     excludeProjects: results['exclude-projects'] as List<String>? ?? [],
     recursionExclude: results['recursion-exclude'] as List<String>? ?? [],

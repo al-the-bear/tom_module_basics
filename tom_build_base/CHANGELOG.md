@@ -1,3 +1,25 @@
+## 1.10.0
+
+### Features
+
+- **Top repository navigation** (`-T, --top-repo`) — New git traversal option.
+  - Traverses UP the directory tree to find the topmost (outermost) git repository.
+  - Uses that repository as the root for subsequent traversal.
+  - Can be combined with `-i` (inner-first-git) or `-o` (outer-first-git).
+  - Added `GitRepoFinder.findTopRepo()` method for upward git repo discovery.
+  - Example: `buildkit -T -i :compile` — finds top repo, then processes inner repos first.
+
+### Classes Modified
+
+- `CliArgs` — Added `topRepo` field.
+- `WorkspaceNavigationArgs` — Added `topRepo` field and updated execution mode detection.
+- `GitRepoFinder` — Added `findTopRepo(String startPath)` method.
+- `ProjectNavigator` — Integrated `topRepo` option in navigation.
+- `CliArgParser` — Added parsing for `-T` and `--top-repo` flags.
+- `OptionDefinition` — Added `top-repo` to `gitTraversalOptions`.
+
+---
+
 ## 1.9.0
 
 ### Features

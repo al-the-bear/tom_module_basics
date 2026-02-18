@@ -37,7 +37,7 @@ const analyzerOptions = <OptionDefinition>[
 final analyzerTool = ToolDefinition(
   name: 'tom_analyzer',
   description: 'Dart code analysis tool',
-  version: TestDefaultVersionInfo.version,
+  version: AnalyzerVersionInfo.version,
   mode: ToolMode.singleCommand,
   features: const NavigationFeatures(
     projectTraversal: true,

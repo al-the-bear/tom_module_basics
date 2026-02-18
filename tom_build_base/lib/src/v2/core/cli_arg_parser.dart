@@ -26,6 +26,7 @@ class CliArgs {
   final List<String> skipModules;
   final bool innerFirstGit;
   final bool outerFirstGit;
+  final bool topRepo;
 
   // Build options
   final bool buildOrder;
@@ -68,6 +69,7 @@ class CliArgs {
     this.skipModules = const [],
     this.innerFirstGit = false,
     this.outerFirstGit = false,
+    this.topRepo = false,
     this.buildOrder = false,
     this.workspaceRecursion = false,
     this.verbose = false,
@@ -339,6 +341,10 @@ class CliArgParser {
       case 'o':
         state.outerFirstGit = true;
         break;
+      case 'top-repo':
+      case 'T':
+        state.topRepo = true;
+        break;
       case 'build-order':
       case 'b':
         state.buildOrder = true;
@@ -450,6 +456,7 @@ class CliArgParser {
       'm': 'modules',
       'i': 'inner-first-git',
       'o': 'outer-first-git',
+      'T': 'top-repo',
       'b': 'build-order',
       'v': 'verbose',
       'n': 'dry-run',
@@ -564,6 +571,7 @@ class _ParseState {
   final List<String> skipModules = [];
   bool innerFirstGit = false;
   bool outerFirstGit = false;
+  bool topRepo = false;
   bool buildOrder = false;
   bool workspaceRecursion = false;
   bool verbose = false;
@@ -598,6 +606,7 @@ class _ParseState {
       skipModules: skipModules,
       innerFirstGit: innerFirstGit,
       outerFirstGit: outerFirstGit,
+      topRepo: topRepo,
       buildOrder: buildOrder,
       workspaceRecursion: workspaceRecursion,
       verbose: verbose,

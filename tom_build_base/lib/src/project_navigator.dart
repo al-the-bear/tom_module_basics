@@ -5,6 +5,7 @@ import 'package:path/path.dart' as p;
 import 'package:yaml/yaml.dart';
 
 import 'project_discovery.dart';
+import 'v2/traversal/folder_scanner.dart';
 import 'workspace_mode.dart';
 import 'yaml_utils.dart';
 
@@ -225,6 +226,7 @@ class ProjectNavigator {
   /// Navigate to find projects or git repositories based on navigation args.
   ///
   /// This is the main entry point that handles all navigation modes:
+  /// - Top repo resolution (`topRepo`) - find topmost git repo and use as base
   /// - Git-based traversal (`innerFirstGit`, `outerFirstGit`)
   /// - Project pattern matching (`project`)
   /// - Directory scanning (`scan`, `recursive`)
@@ -234,14 +236,29 @@ class ProjectNavigator {
     WorkspaceNavigationArgs navArgs, {
     required String basePath,
   }) async {
+    var effectiveBasePath = basePath;
+
+    // If topRepo is set, find the topmost git repo and use that as base
+    if (navArgs.topRepo) {
+      final finder = GitRepoFinder();
+      final topRepo = finder.findTopRepo(basePath);
+      if (topRepo == null) {
+        return NavigationResult.error(
+          'No git repository found in directory tree above: $basePath',
+        );
+      }
+      effectiveBasePath = topRepo;
+      _log('Using top git repository: $effectiveBasePath');
+    }
+
     // Check for git-based traversal mode
     if (config.useGitTraversal &&
         (navArgs.innerFirstGit || navArgs.outerFirstGit)) {
-      return _navigateGitMode(navArgs, basePath);
+      return _navigateGitMode(navArgs, effectiveBasePath);
     }
 
     // Project-based navigation
-    return _navigateProjectMode(navArgs, basePath);
+    return _navigateProjectMode(navArgs, effectiveBasePath);
   }
 
   /// Navigate in git-based traversal mode.

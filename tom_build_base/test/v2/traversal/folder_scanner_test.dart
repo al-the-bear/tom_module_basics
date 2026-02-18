@@ -255,4 +255,98 @@ void main() {
           reason: 'buildkit should not stop at issuekit_master.yaml');
     });
   });
+
+  group('BB-V2-GIT: GitRepoFinder.findTopRepo [2026-02-14]', () {
+    late Directory tempDir;
+    late String tempPath;
+
+    setUp(() {
+      tempDir = Directory.systemTemp.createTempSync('git_repo_finder_test_');
+      tempPath = tempDir.path;
+    });
+
+    tearDown(() {
+      if (tempDir.existsSync()) {
+        tempDir.deleteSync(recursive: true);
+      }
+    });
+
+    void createDir(String relativePath) {
+      Directory(p.join(tempPath, relativePath)).createSync(recursive: true);
+    }
+
+    test('BB-V2-GIT-1: returns null when no git repo in path', () {
+      createDir('project');
+
+      final finder = GitRepoFinder();
+      final result = finder.findTopRepo(p.join(tempPath, 'project'));
+
+      expect(result, isNull,
+          reason: 'Should return null when no .git found in path');
+    });
+
+    test('BB-V2-GIT-2: finds single git repo in path', () {
+      createDir('repo/.git');
+      createDir('repo/project');
+
+      final finder = GitRepoFinder();
+      final result = finder.findTopRepo(p.join(tempPath, 'repo/project'));
+
+      expect(result, equals(p.join(tempPath, 'repo')),
+          reason: 'Should find the repo containing .git');
+    });
+
+    test('BB-V2-GIT-3: finds topmost git repo with nested repos', () {
+      // Outer repo
+      createDir('outer/.git');
+      // Inner (nested) repo
+      createDir('outer/inner/.git');
+      createDir('outer/inner/project');
+
+      final finder = GitRepoFinder();
+      final result = finder.findTopRepo(p.join(tempPath, 'outer/inner/project'));
+
+      expect(result, equals(p.join(tempPath, 'outer')),
+          reason: 'Should find the topmost (outermost) repo');
+    });
+
+    test('BB-V2-GIT-4: finds topmost git repo with multiple nesting levels', () {
+      // Level 1 (topmost)
+      createDir('l1/.git');
+      // Level 2
+      createDir('l1/l2/.git');
+      // Level 3
+      createDir('l1/l2/l3/.git');
+      createDir('l1/l2/l3/project');
+
+      final finder = GitRepoFinder();
+      final result = finder.findTopRepo(p.join(tempPath, 'l1/l2/l3/project'));
+
+      expect(result, equals(p.join(tempPath, 'l1')),
+          reason: 'Should find the topmost repo with deep nesting');
+    });
+
+    test('BB-V2-GIT-5: works when starting from repo root', () {
+      createDir('repo/.git');
+
+      final finder = GitRepoFinder();
+      final result = finder.findTopRepo(p.join(tempPath, 'repo'));
+
+      expect(result, equals(p.join(tempPath, 'repo')),
+          reason: 'Should find repo when starting at repo root');
+    });
+
+    test('BB-V2-GIT-6: handles .git file (submodule worktree)', () {
+      // .git can be a file in submodules pointing to the real .git directory
+      createDir('repo');
+      File(p.join(tempPath, 'repo/.git')).writeAsStringSync('gitdir: ../.git/modules/repo');
+      createDir('repo/project');
+
+      final finder = GitRepoFinder();
+      final result = finder.findTopRepo(p.join(tempPath, 'repo/project'));
+
+      expect(result, equals(p.join(tempPath, 'repo')),
+          reason: 'Should detect .git file as well as .git directory');
+    });
+  });
 }

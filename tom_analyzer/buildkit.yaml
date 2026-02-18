@@ -1,5 +1,8 @@
 # Tom Build Configuration for tom_analyzer
 
+versioner:
+  variable-prefix: analyzer
+
 compiler:
   compiles:
     # tom_analyzer (analysis only)

@@ -200,6 +200,39 @@ class GitRepoFinder {
     return repos;
   }
 
+  /// Find the topmost git repository by traversing up from [startPath].
+  ///
+  /// Traverses up the directory tree from [startPath] to the filesystem root,
+  /// returning the path of the outermost (topmost) git repository found.
+  /// Returns null if no git repository is found in the path.
+  ///
+  /// Example: If startPath is `/a/b/c` and both `/a` and `/a/b` are git repos,
+  /// this returns `/a` (the topmost one).
+  String? findTopRepo(String startPath) {
+    var current = p.normalize(p.absolute(startPath));
+    String? topRepo;
+    
+    while (true) {
+      // Check if this is a git repo
+      final gitDir = Directory(p.join(current, '.git'));
+      final gitFile = File(p.join(current, '.git'));
+      
+      if (gitDir.existsSync() || gitFile.existsSync()) {
+        topRepo = current;
+      }
+      
+      // Move to parent directory
+      final parent = p.dirname(current);
+      if (parent == current) {
+        // Reached root
+        break;
+      }
+      current = parent;
+    }
+    
+    return topRepo;
+  }
+
   Future<void> _findGitRepos(Directory dir, List<FsFolder> results) async {
     if (!dir.existsSync()) return;
     

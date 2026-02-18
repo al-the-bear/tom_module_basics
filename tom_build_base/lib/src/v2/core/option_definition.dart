@@ -183,6 +183,11 @@ const List<OptionDefinition> gitTraversalOptions = [
     abbr: 'o',
     description: 'Process outer repos first',
   ),
+  OptionDefinition.flag(
+    name: 'top-repo',
+    abbr: 'T',
+    description: 'Find topmost git repo and use as root',
+  ),
 ];
 
 /// Common options for all tools.
