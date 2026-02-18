@@ -50,3 +50,14 @@ export 'src/project_scanner.dart';
 export 'src/workspace_mode.dart';
 export 'src/yaml_utils.dart';
 export 'src/show_versions.dart';
+
+// V2 traversal API
+export 'src/v2/folder/fs_folder.dart';
+export 'src/v2/folder/run_folder.dart';
+export 'src/v2/folder/natures/dart_project_folder.dart';
+export 'src/v2/folder/natures/git_folder.dart';
+export 'src/v2/folder/natures/extension_folder.dart';
+export 'src/v2/folder/natures/buildkit_folder.dart';
+export 'src/v2/traversal/workspace_scanner.dart';
+export 'src/v2/traversal/folder_scanner.dart' show GitRepoFinder;
+export 'src/v2/traversal/nature_detector.dart';

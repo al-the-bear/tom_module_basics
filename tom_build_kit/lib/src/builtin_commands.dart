@@ -18,6 +18,7 @@ import 'commands/gittag_tool.dart';
 import 'commands/publisher_tool.dart';
 import 'commands/versioner_tool.dart';
 import 'commands/bumpversion_tool.dart';
+import 'commands/bumppubspec_tool.dart';
 import 'commands/compiler_tool.dart';
 import 'commands/runner_tool.dart';
 import 'commands/dependencies_tool.dart';
@@ -107,6 +108,7 @@ class BuiltinCommands {
     'buildsorter',
     'versioner',
     'bumpversion',
+    'bumppubspec',
     'compiler',
     'runner',
     'cleanup',
@@ -192,6 +194,8 @@ class BuiltinCommands {
         return _runVersioner(args);
       case 'bumpversion':
         return _runBumpVersion(args);
+      case 'bumppubspec':
+        return _runBumpPubspec(args);
       case 'compiler':
         return _runCompiler(args);
       case 'runner':
@@ -249,6 +253,14 @@ class BuiltinCommands {
   Future<bool> _runBumpVersion(List<String> args) async {
     if (verbose) print('  [builtin] Running bumpversion...');
     final tool = BumpVersionTool()
+      ..verbose = verbose
+      ..dryRun = dryRun;
+    return tool.run(args);
+  }
+
+  Future<bool> _runBumpPubspec(List<String> args) async {
+    if (verbose) print('  [builtin] Running bumppubspec...');
+    final tool = BumpPubspecTool()
       ..verbose = verbose
       ..dryRun = dryRun;
     return tool.run(args);
@@ -326,7 +338,8 @@ class BuiltinCommands {
     if (verbose) print('  [builtin] Running gitcommit...');
     final tool = GitCommitTool()
       ..verbose = verbose
-      ..dryRun = dryRun;
+      ..dryRun = dryRun
+      ..autoInnerFirst = true; // Auto-inject -i like standalone binary
     return tool.run(args);
   }
 

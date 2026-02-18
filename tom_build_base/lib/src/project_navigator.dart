@@ -231,12 +231,21 @@ class ProjectNavigator {
   /// - Project pattern matching (`project`)
   /// - Directory scanning (`scan`, `recursive`)
   ///
+  /// Note: `topRepo` requires either `innerFirstGit` or `outerFirstGit`.
+  ///
   /// Returns a [NavigationResult] with the discovered paths.
   Future<NavigationResult> navigate(
     WorkspaceNavigationArgs navArgs, {
     required String basePath,
   }) async {
     var effectiveBasePath = basePath;
+
+    // Validate: topRepo requires git traversal mode
+    if (navArgs.topRepo && !navArgs.innerFirstGit && !navArgs.outerFirstGit) {
+      return NavigationResult.error(
+        '-T/--top-repo requires git traversal mode (-i/--inner-first-git or -o/--outer-first-git)',
+      );
+    }
 
     // If topRepo is set, find the topmost git repo and use that as base
     if (navArgs.topRepo) {

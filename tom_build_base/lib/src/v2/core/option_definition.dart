@@ -186,7 +186,7 @@ const List<OptionDefinition> gitTraversalOptions = [
   OptionDefinition.flag(
     name: 'top-repo',
     abbr: 'T',
-    description: 'Find topmost git repo and use as root',
+    description: 'Find topmost git repo and use as root (requires -i or -o)',
   ),
 ];
 

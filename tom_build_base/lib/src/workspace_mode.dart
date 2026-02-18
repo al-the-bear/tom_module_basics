@@ -2,6 +2,8 @@ import 'package:args/args.dart';
 import 'package:dcli/dcli.dart';
 import 'package:path/path.dart' as p;
 
+import 'v2/traversal/folder_scanner.dart' show GitRepoFinder;
+
 /// Constants for workspace configuration files.
 const kBuildkitMasterYaml = 'buildkit_master.yaml';
 const kTomWorkspaceYaml = 'tom_workspace.yaml';
@@ -494,13 +496,32 @@ bool isWorkspaceBoundary(String dirPath) {
 ///
 /// In workspace mode with bare `-R`, returns the detected workspace root.
 /// In workspace mode with `-R <path>`, validates and returns that path.
+/// With `-T/--top-repo`, finds topmost git repo (requires `-i` or `-o`).
 /// In project mode, returns the current directory.
 ///
-/// Throws [ArgumentError] if the specified root path is invalid.
+/// Throws [ArgumentError] if the specified root path is invalid or
+/// if `-T` is used without git traversal mode.
 String resolveExecutionRoot(
   WorkspaceNavigationArgs navArgs, {
   required String currentDir,
 }) {
+  // Handle -T/--top-repo first (requires git traversal mode)
+  if (navArgs.topRepo) {
+    if (!navArgs.innerFirstGit && !navArgs.outerFirstGit) {
+      throw ArgumentError(
+        '-T/--top-repo requires git traversal mode (-i/--inner-first-git or -o/--outer-first-git)',
+      );
+    }
+    final finder = GitRepoFinder();
+    final topRepo = finder.findTopRepo(currentDir);
+    if (topRepo == null) {
+      throw ArgumentError(
+        'No git repository found in directory tree above: $currentDir',
+      );
+    }
+    return topRepo;
+  }
+
   if (navArgs.bareRoot) {
     // Bare -R: find workspace root
     return findWorkspaceRoot(currentDir);

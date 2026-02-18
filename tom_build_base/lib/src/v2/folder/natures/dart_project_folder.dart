@@ -32,6 +32,17 @@ class DartProjectFolder extends RunFolder {
     this.pubspec = const {},
   });
 
+  /// Whether this package is publishable to pub.dev.
+  ///
+  /// Returns true if the package:
+  /// - Has a version
+  /// - Does NOT have `publish_to: none` in pubspec.yaml
+  bool get isPublishable {
+    if (version == null || version!.isEmpty) return false;
+    final publishTo = pubspec['publish_to'];
+    return publishTo != 'none';
+  }
+
   /// Check if a folder is a Dart project.
   static bool isDartProject(String dirPath) {
     return File('$dirPath/pubspec.yaml').existsSync();
