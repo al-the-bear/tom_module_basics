@@ -133,8 +133,18 @@ Future<void> main(List<String> args) async {
     return;
   }
 
+  // Apply macro expansion with placeholder support
+  List<String> expandedRest;
+  try {
+    expandedRest = expandMacros(rest, _macros);
+  } on MacroExpansionException catch (e) {
+    print('Error: ${e.message}');
+    if (e.detail != null) print('  ${e.detail}');
+    exit(1);
+  }
+
   // Parse execution steps (commands with :, pipelines without)
-  final steps = _parseExecutionSteps(rest, globalResults);
+  final steps = _parseExecutionSteps(expandedRest, globalResults);
   
   // Load pipeline config
   final config = PipelineConfig.load(
@@ -470,11 +480,8 @@ Future<bool> _executeCommand(
   cmdArgs.add(':${step.name}');
   cmdArgs.addAll(step.args);
   
-  // Apply macro substitution
-  final processedArgs = _applyMacros(cmdArgs);
-  
   // Run via ToolRunner
-  final result = await runner.run(processedArgs);
+  final result = await runner.run(cmdArgs);
   
   if (!result.success && result.errorMessage != null) {
     print('Error: ${result.errorMessage}');
@@ -562,16 +569,7 @@ Future<bool> _executePipelineAcrossProjects({
   return allSuccess;
 }
 
-/// Apply macro substitution to args.
-List<String> _applyMacros(List<String> args) {
-  return args.map((arg) {
-    var result = arg;
-    for (final entry in _macros.entries) {
-      result = result.replaceAll('@${entry.key}', entry.value);
-    }
-    return result;
-  }).toList();
-}
+
 
 /// List available pipelines.
 Future<void> _listPipelines(String rootPath) async {
