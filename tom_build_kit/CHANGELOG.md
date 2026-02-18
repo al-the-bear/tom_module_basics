@@ -1,3 +1,18 @@
+## 1.7.0
+
+### Refactoring
+
+- **WorkspaceScanner integration** — Refactored all 17 git tools to use unified `WorkspaceScanner` API.
+  - Replaced duplicated `_findGitRepositories()` methods with `WorkspaceScanner().findGitRepoPaths()`.
+  - Removed ~30 lines of duplicated code from each tool.
+  - `bumppubspec` now uses `WorkspaceScanner().findPublishable()` for package discovery.
+
+### Dependencies
+
+- Requires tom_build_base v1.11.0 or later for WorkspaceScanner API.
+
+---
+
 ## 1.6.0
 
 ### Features

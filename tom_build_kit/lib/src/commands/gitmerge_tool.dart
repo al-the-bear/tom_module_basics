@@ -139,7 +139,7 @@ class GitMergeTool extends ToolBase {
       return false;
     }
 
-    var repos = _findGitRepositories(executionRoot);
+    var repos = WorkspaceScanner().findGitRepoPaths(executionRoot);
 
     // Apply modules filter if specified
     if (navArgs.modules.isNotEmpty) {
@@ -198,7 +198,7 @@ class GitMergeTool extends ToolBase {
   }
 
   Future<bool> _runAbort(String executionRoot, WorkspaceNavigationArgs navArgs, bool listMode) async {
-    var repos = _findGitRepositories(executionRoot);
+    var repos = WorkspaceScanner().findGitRepoPaths(executionRoot);
 
     // Apply modules filter if specified
     if (navArgs.modules.isNotEmpty) {
@@ -231,7 +231,7 @@ class GitMergeTool extends ToolBase {
   }
 
   Future<bool> _runContinue(String executionRoot, WorkspaceNavigationArgs navArgs, bool listMode) async {
-    var repos = _findGitRepositories(executionRoot);
+    var repos = WorkspaceScanner().findGitRepoPaths(executionRoot);
 
     // Apply modules filter if specified
     if (navArgs.modules.isNotEmpty) {
@@ -268,7 +268,7 @@ class GitMergeTool extends ToolBase {
     print('=== Git Merge - Guided Mode ===');
     print('');
     
-    var repos = _findGitRepositories(executionRoot);
+    var repos = WorkspaceScanner().findGitRepoPaths(executionRoot);
 
     // Apply modules filter if specified
     if (navArgs.modules.isNotEmpty) {
@@ -378,43 +378,6 @@ class GitMergeTool extends ToolBase {
   bool _hasGitTraversalFlag(List<String> args) {
     return args.contains('-i') || args.contains('--inner-first-git') ||
            args.contains('-o') || args.contains('--outer-first-git');
-  }
-
-  List<String> _findGitRepositories(String rootPath) {
-    final repos = <String>[];
-    final rootDir = Directory(rootPath);
-    if (!rootDir.existsSync()) return repos;
-
-    bool isGitRepo(String dirPath) {
-      final gitPath = p.join(dirPath, '.git');
-      return Directory(gitPath).existsSync() || File(gitPath).existsSync();
-    }
-
-    if (isGitRepo(rootPath)) repos.add(rootPath);
-
-    final searchDirs = <String>[rootPath];
-    for (final subdir in ['xternal', 'xternal_apps']) {
-      final dir = Directory(p.join(rootPath, subdir));
-      if (dir.existsSync()) searchDirs.add(dir.path);
-    }
-
-    for (final searchDir in searchDirs) {
-      try {
-        for (final entity in Directory(searchDir).listSync()) {
-          if (entity is Directory && entity.path != rootPath) {
-            final name = p.basename(entity.path);
-            if (name.startsWith('.')) continue;
-            
-            final skipFile = File(p.join(entity.path, kBuildkitSkipYaml));
-            if (skipFile.existsSync()) continue;
-            
-            if (isGitRepo(entity.path)) repos.add(entity.path);
-          }
-        }
-      } catch (_) {}
-    }
-
-    return repos;
   }
 
   Future<void> _runGit(String repoPath, List<String> args, String relPath) async {

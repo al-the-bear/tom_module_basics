@@ -1,3 +1,21 @@
+## 1.11.0
+
+### Features
+
+- **WorkspaceScanner** — Unified scanning API combining FolderScanner + NatureDetector.
+  - `scan()` returns `ScanResults` with type-safe `byNature<T>()` filtering.
+  - `findGitRepos()`, `findDartProjects()`, `findPublishable()` — Nature-based queries.
+  - `findGitRepoPaths()`, `findDartProjectPaths()`, `findPublishablePaths()` — Path convenience methods.
+  - `FolderContext` provides folder + natures together with `hasNature<T>()`, `getNature<T>()`.
+
+- **DartProjectFolder.isPublishable** — New getter to check if package can be published to pub.dev.
+
+### Exports
+
+- V2 traversal API now exported from main barrel: `WorkspaceScanner`, `GitFolder`, `DartProjectFolder`, etc.
+
+---
+
 ## 1.10.0
 
 ### Features

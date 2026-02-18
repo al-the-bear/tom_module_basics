@@ -193,11 +193,64 @@ class FolderScanner {
 
 /// Finds git repositories under a given root.
 class GitRepoFinder {
-  /// Find all git repositories under [root].
+  /// Find all git repositories under [root] recursively.
   Future<List<FsFolder>> findAll(String root) async {
     final repos = <FsFolder>[];
     await _findGitRepos(Directory(root), repos);
     return repos;
+  }
+
+  /// Find git repositories at workspace level (shallow search).
+  ///
+  /// This matches the behavior of legacy `_findGitRepositories` methods:
+  /// - Checks [root] itself
+  /// - Checks direct children of [root]
+  /// - Checks direct children of [root]/xternal (if exists)
+  /// - Checks direct children of [root]/xternal_apps (if exists)
+  ///
+  /// This is faster than [findAll] and typically what you want for
+  /// workspace-level git operations.
+  List<String> findWorkspaceRepos(String root) {
+    final repos = <String>[];
+    final rootDir = Directory(root);
+
+    if (!rootDir.existsSync()) return repos;
+
+    if (_isGitRepo(root)) {
+      repos.add(root);
+    }
+
+    // Search in root and special directories
+    final searchDirs = <String>[root];
+    final xternalDir = Directory(p.join(root, 'xternal'));
+    if (xternalDir.existsSync()) {
+      searchDirs.add(xternalDir.path);
+    }
+    final xternalAppsDir = Directory(p.join(root, 'xternal_apps'));
+    if (xternalAppsDir.existsSync()) {
+      searchDirs.add(xternalAppsDir.path);
+    }
+
+    for (final searchDir in searchDirs) {
+      try {
+        for (final entity in Directory(searchDir).listSync()) {
+          if (entity is Directory && entity.path != root) {
+            if (_isGitRepo(entity.path)) {
+              repos.add(entity.path);
+            }
+          }
+        }
+      } catch (_) {
+        // Permission errors, etc.
+      }
+    }
+
+    return repos;
+  }
+
+  bool _isGitRepo(String path) {
+    final gitPath = p.join(path, '.git');
+    return Directory(gitPath).existsSync() || File(gitPath).existsSync();
   }
 
   /// Find the topmost git repository by traversing up from [startPath].

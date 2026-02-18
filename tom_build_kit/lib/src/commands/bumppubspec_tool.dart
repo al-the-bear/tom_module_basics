@@ -267,40 +267,9 @@ class BumpPubspecTool extends ToolBase {
   /// A publishable package is one that does NOT have `publish_to: none` in pubspec.yaml.
   /// Returns a list of package names.
   Future<List<String>> _findPublishablePackages(String executionRoot) async {
-    final projectDiscovery = ProjectDiscovery(
-      verbose: verbose,
-      toolBasename: 'buildkit',
-    );
-
-    final projects = await projectDiscovery.scanForProjects(
-      executionRoot,
-      recursive: true,
-    );
-
-    final publishable = <String>[];
-    for (final project in projects) {
-      final pubspecPath = p.join(project, 'pubspec.yaml');
-      if (!File(pubspecPath).existsSync()) continue;
-
-      final content = File(pubspecPath).readAsStringSync();
-      final yaml = loadYaml(content);
-      if (yaml is! YamlMap) continue;
-
-      final name = yaml['name'];
-      if (name is! String || name.isEmpty) continue;
-
-      // Check if publishable (not publish_to: none)
-      final publishTo = yaml['publish_to'];
-      if (publishTo == 'none') continue;
-
-      // Must have a version
-      final version = yaml['version'];
-      if (version is! String || version.isEmpty) continue;
-
-      publishable.add(name);
-    }
-
-    return publishable;
+    final scanner = WorkspaceScanner(verbose: verbose);
+    final publishable = await scanner.findPublishable(executionRoot);
+    return publishable.map((p) => p.projectName).toList();
   }
 
   /// Check what changes would be made to a project

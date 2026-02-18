@@ -167,11 +167,21 @@ class WorkspaceScanner {
 
   // --- Convenience methods returning paths directly ---
 
-  /// Find all git repository paths under [root].
+  /// Find git repository paths (shallow workspace-aware search).
   ///
-  /// Returns list of absolute paths to git repositories.
+  /// This is the recommended method for workspace-level git operations.
+  /// Searches root, direct children, and xternal/xternal_apps children.
   /// Drop-in replacement for legacy `_findGitRepositories` methods.
-  Future<List<String>> findGitRepoPaths(String root) async {
+  List<String> findGitRepoPaths(String root) {
+    final finder = GitRepoFinder();
+    return finder.findWorkspaceRepos(root);
+  }
+
+  /// Find git repository paths recursively (deep search).
+  ///
+  /// Searches all subdirectories. Use [findGitRepoPaths] for workspace-level
+  /// operations, this for comprehensive scanning.
+  Future<List<String>> findGitRepoPathsDeep(String root) async {
     final repos = await findGitRepos(root);
     return repos.map((g) => g.fsFolder.path).toList();
   }

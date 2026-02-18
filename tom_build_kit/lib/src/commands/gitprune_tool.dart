@@ -90,7 +90,7 @@ class GitPruneTool extends ToolBase {
     final remote = results['remote'] as String;
     final listMode = results['list'] as bool;
 
-    var repos = _findGitRepositories(executionRoot);
+    var repos = WorkspaceScanner().findGitRepoPaths(executionRoot);
 
     // Apply modules filter if specified
     if (navArgs.modules.isNotEmpty) {
@@ -209,43 +209,6 @@ class GitPruneTool extends ToolBase {
     } catch (_) {
       return [];
     }
-  }
-
-  List<String> _findGitRepositories(String rootPath) {
-    final repos = <String>[];
-    final rootDir = Directory(rootPath);
-    if (!rootDir.existsSync()) return repos;
-
-    bool isGitRepo(String dirPath) {
-      final gitPath = p.join(dirPath, '.git');
-      return Directory(gitPath).existsSync() || File(gitPath).existsSync();
-    }
-
-    if (isGitRepo(rootPath)) repos.add(rootPath);
-
-    final searchDirs = <String>[rootPath];
-    for (final subdir in ['xternal', 'xternal_apps']) {
-      final dir = Directory(p.join(rootPath, subdir));
-      if (dir.existsSync()) searchDirs.add(dir.path);
-    }
-
-    for (final searchDir in searchDirs) {
-      try {
-        for (final entity in Directory(searchDir).listSync()) {
-          if (entity is Directory && entity.path != rootPath) {
-            final name = p.basename(entity.path);
-            if (name.startsWith('.')) continue;
-            
-            final skipFile = File(p.join(entity.path, kBuildkitSkipYaml));
-            if (skipFile.existsSync()) continue;
-            
-            if (isGitRepo(entity.path)) repos.add(entity.path);
-          }
-        }
-      } catch (_) {}
-    }
-
-    return repos;
   }
 
   Future<bool> _runGit(String repoPath, List<String> args, String relPath) async {

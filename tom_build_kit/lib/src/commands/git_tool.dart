@@ -93,7 +93,7 @@ class GitTool extends ToolBase {
     }
 
     // Find git repositories
-    var repos = _findGitRepositories(executionRoot);
+    var repos = WorkspaceScanner().findGitRepoPaths(executionRoot);
 
     // Apply modules filter if specified
     if (navArgs.modules.isNotEmpty) {
@@ -181,56 +181,6 @@ class GitTool extends ToolBase {
     print('Ran git ${gitArgs.first} on $processedCount repository(ies) ($orderLabel)');
 
     return allSuccess;
-  }
-
-  List<String> _findGitRepositories(String rootPath) {
-    final repos = <String>[];
-    final rootDir = Directory(rootPath);
-
-    void scanDirectory(Directory dir) {
-      // Check if this directory is a git repo
-      final gitPath = p.join(dir.path, '.git');
-      if (Directory(gitPath).existsSync() || File(gitPath).existsSync()) {
-        repos.add(dir.path);
-      }
-
-      // Scan subdirectories
-      try {
-        for (final entity in dir.listSync(followLinks: false)) {
-          if (entity is Directory) {
-            // Skip hidden directories (except .git which we already checked)
-            final name = p.basename(entity.path);
-            if (name.startsWith('.')) continue;
-
-            // Skip excluded directories
-            if (_isExcludedDirectory(name)) continue;
-
-            // Check for buildkit_skip.yaml
-            final skipFile = File(p.join(entity.path, kBuildkitSkipYaml));
-            if (skipFile.existsSync()) continue;
-
-            scanDirectory(entity);
-          }
-        }
-      } catch (e) {
-        // Ignore permission errors etc.
-      }
-    }
-
-    scanDirectory(rootDir);
-    return repos;
-  }
-
-  bool _isExcludedDirectory(String name) {
-    const excluded = {
-      'node_modules',
-      'build',
-      '.dart_tool',
-      '.pub-cache',
-      '.gradle',
-      '__pycache__',
-    };
-    return excluded.contains(name);
   }
 
   void _printUsage(ArgParser parser) {

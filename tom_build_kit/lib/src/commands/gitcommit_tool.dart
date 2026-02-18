@@ -143,7 +143,7 @@ class GitCommitTool extends ToolBase {
     }
 
     // Find git repositories
-    var repos = _findGitRepositories(executionRoot);
+    var repos = WorkspaceScanner().findGitRepoPaths(executionRoot);
     
     // Apply modules filter if specified
     if (navArgs.modules.isNotEmpty) {
@@ -273,48 +273,6 @@ class GitCommitTool extends ToolBase {
            args.contains('--outer-first-git');
   }
 
-  List<String> _findGitRepositories(String rootPath) {
-    final repos = <String>[];
-    final rootDir = Directory(rootPath);
-
-    if (!rootDir.existsSync()) return repos;
-
-    bool isGitRepo(String dirPath) {
-      final gitPath = p.join(dirPath, '.git');
-      return Directory(gitPath).existsSync() || File(gitPath).existsSync();
-    }
-
-    if (isGitRepo(rootPath)) {
-      repos.add(rootPath);
-    }
-
-    final searchDirs = <String>[rootPath];
-    final xternalDir = Directory(p.join(rootPath, 'xternal'));
-    if (xternalDir.existsSync()) {
-      searchDirs.add(xternalDir.path);
-    }
-    final xternalAppsDir = Directory(p.join(rootPath, 'xternal_apps'));
-    if (xternalAppsDir.existsSync()) {
-      searchDirs.add(xternalAppsDir.path);
-    }
-
-    for (final searchDir in searchDirs) {
-      try {
-        for (final entity in Directory(searchDir).listSync()) {
-          if (entity is Directory && entity.path != rootPath) {
-            if (isGitRepo(entity.path)) {
-              repos.add(entity.path);
-            }
-          }
-        }
-      } catch (_) {
-        // Permission errors, etc.
-      }
-    }
-
-    return repos;
-  }
-
   Future<bool> _hasChanges(String repoPath, {bool addAll = false, bool addUpdated = false}) async {
     try {
       if (addAll) {
@@ -442,7 +400,7 @@ class GitCommitTool extends ToolBase {
     guide.header('Git Commit - Guided Mode');
 
     // Find repositories with changes
-    var repos = _findGitRepositories(executionRoot);
+    var repos = WorkspaceScanner().findGitRepoPaths(executionRoot);
     
     // Apply modules filter if specified
     if (navArgs.modules.isNotEmpty) {
