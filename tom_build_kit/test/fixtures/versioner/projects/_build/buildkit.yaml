@@ -7,4 +7,4 @@ versioner:
   variable-prefix: tomTools
 
 cleanup:
-  - '**/version.g.dart'
+  - '**/version.versioner.dart'

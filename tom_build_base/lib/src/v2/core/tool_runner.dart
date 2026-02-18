@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:yaml/yaml.dart';
+
 import 'cli_arg_parser.dart';
 import 'command_definition.dart';
 import 'help_generator.dart';
@@ -7,6 +9,7 @@ import 'tool_definition.dart';
 import 'command_executor.dart';
 import '../traversal/traversal_info.dart';
 import '../traversal/build_base.dart';
+import '../../workspace_mode.dart';
 
 /// Result of running a tool or command.
 class ToolResult {
@@ -37,16 +40,16 @@ class ToolResult {
   const ToolResult.success({
     this.processedCount = 0,
     this.itemResults = const [],
-  })  : success = true,
-        failedCount = 0,
-        errorMessage = null;
+  }) : success = true,
+       failedCount = 0,
+       errorMessage = null;
 
   /// Create a failure result.
   const ToolResult.failure(this.errorMessage)
-      : success = false,
-        processedCount = 0,
-        failedCount = 0,
-        itemResults = const [];
+    : success = false,
+      processedCount = 0,
+      failedCount = 0,
+      itemResults = const [];
 
   /// Create from aggregated item results.
   factory ToolResult.fromItems(List<ItemResult> items) {
@@ -89,15 +92,15 @@ class ItemResult {
     required this.path,
     required this.name,
     this.message,
-  })  : success = true,
-        error = null;
+  }) : success = true,
+       error = null;
 
   const ItemResult.failure({
     required this.path,
     required this.name,
     required this.error,
-  })  : success = false,
-        message = null;
+  }) : success = false,
+       message = null;
 }
 
 /// Runs tools based on their definitions.
@@ -213,14 +216,46 @@ class ToolRunner {
     CommandDefinition? cmd,
     CliArgs cliArgs,
   ) async {
-    // Get execution root
-    final executionRoot = cliArgs.root ?? Directory.current.path;
+    // Get execution root: explicit path > workspace root (default)
+    // Default behavior is --scan . -R --not-recursive (workspace mode)
+    final String executionRoot;
+    if (cliArgs.root != null) {
+      // Explicit -R <path> was provided
+      executionRoot = cliArgs.root!;
+    } else {
+      // Default: use workspace root (as if bare -R was passed)
+      executionRoot = findWorkspaceRoot(Directory.current.path);
+    }
+
+    // Load config defaults from buildkit_master.yaml navigation section
+    final configDefaults = _loadTraversalDefaults(executionRoot);
 
     // Build traversal info
     final supportsGit = cmd?.supportsGitTraversal ?? false;
-    final BaseTraversalInfo traversalInfo = supportsGit
-        ? cliArgs.toGitTraversalInfo(executionRoot: executionRoot)
-        : cliArgs.toProjectTraversalInfo(executionRoot: executionRoot);
+    final BaseTraversalInfo traversalInfo;
+
+    if (supportsGit) {
+      // For git commands, git mode must be explicitly specified
+      final defaultGitOrder = cmd?.defaultGitOrder;
+      final gitInfo = cliArgs.toGitTraversalInfo(
+        executionRoot: executionRoot,
+        commandDefaultGitOrder: defaultGitOrder,
+      );
+      if (gitInfo == null) {
+        output.writeln('Error: Git traversal mode not specified.');
+        output.writeln('Use --inner-first-git (-i) or --outer-first-git (-o).');
+        return const ToolResult.failure(
+          'Git traversal mode required but not specified',
+        );
+      }
+      traversalInfo = gitInfo;
+    } else {
+      // For project commands, use cascade: CLI > config > defaults
+      traversalInfo = cliArgs.toProjectTraversalInfo(
+        executionRoot: executionRoot,
+        configDefaults: configDefaults,
+      );
+    }
 
     // Check if command requires traversal
     if (cmd != null && !cmd.requiresTraversal) {
@@ -241,12 +276,18 @@ class ToolRunner {
           if (cmdArgs != null) {
             // Check project patterns
             if (cmdArgs.projectPatterns.isNotEmpty) {
-              final matches = _matchesAny(context.name, cmdArgs.projectPatterns);
+              final matches = _matchesAny(
+                context.name,
+                cmdArgs.projectPatterns,
+              );
               if (!matches) return true; // Skip, continue
             }
             // Check exclude patterns
             if (cmdArgs.excludePatterns.isNotEmpty) {
-              final excluded = _matchesAny(context.name, cmdArgs.excludePatterns);
+              final excluded = _matchesAny(
+                context.name,
+                cmdArgs.excludePatterns,
+              );
               if (excluded) return true; // Skip, continue
             }
           }
@@ -276,5 +317,25 @@ class ToolRunner {
         .replaceAll('*', '.*')
         .replaceAll('?', '.');
     return RegExp('^$regexStr\$').hasMatch(name);
+  }
+
+  /// Load traversal defaults from buildkit_master.yaml navigation section.
+  TraversalDefaults? _loadTraversalDefaults(String basePath) {
+    final wsRoot = findWorkspaceRoot(basePath);
+    final masterFile = File('$wsRoot/$kBuildkitMasterYaml');
+    if (!masterFile.existsSync()) return null;
+
+    try {
+      final content = masterFile.readAsStringSync();
+      final yaml = loadYaml(content);
+      if (yaml is! YamlMap) return null;
+
+      final nav = yaml['navigation'] as YamlMap?;
+      if (nav == null) return null;
+
+      return TraversalDefaults.fromMap(Map<String, dynamic>.from(nav));
+    } catch (e) {
+      return null;
+    }
   }
 }

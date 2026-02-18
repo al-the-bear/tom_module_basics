@@ -51,10 +51,10 @@ void main() {
 
   // ----------- Helpers ----------- //
 
-  /// Read the generated version.g.dart file content.
+  /// Read the generated version.versioner.dart file content.
   String readVersionFile() {
     final versionFile =
-        p.join(ws.workspaceRoot, '_build', 'lib', 'src', 'version.g.dart');
+        p.join(ws.workspaceRoot, '_build', 'lib', 'src', 'version.versioner.dart');
     return File(versionFile).readAsStringSync();
   }
 
@@ -72,7 +72,7 @@ void main() {
       File(buildConfig).writeAsStringSync(
         '# Test fixture: no versioner section\n'
         'cleanup:\n'
-        "  - '**/version.g.dart'\n",
+        "  - '**/version.versioner.dart'\n",
       );
       print('    📝 Wrote _build/buildkit.yaml without versioner section');
 
@@ -109,7 +109,7 @@ void main() {
         '  variable-prefix: tomTools\n'
         '\n'
         'cleanup:\n'
-        "  - '**/version.g.dart'\n",
+        "  - '**/version.versioner.dart'\n",
       );
       print('    📝 Wrote _build/buildkit.yaml with variable-prefix: tomTools');
 

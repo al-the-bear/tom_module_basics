@@ -60,7 +60,7 @@ final output = 'ls -la'.toList();
 **Purpose:** Build tools for the Tom workspace
 
 **Key Components:**
-- **versioner** — Generate version.g.dart files with build metadata
+- **versioner** — Generate version.versioner.dart files with build metadata
 - **bumpversion** — Bump pubspec.yaml versions across projects
 - **cleanup** — Remove generated and temporary files
 - **compiler** — Cross-platform Dart compilation

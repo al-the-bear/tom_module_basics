@@ -554,7 +554,7 @@ class CleanupTool extends ToolBase {
     print('  cleanup:');
     print('    - build');
     print('    - globs: ["**/*.g.dart", "**/*.r.dart"]');
-    print('      excludes: ["**/version.g.dart"]');
+    print('      excludes: ["**/version.versioner.dart"]');
     print('    protected-folders: [".secrets", ".env"]');
     print('');
     print('Safety: Aborts if file count exceeds --max-files (default 100).');

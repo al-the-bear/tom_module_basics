@@ -1459,7 +1459,7 @@ class GitStatusCommand extends Command {
 class ToolDefinition {
   final String name;                               // Tool name ('buildkit', 'testkit')
   final String description;                        // Short description for help
-  final String version;                            // Version (from version.g.dart)
+  final String version;                            // Version (from version.versioner.dart)
   final ToolMode mode;                             // Tool mode
   final NavigationFeatures navigationFeatures;     // Global navigation options
   final List<OptionDefinition> globalOptions;      // Global non-navigation options

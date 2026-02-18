@@ -356,7 +356,7 @@ Built-in commands run the respective tools directly via their Dart implementatio
 
 | Command | Description |
 |---------|-------------|
-| `versioner` | Generate `version.g.dart` files with build metadata |
+| `versioner` | Generate `version.versioner.dart` files with build metadata |
 | `bumpversion` | Bump `pubspec.yaml` versions across projects |
 | `compiler` | Cross-platform Dart compilation |
 | `runner` | `build_runner` wrapper with builder filtering |
@@ -493,7 +493,7 @@ bk :status [options]
 
 **Output Sections:**
 
-1. **Source Version** — Version, build number, git commit, build time, Dart SDK from `version.g.dart`
+1. **Source Version** — Version, build number, git commit, build time, Dart SDK from `version.versioner.dart`
 2. **Binary Status** — Checks each tool by running `<tool> --version`:
    - ✓ Current — Matches source version
    - ⚠ Outdated — Different version/build/commit

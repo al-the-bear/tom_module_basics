@@ -5,7 +5,7 @@ library;
 
 import 'package:tom_build_base/tom_build_base_v2.dart';
 
-import '../version.g.dart';
+import '../version.versioner.dart';
 
 // =============================================================================
 // Common Options

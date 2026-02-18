@@ -992,7 +992,7 @@ void _printUsage(ArgParser parser) {
   print('  :<command> [args] Run a tool command directly');
   print('');
   print('Built-in commands:');
-  print('  :versioner      Generate version.g.dart files with build metadata');
+  print('  :versioner      Generate version.versioner.dart files with build metadata');
   print('  :bumpversion    Bump pubspec.yaml versions across projects');
   print('  :compiler       Cross-platform Dart compilation with pre/post-compile commands');
   print('  :runner         Build_runner wrapper with builder filtering');

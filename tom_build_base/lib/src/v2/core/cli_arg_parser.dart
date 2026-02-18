@@ -3,6 +3,57 @@ import 'option_definition.dart';
 import 'tool_definition.dart';
 import '../traversal/traversal_info.dart';
 
+/// Traversal defaults loaded from buildkit_master.yaml navigation section.
+///
+/// Used as fallback when CLI options are not explicitly provided.
+/// Priority cascade: CLI > config defaults > hardcoded defaults.
+class TraversalDefaults {
+  /// Starting scan path (default: '.').
+  final String? scan;
+
+  /// Whether to scan recursively (default: true).
+  final bool? recursive;
+
+  /// Exclude patterns for paths.
+  final List<String>? exclude;
+
+  /// Exclude patterns for project names.
+  final List<String>? excludeProjects;
+
+  /// Patterns to skip during recursive descent.
+  final List<String>? recursionExclude;
+
+  const TraversalDefaults({
+    this.scan,
+    this.recursive,
+    this.exclude,
+    this.excludeProjects,
+    this.recursionExclude,
+  });
+
+  /// Create from a navigation defaults map (from buildkit_master.yaml).
+  factory TraversalDefaults.fromMap(Map<String, dynamic>? navMap) {
+    if (navMap == null) return const TraversalDefaults();
+    return TraversalDefaults(
+      scan: navMap['scan'] as String?,
+      recursive: navMap['recursive'] as bool?,
+      exclude: _toStringList(navMap['exclude']),
+      excludeProjects: _toStringList(
+        navMap['exclude-projects'] ?? navMap['excludeProjects'],
+      ),
+      recursionExclude: _toStringList(
+        navMap['recursion-exclude'] ?? navMap['recursionExclude'],
+      ),
+    );
+  }
+
+  static List<String>? _toStringList(dynamic value) {
+    if (value == null) return null;
+    if (value is List) return value.map((e) => e.toString()).toList();
+    return null;
+  }
+}
+
 /// Parsed command-line arguments.
 ///
 /// Provides the raw parsed values from command-line arguments before
@@ -14,6 +65,11 @@ class CliArgs {
   final bool notRecursive;
   final String? root;
   final bool bareRoot;
+
+  // Track whether options were explicitly set via CLI
+  // (used for defaults cascade: CLI > config > hardcoded)
+  final bool scanExplicitlySet;
+  final bool recursiveExplicitlySet;
 
   // Exclude/include patterns
   final List<String> excludePatterns;
@@ -61,6 +117,8 @@ class CliArgs {
     this.notRecursive = false,
     this.root,
     this.bareRoot = false,
+    this.scanExplicitlySet = false,
+    this.recursiveExplicitlySet = false,
     this.excludePatterns = const [],
     this.excludeProjects = const [],
     this.recursionExclude = const [],
@@ -91,16 +149,56 @@ class CliArgs {
 
   /// Convert to ProjectTraversalInfo.
   ///
+  /// Applies defaults cascade: CLI > [configDefaults] > hardcoded defaults.
+  /// Hardcoded defaults are `scan: '.'`, `recursive: true`.
+  ///
   /// Requires [executionRoot] to be provided if not set in args.
-  ProjectTraversalInfo toProjectTraversalInfo({String? executionRoot}) {
+  /// [configDefaults] is optional config from buildkit_master.yaml navigation section.
+  ProjectTraversalInfo toProjectTraversalInfo({
+    String? executionRoot,
+    TraversalDefaults? configDefaults,
+  }) {
     final effectiveRoot = root ?? executionRoot ?? '.';
+
+    // Resolve scan: CLI > config > default '.'
+    final effectiveScan = scanExplicitlySet
+        ? (scan ?? '.')
+        : (configDefaults?.scan ?? scan ?? '.');
+
+    // Resolve recursive: CLI > config > default false
+    // Default is --not-recursive (scan single dir, not recursively)
+    // -r explicitly enables recursion
+    final bool effectiveRecursive;
+    if (notRecursive) {
+      effectiveRecursive = false;
+    } else if (recursiveExplicitlySet) {
+      effectiveRecursive = recursive;
+    } else {
+      effectiveRecursive =
+          configDefaults?.recursive ?? false; // Default: not recursive
+    }
+
+    // Merge exclude patterns: CLI + config
+    final mergedExclude = <String>[
+      ...excludePatterns,
+      ...?configDefaults?.exclude,
+    ];
+    final mergedExcludeProjects = <String>[
+      ...excludeProjects,
+      ...?configDefaults?.excludeProjects,
+    ];
+    final mergedRecursionExclude = <String>[
+      ...recursionExclude,
+      ...?configDefaults?.recursionExclude,
+    ];
+
     return ProjectTraversalInfo(
-      scan: scan ?? '.',
-      recursive: recursive && !notRecursive,
+      scan: effectiveScan,
+      recursive: effectiveRecursive,
       executionRoot: effectiveRoot,
-      excludePatterns: excludePatterns,
-      excludeProjects: excludeProjects,
-      recursionExclude: recursionExclude,
+      excludePatterns: mergedExclude,
+      excludeProjects: mergedExcludeProjects,
+      recursionExclude: mergedRecursionExclude,
       projectPatterns: projectPatterns,
       buildOrder: buildOrder,
       includeTestProjects: includeTestProjects,
@@ -111,12 +209,34 @@ class CliArgs {
   /// Convert to GitTraversalInfo.
   ///
   /// Requires [executionRoot] to be provided if not set in args.
-  /// If neither innerFirstGit nor outerFirstGit is set, defaults to innerFirst.
-  GitTraversalInfo toGitTraversalInfo({String? executionRoot}) {
+  /// [commandDefaultGitOrder] is the command's default git order if specified.
+  ///
+  /// Git traversal mode must be determined from one of:
+  /// 1. CLI flags (--inner-first-git or --outer-first-git)
+  /// 2. Command's default git order
+  ///
+  /// Returns null if git mode cannot be determined (caller should emit error).
+  GitTraversalInfo? toGitTraversalInfo({
+    String? executionRoot,
+    GitTraversalOrder? commandDefaultGitOrder,
+  }) {
     final effectiveRoot = root ?? executionRoot ?? '.';
-    final mode = innerFirstGit
-        ? GitTraversalMode.innerFirst
-        : (outerFirstGit ? GitTraversalMode.outerFirst : GitTraversalMode.innerFirst);
+
+    // Determine git mode: CLI > command default
+    final GitTraversalMode? mode;
+    if (innerFirstGit) {
+      mode = GitTraversalMode.innerFirst;
+    } else if (outerFirstGit) {
+      mode = GitTraversalMode.outerFirst;
+    } else if (commandDefaultGitOrder != null) {
+      mode = commandDefaultGitOrder == GitTraversalOrder.innerFirst
+          ? GitTraversalMode.innerFirst
+          : GitTraversalMode.outerFirst;
+    } else {
+      // No git mode specified and no command default - caller must handle error
+      return null;
+    }
+
     return GitTraversalInfo(
       executionRoot: effectiveRoot,
       excludePatterns: excludePatterns,
@@ -127,6 +247,9 @@ class CliArgs {
       testProjectsOnly: testProjectsOnly,
     );
   }
+
+  /// Whether git traversal mode is explicitly specified via CLI.
+  bool get gitModeExplicitlySet => innerFirstGit || outerFirstGit;
 
   /// Whether effective recursive mode is on.
   bool get effectiveRecursive => recursive && !notRecursive;
@@ -170,10 +293,7 @@ class CliArgParser {
   final ToolDefinition? toolDefinition;
   final List<OptionDefinition> allowedOptions;
 
-  CliArgParser({
-    this.toolDefinition,
-    this.allowedOptions = const [],
-  });
+  CliArgParser({this.toolDefinition, this.allowedOptions = const []});
 
   /// Parse command-line arguments.
   CliArgs parse(List<String> args) {
@@ -299,13 +419,16 @@ class CliArgParser {
       case 'scan':
       case 's':
         state.scan = value;
+        state.scanExplicitlySet = true;
         break;
       case 'recursive':
       case 'r':
         state.recursive = true;
+        state.recursiveExplicitlySet = true;
         break;
       case 'not-recursive':
         state.notRecursive = true;
+        state.recursiveExplicitlySet = true;
         break;
       case 'root':
       case 'R':
@@ -489,7 +612,11 @@ class CliArgParser {
 
   List<String> _splitValue(String value) {
     // Split on comma for multi-value options
-    return value.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
+    return value
+        .split(',')
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty)
+        .toList();
   }
 
   /// Parse a command-line string (for REPL use).
@@ -559,7 +686,9 @@ class CliArgParser {
 // Internal parse state
 class _ParseState {
   String? scan;
+  bool scanExplicitlySet = false;
   bool recursive = false;
+  bool recursiveExplicitlySet = false;
   bool notRecursive = false;
   String? root;
   bool bareRoot = false;
@@ -594,7 +723,9 @@ class _ParseState {
   CliArgs toCliArgs() {
     return CliArgs(
       scan: scan,
+      scanExplicitlySet: scanExplicitlySet,
       recursive: recursive,
+      recursiveExplicitlySet: recursiveExplicitlySet,
       notRecursive: notRecursive,
       root: root,
       bareRoot: bareRoot,
@@ -623,7 +754,9 @@ class _ParseState {
       positionalArgs: positionalArgs,
       commands: commands,
       commandArgs: Map.fromEntries(
-        commandArgs.entries.map((e) => MapEntry(e.key, e.value.toPerCommandArgs())),
+        commandArgs.entries.map(
+          (e) => MapEntry(e.key, e.value.toPerCommandArgs()),
+        ),
       ),
       extraOptions: extraOptions,
     );

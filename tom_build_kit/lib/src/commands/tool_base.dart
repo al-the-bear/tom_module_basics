@@ -5,7 +5,7 @@ import 'package:path/path.dart' as p;
 import 'package:tom_build_base/tom_build_base.dart';
 import 'package:yaml/yaml.dart';
 
-import '../version.g.dart';
+import '../version.versioner.dart';
 
 /// Filename for the workspace-level build configuration.
 const kBuildkitMasterYaml = 'buildkit_master.yaml';

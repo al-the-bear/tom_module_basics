@@ -14,7 +14,7 @@ import 'versioner_tool.dart';
 /// Increases the patch version by default for every project. Projects
 /// can be selectively assigned minor or major bumps via `--minor` and
 /// `--major` options. After bumping, optionally runs the versioner tool
-/// to regenerate version.g.dart files (with `--versioner`).
+/// to regenerate version.versioner.dart files (with `--versioner`).
 ///
 /// The build counter (tom_build_state.json) is reset to 0 for each
 /// bumped project, so the first versioner run after a bump starts at 1.
@@ -376,7 +376,7 @@ class BumpVersionTool extends ToolBase {
     print('  - Use --minor to specify projects for minor bump');
     print('  - Use --major to specify projects for major bump');
     print('  - Build counter (tom_build_state.json) is reset to 0');
-    print('  - Use --versioner to regenerate version.g.dart files after bump');
+    print('  - Use --versioner to regenerate version.versioner.dart files after bump');
     print('');
     print('Examples:');
     print('  bumpversion -s . -r                        # Patch bump all');

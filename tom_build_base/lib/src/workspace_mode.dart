@@ -141,12 +141,12 @@ class WorkspaceNavigationArgs {
   WorkspaceNavigationArgs withDefaults() {
     // Only apply scan default if no explicit project/scan was given
     final needsScanDefault = scan == null && project == null;
-    
+
     // Only apply recursive default if user didn't explicitly set it
-    final effectiveRecursive = recursiveExplicitlySet 
-        ? recursive 
+    final effectiveRecursive = recursiveExplicitlySet
+        ? recursive
         : (needsScanDefault || recursive);
-    
+
     return WorkspaceNavigationArgs(
       scan: needsScanDefault ? '.' : scan,
       recursive: effectiveRecursive,
@@ -225,7 +225,8 @@ class WorkspaceNavigationArgs {
     return WorkspaceNavigationArgs(
       scan: scan ?? this.scan,
       recursive: recursive ?? this.recursive,
-      recursiveExplicitlySet: recursiveExplicitlySet ?? this.recursiveExplicitlySet,
+      recursiveExplicitlySet:
+          recursiveExplicitlySet ?? this.recursiveExplicitlySet,
       buildOrder: buildOrder ?? this.buildOrder,
       project: project ?? this.project,
       root: root ?? this.root,
@@ -268,53 +269,81 @@ class WorkspaceNavigationArgs {
 /// - `--recursion-exclude` - Exclude patterns during recursive scan
 /// - `-m, --modules` - Include only projects within specified git modules
 void addNavigationOptions(ArgParser parser) {
-  parser.addOption('scan',
-      abbr: 's', help: 'Scan directory for projects');
-  parser.addFlag('recursive',
-      abbr: 'r',
-      negatable: true,
-      defaultsTo: false,
-      help: 'Scan directories recursively (use --no-recursive to disable)');
-  parser.addFlag('build-order',
-      abbr: 'b',
-      negatable: true,
-      defaultsTo: false,
-      help: 'Sort projects in dependency build order (use --no-build-order to disable)');
-  parser.addOption('project',
-      abbr: 'p', help: 'Project(s) to run (comma-separated, globs supported)');
-  parser.addOption('root',
-      abbr: 'R',
-      help: 'Workspace root (bare: detected, path: specified workspace)');
-  parser.addFlag('workspace-recursion',
-      abbr: 'w',
-      negatable: false,
-      help: 'Shell out to sub-workspaces instead of skipping');
-  parser.addFlag('inner-first-git',
-      abbr: 'i',
-      negatable: false,
-      help: 'Scan git repos, process innermost (deepest) first');
-  parser.addFlag('outer-first-git',
-      abbr: 'o',
-      negatable: false,
-      help: 'Scan git repos, process outermost (shallowest) first');
-  parser.addFlag('top-repo',
-      abbr: 'T',
-      negatable: false,
-      help: 'Find topmost git repo by traversing up from current directory');
-  parser.addMultiOption('exclude',
-      abbr: 'x', help: 'Exclude patterns (path-based globs)');
-  parser.addMultiOption('exclude-projects',
-      help:
-          'Exclude projects by name or path (e.g. zom_*, xternal/tom_module_basics/*)');
-  parser.addMultiOption('recursion-exclude',
-      help: 'Exclude patterns during recursive scan');
-  parser.addOption('modules',
-      abbr: 'm',
-      help:
-          'Include only projects within specified git modules (comma-separated, e.g. tom_module_d4rt,tom_module_basics)');
-  parser.addOption('modes',
-      help:
-          'Active modes for config processing (comma-separated, e.g. DEV,CI). Overrides tom_workspace.yaml default.');
+  parser.addOption('scan', abbr: 's', help: 'Scan directory for projects');
+  parser.addFlag(
+    'recursive',
+    abbr: 'r',
+    negatable: true,
+    defaultsTo: false,
+    help: 'Scan directories recursively (use --no-recursive to disable)',
+  );
+  parser.addFlag(
+    'build-order',
+    abbr: 'b',
+    negatable: true,
+    defaultsTo: false,
+    help:
+        'Sort projects in dependency build order (use --no-build-order to disable)',
+  );
+  parser.addOption(
+    'project',
+    abbr: 'p',
+    help: 'Project(s) to run (comma-separated, globs supported)',
+  );
+  parser.addOption(
+    'root',
+    abbr: 'R',
+    help: 'Workspace root (bare: detected, path: specified workspace)',
+  );
+  parser.addFlag(
+    'workspace-recursion',
+    abbr: 'w',
+    negatable: false,
+    help: 'Shell out to sub-workspaces instead of skipping',
+  );
+  parser.addFlag(
+    'inner-first-git',
+    abbr: 'i',
+    negatable: false,
+    help: 'Scan git repos, process innermost (deepest) first',
+  );
+  parser.addFlag(
+    'outer-first-git',
+    abbr: 'o',
+    negatable: false,
+    help: 'Scan git repos, process outermost (shallowest) first',
+  );
+  parser.addFlag(
+    'top-repo',
+    abbr: 'T',
+    negatable: false,
+    help: 'Find topmost git repo by traversing up from current directory',
+  );
+  parser.addMultiOption(
+    'exclude',
+    abbr: 'x',
+    help: 'Exclude patterns (path-based globs)',
+  );
+  parser.addMultiOption(
+    'exclude-projects',
+    help:
+        'Exclude projects by name or path (e.g. zom_*, xternal/tom_module_basics/*)',
+  );
+  parser.addMultiOption(
+    'recursion-exclude',
+    help: 'Exclude patterns during recursive scan',
+  );
+  parser.addOption(
+    'modules',
+    abbr: 'm',
+    help:
+        'Include only projects within specified git modules (comma-separated, e.g. tom_module_d4rt,tom_module_basics)',
+  );
+  parser.addOption(
+    'modes',
+    help:
+        'Active modes for config processing (comma-separated, e.g. DEV,CI). Overrides tom_workspace.yaml default.',
+  );
 }
 
 /// Preprocess command-line arguments to handle special -R behavior.
@@ -330,7 +359,8 @@ void addNavigationOptions(ArgParser parser) {
 /// - `processedArgs`: The args with bare -R converted to `--root=BARE_ROOT_MARKER`
 /// - `bareRoot`: Whether bare -R was detected
 (List<String> processedArgs, bool bareRoot) preprocessRootFlag(
-    List<String> args) {
+  List<String> args,
+) {
   final processedArgs = <String>[];
   var bareRoot = false;
 
@@ -527,16 +557,20 @@ String resolveExecutionRoot(
     return findWorkspaceRoot(currentDir);
   } else if (navArgs.root != null) {
     // -R <path>: validate specified workspace
-    final specifiedPath =
-        p.isAbsolute(navArgs.root!) ? navArgs.root! : p.join(currentDir, navArgs.root!);
+    final specifiedPath = p.isAbsolute(navArgs.root!)
+        ? navArgs.root!
+        : p.join(currentDir, navArgs.root!);
     final resolved = truepath(specifiedPath);
 
     if (!exists(resolved) || !isDirectory(resolved)) {
-      throw ArgumentError('Specified workspace does not exist: ${navArgs.root}');
+      throw ArgumentError(
+        'Specified workspace does not exist: ${navArgs.root}',
+      );
     }
     if (!isWorkspaceBoundary(resolved)) {
       throw ArgumentError(
-          'Specified path is not a workspace (no $kBuildkitMasterYaml): ${navArgs.root}');
+        'Specified path is not a workspace (no $kBuildkitMasterYaml): ${navArgs.root}',
+      );
     }
     return resolved;
   }
@@ -557,7 +591,10 @@ String resolveExecutionRoot(
 bool isHelpCommand(List<String> args) {
   if (args.isEmpty) return false;
   final first = args.first.toLowerCase();
-  return first == 'help' || first == '-help' || first == '-h' || first == '--help';
+  return first == 'help' ||
+      first == '-help' ||
+      first == '-h' ||
+      first == '--help';
 }
 
 /// Check if the first argument is a version command.
@@ -566,7 +603,10 @@ bool isHelpCommand(List<String> args) {
 bool isVersionCommand(List<String> args) {
   if (args.isEmpty) return false;
   final first = args.first.toLowerCase();
-  return first == 'version' || first == '-version' || first == '-v' || first == '--version';
+  return first == 'version' ||
+      first == '-version' ||
+      first == '-v' ||
+      first == '--version';
 }
 
 // =============================================================================
@@ -652,16 +692,12 @@ List<String> getToolHelpHeader({
   required String toolDescription,
   required List<String> usagePatterns,
 }) {
-  final lines = <String>[
-    '$toolName - $toolDescription',
-    '',
-    'Usage:',
-  ];
-  
+  final lines = <String>['$toolName - $toolDescription', '', 'Usage:'];
+
   for (final pattern in usagePatterns) {
     lines.add('  $pattern');
   }
-  
+
   lines.add('');
   return lines;
 }
@@ -687,4 +723,3 @@ List<String> getToolHelpFooter({String? toolName}) {
     '  $name version                # Show version information',
   ];
 }
-

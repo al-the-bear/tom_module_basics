@@ -5,7 +5,7 @@
 library;
 
 // Version info
-export 'src/version.g.dart';
+export 'src/version.versioner.dart';
 
 // Pipeline infrastructure
 export 'src/pipeline_config.dart';

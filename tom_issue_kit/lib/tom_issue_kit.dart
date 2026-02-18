@@ -34,7 +34,7 @@ export 'src/services/issue_service.dart';
 export 'src/util/output_formatter.dart';
 
 // Version info
-export 'src/version.g.dart';
+export 'src/version.versioner.dart';
 
 // V2 CLI framework
 export 'src/v2/issuekit_executors.dart';

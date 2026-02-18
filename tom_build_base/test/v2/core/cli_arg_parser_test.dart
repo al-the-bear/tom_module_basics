@@ -48,20 +48,29 @@ void main() {
     });
 
     group('effectiveRecursive', () {
-      test('BB-CLI-2: effectiveRecursive true when recursive set [2026-02-12]', () {
-        const args = CliArgs(recursive: true, notRecursive: false);
-        expect(args.effectiveRecursive, isTrue);
-      });
+      test(
+        'BB-CLI-2: effectiveRecursive true when recursive set [2026-02-12]',
+        () {
+          const args = CliArgs(recursive: true, notRecursive: false);
+          expect(args.effectiveRecursive, isTrue);
+        },
+      );
 
-      test('BB-CLI-3: effectiveRecursive false when both flags set [2026-02-12]', () {
-        const args = CliArgs(recursive: true, notRecursive: true);
-        expect(args.effectiveRecursive, isFalse);
-      });
+      test(
+        'BB-CLI-3: effectiveRecursive false when both flags set [2026-02-12]',
+        () {
+          const args = CliArgs(recursive: true, notRecursive: true);
+          expect(args.effectiveRecursive, isFalse);
+        },
+      );
 
-      test('BB-CLI-4: effectiveRecursive false when not recursive [2026-02-12]', () {
-        const args = CliArgs(recursive: false, notRecursive: false);
-        expect(args.effectiveRecursive, isFalse);
-      });
+      test(
+        'BB-CLI-4: effectiveRecursive false when not recursive [2026-02-12]',
+        () {
+          const args = CliArgs(recursive: false, notRecursive: false);
+          expect(args.effectiveRecursive, isFalse);
+        },
+      );
     });
 
     group('isHelpOrVersion', () {
@@ -82,22 +91,26 @@ void main() {
     });
 
     group('toProjectTraversalInfo', () {
-      test('BB-CLI-8: Converts basic args to ProjectTraversalInfo [2026-02-12]', () {
-        const args = CliArgs(
-          scan: './src',
-          recursive: true,
-          projectPatterns: ['tom_*'],
-          excludeProjects: ['tom_test_*'],
-        );
+      test(
+        'BB-CLI-8: Converts basic args to ProjectTraversalInfo [2026-02-12]',
+        () {
+          const args = CliArgs(
+            scan: './src',
+            recursive: true,
+            recursiveExplicitlySet: true, // CLI explicitly set -r
+            projectPatterns: ['tom_*'],
+            excludeProjects: ['tom_test_*'],
+          );
 
-        final info = args.toProjectTraversalInfo(executionRoot: '/workspace');
+          final info = args.toProjectTraversalInfo(executionRoot: '/workspace');
 
-        expect(info.scan, equals('./src'));
-        expect(info.recursive, isTrue);
-        expect(info.executionRoot, equals('/workspace'));
-        expect(info.projectPatterns, equals(['tom_*']));
-        expect(info.excludeProjects, equals(['tom_test_*']));
-      });
+          expect(info.scan, equals('./src'));
+          expect(info.recursive, isTrue);
+          expect(info.executionRoot, equals('/workspace'));
+          expect(info.projectPatterns, equals(['tom_*']));
+          expect(info.excludeProjects, equals(['tom_test_*']));
+        },
+      );
 
       test('BB-CLI-9: Uses root from args if provided [2026-02-12]', () {
         const args = CliArgs(root: '/custom/root');
@@ -119,35 +132,68 @@ void main() {
         final info = args.toProjectTraversalInfo(executionRoot: '/workspace');
         expect(info.scan, equals('.'));
       });
+
+      test('BB-CLI-11b: Defaults to not recursive [2026-02-18]', () {
+        const args = CliArgs();
+
+        final info = args.toProjectTraversalInfo(executionRoot: '/workspace');
+        expect(
+          info.recursive,
+          isFalse,
+          reason: 'Default is --scan . -R --not-recursive',
+        );
+      });
     });
 
     group('toGitTraversalInfo', () {
-      test('BB-CLI-12: Converts basic args to GitTraversalInfo [2026-02-12]', () {
-        const args = CliArgs(
-          modules: ['basics', 'd4rt'],
-          skipModules: ['crypto'],
-          innerFirstGit: true,
-        );
+      test(
+        'BB-CLI-12: Converts basic args to GitTraversalInfo [2026-02-12]',
+        () {
+          const args = CliArgs(
+            modules: ['basics', 'd4rt'],
+            skipModules: ['crypto'],
+            innerFirstGit: true,
+          );
 
-        final info = args.toGitTraversalInfo(executionRoot: '/workspace');
+          final info = args.toGitTraversalInfo(executionRoot: '/workspace');
 
-        expect(info.modules, equals(['basics', 'd4rt']));
-        expect(info.skipModules, equals(['crypto']));
-        expect(info.gitMode, equals(GitTraversalMode.innerFirst));
-      });
+          expect(info, isNotNull);
+          expect(info!.modules, equals(['basics', 'd4rt']));
+          expect(info.skipModules, equals(['crypto']));
+          expect(info.gitMode, equals(GitTraversalMode.innerFirst));
+        },
+      );
 
-      test('BB-CLI-13: Defaults to innerFirst git mode [2026-02-12]', () {
-        const args = CliArgs();
+      test(
+        'BB-CLI-13: Returns null when git mode not specified [2026-02-12]',
+        () {
+          const args = CliArgs();
 
-        final info = args.toGitTraversalInfo(executionRoot: '/workspace');
-        expect(info.gitMode, equals(GitTraversalMode.innerFirst));
-      });
+          final info = args.toGitTraversalInfo(executionRoot: '/workspace');
+          expect(info, isNull, reason: 'Git mode must be explicitly specified');
+        },
+      );
+
+      test(
+        'BB-CLI-13b: Uses command default git mode when provided [2026-02-12]',
+        () {
+          const args = CliArgs();
+
+          final info = args.toGitTraversalInfo(
+            executionRoot: '/workspace',
+            commandDefaultGitOrder: GitTraversalOrder.innerFirst,
+          );
+          expect(info, isNotNull);
+          expect(info!.gitMode, equals(GitTraversalMode.innerFirst));
+        },
+      );
 
       test('BB-CLI-14: Uses outerFirst when specified [2026-02-12]', () {
         const args = CliArgs(outerFirstGit: true);
 
         final info = args.toGitTraversalInfo(executionRoot: '/workspace');
-        expect(info.gitMode, equals(GitTraversalMode.outerFirst));
+        expect(info, isNotNull);
+        expect(info!.gitMode, equals(GitTraversalMode.outerFirst));
       });
     });
   });
@@ -224,10 +270,13 @@ void main() {
         expect(args.excludePatterns, equals(['*.dart', '*.yaml']));
       });
 
-      test('BB-CLI-26: Parses --exclude with comma-separated values [2026-02-12]', () {
-        final args = parser.parse(['--exclude=*.dart,*.yaml']);
-        expect(args.excludePatterns, equals(['*.dart', '*.yaml']));
-      });
+      test(
+        'BB-CLI-26: Parses --exclude with comma-separated values [2026-02-12]',
+        () {
+          final args = parser.parse(['--exclude=*.dart,*.yaml']);
+          expect(args.excludePatterns, equals(['*.dart', '*.yaml']));
+        },
+      );
 
       test('BB-CLI-27: Parses --project patterns [2026-02-12]', () {
         final args = parser.parse(['--project=tom_*', '--project=d4rt_*']);
@@ -402,18 +451,27 @@ void main() {
         expect(args.commandArgs['test']!.options['coverage'], isTrue);
       });
 
-      test('BB-CLI-56: Parses multiple commands with per-command options [2026-02-12]', () {
-        final args = parser.parse([
-          ':cleanup',
-          '--project=tom_*',
-          ':compile',
-          '--project=d4rt_*',
-        ]);
+      test(
+        'BB-CLI-56: Parses multiple commands with per-command options [2026-02-12]',
+        () {
+          final args = parser.parse([
+            ':cleanup',
+            '--project=tom_*',
+            ':compile',
+            '--project=d4rt_*',
+          ]);
 
-        expect(args.commands, equals(['cleanup', 'compile']));
-        expect(args.commandArgs['cleanup']!.projectPatterns, equals(['tom_*']));
-        expect(args.commandArgs['compile']!.projectPatterns, equals(['d4rt_*']));
-      });
+          expect(args.commands, equals(['cleanup', 'compile']));
+          expect(
+            args.commandArgs['cleanup']!.projectPatterns,
+            equals(['tom_*']),
+          );
+          expect(
+            args.commandArgs['compile']!.projectPatterns,
+            equals(['d4rt_*']),
+          );
+        },
+      );
     });
 
     group('positional arguments', () {
@@ -422,17 +480,23 @@ void main() {
         expect(args.positionalArgs, equals(['script.dart']));
       });
 
-      test('BB-CLI-58: Captures positional args before options [2026-02-12]', () {
-        final args = parser.parse(['file1.dart', 'file2.dart', '-v']);
-        expect(args.positionalArgs, equals(['file1.dart', 'file2.dart']));
-        expect(args.verbose, isTrue);
-      });
+      test(
+        'BB-CLI-58: Captures positional args before options [2026-02-12]',
+        () {
+          final args = parser.parse(['file1.dart', 'file2.dart', '-v']);
+          expect(args.positionalArgs, equals(['file1.dart', 'file2.dart']));
+          expect(args.verbose, isTrue);
+        },
+      );
 
-      test('BB-CLI-59: Captures positional args before commands [2026-02-12]', () {
-        final args = parser.parse(['config.yaml', ':build']);
-        expect(args.positionalArgs, equals(['config.yaml']));
-        expect(args.commands, equals(['build']));
-      });
+      test(
+        'BB-CLI-59: Captures positional args before commands [2026-02-12]',
+        () {
+          final args = parser.parse(['config.yaml', ':build']);
+          expect(args.positionalArgs, equals(['config.yaml']));
+          expect(args.commands, equals(['build']));
+        },
+      );
     });
 
     group('extra options', () {

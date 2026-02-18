@@ -150,11 +150,11 @@ final verbose = ConfigMerger.mergeScalar(false, true);
 
 // With explicit-check callback
 final output = ConfigMerger.mergeScalar<String?>(
-  'lib/src/version.g.dart',
+  'lib/src/version.versioner.dart',
   null,
   isExplicit: (v) => v != null,
 );
-// → 'lib/src/version.g.dart'  (project is null, so workspace wins)
+// → 'lib/src/version.versioner.dart'  (project is null, so workspace wins)
 
 // Nullable convenience
 final prefix = ConfigMerger.mergeNullable('v', null);
@@ -193,7 +193,7 @@ const builder = 'tom_version_builder:version_builder';
 if (hasBuildYamlConsumerConfig(projectPath, builder)) {
   final enabled = isBuildYamlBuilderEnabled(projectPath, builder);
   final options = getBuildYamlBuilderOptions(projectPath, builder);
-  final output = options?['output'] ?? 'lib/src/version.g.dart';
+  final output = options?['output'] ?? 'lib/src/version.versioner.dart';
 }
 ```
 

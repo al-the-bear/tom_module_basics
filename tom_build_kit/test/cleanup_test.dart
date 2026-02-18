@@ -11,8 +11,8 @@ import 'helpers/test_workspace.dart';
 
 /// Integration tests for the cleanup tool.
 ///
-/// Target project: `_build` (has `cleanup: ['**/version.g.dart']` in its
-/// buildkit.yaml, and `_build/lib/src/version.g.dart` exists as a
+/// Target project: `_build` (has `cleanup: ['**/version.versioner.dart']` in its
+/// buildkit.yaml, and `_build/lib/src/version.versioner.dart` exists as a
 /// tracked file that gets restored by `git checkout -- .`).
 void main() {
   late TestWorkspace ws;
@@ -161,19 +161,19 @@ void main() {
       final stdout = (result.stdout as String);
       expect(result.exitCode, equals(0));
       // Should show the cleanup glob pattern from _build/buildkit.yaml
-      expect(stdout, contains('version.g.dart'),
+      expect(stdout, contains('version.versioner.dart'),
           reason: 'Should display the cleanup glob pattern');
       log.expectation(
-          'shows version.g.dart pattern', stdout.contains('version.g.dart'));
+          'shows version.versioner.dart pattern', stdout.contains('version.versioner.dart'));
     });
 
     test('deletes files matching glob patterns', () async {
       log.start('CLN_DEL01', 'deletes files matching patterns');
 
       final versionFile =
-          p.join(ws.workspaceRoot, '_build', 'lib', 'src', 'version.g.dart');
+          p.join(ws.workspaceRoot, '_build', 'lib', 'src', 'version.versioner.dart');
       expect(File(versionFile).existsSync(), isTrue,
-          reason: 'version.g.dart should exist before cleanup');
+          reason: 'version.versioner.dart should exist before cleanup');
 
       final result =
           await ws.runTool('cleanup', ['--project', '_build']);
@@ -181,18 +181,18 @@ void main() {
 
       expect(result.exitCode, equals(0));
       expect(File(versionFile).existsSync(), isFalse,
-          reason: 'version.g.dart should be deleted by cleanup');
+          reason: 'version.versioner.dart should be deleted by cleanup');
       log.expectation(
-          'version.g.dart deleted', !File(versionFile).existsSync());
+          'version.versioner.dart deleted', !File(versionFile).existsSync());
     });
 
     test('--dry-run lists files without deleting', () async {
       log.start('CLN_DRY01', '--dry-run lists without deleting');
 
       final versionFile =
-          p.join(ws.workspaceRoot, '_build', 'lib', 'src', 'version.g.dart');
+          p.join(ws.workspaceRoot, '_build', 'lib', 'src', 'version.versioner.dart');
       expect(File(versionFile).existsSync(), isTrue,
-          reason: 'version.g.dart should exist before dry-run');
+          reason: 'version.versioner.dart should exist before dry-run');
 
       final result = await ws.runTool(
           'cleanup', ['--project', '_build', '--dry-run']);
@@ -201,21 +201,21 @@ void main() {
       expect(result.exitCode, equals(0));
       // File should still exist after dry-run
       expect(File(versionFile).existsSync(), isTrue,
-          reason: 'version.g.dart should survive --dry-run');
+          reason: 'version.versioner.dart should survive --dry-run');
       // Output should mention the file
       final stdout = (result.stdout as String);
-      expect(stdout, contains('version.g.dart'),
-          reason: 'Dry-run should list version.g.dart');
+      expect(stdout, contains('version.versioner.dart'),
+          reason: 'Dry-run should list version.versioner.dart');
       log.expectation('file survives', File(versionFile).existsSync());
       log.expectation(
-          'file listed in output', stdout.contains('version.g.dart'));
+          'file listed in output', stdout.contains('version.versioner.dart'));
     });
 
     test('excludes patterns prevent deletion', () async {
       log.start('CLN_EXC01', 'excludes prevent deletion');
 
       // Modify _build/buildkit.yaml: broad pattern with exclude for
-      // version.g.dart — version.g.dart should survive, temp file should not.
+      // version.versioner.dart — version.versioner.dart should survive, temp file should not.
       setBuildConfig('''
 # Modified by integration test — CLN_EXC01
 versioner:
@@ -225,7 +225,7 @@ cleanup:
   - globs:
       - '**/*.g.dart'
     excludes:
-      - '**/version.g.dart'
+      - '**/version.versioner.dart'
 ''');
 
       // Create a temp .g.dart file that SHOULD be deleted
@@ -234,7 +234,7 @@ cleanup:
               content: '// This file should be deleted by cleanup');
 
       final versionFile =
-          p.join(ws.workspaceRoot, '_build', 'lib', 'src', 'version.g.dart');
+          p.join(ws.workspaceRoot, '_build', 'lib', 'src', 'version.versioner.dart');
       expect(File(versionFile).existsSync(), isTrue);
       expect(File(tempFile).existsSync(), isTrue);
 
@@ -243,9 +243,9 @@ cleanup:
       log.capture('cleanup with excludes', result);
 
       expect(result.exitCode, equals(0));
-      // version.g.dart should survive (excluded)
+      // version.versioner.dart should survive (excluded)
       expect(File(versionFile).existsSync(), isTrue,
-          reason: 'version.g.dart should be protected by exclude pattern');
+          reason: 'version.versioner.dart should be protected by exclude pattern');
       // test_temp.g.dart should be deleted (matches glob, not excluded)
       expect(File(tempFile).existsSync(), isFalse,
           reason: 'test_temp.g.dart should be deleted (not excluded)');
@@ -254,7 +254,7 @@ cleanup:
       tempFiles.remove(tempFile);
 
       log.expectation(
-          'version.g.dart survives', File(versionFile).existsSync());
+          'version.versioner.dart survives', File(versionFile).existsSync());
       log.expectation(
           'test_temp.g.dart deleted', !File(tempFile).existsSync());
     });
@@ -265,7 +265,7 @@ cleanup:
       // Use broad pattern, add 'src' as a protected folder.
       // Protected-folders uses basename matching on individual path
       // segments — so 'src' matches any path containing a '/src/' segment.
-      // version.g.dart is under lib/src/, so it should survive.
+      // version.versioner.dart is under lib/src/, so it should survive.
       setBuildConfig('''
 # Modified by integration test — CLN_PRO01
 versioner:
@@ -279,7 +279,7 @@ cleanup:
 ''');
 
       final versionFile =
-          p.join(ws.workspaceRoot, '_build', 'lib', 'src', 'version.g.dart');
+          p.join(ws.workspaceRoot, '_build', 'lib', 'src', 'version.versioner.dart');
       expect(File(versionFile).existsSync(), isTrue);
 
       // Create a .g.dart file OUTSIDE the protected src/ folder
@@ -292,9 +292,9 @@ cleanup:
       log.capture('cleanup with protected-folders', result);
 
       expect(result.exitCode, equals(0));
-      // version.g.dart under lib/src/ (protected) should survive
+      // version.versioner.dart under lib/src/ (protected) should survive
       expect(File(versionFile).existsSync(), isTrue,
-          reason: 'version.g.dart in protected src/ folder should survive');
+          reason: 'version.versioner.dart in protected src/ folder should survive');
       // temp file outside protected folder should be deleted
       expect(File(tempFile).existsSync(), isFalse,
           reason: 'File outside protected folder should be deleted');
@@ -329,7 +329,7 @@ cleanup:
 ''');
 
       final versionFile =
-          p.join(ws.workspaceRoot, '_build', 'lib', 'src', 'version.g.dart');
+          p.join(ws.workspaceRoot, '_build', 'lib', 'src', 'version.versioner.dart');
       expect(File(versionFile).existsSync(), isTrue);
 
       // Create a .g.dart file OUTSIDE lib/src/ (should be deleted)
@@ -343,11 +343,11 @@ cleanup:
 
       expect(result.exitCode, equals(0));
 
-      // Bug #17 FIXED: version.g.dart under lib/src/ should survive
+      // Bug #17 FIXED: version.versioner.dart under lib/src/ should survive
       // because 'lib/src' is listed in protected-folders and Glob
       // matching now handles multi-segment paths correctly.
       expect(File(versionFile).existsSync(), isTrue,
-          reason: 'version.g.dart in protected lib/src/ folder should '
+          reason: 'version.versioner.dart in protected lib/src/ folder should '
               'survive cleanup. Bug #17 fixed: multi-segment paths now '
               'handled via Glob matching in _isInProtectedFolder()');
 

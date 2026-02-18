@@ -5,7 +5,7 @@ library;
 
 import 'package:tom_build_base/tom_build_base_v2.dart';
 
-import '../version.g.dart';
+import '../version.versioner.dart';
 
 // =============================================================================
 // Common Options
@@ -17,7 +17,7 @@ const versionerOptions = <OptionDefinition>[
     name: 'output',
     abbr: 'O',
     description: 'Output file path relative to project',
-    defaultValue: 'lib/src/version.g.dart',
+    defaultValue: 'lib/src/version.versioner.dart',
     valueName: 'path',
   ),
   OptionDefinition.flag(
@@ -31,7 +31,8 @@ const versionerOptions = <OptionDefinition>[
   ),
   OptionDefinition.option(
     name: 'variable-prefix',
-    description: 'Prefix for generated class name (e.g., "myApp" → MyAppVersionInfo)',
+    description:
+        'Prefix for generated class name (e.g., "myApp" → MyAppVersionInfo)',
     valueName: 'name',
   ),
 ];
@@ -88,10 +89,7 @@ const runnerOptions = <OptionDefinition>[
     description: 'Build config name',
     valueName: 'name',
   ),
-  OptionDefinition.flag(
-    name: 'release',
-    description: 'Build in release mode',
-  ),
+  OptionDefinition.flag(name: 'release', description: 'Build in release mode'),
   OptionDefinition.flag(
     name: 'delete-conflicting',
     description: 'Delete conflicting outputs without prompting',
@@ -148,10 +146,7 @@ const publisherOptions = <OptionDefinition>[
 
 /// Options for pubget/pubupdate commands.
 const pubOptions = <OptionDefinition>[
-  OptionDefinition.flag(
-    name: 'offline',
-    description: 'Use cached packages',
-  ),
+  OptionDefinition.flag(name: 'offline', description: 'Use cached packages'),
 ];
 
 // =============================================================================
@@ -169,10 +164,7 @@ const gitstatusOptions = <OptionDefinition>[
     name: 'no-fetch',
     description: 'Skip fetching from remote before status',
   ),
-  OptionDefinition.flag(
-    name: 'stash',
-    description: 'Show stash information',
-  ),
+  OptionDefinition.flag(name: 'stash', description: 'Show stash information'),
 ];
 
 /// Options for gitcommit command.
@@ -183,14 +175,8 @@ const gitcommitOptions = <OptionDefinition>[
     description: 'Commit message',
     valueName: 'msg',
   ),
-  OptionDefinition.flag(
-    name: 'amend',
-    description: 'Amend last commit',
-  ),
-  OptionDefinition.flag(
-    name: 'push',
-    description: 'Push after commit',
-  ),
+  OptionDefinition.flag(name: 'amend', description: 'Amend last commit'),
+  OptionDefinition.flag(name: 'push', description: 'Push after commit'),
   OptionDefinition.flag(
     name: 'all',
     abbr: 'a',
@@ -200,14 +186,8 @@ const gitcommitOptions = <OptionDefinition>[
 
 /// Options for gitpull command.
 const gitpullOptions = <OptionDefinition>[
-  OptionDefinition.flag(
-    name: 'rebase',
-    description: 'Rebase instead of merge',
-  ),
-  OptionDefinition.flag(
-    name: 'ff-only',
-    description: 'Fast-forward only',
-  ),
+  OptionDefinition.flag(name: 'rebase', description: 'Rebase instead of merge'),
+  OptionDefinition.flag(name: 'ff-only', description: 'Fast-forward only'),
 ];
 
 /// Options for gitbranch command.
@@ -251,10 +231,7 @@ const gittagOptions = <OptionDefinition>[
     description: 'Delete tag',
     valueName: 'name',
   ),
-  OptionDefinition.flag(
-    name: 'push',
-    description: 'Push tags after creating',
-  ),
+  OptionDefinition.flag(name: 'push', description: 'Push tags after creating'),
 ];
 
 /// Options for gitcheckout command.
@@ -296,11 +273,7 @@ const gitcleanOptions = <OptionDefinition>[
     abbr: 'd',
     description: 'Remove untracked directories too',
   ),
-  OptionDefinition.flag(
-    name: 'force',
-    abbr: 'f',
-    description: 'Force removal',
-  ),
+  OptionDefinition.flag(name: 'force', abbr: 'f', description: 'Force removal'),
 ];
 
 /// Options for gitsync command.
@@ -355,10 +328,7 @@ const gitcompareOptions = <OptionDefinition>[
     description: 'Base branch/ref to compare against',
     valueName: 'ref',
   ),
-  OptionDefinition.flag(
-    name: 'stat',
-    description: 'Show diffstat only',
-  ),
+  OptionDefinition.flag(name: 'stat', description: 'Show diffstat only'),
 ];
 
 /// Options for gitmerge command.
@@ -411,10 +381,7 @@ const gitrebaseOptions = <OptionDefinition>[
     name: 'continue',
     description: 'Continue rebase after resolving conflicts',
   ),
-  OptionDefinition.flag(
-    name: 'abort',
-    description: 'Abort rebase',
-  ),
+  OptionDefinition.flag(name: 'abort', description: 'Abort rebase'),
 ];
 
 /// Options for git passthrough command.
@@ -470,7 +437,7 @@ const definesOptions = <OptionDefinition>[];
 
 const versionerCommand = CommandDefinition(
   name: 'versioner',
-  description: 'Generate version.g.dart files with build metadata',
+  description: 'Generate version.versioner.dart files with build metadata',
   aliases: ['v', 'ver'],
   options: versionerOptions,
   supportsProjectTraversal: true,
@@ -479,7 +446,7 @@ const versionerCommand = CommandDefinition(
   canRunStandalone: true,
   examples: [
     'buildkit :versioner',
-    'buildkit :versioner --output lib/src/version.g.dart',
+    'buildkit :versioner --output lib/src/version.versioner.dart',
     'buildkit :versioner --variable-prefix myApp',
   ],
 );
@@ -493,10 +460,7 @@ const bumpversionCommand = CommandDefinition(
   supportsGitTraversal: false,
   requiresTraversal: false,
   canRunStandalone: true,
-  examples: [
-    'buildkit :bumpversion --type=minor',
-    'bumpversion --set=2.0.0',
-  ],
+  examples: ['buildkit :bumpversion --type=minor', 'bumpversion --set=2.0.0'],
 );
 
 const compilerCommand = CommandDefinition(
@@ -571,10 +535,7 @@ const publisherCommand = CommandDefinition(
   supportsGitTraversal: false,
   requiresTraversal: true,
   canRunStandalone: true,
-  examples: [
-    'buildkit :publisher',
-    'buildkit :publisher --show-all',
-  ],
+  examples: ['buildkit :publisher', 'buildkit :publisher --show-all'],
 );
 
 const pubgetCommand = CommandDefinition(
@@ -585,9 +546,7 @@ const pubgetCommand = CommandDefinition(
   supportsProjectTraversal: true,
   supportsGitTraversal: false,
   requiresTraversal: false,
-  examples: [
-    'buildkit :pubget',
-  ],
+  examples: ['buildkit :pubget'],
 );
 
 const pubgetallCommand = CommandDefinition(
@@ -597,9 +556,7 @@ const pubgetallCommand = CommandDefinition(
   options: pubOptions,
   requiresTraversal: false,
   supportsProjectTraversal: false,
-  examples: [
-    'buildkit :pubgetall',
-  ],
+  examples: ['buildkit :pubgetall'],
 );
 
 const pubupdateCommand = CommandDefinition(
@@ -610,9 +567,7 @@ const pubupdateCommand = CommandDefinition(
   supportsProjectTraversal: true,
   supportsGitTraversal: false,
   requiresTraversal: false,
-  examples: [
-    'buildkit :pubupdate',
-  ],
+  examples: ['buildkit :pubupdate'],
 );
 
 const pubupdateallCommand = CommandDefinition(
@@ -622,9 +577,7 @@ const pubupdateallCommand = CommandDefinition(
   options: pubOptions,
   requiresTraversal: false,
   supportsProjectTraversal: false,
-  examples: [
-    'buildkit :pubupdateall',
-  ],
+  examples: ['buildkit :pubupdateall'],
 );
 
 const buildsorterCommand = CommandDefinition(
@@ -636,9 +589,7 @@ const buildsorterCommand = CommandDefinition(
   supportsGitTraversal: false,
   requiresTraversal: false,
   canRunStandalone: true,
-  examples: [
-    'buildkit :buildsorter',
-  ],
+  examples: ['buildkit :buildsorter'],
 );
 
 // =============================================================================
@@ -671,10 +622,7 @@ const gitstatusCommand = CommandDefinition(
   defaultGitOrder: GitTraversalOrder.innerFirst,
   requiresTraversal: true,
   canRunStandalone: true,
-  examples: [
-    'buildkit :gitstatus',
-    'gitstatus --short',
-  ],
+  examples: ['buildkit :gitstatus', 'gitstatus --short'],
 );
 
 const gitcommitCommand = CommandDefinition(
@@ -687,10 +635,7 @@ const gitcommitCommand = CommandDefinition(
   defaultGitOrder: GitTraversalOrder.innerFirst, // Fixed: inner first
   requiresTraversal: true,
   canRunStandalone: true,
-  examples: [
-    'buildkit :gitcommit -m "feat: add feature"',
-    'gitcommit --amend',
-  ],
+  examples: ['buildkit :gitcommit -m "feat: add feature"', 'gitcommit --amend'],
 );
 
 const gitpullCommand = CommandDefinition(
@@ -703,10 +648,7 @@ const gitpullCommand = CommandDefinition(
   defaultGitOrder: GitTraversalOrder.outerFirst, // Fixed: outer first
   requiresTraversal: true,
   canRunStandalone: true,
-  examples: [
-    'buildkit :gitpull',
-    'gitpull --rebase',
-  ],
+  examples: ['buildkit :gitpull', 'gitpull --rebase'],
 );
 
 const gitbranchCommand = CommandDefinition(
@@ -719,10 +661,7 @@ const gitbranchCommand = CommandDefinition(
   defaultGitOrder: GitTraversalOrder.innerFirst, // Fixed: inner first
   requiresTraversal: true,
   canRunStandalone: true,
-  examples: [
-    'buildkit :gitbranch',
-    'gitbranch --create feature-x',
-  ],
+  examples: ['buildkit :gitbranch', 'gitbranch --create feature-x'],
 );
 
 const gittagCommand = CommandDefinition(
@@ -735,10 +674,7 @@ const gittagCommand = CommandDefinition(
   defaultGitOrder: GitTraversalOrder.innerFirst, // Fixed: inner first
   requiresTraversal: true,
   canRunStandalone: true,
-  examples: [
-    'buildkit :gittag',
-    'gittag --create v1.0.0 --push',
-  ],
+  examples: ['buildkit :gittag', 'gittag --create v1.0.0 --push'],
 );
 
 const gitcheckoutCommand = CommandDefinition(
@@ -751,9 +687,7 @@ const gitcheckoutCommand = CommandDefinition(
   defaultGitOrder: GitTraversalOrder.outerFirst, // Fixed: outer first
   requiresTraversal: true,
   canRunStandalone: true,
-  examples: [
-    'buildkit :gitcheckout --branch=main',
-  ],
+  examples: ['buildkit :gitcheckout --branch=main'],
 );
 
 const gitresetCommand = CommandDefinition(
@@ -766,9 +700,7 @@ const gitresetCommand = CommandDefinition(
   defaultGitOrder: GitTraversalOrder.outerFirst, // Fixed: outer first
   requiresTraversal: true,
   canRunStandalone: true,
-  examples: [
-    'buildkit :gitreset --hard',
-  ],
+  examples: ['buildkit :gitreset --hard'],
 );
 
 const gitcleanCommand = CommandDefinition(
@@ -781,9 +713,7 @@ const gitcleanCommand = CommandDefinition(
   defaultGitOrder: GitTraversalOrder.innerFirst, // Fixed: inner first
   requiresTraversal: true,
   canRunStandalone: true,
-  examples: [
-    'buildkit :gitclean -df',
-  ],
+  examples: ['buildkit :gitclean -df'],
 );
 
 const gitsyncCommand = CommandDefinition(
@@ -796,9 +726,7 @@ const gitsyncCommand = CommandDefinition(
   defaultGitOrder: GitTraversalOrder.outerFirst, // Fixed: outer first
   requiresTraversal: true,
   canRunStandalone: true,
-  examples: [
-    'buildkit :gitsync',
-  ],
+  examples: ['buildkit :gitsync'],
 );
 
 const gitpruneCommand = CommandDefinition(
@@ -811,9 +739,7 @@ const gitpruneCommand = CommandDefinition(
   defaultGitOrder: GitTraversalOrder.outerFirst, // Fixed: outer first
   requiresTraversal: true,
   canRunStandalone: true,
-  examples: [
-    'buildkit :gitprune',
-  ],
+  examples: ['buildkit :gitprune'],
 );
 
 const gitstashCommand = CommandDefinition(
@@ -826,9 +752,7 @@ const gitstashCommand = CommandDefinition(
   defaultGitOrder: GitTraversalOrder.innerFirst, // Fixed: inner first
   requiresTraversal: true,
   canRunStandalone: true,
-  examples: [
-    'buildkit :gitstash -m "wip"',
-  ],
+  examples: ['buildkit :gitstash -m "wip"'],
 );
 
 const gitunstashCommand = CommandDefinition(
@@ -841,9 +765,7 @@ const gitunstashCommand = CommandDefinition(
   defaultGitOrder: GitTraversalOrder.outerFirst, // Fixed: outer first (reverse)
   requiresTraversal: true,
   canRunStandalone: true,
-  examples: [
-    'buildkit :gitunstash --pop',
-  ],
+  examples: ['buildkit :gitunstash --pop'],
 );
 
 const gitcompareCommand = CommandDefinition(
@@ -856,9 +778,7 @@ const gitcompareCommand = CommandDefinition(
   defaultGitOrder: GitTraversalOrder.innerFirst, // Fixed: inner first
   requiresTraversal: true,
   canRunStandalone: true,
-  examples: [
-    'buildkit :gitcompare --base=main',
-  ],
+  examples: ['buildkit :gitcompare --base=main'],
 );
 
 const gitmergeCommand = CommandDefinition(
@@ -871,9 +791,7 @@ const gitmergeCommand = CommandDefinition(
   defaultGitOrder: GitTraversalOrder.innerFirst, // Fixed: inner first
   requiresTraversal: true,
   canRunStandalone: true,
-  examples: [
-    'buildkit :gitmerge --branch=feature-x',
-  ],
+  examples: ['buildkit :gitmerge --branch=feature-x'],
 );
 
 const gitsquashCommand = CommandDefinition(
@@ -886,9 +804,7 @@ const gitsquashCommand = CommandDefinition(
   defaultGitOrder: GitTraversalOrder.innerFirst, // Fixed: inner first
   requiresTraversal: true,
   canRunStandalone: true,
-  examples: [
-    'buildkit :gitsquash -n 3 -m "combined commit"',
-  ],
+  examples: ['buildkit :gitsquash -n 3 -m "combined commit"'],
 );
 
 const gitrebaseCommand = CommandDefinition(
@@ -901,9 +817,7 @@ const gitrebaseCommand = CommandDefinition(
   defaultGitOrder: GitTraversalOrder.innerFirst, // Fixed: inner first
   requiresTraversal: true,
   canRunStandalone: true,
-  examples: [
-    'buildkit :gitrebase --onto=main',
-  ],
+  examples: ['buildkit :gitrebase --onto=main'],
 );
 
 // =============================================================================
@@ -931,9 +845,7 @@ const defineCommand = CommandDefinition(
   options: defineOptions,
   requiresTraversal: false,
   supportsProjectTraversal: false,
-  examples: [
-    'buildkit define cv=:versioner :compiler',
-  ],
+  examples: ['buildkit define cv=:versioner :compiler'],
 );
 
 const undefineCommand = CommandDefinition(
@@ -943,9 +855,7 @@ const undefineCommand = CommandDefinition(
   options: undefineOptions,
   requiresTraversal: false,
   supportsProjectTraversal: false,
-  examples: [
-    'buildkit undefine cv',
-  ],
+  examples: ['buildkit undefine cv'],
 );
 
 const definesCommand = CommandDefinition(
@@ -955,9 +865,7 @@ const definesCommand = CommandDefinition(
   options: definesOptions,
   requiresTraversal: false,
   supportsProjectTraversal: false,
-  examples: [
-    'buildkit defines',
-  ],
+  examples: ['buildkit defines'],
 );
 
 // =============================================================================

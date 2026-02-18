@@ -14,7 +14,7 @@ import 'helpers/test_workspace.dart';
 /// These tests use the `_build` project as the target because:
 /// - It's in the main repo (no submodule complications for git revert)
 /// - It has a versioner config (variable-prefix: tomTools)
-/// - Its version.g.dart is NOT imported by tom_build_kit, so regenerating
+/// - Its version.versioner.dart is NOT imported by tom_build_kit, so regenerating
 ///   it won't break the tool under test
 void main() {
   late TestWorkspace ws;
@@ -23,13 +23,13 @@ void main() {
   /// Absolute path to the _build project (target for versioner tests).
   late String targetProject;
 
-  /// Relative path from workspace root to the version.g.dart file.
+  /// Relative path from workspace root to the version.versioner.dart file.
   late String versionFileRelative;
 
   setUpAll(() async {
     ws = TestWorkspace();
     targetProject = p.join(ws.workspaceRoot, '_build');
-    versionFileRelative = '_build/lib/src/version.g.dart';
+    versionFileRelative = '_build/lib/src/version.versioner.dart';
     print('');
     print('╔══════════════════════════════════════════════════════╗');
     print('║          Versioner Integration Tests                 ║');
@@ -50,7 +50,7 @@ void main() {
   tearDown(() async {
     log.finish();
     // Revert all changes in the main repo (buildkit_master.yaml,
-    // _build/lib/src/version.g.dart, _build/tom_build_state.json)
+    // _build/lib/src/version.versioner.dart, _build/tom_build_state.json)
     await ws.revertAll();
   });
 
@@ -63,8 +63,8 @@ void main() {
   });
 
   group('versioner', () {
-    test('--project generates version.g.dart with correct prefix', () async {
-      log.start('VER_GEN01', '--project generates version.g.dart with correct prefix');
+    test('--project generates version.versioner.dart with correct prefix', () async {
+      log.start('VER_GEN01', '--project generates version.versioner.dart with correct prefix');
       await ws.installFixture('versioner');
 
       final result = await ws.runTool(
@@ -88,7 +88,7 @@ void main() {
       // The generated file should exist
       final versionFile = File(p.join(ws.workspaceRoot, versionFileRelative));
       final fileExists = versionFile.existsSync();
-      log.expectation('version.g.dart exists', fileExists);
+      log.expectation('version.versioner.dart exists', fileExists);
       expect(versionFile.existsSync(), isTrue);
 
       final content = versionFile.readAsStringSync();
@@ -270,7 +270,7 @@ void main() {
   });
 }
 
-/// Extract the build number from generated version.g.dart content.
+/// Extract the build number from generated version.versioner.dart content.
 int _extractBuildNumber(String content) {
   final match =
       RegExp(r'static const int buildNumber = (\d+);').firstMatch(content);

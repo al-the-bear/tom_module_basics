@@ -65,8 +65,9 @@ ColumnHeader? parseColumnHeader(String header) {
   final trimmed = header.trim();
   final isBaseline = trimmed.startsWith('Baseline');
 
-  final match =
-      RegExp(r'\[(\d{2})-(\d{2})\s+(\d{2}):(\d{2})\]').firstMatch(trimmed);
+  final match = RegExp(
+    r'\[(\d{2})-(\d{2})\s+(\d{2}):(\d{2})\]',
+  ).firstMatch(trimmed);
   if (match == null) return null;
 
   final now = DateTime.now();
@@ -119,8 +120,9 @@ TestEntry parseEntryFromLabel(String label) {
   }
 
   // Extract creation date [YYYY-MM-DD HH:MM]
-  final dateMatch = RegExp(r'\[(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2})\]')
-      .firstMatch(description);
+  final dateMatch = RegExp(
+    r'\[(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2})\]',
+  ).firstMatch(description);
   if (dateMatch != null) {
     creationDate = DateTime(
       int.parse(dateMatch.group(1)!),
@@ -170,8 +172,9 @@ TestEntry parseEntryFromColumns({
   }
 
   // Extract creation date [YYYY-MM-DD HH:MM]
-  final dateMatch = RegExp(r'\[(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2})\]')
-      .firstMatch(remaining);
+  final dateMatch = RegExp(
+    r'\[(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2})\]',
+  ).firstMatch(remaining);
   if (dateMatch != null) {
     creationDate = DateTime(
       int.parse(dateMatch.group(1)!),
@@ -184,11 +187,26 @@ TestEntry parseEntryFromColumns({
   }
 
   // Reconstruct fullDescription to match what DartTestParser produces.
-  // The original test name may have (PASS) or (FAIL) suffix which is stripped
-  // when writing to CSV but needs to be restored for key matching.
+  // fullDescription is the test name WITHOUT groups prefix (groups are stored
+  // separately). It includes id prefix, date bracket, and (FAIL) suffix from
+  // the original test name.
   final idPrefix = id.isNotEmpty ? '$id: ' : '';
-  final expectSuffix = expectation == 'FAIL' ? '' : ' (PASS)';
-  final fullDescription = '$idPrefix$description$expectSuffix';
+
+  // Build date bracket if creationDate was present
+  String dateBracket = '';
+  if (creationDate != null) {
+    final d = creationDate;
+    dateBracket = ' [${d.year.toString().padLeft(4, '0')}-'
+        '${d.month.toString().padLeft(2, '0')}-'
+        '${d.day.toString().padLeft(2, '0')} '
+        '${d.hour.toString().padLeft(2, '0')}:'
+        '${d.minute.toString().padLeft(2, '0')}]';
+  }
+
+  // If the test has FAIL expectation, the original test name included (FAIL).
+  // For OK expectation, no suffix was present.
+  final expectSuffix = expectation == 'FAIL' ? ' (FAIL)' : '';
+  final fullDescription = '$idPrefix$remaining$dateBracket$expectSuffix';
 
   return TestEntry(
     id: id.isNotEmpty ? id : null,

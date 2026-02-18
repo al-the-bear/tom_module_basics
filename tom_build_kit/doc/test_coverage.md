@@ -63,7 +63,7 @@ Target project: `_build` (main repo, has `variable-prefix: tomTools` in its `bui
 
 | ID | Feature | Status | How to Test |
 |----|---------|--------|-------------|
-| VER_GEN01 | Generates `version.g.dart` with correct class name | ✅ | Run versioner `--project _build`. Verify file contains `class TomToolsVersionInfo` (project config overrides workspace default). |
+| VER_GEN01 | Generates `version.versioner.dart` with correct class name | ✅ | Run versioner `--project _build`. Verify file contains `class TomToolsVersionInfo` (project config overrides workspace default). |
 | VER_GIT01 | `--no-git` omits git commit field | ✅ | Run with `--no-git`. Verify `gitCommit` is empty string. Bug #12 FIXED. |
 | VER_LST01 | `--list` shows matching projects | ✅ | Run with `--list`. Verify `_build` appears in output. |
 | VER_SHW01 | `--show` displays project config | ✅ | Run with `--show`. Verify `variable-prefix` and `tomTools` appear. |
@@ -83,7 +83,7 @@ Target project: `_build` (has cleanup config) or a test project.
 |----|---------|--------|-------------|
 | CLN_DEL01 | Deletes files matching glob patterns | ✅ | Create temp `.g.dart` files in target project. Run cleanup. Verify files deleted. |
 | CLN_DRY01 | `--dry-run` lists files without deleting | ✅ | Create temp files. Run with `--dry-run`. Verify files still exist and stdout lists them. |
-| CLN_EXC01 | `excludes` patterns prevent deletion | ✅ | Create a `version.g.dart` file. Configure exclude for it. Run cleanup. Verify it survives. |
+| CLN_EXC01 | `excludes` patterns prevent deletion | ✅ | Create a `version.versioner.dart` file. Configure exclude for it. Run cleanup. Verify it survives. |
 | CLN_PRO01 | Protected folders are never deleted | ✅ | Attempt cleanup on directory containing `.git` or `.github`. Verify those are untouched. |
 | CLN_PRO02 | Protected folders with multi-segment paths | ✅ | Set `protected-folders: ['lib/src']`. Verify lib/src/ contents survive. Bug #17 FIXED. |
 | CLN_SAF01 | `--max-files` safety limit triggers abort | ✅ | Create >100 matching files. Run without `--force`. Verify exit code != 0 and files remain. |

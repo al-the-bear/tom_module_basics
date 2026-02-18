@@ -5,7 +5,7 @@ This document describes the relationship between `tom_build_kit` and the shared 
 ## Overview
 
 `tom_build_kit` provides the build tools for the Tom workspace:
-- **versioner** — Generate version.g.dart files
+- **versioner** — Generate version.versioner.dart files
 - **bumpversion** — Bump pubspec.yaml versions
 - **cleanup** — Remove generated files
 - **compiler** — Cross-platform compilation

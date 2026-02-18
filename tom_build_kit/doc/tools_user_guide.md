@@ -57,7 +57,7 @@ Tom Build Kit provides seven CLI tools and three additional built-in commands th
 
 | Tool | Binary | Purpose |
 |------|--------|---------|
-| **Versioner** | `versioner` | Generate `version.g.dart` files with build metadata |
+| **Versioner** | `versioner` | Generate `version.versioner.dart` files with build metadata |
 | **BumpVersion** | `bumpversion` | Bump `pubspec.yaml` versions across projects |
 | **Cleanup** | `cleanup` | Remove generated and temporary files with safety checks |
 | **Compiler** | `compiler` | Cross-platform Dart compilation with pre/post-compile phases |
@@ -224,7 +224,7 @@ buildkit:
 # Workspace-level tool defaults
 versioner:
   variable-prefix: testDefault
-  output: lib/src/version.g.dart
+  output: lib/src/version.versioner.dart
 ```
 
 ### buildkit.yaml
@@ -234,7 +234,7 @@ Project-level configuration file in each project directory. Overrides workspace 
 ```yaml
 # Versioner config
 versioner:
-  output: lib/src/version.g.dart
+  output: lib/src/version.versioner.dart
   includeGitCommit: true
   variable-prefix: tomTools
 
@@ -245,7 +245,7 @@ cleanup:
     - .dart_tool/build
     - "**/*.g.dart"
   excludes:
-    - lib/src/version.g.dart
+    - lib/src/version.versioner.dart
   protected-folders:
     - lib/src
 
@@ -273,7 +273,7 @@ targets:
       tom_build_kit:version_builder:
         enabled: true
         options:
-          output: lib/src/version.g.dart
+          output: lib/src/version.versioner.dart
           includeGitCommit: true
 
       tom_build_kit:compiler_builder:
@@ -292,7 +292,7 @@ targets:
             - build
             - .dart_tool/build
           excludes:
-            - lib/src/version.g.dart
+            - lib/src/version.versioner.dart
 ```
 
 ### buildkit_skip.yaml
@@ -330,7 +330,7 @@ Configuration is loaded in layers. Higher-priority layers override lower-priorit
 
 ### Versioner
 
-Generates `version.g.dart` files with build metadata from `pubspec.yaml`, git state, and Dart SDK info.
+Generates `version.versioner.dart` files with build metadata from `pubspec.yaml`, git state, and Dart SDK info.
 
 **Usage:**
 
@@ -343,7 +343,7 @@ buildkit :versioner [tool-options]
 
 | Flag | Short | Default | Description |
 |------|-------|---------|-------------|
-| `--output <path>` | `-o` | `lib/src/version.g.dart` | Output file path relative to project |
+| `--output <path>` | `-o` | `lib/src/version.versioner.dart` | Output file path relative to project |
 | `--no-git` | — | `false` | Skip git commit hash |
 | `--version <ver>` | — | from pubspec | Override version string |
 | `--variable-prefix <name>` | — | — | Prefix for generated class name |
@@ -352,7 +352,7 @@ buildkit :versioner [tool-options]
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
-| `output` | String | `lib/src/version.g.dart` | Output file path |
+| `output` | String | `lib/src/version.versioner.dart` | Output file path |
 | `includeGitCommit` | bool | `true` | Include git commit hash |
 | `version` | String | from pubspec | Override version string |
 | `variable-prefix` | String | — | Prefix for generated class name |
@@ -494,10 +494,10 @@ cleanup:
 
     # Map with per-section excludes
     - globs: ["**/*.g.dart"]
-      excludes: ["lib/src/version.g.dart"]
+      excludes: ["lib/src/version.versioner.dart"]
 
   excludes:
-    - lib/src/version.g.dart
+    - lib/src/version.versioner.dart
 
   protected-folders:
     - lib/src

@@ -1,6 +1,6 @@
 /// Native v2 executor for the versioner command.
 ///
-/// Generates version.g.dart files with build metadata (version, git commit,
+/// Generates version.versioner.dart files with build metadata (version, git commit,
 /// build number, SDK version, timestamp). Config is merged from three sources:
 /// CLI args > project buildkit.yaml > workspace buildkit_master.yaml.
 library;
@@ -28,7 +28,7 @@ class VersionerConfig {
   final String? variablePrefix;
 
   const VersionerConfig({
-    this.output = 'lib/src/version.g.dart',
+    this.output = 'lib/src/version.versioner.dart',
     this.includeGitCommit = true,
     this.versionOverride,
     this.variablePrefix,
@@ -41,7 +41,7 @@ class VersionerConfig {
 
     final options = config.toolOptions;
     return VersionerConfig(
-      output: options['output'] as String? ?? 'lib/src/version.g.dart',
+      output: options['output'] as String? ?? 'lib/src/version.versioner.dart',
       includeGitCommit: options['includeGitCommit'] as bool? ?? true,
       versionOverride: options['version'] as String?,
       variablePrefix: options['variable-prefix'] as String? ??
@@ -56,7 +56,7 @@ class VersionerConfig {
 
     final options = config.toolOptions;
     return VersionerConfig(
-      output: options['output'] as String? ?? 'lib/src/version.g.dart',
+      output: options['output'] as String? ?? 'lib/src/version.versioner.dart',
       includeGitCommit: options['includeGitCommit'] as bool? ?? true,
       versionOverride: options['version'] as String?,
       variablePrefix: options['variable-prefix'] as String? ??
@@ -70,7 +70,7 @@ class VersionerConfig {
   /// The [other] is the lower-priority config (e.g., project YAML).
   VersionerConfig merge(VersionerConfig other) {
     return VersionerConfig(
-      output: output != 'lib/src/version.g.dart' ? output : other.output,
+      output: output != 'lib/src/version.versioner.dart' ? output : other.output,
       includeGitCommit: includeGitCommit,
       versionOverride: versionOverride ?? other.versionOverride,
       variablePrefix: variablePrefix ?? other.variablePrefix,
@@ -174,7 +174,7 @@ class VersionerExecutor extends CommandExecutor {
     final cmdOpts = _getCommandOptions(args);
 
     return VersionerConfig(
-      output: cmdOpts['output'] as String? ?? 'lib/src/version.g.dart',
+      output: cmdOpts['output'] as String? ?? 'lib/src/version.versioner.dart',
       includeGitCommit: cmdOpts['no-git'] != true,
       versionOverride: cmdOpts['version'] as String?,
       variablePrefix: cmdOpts['variable-prefix'] as String?,
@@ -217,7 +217,7 @@ class VersionerExecutor extends CommandExecutor {
     }
   }
 
-  /// Generate version.g.dart for a single project.
+  /// Generate version.versioner.dart for a single project.
   ///
   /// Config merge order: CLI > project > workspace.
   Future<bool> _generateVersionFile({
@@ -369,7 +369,7 @@ class VersionerExecutor extends CommandExecutor {
     }
   }
 
-  /// Generate the version.g.dart file content.
+  /// Generate the version.versioner.dart file content.
   String _generateVersionFileContent({
     required String packageName,
     required String version,

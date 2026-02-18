@@ -67,7 +67,7 @@ buildkit build --project='./*'
 
 | Command | Description |
 |---------|-------------|
-| `:versioner` | Generate version.g.dart from pubspec.yaml |
+| `:versioner` | Generate version.versioner.dart from pubspec.yaml |
 | `:compiler` | Compile Dart to native executables |
 | `:runner` | Run build_runner for code generation |
 | `:astgen` | Generate AST files for D4rt |

@@ -5,7 +5,7 @@ library;
 
 import 'package:tom_build_base/tom_build_base_v2.dart';
 
-import '../version.g.dart';
+import '../version.versioner.dart';
 
 // =============================================================================
 // Command Options
@@ -55,6 +55,10 @@ const testOptions = <OptionDefinition>[
   OptionDefinition.flag(
     name: 'mismatched',
     description: 'Re-run tests that don\'t match expectation (X/OK, OK/X)',
+  ),
+  OptionDefinition.flag(
+    name: 'no-update',
+    description: 'Run tests without updating baseline; print summary only',
   ),
   OptionDefinition.option(
     name: 'test-args',
@@ -181,10 +185,7 @@ const diffCommand = CommandDefinition(
   description: 'Diff two arbitrary runs by timestamp',
   options: diffOptions,
   supportsProjectTraversal: true,
-  examples: [
-    'testkit :diff 0211_1430',
-    'testkit :diff 0211_1430 0212_0900',
-  ],
+  examples: ['testkit :diff 0211_1430', 'testkit :diff 0211_1430 0212_0900'],
 );
 
 const historyCommand = CommandDefinition(
@@ -192,10 +193,7 @@ const historyCommand = CommandDefinition(
   description: 'Show all results for a test across runs',
   options: analysisOptions,
   supportsProjectTraversal: true,
-  examples: [
-    'testkit :history "parser"',
-    'testkit :history ID001',
-  ],
+  examples: ['testkit :history "parser"', 'testkit :history ID001'],
 );
 
 const flakyCommand = CommandDefinition(
@@ -219,10 +217,7 @@ const trimCommand = CommandDefinition(
   description: 'Keep only the last N runs',
   options: trimOptions,
   supportsProjectTraversal: true,
-  examples: [
-    'testkit :trim 5',
-    'testkit :trim 10 -r',
-  ],
+  examples: ['testkit :trim 5', 'testkit :trim 10 -r'],
 );
 
 const resetCommand = CommandDefinition(
@@ -230,10 +225,7 @@ const resetCommand = CommandDefinition(
   description: 'Delete all tracking files',
   options: resetOptions,
   supportsProjectTraversal: true,
-  examples: [
-    'testkit :reset',
-    'testkit :reset --force',
-  ],
+  examples: ['testkit :reset', 'testkit :reset --force'],
 );
 
 // =============================================================================

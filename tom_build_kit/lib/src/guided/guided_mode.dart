@@ -63,7 +63,7 @@ class GuidedMode {
     bool showInstructions = true,
   }) {
     final selected = <int>{};
-    
+
     // Initialize with defaults
     if (defaults != null) {
       for (var i = 0; i < defaults.length && i < options.length; i++) {
@@ -85,10 +85,7 @@ class GuidedMode {
       displayOptions.add('── Done ──');
       displayOptions.add('── Cancel ──');
 
-      final result = dcli.menu(
-        prompt,
-        options: displayOptions,
-      );
+      final result = dcli.menu(prompt, options: displayOptions);
 
       final idx = displayOptions.indexOf(result);
 
@@ -124,10 +121,7 @@ class GuidedMode {
     // DCli's ask doesn't support custom validators directly,
     // so we implement validation manually
     while (true) {
-      final result = dcli.ask(
-        prompt,
-        defaultValue: defaultValue,
-      );
+      final result = dcli.ask(prompt, defaultValue: defaultValue);
       if (validator == null || validator(result)) {
         return result;
       }
@@ -137,10 +131,7 @@ class GuidedMode {
 
   /// Show a password input prompt (hidden text).
   String password(String prompt) {
-    return dcli.ask(
-      prompt,
-      hidden: true,
-    );
+    return dcli.ask(prompt, hidden: true);
   }
 
   /// Show a command preview box before execution.

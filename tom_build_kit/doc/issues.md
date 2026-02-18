@@ -13,7 +13,7 @@ Tracked issues from the tool consolidation (5 standalone tools → tom_build_kit
 
 ### 1. Missing --version flag
 - [x] All 5 tool binaries and buildkit itself must support `--version`, `-version`, and `version` as first argument
-- [x] All tools share a single `TomVersionInfo` from `version.g.dart` since they are in the same package
+- [x] All tools share a single `TomVersionInfo` from `version.versioner.dart` since they are in the same package
 - Files: `tool_base.dart`, all `bin/*.dart`
 
 ### 2. Glob-based exclusion broken in ToolBase

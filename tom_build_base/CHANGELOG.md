@@ -1,3 +1,31 @@
+## 1.9.0
+
+### Breaking Changes
+
+- **Default traversal behavior changed**:
+  - Default is now `--scan . -R --not-recursive` (workspace mode, single directory)
+  - Previously defaulted to current directory without workspace root detection
+  - Use `-r` flag to explicitly enable recursive traversal
+
+### Features
+
+- **Traversal cascade**: CLI options > buildkit_master.yaml navigation > hardcoded defaults
+- **Explicit CLI tracking**: `scanExplicitlySet` and `recursiveExplicitlySet` fields in CliArgs
+- **TraversalDefaults class**: Loads navigation defaults from buildkit_master.yaml
+- **Git mode validation**: `toGitTraversalInfo()` now returns null if git mode not specified
+- **WorkspaceScanner**: Unified scanning API with FolderScanner + NatureDetector
+- **Top repository navigation** (`-T, --top-repo`): Traverse up to find topmost git repo
+- **DartProjectFolder.isPublishable**: Check if package can be published to pub.dev
+
+### Classes Modified
+
+- `CliArgs` — Added `scanExplicitlySet`, `recursiveExplicitlySet` fields
+- `TraversalDefaults` — New class for config defaults with `fromMap()` factory
+- `ToolRunner._runWithTraversal()` — Loads defaults, applies cascade, validates git mode
+- `_ParseState` — Tracks explicit CLI options
+
+---
+
 ## 1.11.0
 
 ### Features

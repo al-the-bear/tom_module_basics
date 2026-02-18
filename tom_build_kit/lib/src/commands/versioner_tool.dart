@@ -28,7 +28,7 @@ class VersionerConfig {
     this.exclude = const [],
     this.recursionExclude = const [],
     this.verbose = false,
-    this.output = 'lib/src/version.g.dart',
+    this.output = 'lib/src/version.versioner.dart',
     this.includeGitCommit = true,
     this.versionOverride,
     this.variablePrefix,
@@ -46,10 +46,11 @@ class VersionerConfig {
       recursive: config.recursive,
       exclude: config.exclude,
       recursionExclude: config.recursionExclude,
-      output: options['output'] as String? ?? 'lib/src/version.g.dart',
+      output: options['output'] as String? ?? 'lib/src/version.versioner.dart',
       includeGitCommit: options['includeGitCommit'] as bool? ?? true,
       versionOverride: options['version'] as String?,
-      variablePrefix: options['variable-prefix'] as String? ??
+      variablePrefix:
+          options['variable-prefix'] as String? ??
           options['variablePrefix'] as String?,
     );
   }
@@ -61,10 +62,11 @@ class VersionerConfig {
 
     final options = config.toolOptions;
     return VersionerConfig(
-      output: options['output'] as String? ?? 'lib/src/version.g.dart',
+      output: options['output'] as String? ?? 'lib/src/version.versioner.dart',
       includeGitCommit: options['includeGitCommit'] as bool? ?? true,
       versionOverride: options['version'] as String?,
-      variablePrefix: options['variable-prefix'] as String? ??
+      variablePrefix:
+          options['variable-prefix'] as String? ??
           options['variablePrefix'] as String?,
     );
   }
@@ -84,7 +86,9 @@ class VersionerConfig {
       exclude: [...exclude, ...other.exclude],
       recursionExclude: [...recursionExclude, ...other.recursionExclude],
       verbose: verbose || other.verbose,
-      output: output != 'lib/src/version.g.dart' ? output : other.output,
+      output: output != 'lib/src/version.versioner.dart'
+          ? output
+          : other.output,
       includeGitCommit: includeGitCommit,
       versionOverride: versionOverride ?? other.versionOverride,
       variablePrefix: variablePrefix ?? other.variablePrefix,
@@ -105,7 +109,7 @@ class VersionerConfig {
   }
 }
 
-/// Versioner tool - generates version.g.dart files with build metadata.
+/// Versioner tool - generates version.versioner.dart files with build metadata.
 ///
 /// Reads version from pubspec.yaml, adds git commit, build number,
 /// Dart SDK version, and timestamp.
@@ -114,22 +118,23 @@ class VersionerTool extends ToolBase {
   String get toolKey => 'versioner';
 
   @override
-  String get toolDescription =>
-      'Generate version files with build metadata';
+  String get toolDescription => 'Generate version files with build metadata';
 
   @override
   void addToolOptions(ArgParser parser) {
     parser
-      ..addOption('output',
-          defaultsTo: 'lib/src/version.g.dart',
-          help: 'Output file path relative to project')
-      ..addFlag('no-git',
-          negatable: false,
-          help: 'Skip git commit hash')
-      ..addOption('version',
-          help: 'Override version string')
-      ..addOption('variable-prefix',
-          help: 'Prefix for generated class name (e.g., "myApp" → MyAppVersionInfo)');
+      ..addOption(
+        'output',
+        defaultsTo: 'lib/src/version.versioner.dart',
+        help: 'Output file path relative to project',
+      )
+      ..addFlag('no-git', negatable: false, help: 'Skip git commit hash')
+      ..addOption('version', help: 'Override version string')
+      ..addOption(
+        'variable-prefix',
+        help:
+            'Prefix for generated class name (e.g., "myApp" → MyAppVersionInfo)',
+      );
   }
 
   @override
@@ -153,7 +158,10 @@ class VersionerTool extends ToolBase {
     String executionRoot;
 
     try {
-      (results, navArgs, executionRoot) = parseArgsWithExecutionMode(parser, args);
+      (results, navArgs, executionRoot) = parseArgsWithExecutionMode(
+        parser,
+        args,
+      );
     } on FormatException catch (e) {
       print('Error: $e');
       _printUsage(parser);
@@ -175,7 +183,8 @@ class VersionerTool extends ToolBase {
 
     // Load workspace-level config
     final wsRoot = findWorkspaceRoot(executionRoot);
-    final wsConfig = VersionerConfig.loadFromMasterYaml(wsRoot) ?? VersionerConfig();
+    final wsConfig =
+        VersionerConfig.loadFromMasterYaml(wsRoot) ?? VersionerConfig();
 
     // Build CLI config (highest priority) - tool-specific options only
     final cliConfig = VersionerConfig(
@@ -237,14 +246,17 @@ class VersionerTool extends ToolBase {
     return success;
   }
 
-  /// Generate version.g.dart for a single project.
+  /// Generate version.versioner.dart for a single project.
   ///
   /// Merge order: CLI > project > workspace.
   /// [cliConfig] contains values from CLI args (highest priority).
   /// [wsConfig] contains workspace-level defaults (lowest priority).
   /// Project-level config is loaded inside this method.
   Future<bool> generateVersionFile(
-      String projectPath, VersionerConfig cliConfig, VersionerConfig wsConfig) async {
+    String projectPath,
+    VersionerConfig cliConfig,
+    VersionerConfig wsConfig,
+  ) async {
     if (verbose) print('Processing: ${p.basename(projectPath)}');
 
     // 3-way merge: CLI > project > workspace
@@ -270,7 +282,9 @@ class VersionerTool extends ToolBase {
       final pubspec = loadYaml(pubspecContent) as YamlMap;
       final packageName = pubspec['name'] as String;
       final version =
-          projectConfig.versionOverride ?? pubspec['version'] as String? ?? '0.0.0';
+          projectConfig.versionOverride ??
+          pubspec['version'] as String? ??
+          '0.0.0';
 
       // Get git commit
       String? gitCommit;
@@ -319,8 +333,10 @@ class VersionerTool extends ToolBase {
         print('    Build: $buildNumber');
         if (gitCommit != null) print('    Git: $gitCommit');
       } else {
-        print('  Version file generated: ${p.basename(projectPath)} '
-            'v$version build $buildNumber');
+        print(
+          '  Version file generated: ${p.basename(projectPath)} '
+          'v$version build $buildNumber',
+        );
       }
 
       return true;
@@ -333,11 +349,11 @@ class VersionerTool extends ToolBase {
   /// Get short git commit hash.
   Future<String?> _getGitCommit(String projectPath) async {
     try {
-      final result = await Process.run(
-        'git',
-        ['rev-parse', '--short', 'HEAD'],
-        workingDirectory: projectPath,
-      );
+      final result = await Process.run('git', [
+        'rev-parse',
+        '--short',
+        'HEAD',
+      ], workingDirectory: projectPath);
       if (result.exitCode == 0) {
         return result.stdout.toString().trim();
       }
@@ -389,7 +405,7 @@ class VersionerTool extends ToolBase {
     }
   }
 
-  /// Generate the version.g.dart file content.
+  /// Generate the version.versioner.dart file content.
   String _generateVersionFileContent({
     required String packageName,
     required String version,
@@ -458,7 +474,7 @@ $sdkLine
     print('');
     print('Configuration (buildkit.yaml):');
     print('  versioner:');
-    print('    output: lib/src/version.g.dart');
+    print('    output: lib/src/version.versioner.dart');
     print('    includeGitCommit: true');
     print('    variablePrefix: myapp  # generates MyappVersionInfo');
     print('    version: "1.0.0"  # optional override');

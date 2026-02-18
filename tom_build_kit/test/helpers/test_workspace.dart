@@ -193,7 +193,7 @@ class TestWorkspace {
   static const _knownFixturePatterns = [
     'buildkit_master.yaml',
     'buildkit.yaml', // In any project directory
-    'version.g.dart', // Generated version files
+    'version.versioner.dart', // Generated version files
     'tom_build_state.json', // Build state files
   ];
 

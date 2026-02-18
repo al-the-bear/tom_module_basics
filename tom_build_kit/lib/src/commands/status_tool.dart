@@ -5,7 +5,7 @@ import 'package:args/args.dart';
 import 'package:path/path.dart' as p;
 import 'package:tom_build_base/tom_build_base.dart';
 
-import '../version.g.dart';
+import '../version.versioner.dart';
 import 'tool_base.dart';
 
 /// Status information for a buildkit tool binary.
@@ -137,7 +137,7 @@ class StatusResult {
 /// Status tool - shows buildkit version, binary status, and git state.
 ///
 /// Displays:
-/// - Source version (from version.g.dart)
+/// - Source version (from version.versioner.dart)
 /// - Binary currency for all buildkit tools
 /// - Git status (pending changes, unpushed commits)
 ///

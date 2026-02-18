@@ -91,6 +91,7 @@ class TestExecutor extends CommandExecutor {
       comment: _getString(args, 'comment'),
       failedOnly: _getFlag(args, 'failed'),
       mismatchedOnly: _getFlag(args, 'mismatched'),
+      noUpdate: _getFlag(args, 'no-update'),
     );
 
     return success
