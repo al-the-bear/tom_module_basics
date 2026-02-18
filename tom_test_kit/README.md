@@ -1,39 +1,46 @@
-<!-- 
-This README describes the package. If you publish this package to pub.dev,
-this README's contents appear on the landing page for your package.
+# Tom Test Kit
 
-For information about how to write a good package README, see the guide for
-[writing package pages](https://dart.dev/tools/pub/writing-package-pages). 
-
-For general information about developing packages, see the Dart guide for
-[creating packages](https://dart.dev/guides/libraries/create-packages)
-and the Flutter guide for
-[developing packages and plugins](https://flutter.dev/to/develop-packages). 
--->
-
-TODO: Put a short description of the package here that helps potential users
-know whether this package might be useful for them.
+Test tracking CLI for Dart projects. Run tests, track results across time, and detect regressions.
 
 ## Features
 
-TODO: List what your package can do. Maybe include images, gifs, or videos.
+- **Test tracking** — Maintain CSV baselines with results from multiple test runs
+- **Structured test naming** — Parse test IDs, dates, and expected results from descriptions
+- **Regression detection** — Compare runs to identify new failures and fixes
+- **Multi-project support** — Scan and test multiple packages in a workspace
 
-## Getting started
+## Quick Start
 
-TODO: List prerequisites and provide or point to information on how to
-start using the package.
+```bash
+# Create a baseline (first run)
+testkit :baseline
 
-## Usage
+# Run tests and update tracking
+testkit :test
 
-TODO: Include short and useful examples for package users. Add longer examples
-to `/example` folder. 
+# Run tests without updating baseline
+testkit :test --no-update
 
-```dart
-const like = 'sample';
+# View current status
+testkit :status
+
+# Compare baseline to latest run
+testkit :basediff
 ```
 
-## Additional information
+## Commands
 
-TODO: Tell users more about the package: where to find more information, how to 
-contribute to the package, how to file issues, what response they can expect 
-from the package authors, and more.
+| Command | Description |
+|---------|-------------|
+| `:baseline` | Run tests, create new baseline CSV |
+| `:test` | Run tests, append results to tracking file |
+| `:test --no-update` | Run tests, show summary without updating |
+| `:status` | Show pass/fail summary |
+| `:basediff` | Diff baseline vs latest |
+| `:diff` | Diff arbitrary runs |
+| `:history` | Show test result history |
+| `:flaky` | List tests with inconsistent results |
+
+## Documentation
+
+- [doc/test_tracking.md](doc/test_tracking.md) — Full workflow and command reference

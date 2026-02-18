@@ -19,6 +19,7 @@ import 'executors/bumpversion_executor.dart';
 import 'executors/cleanup_executor.dart';
 import 'executors/compiler_executor.dart';
 import 'executors/dependencies_executor.dart';
+import 'executors/execute_executor.dart';
 import 'executors/git_executors.dart';
 import 'executors/publisher_executor.dart';
 import 'executors/runner_executor.dart';
@@ -376,6 +377,7 @@ Map<String, CommandExecutor> createBuildkitExecutors({
     'dependencies': DependenciesExecutor(),
     'publisher': PublisherExecutor(),
     'buildsorter': BuildSorterExecutor(),
+    'execute': ExecuteExecutor(),
 
     // Pub commands (have their own non-ToolBase API)
     'pubget': PubGetExecutor(),

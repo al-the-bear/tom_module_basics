@@ -283,6 +283,7 @@ Runs `dart test` and appends a new result column to the most recent tracking fil
 | `-c, --comment=<text>` | Short label shown in the run column header |
 | `--file=<path>` | Tracking file to update (instead of most recent) |
 | `--baseline` | Create baseline if no tracking file exists |
+| `--no-update` | Run tests and print summary without updating baseline |
 | `--test-args=<args>` | Additional arguments passed to `dart test` |
 
 **Test args:** Arguments are passed through to `dart test`. testkit always adds `--reporter json` internally. Forbidden args (will be rejected): `--reporter`, `--file-reporter`, `--pause-after-load`, `--debug`.
@@ -304,6 +305,7 @@ testkit :test                                # Append run to latest baseline
 testkit :test -c "after refactor"            # Run with comment
 testkit :test --baseline                     # Create baseline if missing
 testkit :test --test-args="--name parser"    # Only run parser tests
+testkit :test --no-update                    # Run tests, show summary without updating
 ```
 
 ---

@@ -61,3 +61,4 @@ export 'src/v2/folder/natures/buildkit_folder.dart';
 export 'src/v2/traversal/workspace_scanner.dart';
 export 'src/v2/traversal/folder_scanner.dart' show GitRepoFinder;
 export 'src/v2/traversal/nature_detector.dart';
+export 'src/v2/execute_placeholder.dart';

@@ -1,3 +1,21 @@
+## 1.10.0
+
+### Features
+
+- **ExecutePlaceholderResolver** — New placeholder resolution system for execute commands.
+  - Path placeholders: `${root}`, `${folder}`, `${folder.name}`, `${folder.relative}`
+  - Platform placeholders: `${current-os}`, `${current-arch}`, `${current-platform}`
+  - Nature existence (boolean): `${dart.exists}`, `${flutter.exists}`, `${git.exists}`, etc.
+  - Nature attributes: `${dart.name}`, `${dart.version}`, `${git.branch}`, etc.
+  - Ternary syntax: `${condition?(true-value):(false-value)}` for boolean placeholders
+  - `checkCondition()` for filtering based on boolean placeholders
+
+- **ExecutePlaceholderContext** — Context class holding folder, root, and natures for resolution.
+
+- **UnresolvedPlaceholderException** — Exception thrown when placeholder cannot be resolved.
+
+---
+
 ## 1.9.0
 
 ### Breaking Changes

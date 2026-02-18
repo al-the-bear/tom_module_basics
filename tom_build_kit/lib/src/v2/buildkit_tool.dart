@@ -409,6 +409,16 @@ const buildsorterOptions = <OptionDefinition>[
   ),
 ];
 
+/// Options for execute command.
+const executeOptions = <OptionDefinition>[
+  OptionDefinition.option(
+    name: 'condition',
+    abbr: 'c',
+    description: 'Boolean placeholder condition to filter folders (e.g., dart.exists)',
+    valueName: 'placeholder',
+  ),
+];
+
 /// Options for dcli command.
 const dcliOptions = <OptionDefinition>[
   OptionDefinition.option(
@@ -590,6 +600,23 @@ const buildsorterCommand = CommandDefinition(
   requiresTraversal: false,
   canRunStandalone: true,
   examples: ['buildkit :buildsorter'],
+);
+
+const executeCommand = CommandDefinition(
+  name: 'execute',
+  description: 'Execute shell command in each traversed folder with placeholder support',
+  aliases: ['exec', 'x'],
+  options: executeOptions,
+  supportsProjectTraversal: true,
+  supportsGitTraversal: true,
+  requiresTraversal: true,
+  canRunStandalone: false,
+  examples: [
+    'buildkit :execute "echo \${folder.name}"',
+    'buildkit :execute --condition dart.exists "dart pub get"',
+    'buildkit :execute --condition dart.exists "echo \${dart.publishable?(Publishable):(Not publishable)}"',
+    'buildkit -g :execute --condition git.exists "git status"',
+  ],
 );
 
 // =============================================================================
@@ -909,6 +936,7 @@ final buildkitTool = ToolDefinition(
     dependenciesCommand,
     publisherCommand,
     buildsorterCommand,
+    executeCommand,
     // Pub commands
     pubgetCommand,
     pubgetallCommand,

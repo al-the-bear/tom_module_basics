@@ -73,6 +73,34 @@ buildkit build --project='./*'
 | `:astgen` | Generate AST files for D4rt |
 | `:d4rtgen` | Generate D4rt bridge code |
 | `:cleanup` | Clean build artifacts |
+| `:execute` | Execute shell command in each traversed folder |
+
+## Execute Command
+
+Run shell commands in every traversed folder with placeholder support:
+
+```bash
+# Echo folder name in each git repo
+buildkit -i :execute "echo ${folder.name}"
+
+# Run dart pub get only in dart projects
+buildkit -i :execute --condition dart.exists "dart pub get"
+
+# Conditional output based on project type
+buildkit -i :execute "echo ${dart.publishable?(Publishable):(Not publishable)}"
+
+# Git status in all repos  
+buildkit -i :execute --condition git.exists "git status"
+```
+
+**Available placeholders:**
+- Path: `${root}`, `${folder}`, `${folder.name}`, `${folder.relative}`
+- Platform: `${current-os}`, `${current-arch}`, `${current-platform}`
+- Nature existence: `${dart.exists}`, `${flutter.exists}`, `${git.exists}`
+- Dart: `${dart.name}`, `${dart.version}`, `${dart.publishable}`
+- Git: `${git.branch}`, `${git.remote}`, `${git.dirty}`
+
+**Ternary syntax:** `${condition?(true-value):(false-value)}`
 
 ## Git Commands
 

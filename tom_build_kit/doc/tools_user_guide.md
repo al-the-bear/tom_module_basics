@@ -37,6 +37,7 @@ This package extends the shared infrastructure from **tom_build_base**:
   - [Pub Get](#pub-get)
   - [Publisher](#publisher)
   - [DCli](#dcli)
+  - [Execute](#execute)
 - [Git Tools](#git-tools)
   - [Git Traversal Modes](#git-traversal-modes)
   - [GitStatus](#gitstatus)
@@ -53,7 +54,7 @@ This package extends the shared infrastructure from **tom_build_base**:
 
 ## Overview
 
-Tom Build Kit provides seven CLI tools and three additional built-in commands that share a common infrastructure for project discovery, argument parsing, and configuration loading:
+Tom Build Kit provides seven CLI tools and additional built-in commands that share a common infrastructure for project discovery, argument parsing, and configuration loading:
 
 | Tool | Binary | Purpose |
 |------|--------|---------|
@@ -67,6 +68,7 @@ Tom Build Kit provides seven CLI tools and three additional built-in commands th
 | **Pub Update** | via `:pubupdate` | Run `dart pub upgrade` across projects with output filtering |
 | **Publisher** | `publisher` | Show publishing status for all projects |
 | **DCli** | via `:dcli` | Execute Dart scripts/expressions via dcli with path resolution |
+| **Execute** | via `:execute` | Run shell commands in each folder with placeholder substitution |
 | **GitStatus** | `gitstatus` | Show git status for all repositories |
 | **GitCommit** | `gitcommit` | Commit and push all repositories |
 | **GitPull** | `gitpull` | Pull latest from all repositories |
@@ -1047,6 +1049,100 @@ core:
       - |
         stdin dcli --stdin
         print("Hello from inline Dart!");
+```
+
+---
+
+### Execute
+
+Execute arbitrary shell commands in each traversed folder with placeholder support.
+
+**Aliases:** `exec`, `x`
+
+#### Basic Usage
+
+```bash
+# via buildkit (recommended)
+buildkit -i :execute "echo ${folder.name}"
+
+# with condition filtering
+buildkit -i :execute --condition dart.exists "dart pub get"
+```
+
+#### Command Options
+
+| Option | Description |
+|--------|-------------|
+| `-c, --condition` | Boolean placeholder condition to filter folders |
+
+#### Placeholders
+
+The execute command supports placeholder substitution in the command string:
+
+**Path Placeholders:**
+- `${root}` — Workspace root path
+- `${folder}` — Current folder absolute path
+- `${folder.name}` — Current folder name (last segment)
+- `${folder.relative}` — Folder path relative to root
+
+**Platform Placeholders:**
+- `${current-os}` — Operating system (linux, macos, windows)
+- `${current-arch}` — Architecture (x64, arm64, etc.)
+- `${current-platform}` — Combined platform (linux-x64, macos-arm64, etc.)
+
+**Nature Existence (Boolean):**
+- `${dart.exists}` — true if folder has pubspec.yaml
+- `${flutter.exists}` — true if folder has flutter project
+- `${git.exists}` — true if folder is a git repository
+
+**Dart Attributes (requires dart.exists):**
+- `${dart.name}` — Package name from pubspec.yaml
+- `${dart.version}` — Version from pubspec.yaml
+- `${dart.publishable}` — Whether package can be published
+
+**Git Attributes (requires git.exists):**
+- `${git.branch}` — Current branch name
+- `${git.remote}` — Remote URL
+- `${git.dirty}` — Whether repo has uncommitted changes
+
+#### Ternary Expressions
+
+Use ternary syntax for conditional command construction:
+
+```bash
+${condition?(true-value):(false-value)}
+```
+
+**Examples:**
+
+```bash
+# Output different text based on publishability
+buildkit -i :execute "echo ${dart.publishable?(Ready to publish):(Not publishable)}"
+
+# Conditionally run commands
+buildkit -i :execute --condition dart.exists "echo ${flutter.exists?(Flutter project: ${dart.name}):(Dart package: ${dart.name})}"
+
+# Skip action with empty false branch
+buildkit -i :execute "echo ${git.dirty?(needs commit):()}"
+```
+
+#### Examples
+
+```bash
+# Echo folder name in all git repos
+buildkit -i :execute "echo ${folder.name}"
+
+# Run dart pub get only in dart projects
+buildkit -i :execute --condition dart.exists "dart pub get"
+
+# Check git status only in git repos
+buildkit -i :execute --condition git.exists "git status --short"
+
+# Show project summary
+buildkit -i :execute --condition dart.exists "echo ${dart.name} v${dart.version}: ${dart.publishable?(pub ready):(local only)}"
+
+# Dry-run to preview commands
+buildkit -i --dry-run :execute "echo Processing ${folder.name}"
 ```
 
 ---
