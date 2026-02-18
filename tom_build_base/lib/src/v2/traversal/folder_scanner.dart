@@ -74,28 +74,25 @@ class FolderScanner {
     bool isRoot = false,
   }) async {
     // Check for skip markers.
-    // Skip markers mean "don't include this folder as a project"
-    // but we still descend into children (except for workspace boundaries
-    // which represent separate workspaces).
+    // Skip markers mean "don't include this folder AND don't descend into children"
     final skipMarker = !isRoot ? _getSkipMarker(dir.path) : null;
     
-    if (skipMarker == _SkipType.workspaceBoundary) {
-      // Workspace boundary — stop descending entirely
+    if (skipMarker != null) {
+      // Any skip marker (workspace boundary, global skip, or tool skip)
+      // means we should NOT include this folder and NOT descend further.
+      if (verbose) {
+        final skipFile = switch (skipMarker) {
+          _SkipType.globalSkip => kTomSkipYaml,
+          _SkipType.toolSkip => skipFilename,
+          _SkipType.workspaceBoundary => '${toolBasename}_master.yaml',
+        };
+        print('Skipping ($skipFile): ${p.basename(dir.path)}');
+      }
       return;
     }
     
-    if (skipMarker == null) {
-      // No skip marker — add this directory
-      results.add(FsFolder(path: dir.path));
-    } else if (verbose) {
-      // Log skip message in verbose mode
-      final skipFile = skipMarker == _SkipType.globalSkip
-          ? kTomSkipYaml
-          : skipFilename;
-      print('Skipping ($skipFile): ${p.basename(dir.path)}');
-    }
-    // If skip marker is toolSkip or globalSkip, we skip adding this directory
-    // but still recurse into children below.
+    // No skip marker — add this directory
+    results.add(FsFolder(path: dir.path));
     
     if (!recursive) return;
     

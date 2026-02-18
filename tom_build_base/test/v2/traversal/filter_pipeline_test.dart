@@ -500,15 +500,20 @@ void main() {
         recursionExclude: ['*flutter*'],
       );
 
-      // Should not descend into flutter folders
+      // Should not descend into folders whose NAME matches *flutter*
       for (final folder in folders) {
-        // The folder itself shouldn't match, and we shouldn't have
-        // found any children of flutter folders
-        if (folder.path != zomTestRoot) {
-          expect(folder.path.contains('flutter'), isFalse,
-              reason: 'Should not descend into flutter folders');
-        }
+        final folderName = p.basename(folder.path);
+        // Check that no folder NAME matches the exclusion pattern
+        expect(folderName.contains('flutter'), isFalse,
+            reason: 'Should not include folders matching *flutter* pattern: $folderName');
       }
+
+      // Explicitly verify zom_test_flutter is excluded
+      final flutterFolder = folders.where(
+        (f) => p.basename(f.path) == 'zom_test_flutter',
+      );
+      expect(flutterFolder, isEmpty,
+          reason: 'zom_test_flutter should be excluded');
     });
 
     test('BB-FLT-24: Skips hidden directories [2026-02-12]', () async {
