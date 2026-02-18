@@ -148,14 +148,69 @@ class ToolDefinition {
     this.helpFooter,
   });
 
-  /// Find command by name or alias.
+  /// Find command by name, alias, or unambiguous prefix.
+  ///
+  /// Search order:
+  /// 1. Exact match on name
+  /// 2. Exact match on alias
+  /// 3. Unambiguous prefix match on name (e.g., 'vers' → 'versioner')
+  /// 4. Unambiguous prefix match on alias
+  ///
+  /// Returns null if no match or multiple commands match the prefix.
   CommandDefinition? findCommand(String nameOrAlias) {
+    // 1. Exact match on name
     for (final cmd in commands) {
-      if (cmd.name == nameOrAlias || cmd.aliases.contains(nameOrAlias)) {
+      if (cmd.name == nameOrAlias) {
         return cmd;
       }
     }
+
+    // 2. Exact match on alias
+    for (final cmd in commands) {
+      if (cmd.aliases.contains(nameOrAlias)) {
+        return cmd;
+      }
+    }
+
+    // 3. Prefix match on name
+    final nameMatches = <CommandDefinition>[];
+    for (final cmd in commands) {
+      if (cmd.name.startsWith(nameOrAlias)) {
+        nameMatches.add(cmd);
+      }
+    }
+    if (nameMatches.length == 1) {
+      return nameMatches.first;
+    }
+
+    // 4. Prefix match on aliases (only if no name prefix matches)
+    if (nameMatches.isEmpty) {
+      final aliasMatches = <CommandDefinition>[];
+      for (final cmd in commands) {
+        if (cmd.aliases.any((alias) => alias.startsWith(nameOrAlias))) {
+          aliasMatches.add(cmd);
+        }
+      }
+      if (aliasMatches.length == 1) {
+        return aliasMatches.first;
+      }
+    }
+
     return null;
+  }
+
+  /// Find all commands matching a prefix.
+  ///
+  /// Useful for error messages when a prefix is ambiguous.
+  List<CommandDefinition> findCommandsWithPrefix(String prefix) {
+    final matches = <CommandDefinition>[];
+    for (final cmd in commands) {
+      if (cmd.name.startsWith(prefix) ||
+          cmd.aliases.any((alias) => alias.startsWith(prefix))) {
+        matches.add(cmd);
+      }
+    }
+    return matches;
   }
 
   /// Get all visible commands (not hidden).

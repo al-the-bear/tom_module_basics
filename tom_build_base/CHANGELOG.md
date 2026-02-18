@@ -1,3 +1,17 @@
+## 1.11.0
+
+### Features
+
+- **Command prefix matching** — `findCommand()` now supports unambiguous command prefixes.
+  - `:vers` matches `:versioner` if no other command starts with "vers"
+  - `:co` is ambiguous if both `:compiler` and `:config` exist, returns null
+  - Exact matches (name or alias) always take priority over prefix matches
+  - `findCommandsWithPrefix()` returns all commands matching a prefix (for error messages)
+
+- **Improved error messages** — When a prefix is ambiguous, tool shows all matching commands.
+
+---
+
 ## 1.10.0
 
 ### Features

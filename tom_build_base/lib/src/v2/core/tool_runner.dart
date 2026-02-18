@@ -142,6 +142,15 @@ class ToolRunner {
           output.writeln(HelpGenerator.generateCommandHelp(cmd, tool: tool));
           return const ToolResult.success();
         }
+        // Check if it's an ambiguous prefix
+        final matches = tool.findCommandsWithPrefix(cmdName);
+        if (matches.length > 1) {
+          output.writeln('Ambiguous command prefix ":$cmdName" matches:');
+          for (final match in matches) {
+            output.writeln('  :${match.name}');
+          }
+          return const ToolResult.failure('Ambiguous command prefix');
+        }
         output.writeln('Unknown command: :$cmdName');
         return const ToolResult.failure('Unknown command');
       }
@@ -191,20 +200,33 @@ class ToolRunner {
   Future<ToolResult> _runCommand(String cmdName, CliArgs cliArgs) async {
     final cmd = tool.findCommand(cmdName);
     if (cmd == null) {
+      // Check if it's an ambiguous prefix
+      final matches = tool.findCommandsWithPrefix(cmdName);
+      if (matches.length > 1) {
+        output.writeln('Ambiguous command prefix ":$cmdName" matches:');
+        for (final match in matches) {
+          output.writeln('  :${match.name}');
+        }
+        return const ToolResult.failure('Ambiguous command prefix');
+      }
       output.writeln('Unknown command: :$cmdName');
       return ToolResult.failure('Unknown command: $cmdName');
     }
 
-    // Check for per-command --help
-    final cmdArgs = cliArgs.commandArgs[cmdName];
+    // Use the actual command name for executor lookup and help
+    final actualCmdName = cmd.name;
+
+    // Check for per-command --help (check both original and resolved names)
+    final cmdArgs = cliArgs.commandArgs[cmdName] ?? cliArgs.commandArgs[actualCmdName];
     if (cmdArgs != null && cmdArgs.options['help'] == true) {
       output.writeln(HelpGenerator.generateCommandHelp(cmd, tool: tool));
       return const ToolResult.success();
     }
 
-    final executor = executors[cmdName];
+    // Look up executor by actual command name
+    final executor = executors[actualCmdName];
     if (executor == null) {
-      return ToolResult.failure('No executor for command: $cmdName');
+      return ToolResult.failure('No executor for command: $actualCmdName');
     }
 
     return _runWithTraversal(executor, cmd, cliArgs);
