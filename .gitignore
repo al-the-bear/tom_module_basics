@@ -71,6 +71,7 @@ htmlcov/
 .dart_tool/
 .packages
 pubspec.lock
+pubspec_overrides.yaml
 
 # Pub cache
 .pub-cache/
