@@ -153,13 +153,24 @@ class ProjectDiscovery {
     return [];
   }
 
-  /// Search for a project by name in the workspace.
+  /// Search for a project by name, project ID, or project name in the workspace.
+  ///
+  /// Resolution order (first match wins):
+  /// 1. Folder basename exact match
+  /// 2. Project ID match (from tom_project.yaml `project_id`/`short-id`, or buildkit.yaml `project-id`)
+  /// 3. Project name match (from tom_project.yaml `name`, or buildkit.yaml `name`)
+  ///
+  /// ID and name matching is case-insensitive.
   Future<String?> _findProjectByName(
     String rootDir,
     String projectName,
     bool Function(String)? projectFilter,
   ) async {
     if (!exists(rootDir) || !isDirectory(rootDir)) return null;
+
+    final lowerSearch = projectName.toLowerCase();
+    String? idMatch;
+    String? nameMatch;
 
     try {
       // Use DCli find to search recursively for directories
@@ -175,16 +186,77 @@ class ProjectDiscovery {
           continue;
         }
 
-        // Check if this directory matches the project name and is a valid project
-        if (dirName == projectName && _isProject(dirPath)) {
-          if (projectFilter == null || projectFilter(dirPath)) {
-            return truepath(dirPath);
+        if (!_isProject(dirPath)) continue;
+        if (projectFilter != null && !projectFilter(dirPath)) continue;
+
+        // 1. Folder basename exact match (highest priority)
+        if (dirName == projectName) {
+          return truepath(dirPath);
+        }
+
+        // 2 & 3. Check project ID and name from YAML config files
+        if (idMatch == null || nameMatch == null) {
+          final match = _matchProjectConfig(dirPath, lowerSearch);
+          if (match == _ConfigMatch.id && idMatch == null) {
+            idMatch = truepath(dirPath);
+          } else if (match == _ConfigMatch.name && nameMatch == null) {
+            nameMatch = truepath(dirPath);
           }
         }
       }
     } catch (e) {
       _log('Warning: Error searching workspace: $e');
     }
+
+    // Return first match by priority: folder name → ID → name
+    return idMatch ?? nameMatch;
+  }
+
+  /// Check if a directory's project config files match the search term.
+  /// Returns the type of match found, or null if no match.
+  _ConfigMatch? _matchProjectConfig(String dirPath, String lowerSearch) {
+    // Check tom_project.yaml
+    final tomProjectFile = File(p.join(dirPath, 'tom_project.yaml'));
+    if (tomProjectFile.existsSync()) {
+      try {
+        final content = tomProjectFile.readAsStringSync();
+        final yaml = loadYaml(content);
+        if (yaml is Map) {
+          // Check project_id and short-id
+          final projectId = yaml['project_id'] as String? ?? yaml['short-id'] as String?;
+          if (projectId != null && projectId.toLowerCase() == lowerSearch) {
+            return _ConfigMatch.id;
+          }
+          // Check name
+          final name = yaml['name'] as String?;
+          if (name != null && name.toLowerCase() == lowerSearch) {
+            return _ConfigMatch.name;
+          }
+        }
+      } catch (_) {}
+    }
+
+    // Check buildkit.yaml
+    final buildkitFile = File(p.join(dirPath, 'buildkit.yaml'));
+    if (buildkitFile.existsSync()) {
+      try {
+        final content = buildkitFile.readAsStringSync();
+        final yaml = loadYaml(content);
+        if (yaml is Map) {
+          // Check project-id
+          final projectId = yaml['project-id'] as String?;
+          if (projectId != null && projectId.toLowerCase() == lowerSearch) {
+            return _ConfigMatch.id;
+          }
+          // Check name
+          final name = yaml['name'] as String?;
+          if (name != null && name.toLowerCase() == lowerSearch) {
+            return _ConfigMatch.name;
+          }
+        }
+      } catch (_) {}
+    }
+
     return null;
   }
 
@@ -689,3 +761,6 @@ class ProjectDiscovery {
     return filterByModules(projectPaths, modulePaths);
   }
 }
+
+/// Type of config match found during project search.
+enum _ConfigMatch { id, name }
