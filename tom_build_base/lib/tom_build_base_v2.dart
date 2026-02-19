@@ -50,3 +50,4 @@ export 'src/v2/core/command_executor.dart';
 export 'src/v2/core/tool_runner.dart';
 export 'src/v2/core/completion_generator.dart';
 export 'src/v2/core/macro_expansion.dart';
+export 'src/v2/core/special_commands.dart';

@@ -76,18 +76,15 @@ void _saveMacros() {
 }
 
 Future<void> main(List<String> args) async {
-  // Check for version command early
-  if (args.isNotEmpty &&
-      (args.first.toLowerCase() == 'version' ||
-          args.first == '--version' ||
-          args.first == '-V')) {
-    print('Build Kit $_version');
-    return;
-  }
-
-  // Check for help command early
-  if (args.isEmpty || args.first == '--help' || args.first == '-h') {
-    _printUsage();
+  // Handle special commands (help, version) early
+  final result = handleSpecialCommands(
+    args,
+    buildkitTool,
+    toolHelpGenerator: (_) => _generateToolHelp(),
+    commandHelpGenerator: (_, cmd) => _generateCommandHelp(cmd),
+    versionGenerator: (_) => 'Build Kit $_version',
+  );
+  if (result == SpecialCommandResult.handled) {
     return;
   }
 
@@ -687,56 +684,119 @@ String _findWorkspaceRoot(String fromPath) {
   }
 }
 
+/// Generate tool help text.
+String _generateToolHelp() {
+  final buf = StringBuffer();
+  buf.writeln('Build Kit $_version - Pipeline-based build orchestration');
+  buf.writeln();
+  buf.writeln('Usage: buildkit [options] <pipeline|:command> [args...]');
+  buf.writeln();
+  buf.writeln('Commands (prefixed with :):');
+  buf.writeln('  :versioner      Update version files');
+  buf.writeln('  :bumpversion    Bump version numbers');
+  buf.writeln('  :compiler       Compile Dart executables');
+  buf.writeln('  :runner         Run build_runner');
+  buf.writeln('  :cleanup        Clean build artifacts');
+  buf.writeln('  :dependencies   Show dependency tree');
+  buf.writeln('  :publisher      Publish to pub.dev');
+  buf.writeln('  :buildsorter    Sort packages by build order');
+  buf.writeln('  :pubget         Run dart pub get');
+  buf.writeln('  :pubgetall      Run dart pub get in all projects');
+  buf.writeln('  :pubupdate      Run dart pub upgrade');
+  buf.writeln('  :pubupdateall   Run dart pub upgrade in all projects');
+  buf.writeln();
+  buf.writeln('Git Commands:');
+  buf.writeln('  :gitstatus      Show git status');
+  buf.writeln('  :gitcommit      Commit changes');
+  buf.writeln('  :gitpull        Pull changes');
+  buf.writeln('  :gitpush        Push changes');
+  buf.writeln('  :gitbranch      Branch operations');
+  buf.writeln('  :gittag         Tag operations');
+  buf.writeln('  :gitcheckout    Checkout branch');
+  buf.writeln('  :gitreset       Reset to commit');
+  buf.writeln('  :gitsync        Sync with remote');
+  buf.writeln('  :gitprune       Prune remote branches');
+  buf.writeln('  :gitstash       Stash changes');
+  buf.writeln('  :gitunstash     Apply stashed changes');
+  buf.writeln('  :gitcompare     Compare branches');
+  buf.writeln('  :gitmerge       Merge branches');
+  buf.writeln('  :gitsquash      Squash commits');
+  buf.writeln('  :gitrebase      Rebase branch');
+  buf.writeln();
+  buf.writeln('Macros:');
+  buf.writeln('  :define         Define a macro (name=value)');
+  buf.writeln('  :undefine       Remove a macro');
+  buf.writeln('  :defines        List defined macros');
+  buf.writeln();
+  buf.writeln('Options:');
+  buf.writeln(_createGlobalParser().usage);
+  buf.writeln();
+  buf.writeln('Examples:');
+  buf.writeln('  buildkit build                    Run build pipeline');
+  buf.writeln('  buildkit :versioner --scan .      Run versioner in current dir');
+  buf.writeln('  buildkit :gitstatus -R            Git status from workspace root');
+  buf.writeln('  buildkit :define proj=tom_core    Define macro');
+  buf.writeln('  buildkit :compiler --project @proj   Use macro');
+  buf.writeln();
+  buf.writeln('Use "buildkit help :command" for detailed help on a specific command.');
+  return buf.toString();
+}
+
 /// Print usage help.
 void _printUsage() {
-  print('Build Kit $_version - Pipeline-based build orchestration');
-  print('');
-  print('Usage: buildkit [options] <pipeline|:command> [args...]');
-  print('');
-  print('Commands (prefixed with :):');
-  print('  :versioner      Update version files');
-  print('  :bumpversion    Bump version numbers');
-  print('  :compiler       Compile Dart executables');
-  print('  :runner         Run build_runner');
-  print('  :cleanup        Clean build artifacts');
-  print('  :dependencies   Show dependency tree');
-  print('  :publisher      Publish to pub.dev');
-  print('  :buildsorter    Sort packages by build order');
-  print('  :pubget         Run dart pub get');
-  print('  :pubgetall      Run dart pub get in all projects');
-  print('  :pubupdate      Run dart pub upgrade');
-  print('  :pubupdateall   Run dart pub upgrade in all projects');
-  print('');
-  print('Git Commands:');
-  print('  :gitstatus      Show git status');
-  print('  :gitcommit      Commit changes');
-  print('  :gitpull        Pull changes');
-  print('  :gitpush        Push changes');
-  print('  :gitbranch      Branch operations');
-  print('  :gittag         Tag operations');
-  print('  :gitcheckout    Checkout branch');
-  print('  :gitreset       Reset to commit');
-  print('  :gitsync        Sync with remote');
-  print('  :gitprune       Prune remote branches');
-  print('  :gitstash       Stash changes');
-  print('  :gitunstash     Apply stashed changes');
-  print('  :gitcompare     Compare branches');
-  print('  :gitmerge       Merge branches');
-  print('  :gitsquash      Squash commits');
-  print('  :gitrebase      Rebase branch');
-  print('');
-  print('Macros:');
-  print('  :define         Define a macro (name=value)');
-  print('  :undefine       Remove a macro');
-  print('  :defines        List defined macros');
-  print('');
-  print('Options:');
-  print(_createGlobalParser().usage);
-  print('');
-  print('Examples:');
-  print('  buildkit build                    Run build pipeline');
-  print('  buildkit :versioner --scan .      Run versioner in current dir');
-  print('  buildkit :gitstatus -R            Git status from workspace root');
-  print('  buildkit :define proj=tom_core    Define macro');
-  print('  buildkit :compiler --project @proj   Use macro');
+  print(_generateToolHelp());
+}
+
+/// Generate help text for a specific command.
+String _generateCommandHelp(CommandDefinition cmd) {
+  final buf = StringBuffer();
+
+  buf.writeln('Build Kit $_version');
+  buf.writeln();
+  buf.writeln('Command: :${cmd.name}');
+  if (cmd.aliases.isNotEmpty) {
+    buf.writeln('Aliases: ${cmd.aliases.map((a) => ':$a').join(', ')}');
+  }
+  buf.writeln();
+  buf.writeln(cmd.description);
+  buf.writeln();
+
+  // Command-specific options
+  if (cmd.options.isNotEmpty) {
+    buf.writeln('Options:');
+    for (final opt in cmd.options) {
+      final abbr = opt.abbr != null ? '-${opt.abbr}, ' : '    ';
+      final name = '--${opt.name}';
+      final valuePart = opt.valueName != null ? '=<${opt.valueName}>' : '';
+      buf.writeln('  $abbr$name$valuePart');
+      buf.writeln('      ${opt.description}');
+      if (opt.defaultValue != null) {
+        buf.writeln('      (default: ${opt.defaultValue})');
+      }
+    }
+    buf.writeln();
+  }
+
+  // Examples
+  if (cmd.examples.isNotEmpty) {
+    buf.writeln('Examples:');
+    for (final ex in cmd.examples) {
+      buf.writeln('  $ex');
+    }
+    buf.writeln();
+  }
+
+  // Traversal info
+  if (cmd.supportsProjectTraversal || cmd.supportsGitTraversal) {
+    buf.writeln('Traversal:');
+    if (cmd.supportsProjectTraversal) {
+      buf.writeln('  Supports --project, --exclude-project filters');
+    }
+    if (cmd.supportsGitTraversal) {
+      buf.writeln('  Supports --inner-first-git, --outer-first-git traversal');
+    }
+    buf.writeln();
+  }
+
+  return buf.toString();
 }
