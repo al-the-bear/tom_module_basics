@@ -244,6 +244,12 @@ ArgParser _createGlobalParser() {
       help: 'Process outermost git repos first (for pull/fetch)',
     )
     ..addFlag(
+      'top-repo',
+      abbr: 'T',
+      negatable: false,
+      help: 'Find topmost git repo and traverse down (requires -i or -o)',
+    )
+    ..addFlag(
       'workspace-recursion',
       abbr: 'w',
       negatable: false,
@@ -484,6 +490,10 @@ Future<bool> _executeCommand(
 
   if (global['outer-first-git'] == true) {
     globalArgs.add('--outer-first-git');
+  }
+
+  if (global['top-repo'] == true) {
+    globalArgs.add('--top-repo');
   }
 
   if (global['workspace-recursion'] == true) {
@@ -733,12 +743,18 @@ String _generateToolHelp() {
   buf.writeln();
   buf.writeln('Examples:');
   buf.writeln('  buildkit build                    Run build pipeline');
-  buf.writeln('  buildkit :versioner --scan .      Run versioner in current dir');
-  buf.writeln('  buildkit :gitstatus -R            Git status from workspace root');
+  buf.writeln(
+    '  buildkit :versioner --scan .      Run versioner in current dir',
+  );
+  buf.writeln(
+    '  buildkit :gitstatus -R            Git status from workspace root',
+  );
   buf.writeln('  buildkit :define proj=tom_core    Define macro');
   buf.writeln('  buildkit :compiler --project @proj   Use macro');
   buf.writeln();
-  buf.writeln('Use "buildkit help :command" for detailed help on a specific command.');
+  buf.writeln(
+    'Use "buildkit help :command" for detailed help on a specific command.',
+  );
   return buf.toString();
 }
 
@@ -793,7 +809,7 @@ String _generateCommandHelp(CommandDefinition cmd) {
       buf.writeln('  Supports --project, --exclude-project filters');
     }
     if (cmd.supportsGitTraversal) {
-      buf.writeln('  Supports --inner-first-git, --outer-first-git traversal');
+      buf.writeln('  Supports --inner-first-git, --outer-first-git, --top-repo traversal');
     }
     buf.writeln();
   }

@@ -110,16 +110,26 @@ abstract class ToolBase {
   ArgParser createParser() {
     final parser = ArgParser(allowTrailingOptions: false)
       ..addFlag('help', abbr: 'h', negatable: false, help: 'Show this help')
-      ..addFlag('verbose',
-          abbr: 'v', negatable: false, help: 'Verbose output');
+      ..addFlag('verbose', abbr: 'v', negatable: false, help: 'Verbose output');
     addNavigationOptions(parser);
     parser
-      ..addFlag('list',
-          abbr: 'l', negatable: false, help: 'List matching projects')
-      ..addFlag('show',
-          negatable: false, help: 'Show configuration for project')
-      ..addFlag('dry-run',
-          abbr: 'n', negatable: false, help: 'Show what would be done');
+      ..addFlag(
+        'list',
+        abbr: 'l',
+        negatable: false,
+        help: 'List matching projects',
+      )
+      ..addFlag(
+        'show',
+        negatable: false,
+        help: 'Show configuration for project',
+      )
+      ..addFlag(
+        'dry-run',
+        abbr: 'n',
+        negatable: false,
+        help: 'Show what would be done',
+      );
 
     addToolOptions(parser);
     return parser;
@@ -170,7 +180,9 @@ abstract class ToolBase {
       }
     } else if (navArgs.root != null && executionRoot != currentDir) {
       if (verbose) {
-        print('[workspace-mode] -R ${navArgs.root}: executing from $executionRoot');
+        print(
+          '[workspace-mode] -R ${navArgs.root}: executing from $executionRoot',
+        );
       }
     } else if (navArgs.isProjectMode) {
       if (verbose) {
@@ -298,7 +310,11 @@ abstract class ToolBase {
 
     // Apply --exclude-projects filtering
     final wsRoot = findWorkspaceRoot(basePath);
-    results = ProjectNavigator.filterByName(results, allExcludeProjects, wsRoot);
+    results = ProjectNavigator.filterByName(
+      results,
+      allExcludeProjects,
+      wsRoot,
+    );
 
     // Remove projects that contain buildkit_skip.yaml
     results = ProjectNavigator.filterSkippedProjects(results, verbose: verbose);

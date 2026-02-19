@@ -99,9 +99,9 @@ void _printCommandHelp(
 ) {
   // Find the command
   final cmd = tool.commands.cast<CommandDefinition?>().firstWhere(
-        (c) => c!.name == cmdName || c.aliases.contains(cmdName),
-        orElse: () => null,
-      );
+    (c) => c!.name == cmdName || c.aliases.contains(cmdName),
+    orElse: () => null,
+  );
 
   if (cmd == null) {
     final buf = StringBuffer();
@@ -195,9 +195,20 @@ String generatePlainToolHelp(ToolDefinition tool) {
   for (final cmd in tool.visibleCommands) {
     if (cmd.name.startsWith('git')) {
       gitCmds.add(cmd);
-    } else if (['versioner', 'bumpversion', 'compiler', 'runner', 'cleanup',
-                'dependencies', 'publisher', 'buildsorter', 'pubget', 
-                'pubgetall', 'pubupdate', 'pubupdateall'].contains(cmd.name)) {
+    } else if ([
+      'versioner',
+      'bumpversion',
+      'compiler',
+      'runner',
+      'cleanup',
+      'dependencies',
+      'publisher',
+      'buildsorter',
+      'pubget',
+      'pubgetall',
+      'pubupdate',
+      'pubupdateall',
+    ].contains(cmd.name)) {
       buildCmds.add(cmd);
     } else {
       otherCmds.add(cmd);
@@ -229,7 +240,9 @@ String generatePlainToolHelp(ToolDefinition tool) {
   }
 
   // Help footer hint
-  buf.writeln('Use "${tool.name} help :command" for detailed help on a specific command.');
+  buf.writeln(
+    'Use "${tool.name} help :command" for detailed help on a specific command.',
+  );
   buf.writeln();
 
   // Footer from tool definition
