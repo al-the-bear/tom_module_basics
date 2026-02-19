@@ -721,8 +721,13 @@ class ProjectNavigator {
 
   /// Filter projects by exclude-projects patterns.
   ///
-  /// Patterns containing `/` or `**` are matched against workspace-relative paths.
-  /// Other patterns are matched against folder basename only.
+  /// Resolution order for each pattern:
+  /// 1. Path patterns (containing `/` or `**`) match against workspace-relative paths
+  /// 2. Project ID match from `tom_project.yaml` (`project_id`/`short-id`) or
+  ///    `buildkit.yaml` (`project-id`) — case-insensitive
+  /// 3. Project name match from `tom_project.yaml` or `buildkit.yaml` (`name`) —
+  ///    case-insensitive
+  /// 4. Folder basename match (glob or exact)
   static List<String> filterByName(
     List<String> projects,
     List<String> excludePatterns,
@@ -735,15 +740,80 @@ class ProjectNavigator {
       final relativePath = p.relative(projectPath, from: wsRoot);
       for (final pattern in excludePatterns) {
         final isPathPattern = pattern.contains('/') || pattern.contains('**');
-        final matchTarget = isPathPattern ? relativePath : folderName;
-        try {
-          if (Glob(pattern).matches(matchTarget)) return false;
-        } catch (_) {
-          if (matchTarget.contains(pattern)) return false;
+        if (isPathPattern) {
+          // Path-based matching
+          try {
+            if (Glob(pattern).matches(relativePath)) return false;
+          } catch (_) {
+            if (relativePath.contains(pattern)) return false;
+          }
+        } else {
+          // Check project ID and name from config files (case-insensitive)
+          if (_matchesProjectConfigForExclude(projectPath, pattern)) {
+            return false;
+          }
+          // Folder basename match (glob or exact)
+          try {
+            if (Glob(pattern).matches(folderName)) return false;
+          } catch (_) {
+            if (folderName.contains(pattern)) return false;
+          }
         }
       }
       return true;
     }).toList();
+  }
+
+  /// Check if a project's config files match a pattern by ID or name.
+  ///
+  /// Reads `tom_project.yaml` and `buildkit.yaml` to check `project_id`,
+  /// `short-id`, `project-id`, and `name` fields. Case-insensitive.
+  static bool _matchesProjectConfigForExclude(
+    String projectPath,
+    String pattern,
+  ) {
+    final lowerPattern = pattern.toLowerCase();
+
+    // Check tom_project.yaml
+    final tomProjectFile = File(p.join(projectPath, 'tom_project.yaml'));
+    if (tomProjectFile.existsSync()) {
+      try {
+        final content = tomProjectFile.readAsStringSync();
+        final yaml = loadYaml(content);
+        if (yaml is Map) {
+          final projectId =
+              yaml['project_id'] as String? ?? yaml['short-id'] as String?;
+          if (projectId != null && projectId.toLowerCase() == lowerPattern) {
+            return true;
+          }
+          final name = yaml['name'] as String?;
+          if (name != null && name.toLowerCase() == lowerPattern) {
+            return true;
+          }
+        }
+      } catch (_) {}
+    }
+
+    // Check buildkit.yaml
+    final buildkitFile = File(p.join(projectPath, 'buildkit.yaml'));
+    if (buildkitFile.existsSync()) {
+      try {
+        final content = buildkitFile.readAsStringSync();
+        final yaml = loadYaml(content);
+        if (yaml is Map) {
+          final projectId = yaml['project-id'] as String?;
+          if (projectId != null && projectId.toLowerCase() == lowerPattern) {
+            return true;
+          }
+          final name = yaml['name'] as String?;
+          if (name != null && name.toLowerCase() == lowerPattern) {
+            return true;
+          }
+        }
+      } catch (_) {}
+    }
+
+    return false;
   }
 
   /// Remove projects that contain a skip file.
