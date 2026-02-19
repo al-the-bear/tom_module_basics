@@ -177,15 +177,15 @@ class GitCleanTool extends ToolBase {
   Future<bool> _runGit(String repoPath, List<String> args, String relPath) async {
     print('$relPath: git ${args.join(' ')}');
     try {
-      final result = await Process.run('git', args, workingDirectory: repoPath);
-      final stdout = result.stdout.toString().trim();
+      final result = await ProcessRunner.run('git', args, workingDirectory: repoPath);
+      final stdout = result.stdout.trim();
       if (stdout.isNotEmpty) {
         for (final line in stdout.split('\n')) {
           print('  $line');
         }
       }
       if (result.exitCode != 0) {
-        final stderr = result.stderr.toString().trim();
+        final stderr = result.stderr.trim();
         if (stderr.isNotEmpty) print('  Error: $stderr');
         return false;
       }

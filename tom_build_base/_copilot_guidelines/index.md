@@ -69,6 +69,34 @@ This package is published to pub.dev. See [Project Republishing](/_copilot_guide
 - **Configuration loading** — TomBuildConfig, TomProjectConfig classes
 - **CLI helpers** — `isHelpCommand()`, `isVersionCommand()`, help text generation
 
+## Terminology
+
+### Traversal Modes
+
+| Term | Description |
+|------|-------------|
+| **git-traversal** | Traversal mode that discovers and processes git repositories. Uses `-i` (inner-first) or `-o` (outer-first) flags. Inner-first processes submodules before parent repos; outer-first does the reverse. Required for git commands (`:gitstatus`, `:gitcommit`). |
+| **project-traversal** | Traversal mode that discovers and processes projects by markers (pubspec.yaml, tom_project.yaml, etc.). Uses `-s`/`--scan` and `-r`/`--recursive` flags. Default mode when no git flags specified. |
+
+### Execution Modes
+
+| Term | Description |
+|------|-------------|
+| **kit-mode** | Running a tool as a buildkit command (e.g., `buildkit :versioner`). Options parsed by buildkit orchestrator, tool receives pre-processed args. Supports pipelines and multi-command execution. |
+| **standalone-mode** | Running a tool directly as a binary (e.g., `versioner --scan .`). Tool parses its own args using ToolBase infrastructure. No buildkit orchestration. |
+
+### Navigation Flags
+
+| Flag | Mode | Description |
+|------|------|-------------|
+| `-i`, `--inner-first-git` | git-traversal | Process deepest repos first (submodules before parents) |
+| `-o`, `--outer-first-git` | git-traversal | Process shallowest repos first (parents before submodules) |
+| `-T`, `--top-repo` | git-traversal | Find topmost git repo by walking up from cwd |
+| `-s`, `--scan` | project-traversal | Starting directory for project scan |
+| `-r`, `--recursive` | project-traversal | Recurse into subdirectories during scan |
+| `-R`, `--root` | both | Set/detect workspace root |
+| `-p`, `--project` | project-traversal | Filter projects by glob pattern |
+
 **Documentation:**
 - [Build Base User Guide](../doc/build_base_user_guide.md) — Full API documentation
 - [CLI Tools Navigation](../doc/cli_tools_navigation.md) — Navigation options reference

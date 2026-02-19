@@ -211,9 +211,9 @@ class GitTagTool extends ToolBase {
 
   Future<List<String>> _listTags(String repoPath) async {
     try {
-      final result = await Process.run('git', ['tag', '-l', '--sort=-version:refname'],
+      final result = await ProcessRunner.run('git', ['tag', '-l', '--sort=-version:refname'],
           workingDirectory: repoPath);
-      return result.stdout.toString().split('\n').where((l) => l.isNotEmpty).toList();
+      return result.stdout.split('\n').where((l) => l.isNotEmpty).toList();
     } catch (_) {
       return [];
     }
@@ -221,10 +221,10 @@ class GitTagTool extends ToolBase {
 
   Future<String?> _getLatestTag(String repoPath) async {
     try {
-      final result = await Process.run('git', ['describe', '--tags', '--abbrev=0'],
+      final result = await ProcessRunner.run('git', ['describe', '--tags', '--abbrev=0'],
           workingDirectory: repoPath);
       if (result.exitCode == 0) {
-        return result.stdout.toString().trim();
+        return result.stdout.trim();
       }
       return null;
     } catch (_) {
@@ -239,9 +239,9 @@ class GitTagTool extends ToolBase {
     }
     print('$relPath: git ${args.join(' ')}');
     try {
-      final result = await Process.run('git', args, workingDirectory: repoPath);
+      final result = await ProcessRunner.run('git', args, workingDirectory: repoPath);
       if (result.exitCode != 0) {
-        final stderr = result.stderr.toString().trim();
+        final stderr = result.stderr.trim();
         if (stderr.isNotEmpty) print('  Error: $stderr');
         return false;
       }

@@ -205,9 +205,9 @@ class GitSyncTool extends ToolBase {
 
   Future<bool> _hasUncommittedChanges(String repoPath) async {
     try {
-      final result = await Process.run('git', ['status', '--porcelain'],
+      final result = await ProcessRunner.run('git', ['status', '--porcelain'],
           workingDirectory: repoPath);
-      return result.stdout.toString().trim().isNotEmpty;
+      return result.stdout.trim().isNotEmpty;
     } catch (_) {
       return false;
     }
@@ -215,11 +215,11 @@ class GitSyncTool extends ToolBase {
 
   Future<String> _getDefaultBranch(String repoPath) async {
     try {
-      final result = await Process.run(
+      final result = await ProcessRunner.run(
         'git', ['rev-parse', '--abbrev-ref', 'HEAD'],
         workingDirectory: repoPath,
       );
-      return result.stdout.toString().trim();
+      return result.stdout.trim();
     } catch (_) {
       return 'main';
     }
@@ -234,9 +234,9 @@ class GitSyncTool extends ToolBase {
       print('$relPath: git ${args.join(' ')}');
     }
     try {
-      final result = await Process.run('git', args, workingDirectory: repoPath);
+      final result = await ProcessRunner.run('git', args, workingDirectory: repoPath);
       if (result.exitCode != 0) {
-        final stderr = result.stderr.toString().trim();
+        final stderr = result.stderr.trim();
         if (stderr.isNotEmpty) print('$relPath: $stderr');
         return false;
       }

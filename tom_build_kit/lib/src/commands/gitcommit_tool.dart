@@ -222,9 +222,9 @@ class GitCommitTool extends ToolBase {
       
       if (!await _runGit(repoPath, commitArgs, relPath)) {
         // Check if it's just "nothing to commit"
-        final status = await Process.run('git', ['status', '--porcelain'],
+        final status = await ProcessRunner.run('git', ['status', '--porcelain'],
             workingDirectory: repoPath);
-        if (status.stdout.toString().trim().isEmpty) {
+        if (status.stdout.trim().isEmpty) {
           if (verbose) {
             print('$relPath: nothing to commit');
           }
@@ -277,18 +277,18 @@ class GitCommitTool extends ToolBase {
     try {
       if (addAll) {
         // Check for any changes (staged, unstaged, untracked)
-        final result = await Process.run('git', ['status', '--porcelain'],
+        final result = await ProcessRunner.run('git', ['status', '--porcelain'],
             workingDirectory: repoPath);
-        return result.stdout.toString().trim().isNotEmpty;
+        return result.stdout.trim().isNotEmpty;
       } else if (addUpdated) {
         // Check for modified/deleted files only
-        final result = await Process.run('git', ['status', '--porcelain'],
+        final result = await ProcessRunner.run('git', ['status', '--porcelain'],
             workingDirectory: repoPath);
-        final lines = result.stdout.toString().split('\n');
+        final lines = result.stdout.split('\n');
         return lines.any((line) => line.isNotEmpty && !line.startsWith('??'));
       } else {
         // Check for staged changes only
-        final result = await Process.run('git', ['diff', '--cached', '--quiet'],
+        final result = await ProcessRunner.run('git', ['diff', '--cached', '--quiet'],
             workingDirectory: repoPath);
         return result.exitCode != 0;
       }
@@ -301,9 +301,9 @@ class GitCommitTool extends ToolBase {
     final relPath = p.relative(repoPath, from: wsRoot);
     
     try {
-      final result = await Process.run('git', ['status', '--porcelain'],
+      final result = await ProcessRunner.run('git', ['status', '--porcelain'],
           workingDirectory: repoPath);
-      final lines = result.stdout.toString().split('\n').where((l) => l.isNotEmpty);
+      final lines = result.stdout.split('\n').where((l) => l.isNotEmpty);
       
       if (lines.isEmpty) {
         print('$relPath: clean');
@@ -329,10 +329,10 @@ class GitCommitTool extends ToolBase {
     }
 
     try {
-      final result = await Process.run('git', args, workingDirectory: repoPath);
+      final result = await ProcessRunner.run('git', args, workingDirectory: repoPath);
       
       if (result.exitCode != 0) {
-        final stderr = result.stderr.toString().trim();
+        final stderr = result.stderr.trim();
         if (stderr.isNotEmpty && verbose) {
           print('  $stderr');
         }
@@ -583,12 +583,12 @@ class GitCommitTool extends ToolBase {
 
       // Commit
       if (!await _runGit(repoPath, ['commit', '-m', message], relPath)) {
-        final status = await Process.run(
+        final status = await ProcessRunner.run(
           'git',
           ['status', '--porcelain'],
           workingDirectory: repoPath,
         );
-        if (status.stdout.toString().trim().isEmpty) {
+        if (status.stdout.trim().isEmpty) {
           if (verbose) {
             print('$relPath: nothing to commit');
           }

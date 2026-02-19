@@ -47,6 +47,7 @@ export 'src/processing_result.dart';
 export 'src/project_discovery.dart';
 export 'src/project_navigator.dart';
 export 'src/project_scanner.dart';
+export 'src/tool_logging.dart';
 export 'src/workspace_mode.dart';
 export 'src/yaml_utils.dart';
 export 'src/show_versions.dart';

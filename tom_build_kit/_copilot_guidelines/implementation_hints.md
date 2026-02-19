@@ -124,6 +124,69 @@ class MyTool extends ToolBase {
 
 The `:execute` command is a powerful tool for testing and debugging navigation options before running actual commands. It executes arbitrary shell commands in each discovered project, showing you exactly which projects are selected and in what order.
 
+### Placeholder-Based Diagnostics
+
+The `:execute` command supports placeholders that provide detailed information about each traversed folder. Use these for diagnostic output:
+
+#### Git Traversal Diagnostic
+
+Shows all git repository information:
+
+```bash
+# Full git diagnostic with -i (inner-first) traversal
+buildkit -T -i :execute 'echo "📂 ${folder.name} | Path: ${folder.relative} | Git: ${git.exists} | Branch: ${git.branch} | Changes: ${git.hasChanges} | Submodule: ${git.isSubmodule}"'
+
+# Compact git info
+buildkit -T -o :execute 'echo "${folder.name}: ${git.branch} [${git.hasChanges?(dirty):(clean)}]"'
+```
+
+#### Project Traversal Diagnostic
+
+Shows Dart/Flutter project information:
+
+```bash
+# Full Dart project diagnostic with --condition to filter
+buildkit -R --scan . -r :execute --condition dart.exists 'echo "📦 ${folder.name} | Name: ${dart.name} | Ver: ${dart.version} | Pub: ${dart.publishable}"'
+
+# Flutter projects only
+buildkit -R --scan . -r :execute --condition flutter.exists 'echo "${folder.name}: ${flutter.platforms} [${flutter.isPlugin?(plugin):(app)}]"'
+```
+
+### Available Placeholders
+
+| Placeholder | Description |
+|-------------|-------------|
+| `${folder.name}` | Folder basename |
+| `${folder.relative}` | Relative path from workspace root |
+| `${folder}` | Absolute folder path |
+| `${root}` | Workspace root path |
+| `${git.exists}` | Boolean: is git repository |
+| `${git.branch}` | Current git branch |
+| `${git.hasChanges}` | Boolean: has uncommitted changes |
+| `${git.isSubmodule}` | Boolean: is git submodule |
+| `${dart.exists}` | Boolean: is Dart project |
+| `${dart.name}` | Package name from pubspec.yaml |
+| `${dart.version}` | Version from pubspec.yaml |
+| `${dart.publishable}` | Boolean: publish_to not set to none |
+| `${flutter.exists}` | Boolean: is Flutter project |
+| `${flutter.platforms}` | Comma-separated platform list |
+| `${flutter.isPlugin}` | Boolean: is Flutter plugin |
+| `${current-os}` | Current OS (macos, linux, windows) |
+| `${current-arch}` | Current architecture (arm64, x64) |
+| `${current-platform}` | Platform string (darwin-arm64, linux-x64) |
+
+### Ternary Placeholder Syntax
+
+Use ternary syntax for conditional output:
+
+```bash
+# Show (dirty) or (clean) based on git.hasChanges
+buildkit -T -i :execute 'echo "${folder.name}: ${git.hasChanges?(dirty):(clean)}"'
+
+# Show (Pub) or (Internal) based on dart.publishable
+buildkit -R -s . -r :execute --condition dart.exists 'echo "${dart.name}: ${dart.publishable?(Pub):(Internal)}"'
+```
+
 ### Basic Usage
 
 ```bash

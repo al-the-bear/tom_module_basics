@@ -367,9 +367,9 @@ class GitMergeTool extends ToolBase {
 
   Future<List<String>> _getBranches(String repoPath) async {
     try {
-      final result = await Process.run('git', ['branch', '-a'], workingDirectory: repoPath);
+      final result = await ProcessRunner.run('git', ['branch', '-a'], workingDirectory: repoPath);
       if (result.exitCode != 0) return [];
-      return result.stdout.toString().trim().split('\n').where((s) => s.isNotEmpty).toList();
+      return result.stdout.trim().split('\n').where((s) => s.isNotEmpty).toList();
     } catch (_) {
       return [];
     }
@@ -389,12 +389,12 @@ class GitMergeTool extends ToolBase {
     print('[$relPath] git ${args.join(' ')}');
     
     try {
-      final result = await Process.run('git', args, workingDirectory: repoPath);
-      final output = result.stdout.toString().trim();
+      final result = await ProcessRunner.run('git', args, workingDirectory: repoPath);
+      final output = result.stdout.trim();
       if (output.isNotEmpty) {
         print('  $output');
       }
-      final stderr = result.stderr.toString().trim();
+      final stderr = result.stderr.trim();
       if (stderr.isNotEmpty) {
         print('  $stderr');
       }

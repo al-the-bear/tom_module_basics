@@ -261,11 +261,11 @@ class GitUnstashTool extends ToolBase {
 
   Future<bool> _hasStashes(String repoPath) async {
     try {
-      final result = await Process.run(
+      final result = await ProcessRunner.run(
         'git', ['stash', 'list'],
         workingDirectory: repoPath,
       );
-      return result.stdout.toString().trim().isNotEmpty;
+      return result.stdout.trim().isNotEmpty;
     } catch (_) {
       return false;
     }
@@ -273,13 +273,13 @@ class GitUnstashTool extends ToolBase {
 
   Future<List<String>> _getStashList(String repoPath) async {
     try {
-      final result = await Process.run(
+      final result = await ProcessRunner.run(
         'git', ['stash', 'list'],
         workingDirectory: repoPath,
       );
       if (result.exitCode != 0) return [];
       
-      final output = result.stdout.toString().trim();
+      final output = result.stdout.trim();
       if (output.isEmpty) return [];
       return output.split('\n');
     } catch (_) {
@@ -296,9 +296,9 @@ class GitUnstashTool extends ToolBase {
     print('$relPath: git ${args.join(' ')}');
     
     try {
-      final result = await Process.run('git', args, workingDirectory: repoPath);
+      final result = await ProcessRunner.run('git', args, workingDirectory: repoPath);
       if (result.exitCode != 0) {
-        final stderr = result.stderr.toString().trim();
+        final stderr = result.stderr.trim();
         if (stderr.isNotEmpty) print('  Error: $stderr');
         return false;
       }
@@ -322,10 +322,10 @@ class GitUnstashTool extends ToolBase {
     print('$relPath: git ${args.join(' ')}');
     
     try {
-      final result = await Process.run('git', args, workingDirectory: repoPath);
+      final result = await ProcessRunner.run('git', args, workingDirectory: repoPath);
       
-      final stdout = result.stdout.toString();
-      final stderr = result.stderr.toString();
+      final stdout = result.stdout;
+      final stderr = result.stderr;
       final output = '$stdout\n$stderr'.toLowerCase();
       
       final hasConflicts = output.contains('conflict') || 

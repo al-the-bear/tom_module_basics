@@ -152,18 +152,18 @@ class GitTool extends ToolBase {
         print('$displayPath: git ${gitArgs.join(' ')}');
       }
 
-      final result = await Process.run('git', gitArgs, workingDirectory: repoPath);
+      final result = await ProcessRunner.run('git', gitArgs, workingDirectory: repoPath);
 
       // Print output with repo prefix if multiple repos
-      final hasOutput = result.stdout.toString().trim().isNotEmpty ||
-          result.stderr.toString().trim().isNotEmpty;
+      final hasOutput = result.stdout.trim().isNotEmpty ||
+          result.stderr.trim().isNotEmpty;
 
       if (hasOutput || result.exitCode != 0) {
         print('[$displayPath]');
-        if (result.stdout.toString().trim().isNotEmpty) {
-          print(result.stdout.toString().trimRight());
+        if (result.stdout.trim().isNotEmpty) {
+          print(result.stdout.trimRight());
         }
-        if (result.stderr.toString().trim().isNotEmpty) {
+        if (result.stderr.trim().isNotEmpty) {
           stderr.write(result.stderr);
         }
         if (result.exitCode != 0) {

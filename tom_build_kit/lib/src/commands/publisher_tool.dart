@@ -206,12 +206,12 @@ class PublisherTool extends ToolBase {
     if (gitRoot == null) return false;
     
     try {
-      final result = await Process.run(
+      final result = await ProcessRunner.run(
         'git',
         ['status', '--porcelain', '--', dirPath],
         workingDirectory: gitRoot,
       );
-      return result.stdout.toString().trim().isNotEmpty;
+      return result.stdout.trim().isNotEmpty;
     } catch (_) {
       return false;
     }
@@ -223,21 +223,21 @@ class PublisherTool extends ToolBase {
     
     try {
       // Get current branch
-      final branchResult = await Process.run(
+      final branchResult = await ProcessRunner.run(
         'git',
         ['rev-parse', '--abbrev-ref', 'HEAD'],
         workingDirectory: gitRoot,
       );
-      final branch = branchResult.stdout.toString().trim();
+      final branch = branchResult.stdout.trim();
       if (branch.isEmpty) return false;
 
       // Check for unpushed commits
-      final result = await Process.run(
+      final result = await ProcessRunner.run(
         'git',
         ['log', branch, '--not', '--remotes', '--oneline'],
         workingDirectory: gitRoot,
       );
-      return result.stdout.toString().trim().isNotEmpty;
+      return result.stdout.trim().isNotEmpty;
     } catch (_) {
       return false;
     }

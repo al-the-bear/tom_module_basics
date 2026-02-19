@@ -349,7 +349,7 @@ class StatusTool extends ToolBase {
   /// `<tool> <version>+<build>.<commit> (<timestamp>) [Dart <sdk>]`
   Future<ToolStatus> _checkToolVersion(String toolName) async {
     try {
-      final result = await Process.run(toolName, ['--version']);
+      final result = await ProcessRunner.run(toolName, ['--version']);
 
       if (result.exitCode != 0) {
         return ToolStatus(
@@ -360,7 +360,7 @@ class StatusTool extends ToolBase {
         );
       }
 
-      final output = result.stdout.toString().trim();
+      final output = result.stdout.trim();
       return _parseVersionOutput(toolName, output);
     } on ProcessException {
       return ToolStatus(
@@ -457,12 +457,12 @@ class StatusTool extends ToolBase {
     // Get current branch
     String branch;
     try {
-      final result = await Process.run(
+      final result = await ProcessRunner.run(
         'git',
         ['rev-parse', '--abbrev-ref', 'HEAD'],
         workingDirectory: repoPath,
       );
-      branch = result.stdout.toString().trim();
+      branch = result.stdout.trim();
     } catch (_) {
       branch = 'unknown';
     }
@@ -473,13 +473,13 @@ class StatusTool extends ToolBase {
     List<String> untrackedFiles = [];
 
     try {
-      final result = await Process.run(
+      final result = await ProcessRunner.run(
         'git',
         ['status', '--porcelain'],
         workingDirectory: repoPath,
       );
       final lines =
-          result.stdout.toString().split('\n').where((l) => l.isNotEmpty);
+          result.stdout.split('\n').where((l) => l.isNotEmpty);
       for (final line in lines) {
         if (line.length < 3) continue;
         final indexStatus = line[0];
@@ -504,14 +504,13 @@ class StatusTool extends ToolBase {
     // Get unpushed commits
     List<String> unpushedCommits = [];
     try {
-      final result = await Process.run(
+      final result = await ProcessRunner.run(
         'git',
         ['log', '@{u}..HEAD', '--oneline'],
         workingDirectory: repoPath,
       );
       if (result.exitCode == 0) {
         unpushedCommits = result.stdout
-            .toString()
             .split('\n')
             .where((l) => l.isNotEmpty)
             .toList();
@@ -534,13 +533,13 @@ class StatusTool extends ToolBase {
   /// Count commits since a given commit hash.
   Future<int> _countCommitsSince(String repoPath, String commitHash) async {
     try {
-      final result = await Process.run(
+      final result = await ProcessRunner.run(
         'git',
         ['rev-list', '--count', '$commitHash..HEAD'],
         workingDirectory: repoPath,
       );
       if (result.exitCode == 0) {
-        return int.tryParse(result.stdout.toString().trim()) ?? 0;
+        return int.tryParse(result.stdout.trim()) ?? 0;
       }
     } catch (_) {
       // Ignore

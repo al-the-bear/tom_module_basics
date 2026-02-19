@@ -150,10 +150,20 @@ class FilterPipeline {
     return false;
   }
 
-  /// Check if folder has a matching project name in tom_project.yaml.
+  /// Check if folder has a matching project name in tom_project.yaml or buildkit.yaml.
   bool _matchesProjectName(FsFolder folder, List<String> patterns) {
     for (final nature in folder.natures) {
+      // Check TomBuildFolder (tom_project.yaml)
       if (nature is TomBuildFolder && nature.projectName != null) {
+        final name = nature.projectName!.toLowerCase();
+        for (final pattern in patterns) {
+          if (name == pattern.toLowerCase()) {
+            return true;
+          }
+        }
+      }
+      // Check BuildkitFolder (buildkit.yaml)
+      if (nature is BuildkitFolder && nature.projectName != null) {
         final name = nature.projectName!.toLowerCase();
         for (final pattern in patterns) {
           if (name == pattern.toLowerCase()) {

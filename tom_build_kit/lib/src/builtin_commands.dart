@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
+import 'package:tom_build_base/tom_build_base.dart';
 
 import 'commands/buildsorter_tool.dart';
 import 'commands/cleanup_tool.dart';
@@ -599,7 +600,7 @@ class BuiltinCommands {
     if (verbose) print('  Executing: dcli $dcliArgs');
 
     try {
-      final result = await Process.run(
+      final result = await ProcessRunner.run(
         'dcli',
         args,
         workingDirectory: projectPath,
@@ -610,10 +611,10 @@ class BuiltinCommands {
         },
       );
 
-      if (result.stdout.toString().isNotEmpty) {
+      if (result.stdout.isNotEmpty) {
         stdout.write(result.stdout);
       }
-      if (result.stderr.toString().isNotEmpty) {
+      if (result.stderr.isNotEmpty) {
         stderr.write(result.stderr);
       }
 

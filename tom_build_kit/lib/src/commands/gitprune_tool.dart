@@ -187,14 +187,14 @@ class GitPruneTool extends ToolBase {
   Future<List<String>> _getStaleBranches(String repoPath, String remote) async {
     try {
       // git remote prune --dry-run shows what would be pruned
-      final result = await Process.run(
+      final result = await ProcessRunner.run(
         'git', ['remote', 'prune', remote, '--dry-run'],
         workingDirectory: repoPath,
       );
       
       if (result.exitCode != 0) return [];
       
-      final output = result.stdout.toString();
+      final output = result.stdout;
       final lines = output.split('\n')
           .where((line) => line.contains('[would prune]') || line.contains('* [would prune]'))
           .map((line) {
@@ -220,9 +220,9 @@ class GitPruneTool extends ToolBase {
       print('$relPath: git ${args.join(' ')}');
     }
     try {
-      final result = await Process.run('git', args, workingDirectory: repoPath);
+      final result = await ProcessRunner.run('git', args, workingDirectory: repoPath);
       if (result.exitCode != 0) {
-        final stderr = result.stderr.toString().trim();
+        final stderr = result.stderr.trim();
         if (stderr.isNotEmpty) print('$relPath: $stderr');
         return false;
       }

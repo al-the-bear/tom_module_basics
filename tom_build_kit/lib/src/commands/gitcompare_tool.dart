@@ -262,9 +262,9 @@ class GitCompareTool extends ToolBase {
 
   Future<List<String>> _getBranches(String repoPath) async {
     try {
-      final result = await Process.run('git', ['branch', '-a'], workingDirectory: repoPath);
+      final result = await ProcessRunner.run('git', ['branch', '-a'], workingDirectory: repoPath);
       if (result.exitCode != 0) return [];
-      return result.stdout.toString().trim().split('\n').where((s) => s.isNotEmpty).toList();
+      return result.stdout.trim().split('\n').where((s) => s.isNotEmpty).toList();
     } catch (_) {
       return [];
     }
@@ -284,14 +284,14 @@ class GitCompareTool extends ToolBase {
     print('[$relPath]');
     
     try {
-      final result = await Process.run('git', args, workingDirectory: repoPath);
-      final output = result.stdout.toString().trim();
+      final result = await ProcessRunner.run('git', args, workingDirectory: repoPath);
+      final output = result.stdout.trim();
       if (output.isNotEmpty) {
         print(output);
       } else {
         print('  (no differences)');
       }
-      if (result.stderr.toString().trim().isNotEmpty) {
+      if (result.stderr.trim().isNotEmpty) {
         print('  ${result.stderr}');
       }
       print('');

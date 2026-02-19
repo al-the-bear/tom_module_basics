@@ -212,9 +212,9 @@ class GitBranchTool extends ToolBase {
 
   Future<String> _getCurrentBranch(String repoPath) async {
     try {
-      final result = await Process.run('git', ['rev-parse', '--abbrev-ref', 'HEAD'],
+      final result = await ProcessRunner.run('git', ['rev-parse', '--abbrev-ref', 'HEAD'],
           workingDirectory: repoPath);
-      return result.stdout.toString().trim();
+      return result.stdout.trim();
     } catch (_) {
       return 'unknown';
     }
@@ -222,9 +222,9 @@ class GitBranchTool extends ToolBase {
 
   Future<List<String>> _listBranches(String repoPath) async {
     try {
-      final result = await Process.run('git', ['branch', '-a'],
+      final result = await ProcessRunner.run('git', ['branch', '-a'],
           workingDirectory: repoPath);
-      return result.stdout.toString().split('\n').where((l) => l.isNotEmpty).toList();
+      return result.stdout.split('\n').where((l) => l.isNotEmpty).toList();
     } catch (_) {
       return [];
     }
@@ -237,9 +237,9 @@ class GitBranchTool extends ToolBase {
     }
     print('$relPath: git ${args.join(' ')}');
     try {
-      final result = await Process.run('git', args, workingDirectory: repoPath);
+      final result = await ProcessRunner.run('git', args, workingDirectory: repoPath);
       if (result.exitCode != 0) {
-        final stderr = result.stderr.toString().trim();
+        final stderr = result.stderr.trim();
         if (stderr.isNotEmpty) print('  Error: $stderr');
         return false;
       }

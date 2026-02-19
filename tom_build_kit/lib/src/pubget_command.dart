@@ -226,7 +226,7 @@ class PubGetCommand {
     String projectName,
   ) async {
     try {
-      final result = await Process.run(
+      final result = await ProcessRunner.run(
         'dart',
         ['pub', 'get'],
         workingDirectory: projectPath,
@@ -237,8 +237,8 @@ class PubGetCommand {
         projectPath: relativePath,
         projectName: projectName,
         success: result.exitCode == 0,
-        stdout: result.stdout.toString(),
-        stderr: result.stderr.toString(),
+        stdout: result.stdout,
+        stderr: result.stderr,
         exitCode: result.exitCode,
       );
     } catch (e) {

@@ -255,17 +255,32 @@ class ToolRunner {
 
     // Build traversal info
     final supportsGit = cmd?.supportsGitTraversal ?? false;
+    final requiresGit = cmd?.requiresGitTraversal ?? false;
+    final gitModeSpecified = cliArgs.gitModeExplicitlySet;
+    final defaultGitOrder = cmd?.defaultGitOrder;
     final BaseTraversalInfo traversalInfo;
 
-    if (supportsGit) {
-      // For git commands, git mode must be explicitly specified
-      final defaultGitOrder = cmd?.defaultGitOrder;
+    // Validate: user requested git but command doesn't support it
+    if (!supportsGit && gitModeSpecified) {
+      output.writeln('Error: This command does not support git traversal.');
+      output.writeln('Remove -i/--inner-first-git or -o/--outer-first-git.');
+      return const ToolResult.failure(
+        'Git traversal not supported by this command',
+      );
+    }
+
+    // Determine if we should use git traversal
+    final useGitTraversal = requiresGit || (gitModeSpecified && supportsGit);
+
+    if (useGitTraversal) {
+      // Try git traversal (uses defaultGitOrder if -i/-o not specified)
       final gitInfo = cliArgs.toGitTraversalInfo(
         executionRoot: executionRoot,
         commandDefaultGitOrder: defaultGitOrder,
       );
       if (gitInfo == null) {
-        output.writeln('Error: Git traversal mode not specified.');
+        // No -i/-o specified and no defaultGitOrder available
+        output.writeln('Error: Git traversal mode required for this command.');
         output.writeln('Use --inner-first-git (-i) or --outer-first-git (-o).');
         return const ToolResult.failure(
           'Git traversal mode required but not specified',
@@ -273,7 +288,7 @@ class ToolRunner {
       }
       traversalInfo = gitInfo;
     } else {
-      // For project commands, use cascade: CLI > config > defaults
+      // Use project traversal (default)
       traversalInfo = cliArgs.toProjectTraversalInfo(
         executionRoot: executionRoot,
         configDefaults: configDefaults,

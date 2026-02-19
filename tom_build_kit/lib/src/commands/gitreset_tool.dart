@@ -192,12 +192,12 @@ class GitResetTool extends ToolBase {
 
   Future<String?> _getUpstreamRef(String repoPath) async {
     try {
-      final result = await Process.run(
+      final result = await ProcessRunner.run(
         'git', ['rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{u}'],
         workingDirectory: repoPath,
       );
       if (result.exitCode == 0) {
-        return result.stdout.toString().trim();
+        return result.stdout.trim();
       }
       return null;
     } catch (_) {
@@ -212,9 +212,9 @@ class GitResetTool extends ToolBase {
     }
     print('$relPath: git ${args.join(' ')}');
     try {
-      final result = await Process.run('git', args, workingDirectory: repoPath);
+      final result = await ProcessRunner.run('git', args, workingDirectory: repoPath);
       if (result.exitCode != 0) {
-        final stderr = result.stderr.toString().trim();
+        final stderr = result.stderr.trim();
         if (stderr.isNotEmpty) print('  Error: $stderr');
         return false;
       }

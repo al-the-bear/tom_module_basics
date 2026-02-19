@@ -334,7 +334,8 @@ class NatureDetector {
       if (yaml is Map) {
         config = Map<String, dynamic>.from(yaml);
         projectName = config['name'] as String?;
-        shortId = config['short-id'] as String?;
+        // Support both project_id (underscore) and short-id (hyphen) formats
+        shortId = config['project_id'] as String? ?? config['short-id'] as String?;
       }
     } catch (_) {}
 
@@ -348,6 +349,7 @@ class NatureDetector {
 
   BuildkitFolder _createBuildkitNature(FsFolder folder) {
     String? projectId;
+    String? projectName;
     bool recursive = true;
     Map<String, dynamic> config = {};
 
@@ -358,6 +360,7 @@ class NatureDetector {
       if (yaml is Map) {
         config = Map<String, dynamic>.from(yaml);
         projectId = config['project-id'] as String?;
+        projectName = config['name'] as String?;
         recursive = config['recursive'] as bool? ?? true;
       }
     } catch (_) {}
@@ -365,6 +368,7 @@ class NatureDetector {
     return BuildkitFolder(
       folder,
       projectId: projectId,
+      projectName: projectName,
       recursive: recursive,
       config: config,
     );

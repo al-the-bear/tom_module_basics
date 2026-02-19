@@ -8,7 +8,7 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 import 'package:tom_build_base/tom_build_base.dart'
-    show findWorkspaceRoot, toStringList;
+    show findWorkspaceRoot, toStringList, ProcessRunner;
 import 'package:tom_build_base/tom_build_base_v2.dart';
 import 'package:yaml/yaml.dart';
 
@@ -159,13 +159,13 @@ class RunnerExecutor extends CommandExecutor {
     print('  Running: dart ${dartArgs.join(' ')}');
     print('  Working directory: ${p.basename(projectPath)}');
 
-    final result = await Process.run(
+    final result = await ProcessRunner.run(
       'dart',
       dartArgs,
       workingDirectory: projectPath,
     );
-    if (result.stdout.toString().isNotEmpty) stdout.write(result.stdout);
-    if (result.stderr.toString().isNotEmpty) stderr.write(result.stderr);
+    if (result.stdout.isNotEmpty) stdout.write(result.stdout);
+    if (result.stderr.isNotEmpty) stderr.write(result.stderr);
 
     if (result.exitCode != 0) {
       return ItemResult.failure(

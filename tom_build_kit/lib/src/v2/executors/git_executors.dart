@@ -4,8 +4,8 @@
 /// This file contains all git executors with shared helpers.
 library;
 
-import 'dart:io';
-
+import 'package:tom_build_base/tom_build_base.dart'
+    show ProcessRunner, ProcessRunResult;
 import 'package:tom_build_base/tom_build_base_v2.dart';
 
 // =============================================================================
@@ -13,13 +13,13 @@ import 'package:tom_build_base/tom_build_base_v2.dart';
 // =============================================================================
 
 /// Run a git command and return the result.
-Future<ProcessResult> _runGit(
+Future<ProcessRunResult> _runGit(
   List<String> args,
   String workingDirectory, {
   bool verbose = false,
 }) async {
   if (verbose) print('    git ${args.join(' ')}');
-  return Process.run('git', args, workingDirectory: workingDirectory);
+  return ProcessRunner.run('git', args, workingDirectory: workingDirectory);
 }
 
 /// Get current branch name.
@@ -27,7 +27,7 @@ Future<String?> _getCurrentBranch(String dir) async {
   final result =
       await _runGit(['rev-parse', '--abbrev-ref', 'HEAD'], dir);
   return result.exitCode == 0
-      ? (result.stdout as String).trim()
+      ? result.stdout.trim()
       : null;
 }
 
@@ -69,7 +69,7 @@ class GitStatusExecutor extends CommandExecutor {
 
       // Status
       final statusResult = await _runGit(['status', '--porcelain'], dir);
-      final statusLines = (statusResult.stdout as String).trim();
+      final statusLines = statusResult.stdout.trim();
       final changes = statusLines.isEmpty ? 0 : statusLines.split('\n').length;
 
       // Unpushed
@@ -77,7 +77,7 @@ class GitStatusExecutor extends CommandExecutor {
       final logResult =
           await _runGit(['log', '@{u}..HEAD', '--oneline'], dir);
       if (logResult.exitCode == 0) {
-        final logOut = (logResult.stdout as String).trim();
+        final logOut = logResult.stdout.trim();
         unpushed = logOut.isEmpty ? 0 : logOut.split('\n').length;
       }
 
@@ -86,7 +86,7 @@ class GitStatusExecutor extends CommandExecutor {
       if (showStash) {
         final stashResult = await _runGit(['stash', 'list'], dir);
         if (stashResult.exitCode == 0) {
-          final stashOut = (stashResult.stdout as String).trim();
+          final stashOut = stashResult.stdout.trim();
           stashCount = stashOut.isEmpty ? 0 : stashOut.split('\n').length;
         }
       }
@@ -139,7 +139,7 @@ class GitCommitExecutor extends CommandExecutor {
 
     // Check for changes
     final statusResult = await _runGit(['status', '--porcelain'], dir);
-    final hasChanges = (statusResult.stdout as String).trim().isNotEmpty;
+    final hasChanges = statusResult.stdout.trim().isNotEmpty;
 
     if (!hasChanges && !amend) {
       print('  ${context.name}: nothing to commit');
@@ -178,7 +178,7 @@ class GitCommitExecutor extends CommandExecutor {
       final result =
           await _runGit(['commit', '-m', message], dir, verbose: args.verbose);
       if (result.exitCode != 0) {
-        final stderr = (result.stderr as String).trim();
+        final stderr = result.stderr.trim();
         return ItemResult.failure(
           path: dir, name: context.name, error: 'commit failed: $stderr');
       }
@@ -227,10 +227,10 @@ class GitPullExecutor extends CommandExecutor {
     }
 
     final result = await _runGit(pullArgs, dir, verbose: args.verbose);
-    final output = (result.stdout as String).trim();
+    final output = result.stdout.trim();
 
     if (result.exitCode != 0) {
-      final stderr = (result.stderr as String).trim();
+      final stderr = result.stderr.trim();
       print('  ${context.name}: pull failed');
       if (args.verbose && stderr.isNotEmpty) print('    $stderr');
       return ItemResult.failure(
@@ -289,7 +289,7 @@ class GitBranchExecutor extends CommandExecutor {
     // List branches
     final branchArgs = showAll ? ['branch', '-a'] : ['branch'];
     final result = await _runGit(branchArgs, dir);
-    final output = (result.stdout as String).trim();
+    final output = result.stdout.trim();
     print('  ${context.name}:');
     for (final line in output.split('\n')) {
       print('    $line');
@@ -345,7 +345,7 @@ class GitTagExecutor extends CommandExecutor {
 
     // List tags
     final result = await _runGit(['tag', '-l'], dir);
-    final output = (result.stdout as String).trim();
+    final output = result.stdout.trim();
     if (output.isEmpty) {
       print('  ${context.name}: no tags');
     } else {
@@ -384,7 +384,7 @@ class GitCheckoutExecutor extends CommandExecutor {
     final result = await _runGit(checkoutArgs, dir);
 
     if (result.exitCode != 0) {
-      final stderr = (result.stderr as String).trim();
+      final stderr = result.stderr.trim();
       return ItemResult.failure(
         path: dir, name: context.name, error: 'checkout failed: $stderr');
     }
@@ -450,7 +450,7 @@ class GitCleanExecutor extends CommandExecutor {
       // Show what would be cleaned
       final dryResult =
           await _runGit([...cleanArgs, '-n'], dir);
-      final output = (dryResult.stdout as String).trim();
+      final output = dryResult.stdout.trim();
       if (output.isEmpty) {
         print('  ${context.name}: nothing to clean');
       } else {
@@ -556,7 +556,7 @@ class GitStashExecutor extends CommandExecutor {
     if (message != null) stashArgs.addAll(['-m', message]);
 
     final result = await _runGit(stashArgs, dir);
-    final output = (result.stdout as String).trim();
+    final output = result.stdout.trim();
     final nothingToStash = output.contains('No local changes');
 
     if (nothingToStash) {
@@ -595,7 +595,7 @@ class GitUnstashExecutor extends CommandExecutor {
 
     final result = await _runGit(stashArgs, dir);
     if (result.exitCode != 0) {
-      final stderr = (result.stderr as String).trim();
+      final stderr = result.stderr.trim();
       if (stderr.contains('No stash entries')) {
         print('  ${context.name}: no stash entries');
         return ItemResult.success(
@@ -628,7 +628,7 @@ class GitCompareExecutor extends CommandExecutor {
         : ['diff', '--shortstat', '$base..HEAD'];
 
     final result = await _runGit(diffArgs, dir);
-    final output = (result.stdout as String).trim();
+    final output = result.stdout.trim();
 
     if (output.isEmpty) {
       print('  ${context.name}: no differences from $base');
@@ -808,8 +808,8 @@ class GitPassthroughExecutor extends CommandExecutor {
     }
 
     final result = await _runGit(gitArgs, dir, verbose: args.verbose);
-    final output = (result.stdout as String).trim();
-    final stderr = (result.stderr as String).trim();
+    final output = result.stdout.trim();
+    final stderr = result.stderr.trim();
 
     print('  ${context.name}:');
     if (output.isNotEmpty) {

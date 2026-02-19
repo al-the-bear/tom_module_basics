@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import '../folder/fs_folder.dart';
+import '../folder/run_folder.dart';
 import '../folder/natures/dart_project_folder.dart';
 import 'command_context.dart';
 import 'filter_pipeline.dart';
@@ -71,23 +72,35 @@ abstract class BuildBase {
     switch (info) {
       case ProjectTraversalInfo pi:
         folders = await _scanProjects(pi, verbose: verbose);
-        folders = filter.applyProjectFilters(folders, pi);
       case GitTraversalInfo gi:
         folders = await _findGitRepos(gi);
-        folders = filter.applyGitFilters(folders, gi);
       default:
         folders = [];
     }
 
-    // Detect natures and create contexts
-    final contexts = <CommandContext>[];
+    // Detect natures FIRST (needed for project ID/name filtering)
     for (final folder in folders) {
       final natures = detector.detectNatures(folder);
       // Store natures in folder for filter pipeline access
       folder.natures.addAll(natures);
+    }
+
+    // Apply filters AFTER nature detection (so ID/name matching works)
+    switch (info) {
+      case ProjectTraversalInfo pi:
+        folders = filter.applyProjectFilters(folders, pi);
+      case GitTraversalInfo gi:
+        folders = filter.applyGitFilters(folders, gi);
+      default:
+        break;
+    }
+
+    // Create contexts from filtered folders
+    final contexts = <CommandContext>[];
+    for (final folder in folders) {
       contexts.add(CommandContext(
         fsFolder: folder,
-        natures: natures,
+        natures: folder.natures.whereType<RunFolder>().toList(),
         executionRoot: info.executionRoot,
         traversal: info,
       ));

@@ -437,16 +437,16 @@ class RunnerTool extends ToolBase {
     print('  Running: dart ${dartArgs.join(' ')}');
     print('  Working directory: ${p.basename(projectPath)}');
 
-    final result = await Process.run(
+    final result = await ProcessRunner.run(
       'dart',
       dartArgs,
       workingDirectory: projectPath,
     );
 
-    if (result.stdout.toString().isNotEmpty) {
+    if (result.stdout.isNotEmpty) {
       stdout.write(result.stdout);
     }
-    if (result.stderr.toString().isNotEmpty) {
+    if (result.stderr.isNotEmpty) {
       stderr.write(result.stderr);
     }
 

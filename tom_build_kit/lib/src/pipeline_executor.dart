@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:tom_build_base/tom_build_base.dart';
+
 import 'pipeline_config.dart';
 import 'pipeline_step.dart';
 import 'builtin_commands.dart';
@@ -246,17 +248,16 @@ class PipelineExecutor {
     if (verbose) print('  Executing: $expanded');
 
     try {
-      final result = await Process.run(
-        'sh',
-        ['-c', expanded],
+      final result = await ProcessRunner.runShell(
+        expanded,
         workingDirectory: projectPath,
         environment: _buildEnvironment(),
       );
 
-      if (result.stdout.toString().isNotEmpty) {
+      if (result.stdout.isNotEmpty) {
         stdout.write(result.stdout);
       }
-      if (result.stderr.toString().isNotEmpty) {
+      if (result.stderr.isNotEmpty) {
         stderr.write(result.stderr);
       }
 

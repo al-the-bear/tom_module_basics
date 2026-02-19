@@ -176,7 +176,7 @@ class GitStatusTool extends ToolBase {
 
   Future<void> _gitFetch(String repoPath) async {
     try {
-      await Process.run('git', ['fetch', '--all', '--quiet'],
+      await ProcessRunner.run('git', ['fetch', '--all', '--quiet'],
           workingDirectory: repoPath);
     } catch (_) {
       // Ignore fetch errors
@@ -189,11 +189,11 @@ class GitStatusTool extends ToolBase {
     // Get current branch
     String branch;
     try {
-      final result = await Process.run(
+      final result = await ProcessRunner.run(
         'git', ['rev-parse', '--abbrev-ref', 'HEAD'],
         workingDirectory: repoPath,
       );
-      branch = result.stdout.toString().trim();
+      branch = result.stdout.trim();
     } catch (_) {
       branch = 'unknown';
     }
@@ -204,11 +204,11 @@ class GitStatusTool extends ToolBase {
     List<String> untrackedFiles = [];
     
     try {
-      final result = await Process.run(
+      final result = await ProcessRunner.run(
         'git', ['status', '--porcelain'],
         workingDirectory: repoPath,
       );
-      final lines = result.stdout.toString().split('\n').where((l) => l.isNotEmpty);
+      final lines = result.stdout.split('\n').where((l) => l.isNotEmpty);
       for (final line in lines) {
         if (line.length < 3) continue;
         final indexStatus = line[0];
@@ -233,12 +233,12 @@ class GitStatusTool extends ToolBase {
     // Get unpushed commits
     List<String> unpushedCommits = [];
     try {
-      final result = await Process.run(
+      final result = await ProcessRunner.run(
         'git', ['log', '@{u}..HEAD', '--oneline'],
         workingDirectory: repoPath,
       );
       if (result.exitCode == 0) {
-        unpushedCommits = result.stdout.toString()
+        unpushedCommits = result.stdout
             .split('\n')
             .where((l) => l.isNotEmpty)
             .toList();
@@ -251,11 +251,11 @@ class GitStatusTool extends ToolBase {
     int stashCount = 0;
     if (showStash) {
       try {
-        final result = await Process.run(
+        final result = await ProcessRunner.run(
           'git', ['stash', 'list'],
           workingDirectory: repoPath,
         );
-        stashCount = result.stdout.toString()
+        stashCount = result.stdout
             .split('\n')
             .where((l) => l.isNotEmpty)
             .length;

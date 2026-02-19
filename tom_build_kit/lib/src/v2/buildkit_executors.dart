@@ -10,6 +10,7 @@ library;
 
 import 'dart:io';
 
+import 'package:tom_build_base/tom_build_base.dart';
 import 'package:tom_build_base/tom_build_base_v2.dart';
 
 import '../pubget_command.dart';
@@ -224,12 +225,12 @@ class DcliExecutor extends CommandExecutor {
     dcliArgs.addAll(args.positionalArgs);
 
     try {
-      final result = await Process.run('dcli', dcliArgs);
-      if (result.stdout.toString().isNotEmpty) {
+      final result = await ProcessRunner.run('dcli', dcliArgs);
+      if (result.stdout.isNotEmpty) {
         stdout.write(result.stdout);
       }
       if (result.exitCode != 0) {
-        if (result.stderr.toString().isNotEmpty) {
+        if (result.stderr.isNotEmpty) {
           stderr.write(result.stderr);
         }
         return ToolResult.failure('dcli exited with code ${result.exitCode}');

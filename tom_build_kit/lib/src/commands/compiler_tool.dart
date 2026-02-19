@@ -21,6 +21,7 @@ class CompilerConfig {
   final bool verbose;
   final bool dryRun;
   final List<String> targetFilter;
+  final List<String> executableFilter;
   final List<CommandSection> precompileSections;
   final List<CompileSection> compileSections;
   final List<CommandSection> postcompileSections;
@@ -34,6 +35,7 @@ class CompilerConfig {
     this.verbose = false,
     this.dryRun = false,
     this.targetFilter = const [],
+    this.executableFilter = const [],
     this.precompileSections = const [],
     this.compileSections = const [],
     this.postcompileSections = const [],
@@ -128,6 +130,9 @@ class CompilerConfig {
       targetFilter: other.targetFilter.isNotEmpty
           ? other.targetFilter
           : targetFilter,
+      executableFilter: other.executableFilter.isNotEmpty
+          ? other.executableFilter
+          : executableFilter,
       precompileSections: other.precompileSections.isNotEmpty
           ? other.precompileSections
           : precompileSections,
@@ -158,6 +163,9 @@ class CompilerTool extends ToolBase {
     parser.addOption('targets',
         abbr: 't',
         help: 'Target platforms (comma-separated, e.g., linux-x64,darwin-arm64)');
+    parser.addOption('executable',
+        abbr: 'e',
+        help: 'Executable files filter (comma-separated, e.g., buildkit.dart,compiler.dart)');
   }
 
   @override
@@ -216,6 +224,12 @@ class CompilerTool extends ToolBase {
         ? targetsArg.split(',').map((s) => s.trim()).toList()
         : <String>[];
 
+    // Parse executable filter
+    final executableArg = results['executable'] as String?;
+    final executableFilter = executableArg != null
+        ? executableArg.split(',').map((s) => s.trim()).toList()
+        : <String>[];
+
     // Load workspace-level config
     var config = CompilerConfig.loadFromYaml(executionRoot) ?? CompilerConfig();
 
@@ -229,6 +243,7 @@ class CompilerTool extends ToolBase {
       verbose: verbose,
       dryRun: dryRun,
       targetFilter: targetFilter,
+      executableFilter: executableFilter,
     ));
 
     // Validate paths
@@ -350,8 +365,22 @@ class CompilerTool extends ToolBase {
           }
         }
 
+        // Get files to compile, applying executable filter
+        var files = section.files.toList();
+        if (projectConfig.executableFilter.isNotEmpty) {
+          files = files.where((f) {
+            final fileName = p.basename(f);
+            return projectConfig.executableFilter.any((filter) =>
+                fileName == filter || f.endsWith(filter));
+          }).toList();
+          if (files.isEmpty) {
+            if (verbose) print('  No files match executable filter');
+            continue;
+          }
+        }
+
         // Compile each file for each target (continue on failure)
-        for (final file in section.files) {
+        for (final file in files) {
           for (final target in targets) {
             if (section.isBuiltinCommand) {
               // Built-in command mode — dispatch to built-in tools
@@ -498,16 +527,15 @@ class CompilerTool extends ToolBase {
 
       if (verbose) print('  $sectionName: $command');
 
-      final result = await Process.run(
-        '/bin/sh',
-        ['-c', command],
+      final result = await ProcessRunner.runShell(
+        command,
         environment: Platform.environment,
       );
 
-      if (result.stdout.toString().isNotEmpty) {
+      if (result.stdout.isNotEmpty) {
         stdout.write(result.stdout);
       }
-      if (result.stderr.toString().isNotEmpty) {
+      if (result.stderr.isNotEmpty) {
         stderr.write(result.stderr);
       }
 
@@ -620,17 +648,16 @@ class CompilerTool extends ToolBase {
         print('  Compiling $fileName for $targetPlatform');
       }
 
-      final result = await Process.run(
-        '/bin/sh',
-        ['-c', command],
+      final result = await ProcessRunner.runShell(
+        command,
         workingDirectory: projectPath,
         environment: Platform.environment,
       );
 
-      if (result.stdout.toString().isNotEmpty) {
+      if (result.stdout.isNotEmpty) {
         stdout.write(result.stdout);
       }
-      if (result.stderr.toString().isNotEmpty) {
+      if (result.stderr.isNotEmpty) {
         stderr.write(result.stderr);
       }
 

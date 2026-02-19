@@ -349,13 +349,13 @@ class VersionerTool extends ToolBase {
   /// Get short git commit hash.
   Future<String?> _getGitCommit(String projectPath) async {
     try {
-      final result = await Process.run('git', [
+      final result = await ProcessRunner.run('git', [
         'rev-parse',
         '--short',
         'HEAD',
       ], workingDirectory: projectPath);
       if (result.exitCode == 0) {
-        return result.stdout.toString().trim();
+        return result.stdout.trim();
       }
     } catch (_) {}
     return null;
@@ -392,8 +392,8 @@ class VersionerTool extends ToolBase {
   /// Get Dart SDK version.
   Future<String?> _getDartSdkVersion() async {
     try {
-      final result = await Process.run('dart', ['--version']);
-      final output = result.stdout.toString() + result.stderr.toString();
+      final result = await ProcessRunner.run('dart', ['--version']);
+      final output = result.stdout + result.stderr;
       // Parse "Dart SDK version: 3.x.y ..." format
       final match = RegExp(r'Dart SDK version:\s+(\S+)').firstMatch(output);
       if (match != null) return match.group(1);

@@ -6,6 +6,7 @@ library;
 
 import 'dart:io';
 
+import 'package:tom_build_base/tom_build_base.dart' show ProcessRunner;
 import 'package:tom_build_base/tom_build_base_v2.dart';
 import 'package:yaml/yaml.dart';
 
@@ -119,13 +120,13 @@ class PublisherExecutor extends CommandExecutor {
 
     try {
       // Check for uncommitted changes
-      final statusResult = await Process.run(
+      final statusResult = await ProcessRunner.run(
         'git',
         ['status', '--porcelain', '--', projectPath],
         workingDirectory: projectPath,
       );
       if (statusResult.exitCode == 0) {
-        final output = (statusResult.stdout as String).trim();
+        final output = statusResult.stdout.trim();
         if (output.isNotEmpty) {
           final lineCount = output.split('\n').length;
           issues.add('uncommitted changes ($lineCount files)');
@@ -133,20 +134,20 @@ class PublisherExecutor extends CommandExecutor {
       }
 
       // Check for unpushed commits
-      final branchResult = await Process.run(
+      final branchResult = await ProcessRunner.run(
         'git',
         ['rev-parse', '--abbrev-ref', 'HEAD'],
         workingDirectory: projectPath,
       );
       if (branchResult.exitCode == 0) {
-        final branch = (branchResult.stdout as String).trim();
-        final logResult = await Process.run(
+        final branch = branchResult.stdout.trim();
+        final logResult = await ProcessRunner.run(
           'git',
           ['log', branch, '--not', '--remotes', '--oneline'],
           workingDirectory: projectPath,
         );
         if (logResult.exitCode == 0) {
-          final output = (logResult.stdout as String).trim();
+          final output = logResult.stdout.trim();
           if (output.isNotEmpty) {
             final count = output.split('\n').length;
             issues.add('unpushed commits ($count)');

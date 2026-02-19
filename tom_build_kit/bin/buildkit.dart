@@ -26,6 +26,7 @@ import 'dart:io';
 
 import 'package:args/args.dart';
 import 'package:path/path.dart' as p;
+import 'package:tom_build_base/tom_build_base.dart';
 import 'package:tom_build_base/tom_build_base_v2.dart';
 import 'package:tom_build_kit/tom_build_kit.dart';
 
@@ -106,6 +107,9 @@ Future<void> main(List<String> args) async {
 
   _verbose = globalResults['verbose'] as bool;
   _dryRun = globalResults['dry-run'] as bool;
+
+  // Initialize central logging verbose flag
+  ToolLogger.verbose = _verbose;
 
   // Parse navigation args using tom_build_base (single source of truth)
   final navArgs = parseNavigationArgs(globalResults, bareRoot: bareRootFlag);

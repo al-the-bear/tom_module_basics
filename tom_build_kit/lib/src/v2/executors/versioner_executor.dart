@@ -9,7 +9,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
-import 'package:tom_build_base/tom_build_base.dart' show TomBuildConfig, hasTomBuildConfig, findWorkspaceRoot;
+import 'package:tom_build_base/tom_build_base.dart'
+    show TomBuildConfig, hasTomBuildConfig, findWorkspaceRoot, ProcessRunner;
 import 'package:tom_build_base/tom_build_base_v2.dart';
 import 'package:yaml/yaml.dart';
 
@@ -313,13 +314,13 @@ class VersionerExecutor extends CommandExecutor {
   /// Get short git commit hash.
   Future<String?> _getGitCommit(String projectPath) async {
     try {
-      final result = await Process.run(
+      final result = await ProcessRunner.run(
         'git',
         ['rev-parse', '--short', 'HEAD'],
         workingDirectory: projectPath,
       );
       if (result.exitCode == 0) {
-        return result.stdout.toString().trim();
+        return result.stdout.trim();
       }
     } catch (_) {}
     return null;
@@ -358,8 +359,8 @@ class VersionerExecutor extends CommandExecutor {
   /// Get Dart SDK version.
   Future<String?> _getDartSdkVersion() async {
     try {
-      final result = await Process.run('dart', ['--version']);
-      final output = result.stdout.toString() + result.stderr.toString();
+      final result = await ProcessRunner.run('dart', ['--version']);
+      final output = result.stdout + result.stderr;
       final match = RegExp(r'Dart SDK version:\s+(\S+)').firstMatch(output);
       if (match != null) return match.group(1);
       final versionMatch = RegExp(r'(\d+\.\d+\.\d+)').firstMatch(output);

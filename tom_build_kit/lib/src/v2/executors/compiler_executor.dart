@@ -10,7 +10,8 @@ library;
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
-import 'package:tom_build_base/tom_build_base.dart' show findWorkspaceRoot;
+import 'package:tom_build_base/tom_build_base.dart'
+    show findWorkspaceRoot, ProcessRunner;
 import 'package:tom_build_base/tom_build_base_v2.dart';
 import 'package:yaml/yaml.dart';
 
@@ -26,12 +27,14 @@ import '../../script_utils.dart' as script_utils;
 /// Configuration for the compiler tool, merging workspace + project configs.
 class _CompilerConfig {
   final List<String> targetFilter;
+  final List<String> executableFilter;
   final List<CommandSection> precompileSections;
   final List<CompileSection> compileSections;
   final List<CommandSection> postcompileSections;
 
   const _CompilerConfig({
     this.targetFilter = const [],
+    this.executableFilter = const [],
     this.precompileSections = const [],
     this.compileSections = const [],
     this.postcompileSections = const [],
@@ -89,6 +92,9 @@ class _CompilerConfig {
       targetFilter: other.targetFilter.isNotEmpty
           ? other.targetFilter
           : targetFilter,
+      executableFilter: other.executableFilter.isNotEmpty
+          ? other.executableFilter
+          : executableFilter,
       precompileSections: other.precompileSections.isNotEmpty
           ? other.precompileSections
           : precompileSections,
@@ -134,6 +140,17 @@ class CompilerExecutor extends CommandExecutor {
       }
     }
 
+    // Parse executable filter from CLI
+    final executableFilter = <String>[];
+    final executableArg = cmdOpts['executable'];
+    if (executableArg is String) {
+      executableFilter.addAll(executableArg.split(',').map((s) => s.trim()));
+    } else if (executableArg is List) {
+      for (final e in executableArg) {
+        executableFilter.addAll(e.toString().split(',').map((s) => s.trim()));
+      }
+    }
+
     // Load workspace config then merge project config
     var config =
         _CompilerConfig.loadFromYaml(context.executionRoot) ??
@@ -144,6 +161,9 @@ class CompilerExecutor extends CommandExecutor {
     }
     if (targetFilter.isNotEmpty) {
       config = config.merge(_CompilerConfig(targetFilter: targetFilter));
+    }
+    if (executableFilter.isNotEmpty) {
+      config = config.merge(_CompilerConfig(executableFilter: executableFilter));
     }
 
     if (config.compileSections.isEmpty) {
@@ -208,7 +228,21 @@ class CompilerExecutor extends CommandExecutor {
           }
         }
 
-        for (final file in section.files) {
+        // Get files to compile, applying executable filter
+        var files = section.files.toList();
+        if (config.executableFilter.isNotEmpty) {
+          files = files.where((f) {
+            final fileName = p.basename(f);
+            return config.executableFilter.any((filter) =>
+                fileName == filter || f.endsWith(filter));
+          }).toList();
+          if (files.isEmpty) {
+            if (args.verbose) print('  No files match executable filter');
+            continue;
+          }
+        }
+
+        for (final file in files) {
           for (final target in targets) {
             final success = section.isBuiltinCommand
                 ? await _compileFileBuiltin(
@@ -376,12 +410,12 @@ class CompilerExecutor extends CommandExecutor {
       }
       if (args.verbose) print('  $sectionName: $command');
 
-      final result = await Process.run('/bin/sh', [
-        '-c',
+      final result = await ProcessRunner.runShell(
         command,
-      ], environment: Platform.environment);
-      if (result.stdout.toString().isNotEmpty) stdout.write(result.stdout);
-      if (result.stderr.toString().isNotEmpty) stderr.write(result.stderr);
+        environment: Platform.environment,
+      );
+      if (result.stdout.isNotEmpty) stdout.write(result.stdout);
+      if (result.stderr.isNotEmpty) stderr.write(result.stderr);
       if (result.exitCode != 0) {
         print('  Error: $sectionName command failed (exit ${result.exitCode})');
       }
@@ -469,14 +503,13 @@ class CompilerExecutor extends CommandExecutor {
         print('  Compiling $fileName for $targetPlatform');
       }
 
-      final result = await Process.run(
-        '/bin/sh',
-        ['-c', command],
+      final result = await ProcessRunner.runShell(
+        command,
         workingDirectory: Directory.current.path,
         environment: Platform.environment,
       );
-      if (result.stdout.toString().isNotEmpty) stdout.write(result.stdout);
-      if (result.stderr.toString().isNotEmpty) stderr.write(result.stderr);
+      if (result.stdout.isNotEmpty) stdout.write(result.stdout);
+      if (result.stderr.isNotEmpty) stderr.write(result.stderr);
       if (result.exitCode != 0) {
         print('  Error: Compilation failed for $fileName ($targetPlatform)');
         return false;

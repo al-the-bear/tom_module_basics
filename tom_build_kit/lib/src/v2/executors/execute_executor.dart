@@ -5,7 +5,7 @@
 /// conditional command construction.
 library;
 
-import 'dart:io';
+import 'dart:io' show Directory;
 
 import 'package:tom_build_base/tom_build_base.dart';
 import 'package:tom_build_base/tom_build_base_v2.dart';
@@ -138,15 +138,13 @@ class ExecuteExecutor extends CommandExecutor {
     print('${context.name}: $resolvedCommand');
 
     try {
-      final result = await Process.run(
-        'bash',
-        ['-c', resolvedCommand],
+      final result = await ProcessRunner.runShell(
+        resolvedCommand,
         workingDirectory: context.path,
-        runInShell: false,
       );
 
-      final stdout = (result.stdout as String).trim();
-      final stderr = (result.stderr as String).trim();
+      final stdout = result.stdout.trim();
+      final stderr = result.stderr.trim();
 
       if (stdout.isNotEmpty) {
         for (final line in stdout.split('\n')) {

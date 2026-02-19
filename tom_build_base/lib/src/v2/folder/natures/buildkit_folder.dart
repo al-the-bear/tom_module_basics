@@ -9,6 +9,9 @@ class BuildkitFolder extends RunFolder {
   /// Project ID from buildkit.yaml (short mnemonic like "BB", "D4G").
   final String? projectId;
 
+  /// Project name from buildkit.yaml.
+  final String? projectName;
+
   /// Recursive flag from buildkit.yaml (default: true).
   final bool recursive;
 
@@ -18,6 +21,7 @@ class BuildkitFolder extends RunFolder {
   BuildkitFolder(
     super.fsFolder, {
     this.projectId,
+    this.projectName,
     this.recursive = true,
     this.config = const {},
   });
@@ -28,7 +32,7 @@ class BuildkitFolder extends RunFolder {
   }
 
   @override
-  String toString() => 'BuildkitFolder($path, id: $projectId)';
+  String toString() => 'BuildkitFolder($path, id: $projectId, name: $projectName)';
 }
 
 /// Build runner (build.yaml) nature.

@@ -63,6 +63,12 @@ const compilerOptions = <OptionDefinition>[
     description: 'Target platform(s) filter (e.g., linux-x64,darwin-arm64)',
     valueName: 'platform',
   ),
+  OptionDefinition.multi(
+    name: 'executable',
+    abbr: 'e',
+    description: 'Executable file(s) filter (e.g., buildkit.dart,compiler.dart)',
+    valueName: 'file',
+  ),
 ];
 
 /// Options for runner command.
@@ -486,6 +492,8 @@ const compilerCommand = CommandDefinition(
   examples: [
     'buildkit :compiler',
     'buildkit :compiler --targets=linux-x64,darwin-arm64',
+    'buildkit :compiler --executable=buildkit.dart,compiler.dart',
+    'buildkit :compiler -e buildkit.dart -t linux-x64',
   ],
 );
 
@@ -632,6 +640,7 @@ const gitCommand = CommandDefinition(
   options: gitOptions,
   supportsProjectTraversal: false,
   supportsGitTraversal: true,
+  requiresGitTraversal: true,
   defaultGitOrder: null, // User must specify -i or -o
   requiresTraversal: true,
   canRunStandalone: true,
@@ -648,6 +657,7 @@ const gitstatusCommand = CommandDefinition(
   options: gitstatusOptions,
   supportsProjectTraversal: false,
   supportsGitTraversal: true,
+  requiresGitTraversal: true,
   defaultGitOrder: GitTraversalOrder.innerFirst,
   requiresTraversal: true,
   canRunStandalone: true,
@@ -661,6 +671,7 @@ const gitcommitCommand = CommandDefinition(
   options: gitcommitOptions,
   supportsProjectTraversal: false,
   supportsGitTraversal: true,
+  requiresGitTraversal: true,
   defaultGitOrder: GitTraversalOrder.innerFirst, // Fixed: inner first
   requiresTraversal: true,
   canRunStandalone: true,
@@ -674,6 +685,7 @@ const gitpullCommand = CommandDefinition(
   options: gitpullOptions,
   supportsProjectTraversal: false,
   supportsGitTraversal: true,
+  requiresGitTraversal: true,
   defaultGitOrder: GitTraversalOrder.outerFirst, // Fixed: outer first
   requiresTraversal: true,
   canRunStandalone: true,
@@ -687,6 +699,7 @@ const gitbranchCommand = CommandDefinition(
   options: gitbranchOptions,
   supportsProjectTraversal: false,
   supportsGitTraversal: true,
+  requiresGitTraversal: true,
   defaultGitOrder: GitTraversalOrder.innerFirst, // Fixed: inner first
   requiresTraversal: true,
   canRunStandalone: true,
@@ -700,6 +713,7 @@ const gittagCommand = CommandDefinition(
   options: gittagOptions,
   supportsProjectTraversal: false,
   supportsGitTraversal: true,
+  requiresGitTraversal: true,
   defaultGitOrder: GitTraversalOrder.innerFirst, // Fixed: inner first
   requiresTraversal: true,
   canRunStandalone: true,
@@ -713,6 +727,7 @@ const gitcheckoutCommand = CommandDefinition(
   options: gitcheckoutOptions,
   supportsProjectTraversal: false,
   supportsGitTraversal: true,
+  requiresGitTraversal: true,
   defaultGitOrder: GitTraversalOrder.outerFirst, // Fixed: outer first
   requiresTraversal: true,
   canRunStandalone: true,
@@ -726,6 +741,7 @@ const gitresetCommand = CommandDefinition(
   options: gitresetOptions,
   supportsProjectTraversal: false,
   supportsGitTraversal: true,
+  requiresGitTraversal: true,
   defaultGitOrder: GitTraversalOrder.outerFirst, // Fixed: outer first
   requiresTraversal: true,
   canRunStandalone: true,
@@ -739,6 +755,7 @@ const gitcleanCommand = CommandDefinition(
   options: gitcleanOptions,
   supportsProjectTraversal: false,
   supportsGitTraversal: true,
+  requiresGitTraversal: true,
   defaultGitOrder: GitTraversalOrder.innerFirst, // Fixed: inner first
   requiresTraversal: true,
   canRunStandalone: true,
@@ -752,6 +769,7 @@ const gitsyncCommand = CommandDefinition(
   options: gitsyncOptions,
   supportsProjectTraversal: false,
   supportsGitTraversal: true,
+  requiresGitTraversal: true,
   defaultGitOrder: GitTraversalOrder.outerFirst, // Fixed: outer first
   requiresTraversal: true,
   canRunStandalone: true,
@@ -765,6 +783,7 @@ const gitpruneCommand = CommandDefinition(
   options: gitpruneOptions,
   supportsProjectTraversal: false,
   supportsGitTraversal: true,
+  requiresGitTraversal: true,
   defaultGitOrder: GitTraversalOrder.outerFirst, // Fixed: outer first
   requiresTraversal: true,
   canRunStandalone: true,
@@ -778,6 +797,7 @@ const gitstashCommand = CommandDefinition(
   options: gitstashOptions,
   supportsProjectTraversal: false,
   supportsGitTraversal: true,
+  requiresGitTraversal: true,
   defaultGitOrder: GitTraversalOrder.innerFirst, // Fixed: inner first
   requiresTraversal: true,
   canRunStandalone: true,
@@ -791,6 +811,7 @@ const gitunstashCommand = CommandDefinition(
   options: gitunstashOptions,
   supportsProjectTraversal: false,
   supportsGitTraversal: true,
+  requiresGitTraversal: true,
   defaultGitOrder: GitTraversalOrder.outerFirst, // Fixed: outer first (reverse)
   requiresTraversal: true,
   canRunStandalone: true,
@@ -804,6 +825,7 @@ const gitcompareCommand = CommandDefinition(
   options: gitcompareOptions,
   supportsProjectTraversal: false,
   supportsGitTraversal: true,
+  requiresGitTraversal: true,
   defaultGitOrder: GitTraversalOrder.innerFirst, // Fixed: inner first
   requiresTraversal: true,
   canRunStandalone: true,
@@ -817,6 +839,7 @@ const gitmergeCommand = CommandDefinition(
   options: gitmergeOptions,
   supportsProjectTraversal: false,
   supportsGitTraversal: true,
+  requiresGitTraversal: true,
   defaultGitOrder: GitTraversalOrder.innerFirst, // Fixed: inner first
   requiresTraversal: true,
   canRunStandalone: true,
@@ -830,6 +853,7 @@ const gitsquashCommand = CommandDefinition(
   options: gitsquashOptions,
   supportsProjectTraversal: false,
   supportsGitTraversal: true,
+  requiresGitTraversal: true,
   defaultGitOrder: GitTraversalOrder.innerFirst, // Fixed: inner first
   requiresTraversal: true,
   canRunStandalone: true,
@@ -843,6 +867,7 @@ const gitrebaseCommand = CommandDefinition(
   options: gitrebaseOptions,
   supportsProjectTraversal: false,
   supportsGitTraversal: true,
+  requiresGitTraversal: true,
   defaultGitOrder: GitTraversalOrder.innerFirst, // Fixed: inner first
   requiresTraversal: true,
   canRunStandalone: true,

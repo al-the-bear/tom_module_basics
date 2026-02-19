@@ -234,7 +234,7 @@ class PubUpdateCommand {
         args.add('--major-versions');
       }
 
-      final result = await Process.run(
+      final result = await ProcessRunner.run(
         'dart',
         args,
         workingDirectory: projectPath,
@@ -245,8 +245,8 @@ class PubUpdateCommand {
         projectPath: relativePath,
         projectName: projectName,
         success: result.exitCode == 0,
-        stdout: result.stdout.toString(),
-        stderr: result.stderr.toString(),
+        stdout: result.stdout,
+        stderr: result.stderr,
         exitCode: result.exitCode,
       );
     } catch (e) {

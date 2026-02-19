@@ -42,7 +42,13 @@ class CommandDefinition {
   final bool supportsProjectTraversal;
 
   /// Whether command supports git traversal (--modules, --skip-modules, etc.).
+  /// When true, allows git traversal if user specifies -i or -o.
+  /// When false, errors if user attempts git traversal.
   final bool supportsGitTraversal;
+
+  /// Whether command requires git traversal mode.
+  /// When true, errors if user doesn't specify -i or -o.
+  final bool requiresGitTraversal;
 
   /// Default git traversal order when command supports git traversal.
   /// null means user must explicitly specify.
@@ -75,6 +81,7 @@ class CommandDefinition {
     this.worksWithNatures = const {},
     this.supportsProjectTraversal = true,
     this.supportsGitTraversal = false,
+    this.requiresGitTraversal = false,
     this.defaultGitOrder,
     this.supportsPerCommandFilter = false,
     this.requiresTraversal = true,
