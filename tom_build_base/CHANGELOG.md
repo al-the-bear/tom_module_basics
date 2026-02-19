@@ -1,3 +1,28 @@
+## 1.12.0
+
+### Features
+
+- **`BuildkitFolder.projectName`** — BuildkitFolder nature now reads the `name` field from `buildkit.yaml`, enabling project name matching for buildkit-configured projects.
+
+- **`--project` ID and name matching** — FilterPipeline now matches `--project` values against project IDs and names from both `tom_project.yaml` and `buildkit.yaml`:
+  - `TomBuildFolder`: matches `project_id` and `short-id` fields
+  - `BuildkitFolder`: matches `id` and `name` fields
+  - Case-insensitive matching
+
+- **`handleSpecialCommands()`** — New utility function for tools to handle `help` and `version` commands consistently without custom parsing.
+
+### Bug Fixes
+
+- **Nature detection before filter application** — Fixed `BuildBase.traverse()` to detect folder natures before applying project filters. Previously, `applyProjectFilters()` was called before `detectNatures()`, causing ID/name-based `--project` matching to always fail.
+
+- **`tom_project.yaml` field name** — `NatureDetector._createTomProjectNature()` now reads `project_id` (underscore) in addition to `short-id` (hyphen) from `tom_project.yaml`.
+
+### Internal
+
+- **ToolLogger / ProcessRunner** — Central logging infrastructure with `--verbose` support for consistent tool output.
+
+---
+
 ## 1.11.0
 
 ### Features

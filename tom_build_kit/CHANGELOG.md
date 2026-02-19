@@ -1,3 +1,42 @@
+## 1.8.0
+
+### Features
+
+- **`:execute` command** — Run shell commands in each traversed folder with placeholder substitution.
+  - Aliases: `exec`, `x`
+  - Path placeholders: `${root}`, `${folder}`, `${folder.name}`, `${folder.relative}`
+  - Nature existence checks: `${dart.exists}`, `${flutter.exists}`, `${git.exists}`
+  - Nature attributes: `${dart.name}`, `${dart.version}`, `${git.branch}`, `${git.dirty}`
+  - Ternary expressions: `${condition?(true-value):(false-value)}`
+  - Condition filtering: `--condition dart.exists`
+
+- **`--executable` / `-e` option for `:compiler`** — Filter compilation to specific executable files.
+  - Comma-separated file list: `--executable buildkit.dart,compiler.dart`
+  - Matches by basename or path suffix
+  - Works in both buildkit `:compiler` command and standalone `compiler` tool
+
+- **`--project` ID and name matching** — The `--project` option now matches against project IDs and names from `buildkit.yaml` and `tom_project.yaml`, not just folder names and globs.
+  - Matches `short-id`/`project_id` from `tom_project.yaml`
+  - Matches `id` and `name` from `buildkit.yaml`
+  - Case-insensitive matching
+
+- **Command prefix matching** — Command names can be abbreviated to their shortest unambiguous prefix.
+  - `:vers` matches `:versioner`, `:comp` matches `:compiler`
+  - Exact matches always take priority over prefix matches
+  - Ambiguous prefixes report all matching commands
+
+- **Macro placeholders** — Macros now support argument placeholders `$1`–`$9` and `$$` (all arguments).
+
+### Bug Fixes
+
+- **`--project` filter applied before nature detection** — Fixed regression where `--project` with ID/name values always returned empty results because folder natures were not yet detected at filter time.
+
+### Dependencies
+
+- Requires tom_build_base v1.11.0 or later.
+
+---
+
 ## 1.7.0
 
 ### Refactoring

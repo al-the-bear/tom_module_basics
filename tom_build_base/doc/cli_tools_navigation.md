@@ -90,10 +90,20 @@ astgen -i                    # Inner-first git mode
 |--------|------|-------------|
 | `--inner-first-git` | `-i` | Scan git repos, process innermost (deepest) first |
 | `--outer-first-git` | `-o` | Scan git repos, process outermost (shallowest) first |
+| `--top-repo` | `-T` | Find topmost git repo by traversing up (requires `-i` or `-o`) |
 
 **Use cases:**
 - `-i`: For commit/push operations (leaf repos first)
 - `-o`: For pull/fetch operations (parent repos first)
+- `-T`: Find and operate on the parent repository containing the current directory
+
+The `--top-repo` flag traverses upward from the current directory to find the topmost git repository. It requires a git traversal mode (`-i` or `-o`) to be specified. This is useful when running from a nested subdirectory and you want to operate on the containing repository hierarchy.
+
+```bash
+# From inside a submodule, find all repos from the top
+gitstatus -T -i
+gitcommit -T -i -m "Update all"
+```
 
 ### Exclusion Patterns
 
@@ -362,6 +372,7 @@ reason: "Legacy project, not actively maintained"
 | `workspaceRecursion` | `bool` | Shell out to sub-workspaces |
 | `innerFirstGit` | `bool` | Inner-first git traversal |
 | `outerFirstGit` | `bool` | Outer-first git traversal |
+| `topRepo` | `bool` | Find topmost git repo by traversing up |
 | `exclude` | `List<String>` | Exclude patterns |
 | `excludeProjects` | `List<String>` | Excluded project names/paths |
 | `recursionExclude` | `List<String>` | Recursion exclude patterns |

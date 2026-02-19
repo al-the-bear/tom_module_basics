@@ -34,7 +34,9 @@ This package extends the shared infrastructure from **tom_build_base**:
   - [Pipeline Phases](#pipeline-phases)
 - [Built-in Commands](#built-in-commands)
   - [DCli Command](#dcli-command)
+  - [Execute Command](#execute-command)
   - [Status Command](#status-command)
+- [Command Prefix Matching](#command-prefix-matching)
 - [Macros](#macros)
   - [Defining Macros](#defining-macros)
   - [Using Macros](#using-macros)
@@ -81,6 +83,12 @@ buildkit --list
 
 # Show help for a built-in command
 buildkit help :compiler
+
+# Command prefix matching (unambiguous prefixes work)
+buildkit :vers :comp          # Matches :versioner :compiler
+
+# Execute shell command in each folder
+buildkit -i :execute "echo ${folder.name}"
 ```
 
 ---
@@ -122,6 +130,7 @@ Usage: buildkit [options] <pipeline|:command> [args...] [<pipeline|:command> [ar
 | `--workspace-recursion` | `-w` | Shell out to sub-workspaces instead of skipping |
 | `--inner-first-git` | `-i` | Scan git repos, process innermost (deepest) first |
 | `--outer-first-git` | `-o` | Scan git repos, process outermost (shallowest) first |
+| `--top-repo` | `-T` | Find topmost git repo by traversing up from current directory (requires `-i` or `-o`) |
 | `--exclude <pattern>` | `-x` | Exclude patterns — path-based globs (multi-option) |
 | `--exclude-projects <pattern>` | — | Exclude projects by name or path (multi-option) |
 
@@ -379,6 +388,7 @@ Built-in commands run the respective tools directly via their Dart implementatio
 | `gitsync` | Sync (fetch + merge/rebase) all repositories |
 | `status` | Show buildkit version, binary status, and git state |
 | `dcli` | Execute Dart scripts/expressions via dcli |
+| `execute` | Run shell commands in each folder with placeholder substitution (aliases: `exec`, `x`) |
 
 Commands can include arguments in pipeline definitions:
 
@@ -471,6 +481,53 @@ compiler:
   postcompile:
     - command: dcli ~s/post_compile.dart -no-init-source
 ```
+
+### Execute Command
+
+The `execute` command runs shell commands in each traversed folder with placeholder substitution. This is an internal command (no standalone executable).
+
+**Aliases:** `exec`, `x`
+
+**Syntax:**
+
+```bash
+buildkit -i :execute "echo ${folder.name}"
+buildkit -i :execute --condition dart.exists "dart pub get"
+buildkit -i :x "echo ${folder.name}"       # Using alias
+```
+
+**Options:**
+
+| Option | Description |
+|--------|-------------|
+| `-c, --condition` | Boolean placeholder condition to filter folders |
+
+**Placeholders:**
+
+| Placeholder | Description |
+|-------------|-------------|
+| `${root}` | Workspace root path |
+| `${folder}` | Current folder absolute path |
+| `${folder.name}` | Current folder name (last segment) |
+| `${folder.relative}` | Folder path relative to root |
+| `${current-os}` | Operating system |
+| `${current-arch}` | Architecture |
+| `${current-platform}` | Combined platform |
+| `${dart.exists}` | true if folder has pubspec.yaml |
+| `${flutter.exists}` | true if folder has flutter project |
+| `${git.exists}` | true if folder is a git repository |
+| `${dart.name}` | Package name from pubspec.yaml |
+| `${dart.version}` | Version from pubspec.yaml |
+| `${git.branch}` | Current branch name |
+| `${git.dirty}` | Whether repo has uncommitted changes |
+
+**Ternary expressions:**
+
+```bash
+buildkit -i :execute "echo ${dart.publishable?(Ready to publish):(Local only)}"
+```
+
+> See [tools_user_guide.md — Execute](tools_user_guide.md#execute) for the full placeholder reference.
 
 ### Status Command
 
@@ -626,6 +683,28 @@ bk help :define
 bk help :undefine
 bk help :defines
 ```
+
+---
+
+## Command Prefix Matching
+
+Command names can be abbreviated to their shortest unambiguous prefix:
+
+```bash
+# These are equivalent:
+buildkit :versioner :compiler
+buildkit :vers :comp
+
+# Prefix must be unambiguous:
+buildkit :git         # Ambiguous: gitstatus, gitcommit, gitpull, ...
+buildkit :gitstatus   # Exact match: OK
+buildkit :gitst       # Unambiguous prefix: matches gitstatus
+```
+
+**Rules:**
+- Exact matches (name or alias) always take priority over prefix matches
+- If a prefix matches multiple commands, BuildKit reports the ambiguity and lists all matching commands
+- Aliases are also checked for prefix matching (e.g., `:ex` matches `:execute` via the `exec` alias)
 
 ---
 

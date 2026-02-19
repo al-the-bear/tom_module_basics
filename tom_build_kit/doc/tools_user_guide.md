@@ -553,6 +553,20 @@ buildkit :compiler [tool-options]
 | Flag | Short | Description |
 |------|-------|-------------|
 | `--targets <list>` | `-t` | Target platforms to compile for (comma-separated) |
+| `--executable <list>` | `-e` | Filter to specific executable file(s) (comma-separated) |
+
+The `--executable` option filters which files are compiled. Only files whose basename matches one of the specified names will be processed:
+
+```bash
+# Compile only buildkit.dart
+compiler --project _build --executable buildkit.dart
+
+# Compile multiple specific files
+compiler --project _build --executable buildkit.dart,compiler.dart
+
+# Combine with target filtering
+compiler --project _build --executable buildkit.dart --targets linux-x64
+```
 
 **Configuration** is read from `build.yaml` under the `tom_build_kit:compiler_builder:` key:
 
@@ -670,6 +684,12 @@ compiler --project _build
 
 # Compile only for Linux x64
 compiler --project _build --targets linux-x64
+
+# Compile only specific executables
+compiler --project _build --executable buildkit.dart
+
+# Compile specific files for specific target
+compiler --project _build --executable buildkit.dart,compiler.dart --targets linux-x64
 
 # Dry-run to see planned commands
 compiler --project _build --dry-run
