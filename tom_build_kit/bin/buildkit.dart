@@ -436,9 +436,16 @@ Future<bool> _executeCommand(
 
   // Apply navigation defaults for workspace mode
   var effectiveNavArgs = navArgs;
-  if (isWorkspaceMode && navArgs.scan == null) {
-    // In workspace mode without explicit scan, default to scanning from workspace root
-    effectiveNavArgs = navArgs.copyWith(scan: rootPath, recursive: true);
+  if (isWorkspaceMode) {
+    if (navArgs.scan == null) {
+      // In workspace mode without explicit scan, default to scanning from
+      // workspace root recursively
+      effectiveNavArgs = navArgs.copyWith(scan: rootPath, recursive: true);
+    } else if (!navArgs.recursiveExplicitlySet) {
+      // In workspace mode with scan but no explicit recursive flag,
+      // default to recursive (workspace scans should recurse)
+      effectiveNavArgs = navArgs.copyWith(recursive: true);
+    }
   }
 
   // Get navigation args as command-line list (handles all options automatically)
