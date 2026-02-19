@@ -260,7 +260,9 @@ ArgParser _createGlobalParser() {
     ..addOption('project', abbr: 'p', help: 'Project filter (glob patterns)')
     ..addMultiOption('exclude', abbr: 'x', help: 'Exclude patterns')
     ..addMultiOption('exclude-projects', help: 'Exclude projects by name')
+    ..addMultiOption('recursion-exclude', help: 'Exclude patterns during recursive scan')
     ..addOption('modules', abbr: 'm', help: 'Git modules filter')
+    ..addOption('modes', help: 'Active modes for config processing (comma-separated)')
     ..addFlag(
       'build-order',
       abbr: 'b',
@@ -539,6 +541,18 @@ Future<bool> _executeCommand(
   final modules = global['modules'] as String?;
   if (modules != null) {
     globalArgs.addAll(['--modules', modules]);
+  }
+
+  final recursionExclude = global['recursion-exclude'] as List<String>?;
+  if (recursionExclude != null) {
+    for (final x in recursionExclude) {
+      globalArgs.addAll(['--recursion-exclude', x]);
+    }
+  }
+
+  final modes = global['modes'] as String?;
+  if (modes != null) {
+    globalArgs.addAll(['--modes', modes]);
   }
 
   // Command comes after global args, followed by command-specific args

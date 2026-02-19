@@ -120,3 +120,123 @@ class MyTool extends ToolBase {
 ## Version History
 
 - **2026-02**: Added standardized CLI help/version support via tom_build_base
+## Debugging Traversal with :execute
+
+The `:execute` command is a powerful tool for testing and debugging navigation options before running actual commands. It executes arbitrary shell commands in each discovered project, showing you exactly which projects are selected and in what order.
+
+### Basic Usage
+
+```bash
+# Test which projects would be affected
+buildkit -T -i :execute echo "Test"
+
+# Show project paths
+buildkit -s . -r :execute pwd
+
+# Verify git traversal order
+buildkit -T -o :execute echo "Repo: $(basename $(git rev-parse --show-toplevel 2>/dev/null || pwd))"
+```
+
+### Examples
+
+```bash
+# Debug -T (top-repo) with inner-first traversal
+buildkit -T -i :execute echo "Project: ${PWD##*/}"
+
+# Test --project filter
+buildkit --project tom_build_* :execute echo "Found"
+
+# Verify --exclude-projects filtering
+buildkit -s . -r --exclude-projects "zom_*" :execute ls -la
+
+# Test modules filter
+buildkit -m tom_module_basics :execute echo "In basics"
+```
+
+### Key Points
+
+- `:execute` respects all navigation options (`-T`, `-i`, `-o`, `-s`, `-r`, `-p`, etc.)
+- Output shows project name before command output for each project
+- Use `--dry-run` with other commands first, then `:execute` to verify traversal
+- Combine with `echo` for quick visibility checks
+
+## Architecture Issue: Option Duplication
+
+### Current Problem
+
+`buildkit.dart` duplicates navigation options instead of using `addNavigationOptions()` from tom_build_base:
+
+**buildkit.dart:**
+```dart
+ArgParser _createGlobalParser() {
+  return ArgParser(allowTrailingOptions: false)
+    ..addFlag('inner-first-git', abbr: 'i', ...)  // Duplicated!
+    ..addFlag('outer-first-git', abbr: 'o', ...)  // Duplicated!
+    ..addFlag('top-repo', abbr: 'T', ...)         // Duplicated!
+    // ... all manually defined
+}
+```
+
+**Standalone tools (via ToolBase):**
+```dart
+ArgParser createParser() {
+  final parser = ArgParser(allowTrailingOptions: false);
+  addNavigationOptions(parser);  // Uses tom_build_base
+  // ...
+}
+```
+
+### Missing Options in buildkit.dart
+
+When tom_build_base adds new options, buildkit.dart must be manually updated in THREE places:
+1. `_createGlobalParser()` — Parse the option
+2. `_executeCommand()` — Pass option to underlying commands
+3. `_generateCommandHelp()` — Document the option
+
+Currently missing from buildkit.dart:
+- `--recursion-exclude` — Exclude patterns during recursive scan
+- `--modes` — Active modes for config processing
+
+### Proposed Solution
+
+Refactor buildkit.dart to use tom_build_base's `addNavigationOptions()`:
+
+```dart
+ArgParser _createGlobalParser() {
+  final parser = ArgParser(allowTrailingOptions: false)
+    ..addFlag('help', abbr: 'h', negatable: false, help: 'Show this help')
+    ..addFlag('version', abbr: 'V', negatable: false, help: 'Show version')
+    ..addFlag('verbose', abbr: 'v', negatable: false, help: 'Verbose output')
+    ..addFlag('dry-run', abbr: 'n', negatable: false, help: 'Show what would be executed')
+    ..addFlag('list', abbr: 'l', negatable: false, help: 'List available pipelines');
+  
+  // Delegate navigation options to tom_build_base
+  addNavigationOptions(parser);
+  
+  return parser;
+}
+```
+
+Then use `WorkspaceNavigationArgs` for passing options:
+
+```dart
+Future<bool> _executeCommand(...) async {
+  // Parse navigation args once, pass them directly
+  final navArgs = parseNavigationArgs(globalResults, bareRoot: bareRootFlag);
+  final execArgs = navArgs.toArgs();  // Convert back to arg list
+  // ...
+}
+```
+
+### Benefits of Unified Architecture
+
+1. **Single source of truth** — Options defined only in tom_build_base
+2. **Automatic updates** — New options automatically available in buildkit
+3. **Consistent behavior** — Same parsing logic in kit-mode and standalone-mode
+4. **Reduced maintenance** — No more manual option synchronization
+
+### Implementation Priority
+
+- **High**: Add missing `--recursion-exclude` and `--modes` options to buildkit.dart
+- **Medium**: Refactor to use `addNavigationOptions()`
+- **Long-term**: Add `WorkspaceNavigationArgs.toArgs()` helper to tom_build_base
