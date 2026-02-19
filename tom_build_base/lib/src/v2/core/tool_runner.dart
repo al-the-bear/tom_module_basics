@@ -9,6 +9,7 @@ import 'tool_definition.dart';
 import 'command_executor.dart';
 import '../traversal/traversal_info.dart';
 import '../traversal/build_base.dart';
+import '../traversal/filter_pipeline.dart';
 import '../../workspace_mode.dart';
 
 /// Result of running a tool or command.
@@ -312,18 +313,20 @@ class ToolRunner {
         if (traversalInfo is ProjectTraversalInfo) {
           final cmdArgs = cliArgs.commandArgs[cmd?.name];
           if (cmdArgs != null) {
-            // Check project patterns
+            // Check project patterns (ID → name → folder name glob)
             if (cmdArgs.projectPatterns.isNotEmpty) {
-              final matches = _matchesAny(
-                context.name,
+              final filter = FilterPipeline();
+              final matches = filter.matchesProjectPattern(
+                context.fsFolder,
                 cmdArgs.projectPatterns,
               );
               if (!matches) return true; // Skip, continue
             }
-            // Check exclude patterns
+            // Check exclude patterns (ID → name → folder name glob)
             if (cmdArgs.excludePatterns.isNotEmpty) {
-              final excluded = _matchesAny(
-                context.name,
+              final filter = FilterPipeline();
+              final excluded = filter.matchesProjectPattern(
+                context.fsFolder,
                 cmdArgs.excludePatterns,
               );
               if (excluded) return true; // Skip, continue
@@ -338,23 +341,6 @@ class ToolRunner {
     );
 
     return ToolResult.fromItems(results);
-  }
-
-  /// Check if name matches any pattern.
-  bool _matchesAny(String name, List<String> patterns) {
-    for (final pattern in patterns) {
-      if (_matchGlob(name, pattern)) return true;
-    }
-    return false;
-  }
-
-  /// Simple glob matching.
-  bool _matchGlob(String name, String pattern) {
-    final regexStr = pattern
-        .replaceAll('.', r'\.')
-        .replaceAll('*', '.*')
-        .replaceAll('?', '.');
-    return RegExp('^$regexStr\$').hasMatch(name);
   }
 
   /// Load traversal defaults from buildkit_master.yaml navigation section.

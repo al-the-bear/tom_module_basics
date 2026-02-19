@@ -99,6 +99,16 @@ class FilterPipeline {
     return false;
   }
 
+  /// Check if a folder matches any project pattern by ID, name, or folder name glob.
+  ///
+  /// This is the unified matching method used for `--project` / `-p` filtering.
+  /// Resolution order: project ID → project name → folder name (glob).
+  bool matchesProjectPattern(FsFolder folder, List<String> patterns) {
+    return _matchesProjectId(folder, patterns) ||
+        _matchesProjectName(folder, patterns) ||
+        _matchesNamePattern(folder.name, patterns);
+  }
+
   /// Check if name matches any of the patterns (for include/project filters).
   /// Uses glob pattern matching on folder name.
   bool _matchesNamePattern(String name, List<String> patterns) {
