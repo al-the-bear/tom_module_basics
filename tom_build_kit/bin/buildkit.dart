@@ -88,8 +88,8 @@ Future<void> main(List<String> args) async {
     return;
   }
 
-  // Pre-process args to handle -R without argument
-  final (processedArgs, bareRootFlag) = _preprocessRootFlag(args);
+  // Pre-process args to handle -R without argument (uses tom_build_base)
+  final (processedArgs, bareRootFlag) = preprocessRootFlag(args);
 
   // Parse global options
   final globalParser = _createGlobalParser();
@@ -107,17 +107,15 @@ Future<void> main(List<String> args) async {
   _verbose = globalResults['verbose'] as bool;
   _dryRun = globalResults['dry-run'] as bool;
 
-  // Determine workspace/project mode
+  // Parse navigation args using tom_build_base (single source of truth)
+  final navArgs = parseNavigationArgs(globalResults, bareRoot: bareRootFlag);
+  final isWorkspaceMode = navArgs.isWorkspaceMode;
+
+  // Determine execution root
   final currentDir = Directory.current.path;
-  final isWorkspaceMode =
-      bareRootFlag ||
-      globalResults['root'] != null ||
-      (globalResults['inner-first-git'] as bool) ||
-      (globalResults['outer-first-git'] as bool);
-  final rootPath = bareRootFlag
+  final rootPath = navArgs.bareRoot
       ? _findWorkspaceRoot(currentDir)
-      : (globalResults['root'] as String?) ??
-            (isWorkspaceMode ? _findWorkspaceRoot(currentDir) : currentDir);
+      : navArgs.root ?? (isWorkspaceMode ? _findWorkspaceRoot(currentDir) : currentDir);
 
   // Initialize macro persistence
   _rootPath = rootPath;
@@ -186,13 +184,13 @@ Future<void> main(List<String> args) async {
       success = await _executeCommand(
         runner,
         step,
-        globalResults,
+        navArgs,
         rootPath,
         isWorkspaceMode,
       );
     } else {
       // Pipeline via PipelineExecutor
-      success = await _executePipeline(config, step, globalResults, rootPath);
+      success = await _executePipeline(config, step, navArgs, rootPath);
     }
 
     if (!success) {
@@ -207,8 +205,11 @@ Future<void> main(List<String> args) async {
 }
 
 /// Create the global argument parser.
+///
+/// Uses `addNavigationOptions()` from tom_build_base for all navigation options,
+/// ensuring buildkit stays in sync when new options are added.
 ArgParser _createGlobalParser() {
-  return ArgParser(allowTrailingOptions: false)
+  final parser = ArgParser(allowTrailingOptions: false)
     ..addFlag('help', abbr: 'h', negatable: false, help: 'Show this help')
     ..addFlag('version', abbr: 'V', negatable: false, help: 'Show version')
     ..addFlag('verbose', abbr: 'v', negatable: false, help: 'Verbose output')
@@ -223,53 +224,12 @@ ArgParser _createGlobalParser() {
       abbr: 'l',
       negatable: false,
       help: 'List available pipelines',
-    )
-    ..addFlag(
-      'recursive',
-      abbr: 'r',
-      negatable: true,
-      defaultsTo: false,
-      help: 'Scan directories recursively',
-    )
-    ..addFlag(
-      'inner-first-git',
-      abbr: 'i',
-      negatable: false,
-      help: 'Process innermost git repos first (for commit/push)',
-    )
-    ..addFlag(
-      'outer-first-git',
-      abbr: 'o',
-      negatable: false,
-      help: 'Process outermost git repos first (for pull/fetch)',
-    )
-    ..addFlag(
-      'top-repo',
-      abbr: 'T',
-      negatable: false,
-      help: 'Find topmost git repo and traverse down (requires -i or -o)',
-    )
-    ..addFlag(
-      'workspace-recursion',
-      abbr: 'w',
-      negatable: false,
-      help: 'Shell out to sub-workspaces',
-    )
-    ..addOption('scan', abbr: 's', help: 'Scan directory for projects')
-    ..addOption('root', abbr: 'R', help: 'Workspace root path')
-    ..addOption('project', abbr: 'p', help: 'Project filter (glob patterns)')
-    ..addMultiOption('exclude', abbr: 'x', help: 'Exclude patterns')
-    ..addMultiOption('exclude-projects', help: 'Exclude projects by name')
-    ..addMultiOption('recursion-exclude', help: 'Exclude patterns during recursive scan')
-    ..addOption('modules', abbr: 'm', help: 'Git modules filter')
-    ..addOption('modes', help: 'Active modes for config processing (comma-separated)')
-    ..addFlag(
-      'build-order',
-      abbr: 'b',
-      negatable: true,
-      defaultsTo: false,
-      help: 'Sort projects in dependency build order',
     );
+
+  // Add all navigation options from tom_build_base (single source of truth)
+  addNavigationOptions(parser);
+
+  return parser;
 }
 
 /// Represents an execution step.
@@ -454,109 +414,52 @@ bool _isValueOption(String opt) {
 }
 
 /// Execute a direct command via ToolRunner.
+///
+/// Uses `navArgs.toArgs()` from tom_build_base to build navigation arguments,
+/// ensuring all options are passed consistently without manual duplication.
 Future<bool> _executeCommand(
   ToolRunner runner,
   _ExecutionStep step,
-  ArgResults global,
+  WorkspaceNavigationArgs navArgs,
   String rootPath,
   bool isWorkspaceMode,
 ) async {
   // Build args for the command.
   // Global options MUST come BEFORE the :command, because CliArgParser treats
   // all options after a :command as per-command options.
-  final globalArgs = <String>[];
   final cmdArgs = <String>[];
 
-  // Global navigation options first
-  if (isWorkspaceMode) {
-    globalArgs.addAll(['--root', rootPath]);
+  // Apply navigation defaults for workspace mode
+  var effectiveNavArgs = navArgs;
+  if (isWorkspaceMode && navArgs.scan == null) {
+    // In workspace mode without explicit scan, default to scanning from workspace root
+    effectiveNavArgs = navArgs.copyWith(scan: rootPath, recursive: true);
   }
 
-  final scanPath = global['scan'] as String?;
-  if (scanPath != null && !step.suppressedOptions.contains('s')) {
-    globalArgs.addAll(['--scan', scanPath]);
-  } else if (isWorkspaceMode) {
-    // In workspace mode, default to scanning from workspace root recursively.
-    globalArgs.addAll(['--scan', rootPath]);
-  }
+  // Get navigation args as command-line list (handles all options automatically)
+  final navCmdArgs = effectiveNavArgs.toArgs(
+    rootPath: isWorkspaceMode ? rootPath : null,
+    suppress: step.suppressedOptions,
+  );
+  cmdArgs.addAll(navCmdArgs);
 
-  if (global['recursive'] == true && !step.suppressedOptions.contains('r')) {
-    globalArgs.add('--recursive');
-  } else if (isWorkspaceMode && scanPath == null) {
-    globalArgs.add('--recursive');
-  }
-
-  if (global['inner-first-git'] == true) {
-    globalArgs.add('--inner-first-git');
-  }
-
-  if (global['outer-first-git'] == true) {
-    globalArgs.add('--outer-first-git');
-  }
-
-  if (global['top-repo'] == true) {
-    globalArgs.add('--top-repo');
-  }
-
-  if (global['workspace-recursion'] == true) {
-    globalArgs.add('--workspace-recursion');
-  }
-
-  if (global['build-order'] == true) {
-    globalArgs.add('--build-order');
-  }
-
-  // Global common options
+  // Global common options (verbose, dry-run)
   if (_verbose && !step.suppressedOptions.contains('v')) {
-    globalArgs.add('--verbose');
+    cmdArgs.add('--verbose');
   }
   if (_dryRun && !step.suppressedOptions.contains('n')) {
-    globalArgs.add('--dry-run');
+    cmdArgs.add('--dry-run');
   }
 
-  final project = global['project'] as String?;
-  if (project != null && !step.suppressedOptions.contains('p')) {
-    globalArgs.addAll(['--project', project]);
-    // When --project is specified without --scan, enable recursive scanning
-    // so the project can be found by the traversal engine.
-    if (scanPath == null && !isWorkspaceMode) {
-      globalArgs.addAll(['--scan', '.', '--recursive']);
+  // When --project is specified without --scan, enable recursive scanning
+  // so the project can be found by the traversal engine.
+  if (navArgs.project != null && navArgs.scan == null && !isWorkspaceMode) {
+    if (!cmdArgs.contains('--scan')) {
+      cmdArgs.addAll(['--scan', '.', '--recursive']);
     }
-  }
-
-  final excludes = global['exclude'] as List<String>?;
-  if (excludes != null) {
-    for (final x in excludes) {
-      globalArgs.addAll(['--exclude', x]);
-    }
-  }
-
-  final excludeProjects = global['exclude-projects'] as List<String>?;
-  if (excludeProjects != null) {
-    for (final x in excludeProjects) {
-      globalArgs.addAll(['--exclude-projects', x]);
-    }
-  }
-
-  final modules = global['modules'] as String?;
-  if (modules != null) {
-    globalArgs.addAll(['--modules', modules]);
-  }
-
-  final recursionExclude = global['recursion-exclude'] as List<String>?;
-  if (recursionExclude != null) {
-    for (final x in recursionExclude) {
-      globalArgs.addAll(['--recursion-exclude', x]);
-    }
-  }
-
-  final modes = global['modes'] as String?;
-  if (modes != null) {
-    globalArgs.addAll(['--modes', modes]);
   }
 
   // Command comes after global args, followed by command-specific args
-  cmdArgs.addAll(globalArgs);
   cmdArgs.add(':${step.name}');
   cmdArgs.addAll(step.args);
 
@@ -574,29 +477,25 @@ Future<bool> _executeCommand(
 Future<bool> _executePipeline(
   PipelineConfig config,
   _ExecutionStep step,
-  ArgResults global,
+  WorkspaceNavigationArgs navArgs,
   String rootPath,
 ) async {
-  final scanPath = global['scan'] as String?;
-  final recursive = global['recursive'] as bool;
-  final project = global['project'] as String?;
-
   // Validate project directory when --project is used without --scan
-  if (project != null && scanPath == null) {
-    final projectDir = Directory(p.join(rootPath, project));
+  if (navArgs.project != null && navArgs.scan == null) {
+    final projectDir = Directory(p.join(rootPath, navArgs.project!));
     if (!projectDir.existsSync()) {
       print('Error: project directory does not exist: ${projectDir.path}');
       return false;
     }
   }
 
-  if (scanPath != null) {
+  if (navArgs.scan != null) {
     // Execute pipeline across scanned projects
     return _executePipelineAcrossProjects(
       config: config,
       pipelineName: step.name,
-      scanPath: scanPath,
-      recursive: recursive,
+      scanPath: navArgs.scan!,
+      recursive: navArgs.recursive,
       rootPath: rootPath,
     );
   } else {
@@ -659,35 +558,6 @@ Future<void> _listPipelines(String rootPath) async {
     final status = pipeline.executable ? '' : ' (internal)';
     print('  ${entry.key}$status');
   }
-}
-
-/// Pre-process args to handle bare -R flag.
-(List<String>, bool) _preprocessRootFlag(List<String> args) {
-  final processed = <String>[];
-  var bareRootFlag = false;
-
-  for (var i = 0; i < args.length; i++) {
-    final arg = args[i];
-
-    if (arg == '-R') {
-      // Check if next arg looks like a path
-      if (i + 1 < args.length) {
-        final nextArg = args[i + 1];
-        if (!nextArg.startsWith('-') && !nextArg.startsWith(':')) {
-          // Has path argument
-          processed.add(arg);
-          continue;
-        }
-      }
-      // Bare -R without path
-      bareRootFlag = true;
-      // Don't add to processed - we handle it separately
-    } else {
-      processed.add(arg);
-    }
-  }
-
-  return (processed, bareRootFlag);
 }
 
 /// Find workspace root by looking for buildkit_master.yaml.

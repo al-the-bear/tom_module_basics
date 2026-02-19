@@ -250,9 +250,93 @@ class WorkspaceNavigationArgs {
       'buildOrder=$buildOrder, project=$project, '
       'root=$root, bareRoot=$bareRoot, workspaceRecursion=$workspaceRecursion, '
       'innerFirstGit=$innerFirstGit, outerFirstGit=$outerFirstGit, topRepo=$topRepo)';
-}
 
-/// Add common workspace navigation options to an ArgParser.
+  /// Convert navigation args back to command-line arguments.
+  ///
+  /// This allows buildkit to pass navigation options to underlying commands
+  /// without duplicating option definitions. The returned list can be prepended
+  /// to command-specific arguments.
+  ///
+  /// Options with default values (false for flags, empty for lists) are not included.
+  /// The [rootPath] parameter, if provided, is used as the value for `--root`.
+  ///
+  /// Example:
+  /// ```dart
+  /// final navArgs = parseNavigationArgs(results);
+  /// final cmdArgs = [...navArgs.toArgs(rootPath: rootPath), ':compiler', ...stepArgs];
+  /// ```
+  List<String> toArgs({String? rootPath, Set<String> suppress = const {}}) {
+    final args = <String>[];
+
+    // Root path (workspace mode indicator)
+    if (rootPath != null && !suppress.contains('R')) {
+      args.addAll(['--root', rootPath]);
+    }
+
+    // Scan directory
+    if (scan != null && !suppress.contains('s')) {
+      args.addAll(['--scan', scan!]);
+    }
+
+    // Recursive flag (only if explicitly set or true)
+    if (recursive && !suppress.contains('r')) {
+      args.add('--recursive');
+    }
+
+    // Build order flag
+    if (buildOrder && !suppress.contains('b')) {
+      args.add('--build-order');
+    }
+
+    // Project filter
+    if (project != null && !suppress.contains('p')) {
+      args.addAll(['--project', project!]);
+    }
+
+    // Git traversal options
+    if (innerFirstGit && !suppress.contains('i')) {
+      args.add('--inner-first-git');
+    }
+    if (outerFirstGit && !suppress.contains('o')) {
+      args.add('--outer-first-git');
+    }
+    if (topRepo && !suppress.contains('T')) {
+      args.add('--top-repo');
+    }
+
+    // Workspace recursion
+    if (workspaceRecursion && !suppress.contains('w')) {
+      args.add('--workspace-recursion');
+    }
+
+    // Exclude patterns
+    for (final x in exclude) {
+      args.addAll(['--exclude', x]);
+    }
+
+    // Exclude projects
+    for (final x in excludeProjects) {
+      args.addAll(['--exclude-projects', x]);
+    }
+
+    // Recursion exclude
+    for (final x in recursionExclude) {
+      args.addAll(['--recursion-exclude', x]);
+    }
+
+    // Modules filter
+    if (modules.isNotEmpty && !suppress.contains('m')) {
+      args.addAll(['--modules', modules.join(',')]);
+    }
+
+    // Modes
+    if (modes.isNotEmpty) {
+      args.addAll(['--modes', modes.join(',')]);
+    }
+
+    return args;
+  }
+}
 ///
 /// Adds the following options:
 /// - `-s, --scan` - Scan directory for projects
