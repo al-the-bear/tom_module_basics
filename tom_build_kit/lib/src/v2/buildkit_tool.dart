@@ -55,6 +55,28 @@ const bumpversionOptions = <OptionDefinition>[
   ),
 ];
 
+/// Options for bumppubspec command.
+const bumppubspecOptions = <OptionDefinition>[
+  OptionDefinition.multi(
+    name: 'refs',
+    description:
+        'Package names to update (comma-separated or repeated); defaults to auto-discovery',
+    valueName: 'package',
+  ),
+  OptionDefinition.flag(
+    name: 'replace-any',
+    description: 'Replace "any" dependency constraints',
+  ),
+  OptionDefinition.flag(
+    name: 'replace-path',
+    description: 'Replace path: dependencies with concrete versions',
+  ),
+  OptionDefinition.flag(
+    name: 'replace-git',
+    description: 'Replace git: dependencies with concrete versions',
+  ),
+];
+
 /// Options for compiler command.
 const compilerOptions = <OptionDefinition>[
   OptionDefinition.multi(
@@ -153,6 +175,16 @@ const publisherOptions = <OptionDefinition>[
 /// Options for pubget/pubupdate commands.
 const pubOptions = <OptionDefinition>[
   OptionDefinition.flag(name: 'offline', description: 'Use cached packages'),
+];
+
+/// Options for status command.
+const statusOptions = <OptionDefinition>[
+  OptionDefinition.flag(name: 'json', description: 'Output in JSON format'),
+  OptionDefinition.flag(
+    name: 'skip-binaries',
+    description: 'Skip binary version checks',
+  ),
+  OptionDefinition.flag(name: 'skip-git', description: 'Skip git status checks'),
 ];
 
 // =============================================================================
@@ -480,6 +512,19 @@ const bumpversionCommand = CommandDefinition(
   examples: ['buildkit :bumpversion --type=minor', 'bumpversion --set=2.0.0'],
 );
 
+const bumppubspecCommand = CommandDefinition(
+  name: 'bumppubspec',
+  description: 'Update package version references in pubspec.yaml files',
+  aliases: ['bumprefs'],
+  options: bumppubspecOptions,
+  requiresTraversal: false,
+  supportsProjectTraversal: true,
+  examples: [
+    'buildkit -s . -r :bumppubspec',
+    'bumppubspec --refs tom_build_base --replace-path',
+  ],
+);
+
 const compilerCommand = CommandDefinition(
   name: 'compiler',
   description: 'Cross-platform Dart compilation',
@@ -555,6 +600,16 @@ const publisherCommand = CommandDefinition(
   requiresTraversal: true,
   canRunStandalone: true,
   examples: ['buildkit :publisher', 'buildkit :publisher --show-all'],
+);
+
+const statusCommand = CommandDefinition(
+  name: 'status',
+  description: 'Show buildkit version, binary status, and git state',
+  aliases: [],
+  options: statusOptions,
+  requiresTraversal: false,
+  supportsProjectTraversal: true,
+  examples: ['buildkit :status', 'status --json --skip-git'],
 );
 
 const pubgetCommand = CommandDefinition(
@@ -957,11 +1012,13 @@ final buildkitTool = ToolDefinition(
     // Build tools
     versionerCommand,
     bumpversionCommand,
+    bumppubspecCommand,
     compilerCommand,
     runnerCommand,
     cleanupCommand,
     dependenciesCommand,
     publisherCommand,
+    statusCommand,
     buildsorterCommand,
     executeCommand,
     // Pub commands
