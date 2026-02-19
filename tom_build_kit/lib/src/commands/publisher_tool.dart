@@ -20,20 +20,23 @@ class PublisherTool extends ToolBase {
   String get toolKey => 'publisher';
 
   @override
-  String get toolDescription =>
-      'Show publishing status for all projects';
+  String get toolDescription => 'Show publishing status for all projects';
 
   @override
   void addToolOptions(ArgParser parser) {
     parser
-      ..addFlag('show-all',
-          abbr: 'a',
-          negatable: false,
-          help: 'Show all projects, including publish_to: none')
-      ..addFlag('fix',
-          abbr: 'f',
-          negatable: false,
-          help: 'Attempt to fix common issues (future feature)');
+      ..addFlag(
+        'show-all',
+        abbr: 'a',
+        negatable: false,
+        help: 'Show all projects, including publish_to: none',
+      )
+      ..addFlag(
+        'fix',
+        abbr: 'f',
+        negatable: false,
+        help: 'Attempt to fix common issues (future feature)',
+      );
   }
 
   @override
@@ -56,7 +59,10 @@ class PublisherTool extends ToolBase {
     String executionRoot;
 
     try {
-      (results, navArgs, executionRoot) = parseArgsWithExecutionMode(parser, args);
+      (results, navArgs, executionRoot) = parseArgsWithExecutionMode(
+        parser,
+        args,
+      );
     } on FormatException catch (e) {
       print('Error: $e');
       _printUsage(parser);
@@ -108,10 +114,13 @@ class PublisherTool extends ToolBase {
     return true;
   }
 
-  Future<_ProjectStatus> _analyzeProject(String projectPath, String wsRoot) async {
+  Future<_ProjectStatus> _analyzeProject(
+    String projectPath,
+    String wsRoot,
+  ) async {
     final pubspecFile = File(p.join(projectPath, 'pubspec.yaml'));
     final name = p.basename(projectPath);
-    
+
     if (!pubspecFile.existsSync()) {
       return _ProjectStatus(
         path: projectPath,
@@ -141,7 +150,7 @@ class PublisherTool extends ToolBase {
     final pathDeps = <String>[];
     final deps = pubspec['dependencies'] as YamlMap?;
     final devDeps = pubspec['dev_dependencies'] as YamlMap?;
-    
+
     void checkDeps(YamlMap? depsMap) {
       if (depsMap == null) return;
       for (final entry in depsMap.entries) {
@@ -151,19 +160,21 @@ class PublisherTool extends ToolBase {
         }
       }
     }
+
     checkDeps(deps);
     checkDeps(devDeps);
 
     // Check for missing files
     final hasReadme = File(p.join(projectPath, 'README.md')).existsSync();
-    final hasLicense = File(p.join(projectPath, 'LICENSE')).existsSync() ||
-                       File(p.join(projectPath, 'LICENSE.md')).existsSync();
+    final hasLicense =
+        File(p.join(projectPath, 'LICENSE')).existsSync() ||
+        File(p.join(projectPath, 'LICENSE.md')).existsSync();
     final hasChangelog = File(p.join(projectPath, 'CHANGELOG.md')).existsSync();
 
     // Check git status
     bool? hasUncommitted;
     bool? hasUnpushed;
-    
+
     if (_isGitRepo(projectPath)) {
       hasUncommitted = await _hasUncommittedChanges(projectPath);
       hasUnpushed = await _hasUnpushedCommits(projectPath);
@@ -204,13 +215,14 @@ class PublisherTool extends ToolBase {
   Future<bool> _hasUncommittedChanges(String dirPath) async {
     final gitRoot = _findGitRoot(dirPath);
     if (gitRoot == null) return false;
-    
+
     try {
-      final result = await ProcessRunner.run(
-        'git',
-        ['status', '--porcelain', '--', dirPath],
-        workingDirectory: gitRoot,
-      );
+      final result = await ProcessRunner.run('git', [
+        'status',
+        '--porcelain',
+        '--',
+        dirPath,
+      ], workingDirectory: gitRoot);
       return result.stdout.trim().isNotEmpty;
     } catch (_) {
       return false;
@@ -220,33 +232,39 @@ class PublisherTool extends ToolBase {
   Future<bool> _hasUnpushedCommits(String dirPath) async {
     final gitRoot = _findGitRoot(dirPath);
     if (gitRoot == null) return false;
-    
+
     try {
       // Get current branch
-      final branchResult = await ProcessRunner.run(
-        'git',
-        ['rev-parse', '--abbrev-ref', 'HEAD'],
-        workingDirectory: gitRoot,
-      );
+      final branchResult = await ProcessRunner.run('git', [
+        'rev-parse',
+        '--abbrev-ref',
+        'HEAD',
+      ], workingDirectory: gitRoot);
       final branch = branchResult.stdout.trim();
       if (branch.isEmpty) return false;
 
       // Check for unpushed commits
-      final result = await ProcessRunner.run(
-        'git',
-        ['log', branch, '--not', '--remotes', '--oneline'],
-        workingDirectory: gitRoot,
-      );
+      final result = await ProcessRunner.run('git', [
+        'log',
+        branch,
+        '--not',
+        '--remotes',
+        '--oneline',
+      ], workingDirectory: gitRoot);
       return result.stdout.trim().isNotEmpty;
     } catch (_) {
       return false;
     }
   }
 
-  void _printResults(List<_ProjectStatus> statuses, bool showAll, String wsRoot) {
+  void _printResults(
+    List<_ProjectStatus> statuses,
+    bool showAll,
+    String wsRoot,
+  ) {
     for (final status in statuses) {
       final relPath = p.relative(status.path, from: wsRoot);
-      
+
       if (status.error != null) {
         print('$relPath: ${status.error}');
         continue;
@@ -260,7 +278,7 @@ class PublisherTool extends ToolBase {
       }
 
       final issues = <String>[];
-      
+
       if (status.hasUncommitted == true) {
         issues.add('uncommitted');
       }

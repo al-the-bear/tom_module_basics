@@ -141,8 +141,9 @@ class BuiltinCommands {
   static String? resolveShorthand(String shorthand) {
     final lower = shorthand.toLowerCase();
     if (_builtinNames.contains(lower)) return lower;
-    final matches =
-        _builtinNames.where((cmd) => cmd.startsWith(lower)).toList();
+    final matches = _builtinNames
+        .where((cmd) => cmd.startsWith(lower))
+        .toList();
     if (matches.length == 1) {
       return matches.first;
     }
@@ -150,7 +151,7 @@ class BuiltinCommands {
   }
 
   /// Execute a built-in command.
-  /// 
+  ///
   /// Returns true if successful, false otherwise.
   /// Automatically injects `--project <projectPath>` into tool args
   /// when no `--project` or `-p` is already specified in the args.
@@ -414,10 +415,7 @@ class BuiltinCommands {
       print('  [DRY RUN] Would run pubget with args: $args');
       return true;
     }
-    final pubGetCommand = PubGetCommand(
-      rootPath: rootPath,
-      verbose: verbose,
-    );
+    final pubGetCommand = PubGetCommand(rootPath: rootPath, verbose: verbose);
     return pubGetCommand.execute(args);
   }
 
@@ -427,10 +425,7 @@ class BuiltinCommands {
       print('  [DRY RUN] Would run pubgetall with args: $args');
       return true;
     }
-    final pubGetCommand = PubGetCommand(
-      rootPath: rootPath,
-      verbose: verbose,
-    );
+    final pubGetCommand = PubGetCommand(rootPath: rootPath, verbose: verbose);
     final fullArgs = ['--scan', '.', '--recursive', ...args];
     return pubGetCommand.execute(fullArgs);
   }
@@ -509,8 +504,10 @@ class BuiltinCommands {
       } else if (arg.startsWith('-')) {
         // Unknown option — reject.
         print('  Error: Unknown dcli option "$arg".');
-        print('  Only -init-source <file> and -no-init-source are allowed '
-            'in buildkit context.');
+        print(
+          '  Only -init-source <file> and -no-init-source are allowed '
+          'in buildkit context.',
+        );
         return false;
       } else if (target == null) {
         target = arg;
@@ -536,8 +533,10 @@ class BuiltinCommands {
       final expression = target.substring(1, target.length - 1);
       if (verbose) print('  [builtin] Running dcli expression...');
       if (dryRun) {
-        print('  [DRY RUN] Would run dcli "$expression" ${dcliArgs.join(' ')}'
-            .trimRight());
+        print(
+          '  [DRY RUN] Would run dcli "$expression" ${dcliArgs.join(' ')}'
+              .trimRight(),
+        );
         return true;
       }
       return _executeDcliProcess([expression, ...dcliArgs]);
@@ -561,8 +560,10 @@ class BuiltinCommands {
 
     if (verbose) print('  [builtin] Running dcli $resolvedPath...');
     if (dryRun) {
-      print('  [DRY RUN] Would run dcli $resolvedPath ${dcliArgs.join(' ')}'
-          .trimRight());
+      print(
+        '  [DRY RUN] Would run dcli $resolvedPath ${dcliArgs.join(' ')}'
+            .trimRight(),
+      );
       return true;
     }
 

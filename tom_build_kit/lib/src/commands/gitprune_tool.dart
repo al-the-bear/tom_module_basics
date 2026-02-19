@@ -15,8 +15,7 @@ class GitPruneTool extends ToolBase {
   String get toolKey => 'gitprune';
 
   @override
-  String get toolDescription =>
-      'Remove stale remote-tracking branches';
+  String get toolDescription => 'Remove stale remote-tracking branches';
 
   /// If true, auto-inject --outer-first-git when running standalone.
   bool autoOuterFirst = false;
@@ -24,16 +23,18 @@ class GitPruneTool extends ToolBase {
   @override
   void addToolOptions(ArgParser parser) {
     parser
-      ..addFlag('dry-run-git',
-          negatable: false,
-          help: 'Show what would be pruned without removing')
-      ..addOption('remote',
-          defaultsTo: 'origin',
-          help: 'Remote name to prune')
-      ..addFlag('guide',
-          abbr: 'g',
-          negatable: false,
-          help: 'Guided mode - step-by-step prompts');
+      ..addFlag(
+        'dry-run-git',
+        negatable: false,
+        help: 'Show what would be pruned without removing',
+      )
+      ..addOption('remote', defaultsTo: 'origin', help: 'Remote name to prune')
+      ..addFlag(
+        'guide',
+        abbr: 'g',
+        negatable: false,
+        help: 'Guided mode - step-by-step prompts',
+      );
   }
 
   @override
@@ -61,7 +62,10 @@ class GitPruneTool extends ToolBase {
     String executionRoot;
 
     try {
-      (results, navArgs, executionRoot) = parseArgsWithExecutionMode(parser, effectiveArgs);
+      (results, navArgs, executionRoot) = parseArgsWithExecutionMode(
+        parser,
+        effectiveArgs,
+      );
     } on FormatException catch (e) {
       print('Error: $e');
       _printUsage(parser);
@@ -77,7 +81,9 @@ class GitPruneTool extends ToolBase {
     }
 
     if (!navArgs.innerFirstGit && !navArgs.outerFirstGit) {
-      print('Error: gitprune requires --outer-first-git (-o) or --inner-first-git (-i)');
+      print(
+        'Error: gitprune requires --outer-first-git (-o) or --inner-first-git (-i)',
+      );
       print('');
       print('Recommended: --outer-first-git (-o)');
       print('  Prune parent repos first.');
@@ -103,7 +109,7 @@ class GitPruneTool extends ToolBase {
         log: (msg) => print(msg),
       );
     }
-    
+
     if (repos.isEmpty) {
       print('No git repositories found in: $executionRoot');
       return true;
@@ -134,10 +140,10 @@ class GitPruneTool extends ToolBase {
 
     for (final repoPath in repos) {
       final relPath = p.relative(repoPath, from: executionRoot);
-      
+
       // First check what would be pruned
       final staleBranches = await _getStaleBranches(repoPath, remote);
-      
+
       if (staleBranches.isEmpty) {
         if (verbose) {
           print('$relPath: no stale branches');
@@ -146,7 +152,9 @@ class GitPruneTool extends ToolBase {
       }
 
       if (dryRun || dryRunGit) {
-        print('$relPath: would prune ${staleBranches.length} stale branch(es):');
+        print(
+          '$relPath: would prune ${staleBranches.length} stale branch(es):',
+        );
         for (final branch in staleBranches) {
           print('  - $branch');
         }
@@ -161,7 +169,7 @@ class GitPruneTool extends ToolBase {
         allSuccess = false;
         continue;
       }
-      
+
       for (final branch in staleBranches) {
         print('  - pruned: $branch');
       }
@@ -171,7 +179,9 @@ class GitPruneTool extends ToolBase {
 
     print('');
     if (dryRun || dryRunGit) {
-      print('Would prune $totalPruned stale branch(es) from $prunedCount repo(s)');
+      print(
+        'Would prune $totalPruned stale branch(es) from $prunedCount repo(s)',
+      );
     } else {
       print('Pruned $totalPruned stale branch(es) from $prunedCount repo(s)');
     }
@@ -180,23 +190,32 @@ class GitPruneTool extends ToolBase {
   }
 
   bool _hasGitTraversalFlag(List<String> args) {
-    return args.contains('-i') || args.contains('--inner-first-git') ||
-           args.contains('-o') || args.contains('--outer-first-git');
+    return args.contains('-i') ||
+        args.contains('--inner-first-git') ||
+        args.contains('-o') ||
+        args.contains('--outer-first-git');
   }
 
   Future<List<String>> _getStaleBranches(String repoPath, String remote) async {
     try {
       // git remote prune --dry-run shows what would be pruned
-      final result = await ProcessRunner.run(
-        'git', ['remote', 'prune', remote, '--dry-run'],
-        workingDirectory: repoPath,
-      );
-      
+      final result = await ProcessRunner.run('git', [
+        'remote',
+        'prune',
+        remote,
+        '--dry-run',
+      ], workingDirectory: repoPath);
+
       if (result.exitCode != 0) return [];
-      
+
       final output = result.stdout;
-      final lines = output.split('\n')
-          .where((line) => line.contains('[would prune]') || line.contains('* [would prune]'))
+      final lines = output
+          .split('\n')
+          .where(
+            (line) =>
+                line.contains('[would prune]') ||
+                line.contains('* [would prune]'),
+          )
           .map((line) {
             // Parse "* [would prune] origin/branch-name" or " * [would prune] origin/branch"
             final match = RegExp(r'\[would prune\]\s+(.+)').firstMatch(line);
@@ -204,14 +223,18 @@ class GitPruneTool extends ToolBase {
           })
           .where((s) => s.isNotEmpty)
           .toList();
-      
+
       return lines;
     } catch (_) {
       return [];
     }
   }
 
-  Future<bool> _runGit(String repoPath, List<String> args, String relPath) async {
+  Future<bool> _runGit(
+    String repoPath,
+    List<String> args,
+    String relPath,
+  ) async {
     if (dryRun) {
       print('[DRY RUN] $relPath: git ${args.join(' ')}');
       return true;
@@ -220,7 +243,11 @@ class GitPruneTool extends ToolBase {
       print('$relPath: git ${args.join(' ')}');
     }
     try {
-      final result = await ProcessRunner.run('git', args, workingDirectory: repoPath);
+      final result = await ProcessRunner.run(
+        'git',
+        args,
+        workingDirectory: repoPath,
+      );
       if (result.exitCode != 0) {
         final stderr = result.stderr.trim();
         if (stderr.isNotEmpty) print('$relPath: $stderr');
@@ -238,10 +265,14 @@ class GitPruneTool extends ToolBase {
     print('');
     print('WHAT IT DOES:');
     print('  Removes stale remote-tracking branches from all repositories.');
-    print('  These are local references to branches that no longer exist on the remote.');
+    print(
+      '  These are local references to branches that no longer exist on the remote.',
+    );
     print('');
     print('COMMANDS EXECUTED:');
-    print('  git remote prune origin --dry-run   (first, to see what will be pruned)');
+    print(
+      '  git remote prune origin --dry-run   (first, to see what will be pruned)',
+    );
     print('  git remote prune origin             (then, to actually prune)');
     print('');
     print('WHAT GETS REMOVED:');
@@ -260,7 +291,9 @@ class GitPruneTool extends ToolBase {
     print('');
     print('COMMAND OPTIONS:');
     print('  --dry-run-git       Show what would be pruned without removing.');
-    print('                      Different from -n which affects the tool itself.');
+    print(
+      '                      Different from -n which affects the tool itself.',
+    );
     print('  --remote <name>     Remote to prune (default: origin).');
     print('');
     print('SAFETY:');

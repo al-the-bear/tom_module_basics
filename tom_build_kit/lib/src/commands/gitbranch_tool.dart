@@ -24,30 +24,32 @@ class GitBranchTool extends ToolBase {
   @override
   void addToolOptions(ArgParser parser) {
     parser
-      ..addOption('create',
-          abbr: 'c',
-          help: 'Create and switch to new branch')
-      ..addOption('switch',
-          abbr: 's',
-          help: 'Switch to existing branch')
-      ..addFlag('delete',
-          abbr: 'd',
-          negatable: false,
-          help: 'Delete branch (requires --branch)')
-      ..addOption('branch',
-          abbr: 'b',
-          help: 'Branch name for delete operation')
-      ..addFlag('force',
-          abbr: 'f',
-          negatable: false,
-          help: 'Force delete or force create')
-      ..addFlag('list-branches',
-          negatable: false,
-          help: 'List branches in each repo')
-      ..addFlag('guide',
-          abbr: 'g',
-          negatable: false,
-          help: 'Guided mode - step-by-step prompts');
+      ..addOption('create', abbr: 'c', help: 'Create and switch to new branch')
+      ..addOption('switch', abbr: 's', help: 'Switch to existing branch')
+      ..addFlag(
+        'delete',
+        abbr: 'd',
+        negatable: false,
+        help: 'Delete branch (requires --branch)',
+      )
+      ..addOption('branch', abbr: 'b', help: 'Branch name for delete operation')
+      ..addFlag(
+        'force',
+        abbr: 'f',
+        negatable: false,
+        help: 'Force delete or force create',
+      )
+      ..addFlag(
+        'list-branches',
+        negatable: false,
+        help: 'List branches in each repo',
+      )
+      ..addFlag(
+        'guide',
+        abbr: 'g',
+        negatable: false,
+        help: 'Guided mode - step-by-step prompts',
+      );
   }
 
   @override
@@ -75,7 +77,10 @@ class GitBranchTool extends ToolBase {
     String executionRoot;
 
     try {
-      (results, navArgs, executionRoot) = parseArgsWithExecutionMode(parser, effectiveArgs);
+      (results, navArgs, executionRoot) = parseArgsWithExecutionMode(
+        parser,
+        effectiveArgs,
+      );
     } on FormatException catch (e) {
       print('Error: $e');
       _printUsage(parser);
@@ -91,7 +96,9 @@ class GitBranchTool extends ToolBase {
     }
 
     if (!navArgs.innerFirstGit && !navArgs.outerFirstGit) {
-      print('Error: gitbranch requires --inner-first-git (-i) or --outer-first-git (-o)');
+      print(
+        'Error: gitbranch requires --inner-first-git (-i) or --outer-first-git (-o)',
+      );
       print('');
       print('Recommended: --inner-first-git (-i)');
       print('  Create branches in submodules first for consistency.');
@@ -121,7 +128,7 @@ class GitBranchTool extends ToolBase {
         log: (msg) => print(msg),
       );
     }
-    
+
     if (repos.isEmpty) {
       print('No git repositories found in: $executionRoot');
       return true;
@@ -161,7 +168,7 @@ class GitBranchTool extends ToolBase {
     // Determine operation
     List<String> gitArgs;
     String opName;
-    
+
     if (createBranch != null) {
       gitArgs = ['checkout', '-b', createBranch];
       if (force) gitArgs.insert(1, '-B');
@@ -191,7 +198,7 @@ class GitBranchTool extends ToolBase {
 
     for (final repoPath in repos) {
       final relPath = p.relative(repoPath, from: executionRoot);
-      
+
       if (!await _runGit(repoPath, gitArgs, relPath)) {
         allSuccess = false;
         continue;
@@ -206,14 +213,19 @@ class GitBranchTool extends ToolBase {
   }
 
   bool _hasGitTraversalFlag(List<String> args) {
-    return args.contains('-i') || args.contains('--inner-first-git') ||
-           args.contains('-o') || args.contains('--outer-first-git');
+    return args.contains('-i') ||
+        args.contains('--inner-first-git') ||
+        args.contains('-o') ||
+        args.contains('--outer-first-git');
   }
 
   Future<String> _getCurrentBranch(String repoPath) async {
     try {
-      final result = await ProcessRunner.run('git', ['rev-parse', '--abbrev-ref', 'HEAD'],
-          workingDirectory: repoPath);
+      final result = await ProcessRunner.run('git', [
+        'rev-parse',
+        '--abbrev-ref',
+        'HEAD',
+      ], workingDirectory: repoPath);
       return result.stdout.trim();
     } catch (_) {
       return 'unknown';
@@ -222,22 +234,32 @@ class GitBranchTool extends ToolBase {
 
   Future<List<String>> _listBranches(String repoPath) async {
     try {
-      final result = await ProcessRunner.run('git', ['branch', '-a'],
-          workingDirectory: repoPath);
+      final result = await ProcessRunner.run('git', [
+        'branch',
+        '-a',
+      ], workingDirectory: repoPath);
       return result.stdout.split('\n').where((l) => l.isNotEmpty).toList();
     } catch (_) {
       return [];
     }
   }
 
-  Future<bool> _runGit(String repoPath, List<String> args, String relPath) async {
+  Future<bool> _runGit(
+    String repoPath,
+    List<String> args,
+    String relPath,
+  ) async {
     if (dryRun) {
       print('[DRY RUN] $relPath: git ${args.join(' ')}');
       return true;
     }
     print('$relPath: git ${args.join(' ')}');
     try {
-      final result = await ProcessRunner.run('git', args, workingDirectory: repoPath);
+      final result = await ProcessRunner.run(
+        'git',
+        args,
+        workingDirectory: repoPath,
+      );
       if (result.exitCode != 0) {
         final stderr = result.stderr.trim();
         if (stderr.isNotEmpty) print('  Error: $stderr');
@@ -254,7 +276,9 @@ class GitBranchTool extends ToolBase {
     printUsageHeader();
     print('');
     print('WHAT IT DOES:');
-    print('  Manages branches across all repositories: create, switch, delete, or list.');
+    print(
+      '  Manages branches across all repositories: create, switch, delete, or list.',
+    );
     print('  With no action specified, shows current branch of each repo.');
     print('');
     print('COMMANDS EXECUTED:');
@@ -269,7 +293,9 @@ class GitBranchTool extends ToolBase {
     print('  - Switching context: switch all repos to same branch');
     print('  - Cleanup: delete old branches across workspace');
     print('');
-    print('Traversal: Fixed to inner-first (sub-repos processed before parents).');
+    print(
+      'Traversal: Fixed to inner-first (sub-repos processed before parents).',
+    );
     print('           Do NOT specify -i/-o flags via buildkit.');
     print('');
     print('COMMAND OPTIONS:');
@@ -277,7 +303,9 @@ class GitBranchTool extends ToolBase {
     print('  -s, --switch <name>     Switch to existing branch.');
     print('  -d, --delete            Delete branch (requires -b <name>).');
     print('  -b, --branch <name>     Branch name for delete operation.');
-    print('  -f, --force             Force create (overwrite) or force delete.');
+    print(
+      '  -f, --force             Force create (overwrite) or force delete.',
+    );
     print('  --list-branches         Show all branches in each repo.');
     print('');
     print('DEFAULT BEHAVIOR:');
@@ -288,7 +316,9 @@ class GitBranchTool extends ToolBase {
     print('');
     print('EXAMPLES:');
     print('  gitbranch                         # Show current branch per repo');
-    print('  gitbranch -c feature/new          # Create and switch to new branch');
+    print(
+      '  gitbranch -c feature/new          # Create and switch to new branch',
+    );
     print('  gitbranch -s main                 # Switch all repos to main');
     print('  gitbranch -d -b old-feature       # Delete old-feature branch');
     print('  gitbranch --list-branches         # List all branches per repo');

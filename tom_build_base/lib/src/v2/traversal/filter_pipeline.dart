@@ -10,30 +10,43 @@ import 'repository_id_lookup.dart';
 /// Applies filters to folder lists based on TraversalInfo configuration.
 class FilterPipeline {
   /// Apply filters for project traversal mode.
-  List<FsFolder> applyProjectFilters(List<FsFolder> folders, ProjectTraversalInfo info) {
+  List<FsFolder> applyProjectFilters(
+    List<FsFolder> folders,
+    ProjectTraversalInfo info,
+  ) {
     var result = folders;
 
     // 1. Path exclude (--exclude, -x) - matches against full path with substring matching
     if (info.excludePatterns.isNotEmpty) {
-      result = result.where((f) => !_matchesPathPattern(f.path, info.excludePatterns)).toList();
+      result = result
+          .where((f) => !_matchesPathPattern(f.path, info.excludePatterns))
+          .toList();
     }
 
     // 2. Project include (--project, -p)
     // Resolution order: project ID → project name → folder name pattern (glob)
     if (info.projectPatterns.isNotEmpty) {
-      result = result.where((f) =>
-          _matchesProjectId(f, info.projectPatterns) ||
-          _matchesProjectName(f, info.projectPatterns) ||
-          _matchesNamePattern(f.name, info.projectPatterns)).toList();
+      result = result
+          .where(
+            (f) =>
+                _matchesProjectId(f, info.projectPatterns) ||
+                _matchesProjectName(f, info.projectPatterns) ||
+                _matchesNamePattern(f.name, info.projectPatterns),
+          )
+          .toList();
     }
 
     // 3. Project name exclude (--exclude-projects)
     // Resolution order: project ID → project name → folder name
     if (info.excludeProjects.isNotEmpty) {
-      result = result.where((f) =>
-          !_matchesProjectId(f, info.excludeProjects) &&
-          !_matchesProjectName(f, info.excludeProjects) &&
-          !_matchesNamePattern(f.name, info.excludeProjects)).toList();
+      result = result
+          .where(
+            (f) =>
+                !_matchesProjectId(f, info.excludeProjects) &&
+                !_matchesProjectName(f, info.excludeProjects) &&
+                !_matchesNamePattern(f.name, info.excludeProjects),
+          )
+          .toList();
     }
 
     // 4. Test project filter
@@ -43,12 +56,17 @@ class FilterPipeline {
   }
 
   /// Apply filters for git traversal mode.
-  List<FsFolder> applyGitFilters(List<FsFolder> folders, GitTraversalInfo info) {
+  List<FsFolder> applyGitFilters(
+    List<FsFolder> folders,
+    GitTraversalInfo info,
+  ) {
     var result = folders;
 
     // 1. Path exclude (--exclude, -x)
     if (info.excludePatterns.isNotEmpty) {
-      result = result.where((f) => !_matchesPathPattern(f.path, info.excludePatterns)).toList();
+      result = result
+          .where((f) => !_matchesPathPattern(f.path, info.excludePatterns))
+          .toList();
     }
 
     // 2. Module filter (--modules, -m)
@@ -68,7 +86,10 @@ class FilterPipeline {
   }
 
   /// Apply test project filters based on traversal info.
-  List<FsFolder> _applyTestFilter(List<FsFolder> folders, BaseTraversalInfo info) {
+  List<FsFolder> _applyTestFilter(
+    List<FsFolder> folders,
+    BaseTraversalInfo info,
+  ) {
     if (info.testProjectsOnly) {
       // Only include zom_* test projects
       return folders.where((f) => f.name.startsWith('zom_')).toList();
@@ -116,9 +137,7 @@ class FilterPipeline {
       try {
         // Convert simple wildcard to regex for name matching
         if (pattern.contains('*')) {
-          final regexStr = pattern
-              .replaceAll('.', r'\.')
-              .replaceAll('*', '.*');
+          final regexStr = pattern.replaceAll('.', r'\.').replaceAll('*', '.*');
           final regex = RegExp('^$regexStr\$', caseSensitive: false);
           if (regex.hasMatch(name)) return true;
         } else {
@@ -189,10 +208,15 @@ class FilterPipeline {
   ///
   /// Accepts repository IDs (e.g., "BSC", "D4"), repository names (e.g., "tom_module_basics"),
   /// or path substrings.
-  List<FsFolder> _applyModulesFilter(List<FsFolder> folders, List<String> modules) {
+  List<FsFolder> _applyModulesFilter(
+    List<FsFolder> folders,
+    List<String> modules,
+  ) {
     // Resolve IDs to names
-    final resolvedModules = modules.map(RepositoryIdLookup.resolveToName).toList();
-    
+    final resolvedModules = modules
+        .map(RepositoryIdLookup.resolveToName)
+        .toList();
+
     return folders.where((f) {
       // Check if this folder is within any of the specified modules
       for (final module in resolvedModules) {
@@ -201,9 +225,11 @@ class FilterPipeline {
         for (final nature in f.natures) {
           if (nature is GitFolder && nature.submoduleName != null) {
             final submoduleName = nature.submoduleName!.toLowerCase();
-            if (resolvedModules.any((m) => 
-                submoduleName.contains(m.toLowerCase()) ||
-                submoduleName == m.toLowerCase())) {
+            if (resolvedModules.any(
+              (m) =>
+                  submoduleName.contains(m.toLowerCase()) ||
+                  submoduleName == m.toLowerCase(),
+            )) {
               return true;
             }
           }
@@ -217,10 +243,15 @@ class FilterPipeline {
   ///
   /// Accepts repository IDs (e.g., "BSC", "D4"), repository names (e.g., "tom_module_basics"),
   /// or path substrings.
-  List<FsFolder> _applySkipModulesFilter(List<FsFolder> folders, List<String> skipModules) {
+  List<FsFolder> _applySkipModulesFilter(
+    List<FsFolder> folders,
+    List<String> skipModules,
+  ) {
     // Resolve IDs to names
-    final resolvedModules = skipModules.map(RepositoryIdLookup.resolveToName).toList();
-    
+    final resolvedModules = skipModules
+        .map(RepositoryIdLookup.resolveToName)
+        .toList();
+
     return folders.where((f) {
       // Exclude if this folder is within any of the specified modules
       for (final module in resolvedModules) {
@@ -228,9 +259,11 @@ class FilterPipeline {
         for (final nature in f.natures) {
           if (nature is GitFolder && nature.submoduleName != null) {
             final submoduleName = nature.submoduleName!.toLowerCase();
-            if (resolvedModules.any((m) => 
-                submoduleName.contains(m.toLowerCase()) ||
-                submoduleName == m.toLowerCase())) {
+            if (resolvedModules.any(
+              (m) =>
+                  submoduleName.contains(m.toLowerCase()) ||
+                  submoduleName == m.toLowerCase(),
+            )) {
               return false;
             }
           }
@@ -246,7 +279,11 @@ class FolderSorter {
   /// Sort folders by dependency order (for project traversal).
   ///
   /// Projects that are dependencies of others come first.
-  List<T> sortByBuildOrder<T>(List<T> folders, String Function(T) getPath, String Function(T) getName) {
+  List<T> sortByBuildOrder<T>(
+    List<T> folders,
+    String Function(T) getPath,
+    String Function(T) getName,
+  ) {
     // TODO: Implement topological sort based on pubspec.yaml dependencies
     // For now, return as-is
     return folders;

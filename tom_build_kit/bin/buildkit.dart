@@ -119,7 +119,8 @@ Future<void> main(List<String> args) async {
   final currentDir = Directory.current.path;
   final rootPath = navArgs.bareRoot
       ? _findWorkspaceRoot(currentDir)
-      : navArgs.root ?? (isWorkspaceMode ? _findWorkspaceRoot(currentDir) : currentDir);
+      : navArgs.root ??
+            (isWorkspaceMode ? _findWorkspaceRoot(currentDir) : currentDir);
 
   // Initialize macro persistence
   _rootPath = rootPath;
@@ -697,7 +698,9 @@ String _generateCommandHelp(CommandDefinition cmd) {
       buf.writeln('  Supports --project, --exclude-project filters');
     }
     if (cmd.supportsGitTraversal) {
-      buf.writeln('  Supports --inner-first-git, --outer-first-git, --top-repo traversal');
+      buf.writeln(
+        '  Supports --inner-first-git, --outer-first-git, --top-repo traversal',
+      );
     }
     buf.writeln();
   }

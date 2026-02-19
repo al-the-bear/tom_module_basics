@@ -29,7 +29,9 @@ class BuilderFilterConfig {
     if (excludeBuilders.isNotEmpty) {
       parts.add('exclude: ${excludeBuilders.join(', ')}');
     }
-    return parts.isEmpty ? 'BuilderFilterConfig(none)' : 'BuilderFilterConfig(${parts.join('; ')})';
+    return parts.isEmpty
+        ? 'BuilderFilterConfig(none)'
+        : 'BuilderFilterConfig(${parts.join('; ')})';
   }
 
   /// Load from buildkit.yaml (build_runner section).
@@ -47,9 +49,11 @@ class BuilderFilterConfig {
 
       return BuilderFilterConfig(
         includeBuilders: toStringList(
-            buildRunner['include-builders'] ?? buildRunner['include_builders']),
+          buildRunner['include-builders'] ?? buildRunner['include_builders'],
+        ),
         excludeBuilders: toStringList(
-            buildRunner['exclude-builders'] ?? buildRunner['exclude_builders']),
+          buildRunner['exclude-builders'] ?? buildRunner['exclude_builders'],
+        ),
       );
     } catch (_) {
       return null;
@@ -90,9 +94,13 @@ class BuilderFilterConfig {
             if (buildRunner != null) {
               final rootConfig = BuilderFilterConfig(
                 includeBuilders: toStringList(
-                    buildRunner['include-builders'] ?? buildRunner['include_builders']),
+                  buildRunner['include-builders'] ??
+                      buildRunner['include_builders'],
+                ),
                 excludeBuilders: toStringList(
-                    buildRunner['exclude-builders'] ?? buildRunner['exclude_builders']),
+                  buildRunner['exclude-builders'] ??
+                      buildRunner['exclude_builders'],
+                ),
               );
               if (rootConfig.isNotEmpty) return rootConfig;
             }
@@ -156,12 +164,12 @@ class BuildRunnerConfig {
         recursive: runnerYaml['recursive'] as bool? ?? false,
         exclude: toStringList(runnerYaml['exclude']),
         recursionExclude: toStringList(
-            runnerYaml['recursion-exclude'] ?? runnerYaml['recursionExclude']),
+          runnerYaml['recursion-exclude'] ?? runnerYaml['recursionExclude'],
+        ),
         verbose: runnerYaml['verbose'] as bool? ?? false,
         dryRun: runnerYaml['dry-run'] as bool? ?? false,
         command: runnerYaml['command'] as String? ?? 'build',
-        deleteConflicting:
-            runnerYaml['delete-conflicting'] as bool? ?? true,
+        deleteConflicting: runnerYaml['delete-conflicting'] as bool? ?? true,
         configName: runnerYaml['config'] as String?,
         release: runnerYaml['release'] as bool? ?? false,
       );
@@ -211,22 +219,26 @@ class RunnerTool extends ToolBase {
   @override
   void addToolOptions(ArgParser parser) {
     parser
-      ..addOption('command',
-          abbr: 'c',
-          defaultsTo: 'build',
-          allowed: ['build', 'watch', 'clean'],
-          help: 'Build runner command')
-      ..addMultiOption('include-builders',
-          abbr: 'I', help: 'Include specific builders')
-      ..addMultiOption('exclude-builders',
-          help: 'Exclude specific builders')
-      ..addOption('config',
-          help: 'Build runner config name')
-      ..addFlag('release',
-          negatable: false, help: 'Build in release mode')
-      ..addFlag('delete-conflicting',
-          defaultsTo: true,
-          help: 'Delete conflicting outputs');
+      ..addOption(
+        'command',
+        abbr: 'c',
+        defaultsTo: 'build',
+        allowed: ['build', 'watch', 'clean'],
+        help: 'Build runner command',
+      )
+      ..addMultiOption(
+        'include-builders',
+        abbr: 'I',
+        help: 'Include specific builders',
+      )
+      ..addMultiOption('exclude-builders', help: 'Exclude specific builders')
+      ..addOption('config', help: 'Build runner config name')
+      ..addFlag('release', negatable: false, help: 'Build in release mode')
+      ..addFlag(
+        'delete-conflicting',
+        defaultsTo: true,
+        help: 'Delete conflicting outputs',
+      );
   }
 
   @override
@@ -249,7 +261,10 @@ class RunnerTool extends ToolBase {
     String executionRoot;
 
     try {
-      (results, navArgs, executionRoot) = parseArgsWithExecutionMode(parser, args);
+      (results, navArgs, executionRoot) = parseArgsWithExecutionMode(
+        parser,
+        args,
+      );
     } on FormatException catch (e) {
       print('Error: $e');
       _printUsage(parser);
@@ -272,24 +287,27 @@ class RunnerTool extends ToolBase {
 
     // Load workspace-level config
     final rootPath = findWorkspaceRoot(executionRoot);
-    var config = BuildRunnerConfig.loadFromYaml(executionRoot) ?? BuildRunnerConfig();
+    var config =
+        BuildRunnerConfig.loadFromYaml(executionRoot) ?? BuildRunnerConfig();
 
     // Override with CLI options
-    config = config.merge(BuildRunnerConfig(
-      project: navArgs.project,
-      scan: navArgs.scan,
-      recursive: navArgs.recursive,
-      exclude: navArgs.exclude,
-      recursionExclude: navArgs.recursionExclude,
-      verbose: verbose,
-      dryRun: dryRun,
-      command: results['command'] as String,
-      deleteConflicting: results['delete-conflicting'] as bool,
-      configName: results['config'] as String?,
-      release: results['release'] as bool,
-      cliIncludeBuilders: results['include-builders'] as List<String>,
-      cliExcludeBuilders: results['exclude-builders'] as List<String>,
-    ));
+    config = config.merge(
+      BuildRunnerConfig(
+        project: navArgs.project,
+        scan: navArgs.scan,
+        recursive: navArgs.recursive,
+        exclude: navArgs.exclude,
+        recursionExclude: navArgs.recursionExclude,
+        verbose: verbose,
+        dryRun: dryRun,
+        command: results['command'] as String,
+        deleteConflicting: results['delete-conflicting'] as bool,
+        configName: results['config'] as String?,
+        release: results['release'] as bool,
+        cliIncludeBuilders: results['include-builders'] as List<String>,
+        cliExcludeBuilders: results['exclude-builders'] as List<String>,
+      ),
+    );
 
     // Validate paths
     if (!validateAndEnforcePaths(
@@ -374,16 +392,22 @@ class RunnerTool extends ToolBase {
     // Apply include filter first (if set, only keep matching builders)
     if (filterConfig.includeBuilders.isNotEmpty) {
       buildersToRun = buildersToRun
-          .where((b) => filterConfig.includeBuilders.any(
-              (include) => b.contains(include) || include.contains(b)))
+          .where(
+            (b) => filterConfig.includeBuilders.any(
+              (include) => b.contains(include) || include.contains(b),
+            ),
+          )
           .toList();
     }
 
     // Apply exclude filter on top (remove matching builders)
     if (filterConfig.excludeBuilders.isNotEmpty) {
       final excluded = buildersToRun
-          .where((b) => filterConfig.excludeBuilders.any(
-              (exclude) => b.contains(exclude) || exclude.contains(b)))
+          .where(
+            (b) => filterConfig.excludeBuilders.any(
+              (exclude) => b.contains(exclude) || exclude.contains(b),
+            ),
+          )
           .toList();
       buildersToRun = buildersToRun
           .where((b) => !excluded.contains(b))
@@ -403,15 +427,11 @@ class RunnerTool extends ToolBase {
     }
 
     // Build dart run build_runner command
-    final dartArgs = [
-      'run',
-      'build_runner',
-      projectConfig.command,
-    ];
+    final dartArgs = ['run', 'build_runner', projectConfig.command];
 
     if (projectConfig.deleteConflicting &&
         (projectConfig.command == 'build' ||
-         projectConfig.command == 'watch')) {
+            projectConfig.command == 'watch')) {
       dartArgs.add('--delete-conflicting-outputs');
     }
     if (projectConfig.configName != null) {
@@ -451,8 +471,10 @@ class RunnerTool extends ToolBase {
     }
 
     if (result.exitCode != 0) {
-      print('  Error: build_runner ${projectConfig.command} failed '
-          '(exit ${result.exitCode})');
+      print(
+        '  Error: build_runner ${projectConfig.command} failed '
+        '(exit ${result.exitCode})',
+      );
       return false;
     }
 

@@ -15,8 +15,7 @@ class GitPullTool extends ToolBase {
   String get toolKey => 'gitpull';
 
   @override
-  String get toolDescription =>
-      'Pull latest from all repositories';
+  String get toolDescription => 'Pull latest from all repositories';
 
   /// If true, auto-inject --outer-first-git when running standalone.
   bool autoOuterFirst = false;
@@ -24,19 +23,27 @@ class GitPullTool extends ToolBase {
   @override
   void addToolOptions(ArgParser parser) {
     parser
-      ..addFlag('rebase',
-          negatable: false,
-          help: 'Rebase instead of fast-forward only')
-      ..addFlag('allow-merge',
-          negatable: false,
-          help: 'Allow merge commits (overrides default --ff-only)')
-      ..addOption('remote',
-          defaultsTo: 'origin',
-          help: 'Remote name to pull from')
-      ..addFlag('guide',
-          abbr: 'g',
-          negatable: false,
-          help: 'Guided mode - step-by-step prompts');
+      ..addFlag(
+        'rebase',
+        negatable: false,
+        help: 'Rebase instead of fast-forward only',
+      )
+      ..addFlag(
+        'allow-merge',
+        negatable: false,
+        help: 'Allow merge commits (overrides default --ff-only)',
+      )
+      ..addOption(
+        'remote',
+        defaultsTo: 'origin',
+        help: 'Remote name to pull from',
+      )
+      ..addFlag(
+        'guide',
+        abbr: 'g',
+        negatable: false,
+        help: 'Guided mode - step-by-step prompts',
+      );
   }
 
   @override
@@ -65,7 +72,10 @@ class GitPullTool extends ToolBase {
     String executionRoot;
 
     try {
-      (results, navArgs, executionRoot) = parseArgsWithExecutionMode(parser, effectiveArgs);
+      (results, navArgs, executionRoot) = parseArgsWithExecutionMode(
+        parser,
+        effectiveArgs,
+      );
     } on FormatException catch (e) {
       print('Error: $e');
       _printUsage(parser);
@@ -82,7 +92,9 @@ class GitPullTool extends ToolBase {
 
     // Require git traversal flag
     if (!navArgs.innerFirstGit && !navArgs.outerFirstGit) {
-      print('Error: gitpull requires --outer-first-git (-o) or --inner-first-git (-i)');
+      print(
+        'Error: gitpull requires --outer-first-git (-o) or --inner-first-git (-i)',
+      );
       print('');
       print('Recommended: --outer-first-git (-o)');
       print('  Pull parent repos first to get updated submodule references.');
@@ -93,7 +105,7 @@ class GitPullTool extends ToolBase {
     dryRun = results['dry-run'] as bool;
     final useRebase = results['rebase'] as bool;
     final allowMerge = results['allow-merge'] as bool;
-    final ffOnly = !useRebase && !allowMerge;  // Default is ff-only
+    final ffOnly = !useRebase && !allowMerge; // Default is ff-only
     final remote = results['remote'] as String;
     final listMode = results['list'] as bool;
 
@@ -111,7 +123,7 @@ class GitPullTool extends ToolBase {
         log: (msg) => print(msg),
       );
     }
-    
+
     if (repos.isEmpty) {
       print('No git repositories found in: $executionRoot');
       return true;
@@ -130,7 +142,9 @@ class GitPullTool extends ToolBase {
     });
 
     if (listMode) {
-      print('Git repositories (${navArgs.outerFirstGit ? 'outer-first' : 'inner-first'}):');
+      print(
+        'Git repositories (${navArgs.outerFirstGit ? 'outer-first' : 'inner-first'}):',
+      );
       for (final repo in repos) {
         print('  ${p.relative(repo, from: executionRoot)}');
       }
@@ -143,7 +157,7 @@ class GitPullTool extends ToolBase {
 
     for (final repoPath in repos) {
       final relPath = p.relative(repoPath, from: executionRoot);
-      
+
       // Build pull command
       final pullArgs = ['pull', remote];
       if (useRebase) pullArgs.add('--rebase');
@@ -164,12 +178,16 @@ class GitPullTool extends ToolBase {
 
   bool _hasGitTraversalFlag(List<String> args) {
     return args.contains('-i') ||
-           args.contains('--inner-first-git') ||
-           args.contains('-o') ||
-           args.contains('--outer-first-git');
+        args.contains('--inner-first-git') ||
+        args.contains('-o') ||
+        args.contains('--outer-first-git');
   }
 
-  Future<bool> _runGit(String repoPath, List<String> args, String relPath) async {
+  Future<bool> _runGit(
+    String repoPath,
+    List<String> args,
+    String relPath,
+  ) async {
     if (dryRun) {
       print('[DRY RUN] $relPath: git ${args.join(' ')}');
       return true;
@@ -178,8 +196,12 @@ class GitPullTool extends ToolBase {
     print('$relPath: git ${args.join(' ')}');
 
     try {
-      final result = await ProcessRunner.run('git', args, workingDirectory: repoPath);
-      
+      final result = await ProcessRunner.run(
+        'git',
+        args,
+        workingDirectory: repoPath,
+      );
+
       if (result.exitCode != 0) {
         final stderr = result.stderr.trim();
         if (stderr.isNotEmpty) {
@@ -187,7 +209,7 @@ class GitPullTool extends ToolBase {
         }
         return false;
       }
-      
+
       if (verbose) {
         final stdout = result.stdout.trim();
         if (stdout.isNotEmpty) print('  $stdout');
@@ -207,7 +229,9 @@ class GitPullTool extends ToolBase {
     print('  Uses --ff-only by default to prevent accidental merge commits.');
     print('');
     print('COMMANDS EXECUTED:');
-    print('  git pull origin <branch> --ff-only   (default, fail if merge needed)');
+    print(
+      '  git pull origin <branch> --ff-only   (default, fail if merge needed)',
+    );
     print('  git pull origin <branch> --rebase    (with --rebase)');
     print('  git pull origin <branch>             (with --allow-merge)');
     print('');
@@ -216,15 +240,21 @@ class GitPullTool extends ToolBase {
     print('  - After someone else pushed changes you need');
     print('  - Regular sync during collaborative work');
     print('');
-    print('Traversal: Fixed to outer-first (parent repos pulled before sub-repos).');
+    print(
+      'Traversal: Fixed to outer-first (parent repos pulled before sub-repos).',
+    );
     print('           Do NOT specify -i/-o flags via buildkit.');
     print('');
     print('COMMAND OPTIONS:');
     print('  --rebase          Rebase local commits on top of remote changes.');
-    print('                    Creates linear history, good for feature branches.');
+    print(
+      '                    Creates linear history, good for feature branches.',
+    );
     print('                    May require conflict resolution.');
     print('  --allow-merge     Allow merge commits when branches diverged.');
-    print('                    Creates merge commit, preserves branch history.');
+    print(
+      '                    Creates merge commit, preserves branch history.',
+    );
     print('  --remote <name>   Remote to pull from (default: origin)');
     print('');
     print('DEFAULT BEHAVIOR (--ff-only):');

@@ -60,7 +60,8 @@ class CompilerConfig {
         recursive: compilerYaml['recursive'] as bool? ?? false,
         exclude: toStringList(compilerYaml['exclude']),
         recursionExclude: toStringList(
-            compilerYaml['recursion-exclude'] ?? compilerYaml['recursionExclude']),
+          compilerYaml['recursion-exclude'] ?? compilerYaml['recursionExclude'],
+        ),
       );
     } catch (_) {
       return null;
@@ -160,12 +161,17 @@ class CompilerTool extends ToolBase {
 
   @override
   void addToolOptions(ArgParser parser) {
-    parser.addOption('targets',
-        abbr: 't',
-        help: 'Target platforms (comma-separated, e.g., linux-x64,darwin-arm64)');
-    parser.addOption('executable',
-        abbr: 'e',
-        help: 'Executable files filter (comma-separated, e.g., buildkit.dart,compiler.dart)');
+    parser.addOption(
+      'targets',
+      abbr: 't',
+      help: 'Target platforms (comma-separated, e.g., linux-x64,darwin-arm64)',
+    );
+    parser.addOption(
+      'executable',
+      abbr: 'e',
+      help:
+          'Executable files filter (comma-separated, e.g., buildkit.dart,compiler.dart)',
+    );
   }
 
   @override
@@ -197,7 +203,10 @@ class CompilerTool extends ToolBase {
     String executionRoot;
 
     try {
-      (results, navArgs, executionRoot) = parseArgsWithExecutionMode(parser, args);
+      (results, navArgs, executionRoot) = parseArgsWithExecutionMode(
+        parser,
+        args,
+      );
     } on FormatException catch (e) {
       print('Error: $e');
       _printUsage(parser);
@@ -234,17 +243,19 @@ class CompilerTool extends ToolBase {
     var config = CompilerConfig.loadFromYaml(executionRoot) ?? CompilerConfig();
 
     // Override with CLI options
-    config = config.merge(CompilerConfig(
-      project: navArgs.project,
-      scan: navArgs.scan,
-      recursive: navArgs.recursive,
-      exclude: navArgs.exclude,
-      recursionExclude: navArgs.recursionExclude,
-      verbose: verbose,
-      dryRun: dryRun,
-      targetFilter: targetFilter,
-      executableFilter: executableFilter,
-    ));
+    config = config.merge(
+      CompilerConfig(
+        project: navArgs.project,
+        scan: navArgs.scan,
+        recursive: navArgs.recursive,
+        exclude: navArgs.exclude,
+        recursionExclude: navArgs.recursionExclude,
+        verbose: verbose,
+        dryRun: dryRun,
+        targetFilter: targetFilter,
+        executableFilter: executableFilter,
+      ),
+    );
 
     // Validate paths
     if (!validateAndEnforcePaths(
@@ -293,8 +304,7 @@ class CompilerTool extends ToolBase {
   }
 
   /// Process a single project: run precompile, compile, postcompile.
-  Future<bool> processProject(
-      String projectPath, CompilerConfig config) async {
+  Future<bool> processProject(String projectPath, CompilerConfig config) async {
     if (verbose) print('Processing: ${p.basename(projectPath)}');
 
     // Load project-level config (buildkit.yaml)
@@ -303,7 +313,9 @@ class CompilerTool extends ToolBase {
     if (yamlConfig != null) {
       projectConfig = projectConfig.merge(yamlConfig);
     }
-    final compileSectionsConfig = CompilerConfig.loadCompileSections(projectPath);
+    final compileSectionsConfig = CompilerConfig.loadCompileSections(
+      projectPath,
+    );
     if (compileSectionsConfig != null) {
       projectConfig = projectConfig.merge(compileSectionsConfig);
     }
@@ -338,11 +350,14 @@ class CompilerTool extends ToolBase {
         // Check if this section runs on current platform
         if (section.platforms.isNotEmpty) {
           final matches = section.platforms.any(
-              (p) => PlatformUtils.matchesPlatform(p, currentPlatform));
+            (p) => PlatformUtils.matchesPlatform(p, currentPlatform),
+          );
           if (!matches) {
             if (verbose) {
-              print('  Skipping compile section (platform: '
-                  '${section.platforms.join(', ')})');
+              print(
+                '  Skipping compile section (platform: '
+                '${section.platforms.join(', ')})',
+              );
             }
             continue;
           }
@@ -357,7 +372,8 @@ class CompilerTool extends ToolBase {
         if (projectConfig.targetFilter.isNotEmpty) {
           targets = targets.where((t) {
             return projectConfig.targetFilter.any(
-                (f) => PlatformUtils.matchesPlatform(f, t));
+              (f) => PlatformUtils.matchesPlatform(f, t),
+            );
           }).toList();
           if (targets.isEmpty) {
             if (verbose) print('  No targets match filter');
@@ -370,8 +386,9 @@ class CompilerTool extends ToolBase {
         if (projectConfig.executableFilter.isNotEmpty) {
           files = files.where((f) {
             final fileName = p.basename(f);
-            return projectConfig.executableFilter.any((filter) =>
-                fileName == filter || f.endsWith(filter));
+            return projectConfig.executableFilter.any(
+              (filter) => fileName == filter || f.endsWith(filter),
+            );
           }).toList();
           if (files.isEmpty) {
             if (verbose) print('  No files match executable filter');
@@ -441,11 +458,14 @@ class CompilerTool extends ToolBase {
     // Check platform filter
     if (section.platforms.isNotEmpty) {
       final matches = section.platforms.any(
-          (p) => PlatformUtils.matchesPlatform(p, currentPlatform));
+        (p) => PlatformUtils.matchesPlatform(p, currentPlatform),
+      );
       if (!matches) {
         if (verbose) {
-          print('  Skipping $sectionName (platform: '
-              '${section.platforms.join(', ')})');
+          print(
+            '  Skipping $sectionName (platform: '
+            '${section.platforms.join(', ')})',
+          );
         }
         return true;
       }
@@ -470,8 +490,10 @@ class CompilerTool extends ToolBase {
 
         if (!builtinCommands.isBuiltin(commandRef)) {
           print('  Error: "$commandRef" is not a recognized built-in command.');
-          print('  Available: versioner, compiler, runner, cleanup, '
-              'dependencies, pubget, pubgetall, dcli');
+          print(
+            '  Available: versioner, compiler, runner, cleanup, '
+            'dependencies, pubget, pubgetall, dcli',
+          );
           return false;
         }
 
@@ -488,12 +510,18 @@ class CompilerTool extends ToolBase {
     for (final commandTemplate in section.commandlines) {
       // Resolve current-platform placeholders
       var command = commandTemplate
-          .replaceAll(r'${current-os}',
-              PlatformUtils.getTargetOS(currentPlatform))
-          .replaceAll(r'${current-arch}',
-              PlatformUtils.getTargetArch(currentPlatform))
-          .replaceAll(r'${current-platform}',
-              PlatformUtils.vsCodeToDartTarget(currentPlatform))
+          .replaceAll(
+            r'${current-os}',
+            PlatformUtils.getTargetOS(currentPlatform),
+          )
+          .replaceAll(
+            r'${current-arch}',
+            PlatformUtils.getTargetArch(currentPlatform),
+          )
+          .replaceAll(
+            r'${current-platform}',
+            PlatformUtils.vsCodeToDartTarget(currentPlatform),
+          )
           .replaceAll(r'${current-platform-vs}', currentPlatform);
 
       // Check if this is a stdin-piping command before env var replacement
@@ -510,8 +538,10 @@ class CompilerTool extends ToolBase {
             verbose: verbose,
           );
           if (!result) {
-            print('  Error: $sectionName stdin command failed: '
-                '${parsed.command}');
+            print(
+              '  Error: $sectionName stdin command failed: '
+              '${parsed.command}',
+            );
           }
           continue;
         }
@@ -606,8 +636,10 @@ class CompilerTool extends ToolBase {
         if (parsed != null) {
           final expandedCmd = _replaceEnvVars(parsed.command);
           if (dryRun) {
-            print('  [DRY RUN] compile stdin ($targetPlatform): '
-                '${parsed.command}');
+            print(
+              '  [DRY RUN] compile stdin ($targetPlatform): '
+              '${parsed.command}',
+            );
             continue;
           }
           if (verbose) {
@@ -625,8 +657,10 @@ class CompilerTool extends ToolBase {
             verbose: verbose,
           );
           if (!result) {
-            print('  Error: Compilation failed for $fileName '
-                '($targetPlatform)');
+            print(
+              '  Error: Compilation failed for $fileName '
+              '($targetPlatform)',
+            );
             return false;
           }
           continue;
@@ -761,24 +795,18 @@ class CompilerTool extends ToolBase {
     var result = command;
 
     // Replace $HOME, $USER, etc.
-    result = result.replaceAllMapped(
-      RegExp(r'\$(\w+)'),
-      (match) {
-        final varName = match.group(1)!;
-        // Don't replace our own ${placeholder} patterns
-        if (varName.startsWith('{')) return match.group(0)!;
-        return Platform.environment[varName] ?? '';
-      },
-    );
+    result = result.replaceAllMapped(RegExp(r'\$(\w+)'), (match) {
+      final varName = match.group(1)!;
+      // Don't replace our own ${placeholder} patterns
+      if (varName.startsWith('{')) return match.group(0)!;
+      return Platform.environment[varName] ?? '';
+    });
 
     // Replace [VAR] format
-    result = result.replaceAllMapped(
-      RegExp(r'\[(\w+)\]'),
-      (match) {
-        final varName = match.group(1)!;
-        return Platform.environment[varName] ?? '';
-      },
-    );
+    result = result.replaceAllMapped(RegExp(r'\[(\w+)\]'), (match) {
+      final varName = match.group(1)!;
+      return Platform.environment[varName] ?? '';
+    });
 
     return result;
   }
@@ -810,7 +838,9 @@ class CompilerTool extends ToolBase {
     print('Configuration (buildkit.yaml):');
     print('  compiler:');
     print('    precompile:  [{commandline: [...], platforms: [...]}]');
-    print('    compiles:    [{commandline: [...], files: [...], targets: [...], platforms: [...]}]');
+    print(
+      '    compiles:    [{commandline: [...], files: [...], targets: [...], platforms: [...]}]',
+    );
     print('    postcompile: [{commandline: [...], platforms: [...]}]');
     print('');
     print('  Use "command:" instead of "commandline:" to trigger a built-in');
@@ -826,5 +856,4 @@ class CompilerTool extends ToolBase {
     print('  compiler -t linux-x64             # Compile for Linux x64 only');
     print('  compiler -s . -r                  # All projects recursively');
   }
-
 }

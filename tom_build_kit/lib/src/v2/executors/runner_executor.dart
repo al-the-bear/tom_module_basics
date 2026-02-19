@@ -112,14 +112,19 @@ class RunnerExecutor extends CommandExecutor {
     var buildersToRun = List.of(configuredBuilders);
     if (filter.include.isNotEmpty) {
       buildersToRun = buildersToRun
-          .where((b) => filter.include.any(
-              (inc) => b.contains(inc) || inc.contains(b)))
+          .where(
+            (b) =>
+                filter.include.any((inc) => b.contains(inc) || inc.contains(b)),
+          )
           .toList();
     }
     if (filter.exclude.isNotEmpty) {
       buildersToRun = buildersToRun
-          .where((b) => !filter.exclude.any(
-              (exc) => b.contains(exc) || exc.contains(b)))
+          .where(
+            (b) => !filter.exclude.any(
+              (exc) => b.contains(exc) || exc.contains(b),
+            ),
+          )
           .toList();
     }
     final buildersToDisable = configuredBuilders

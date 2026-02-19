@@ -337,6 +337,7 @@ class WorkspaceNavigationArgs {
     return args;
   }
 }
+
 ///
 /// Adds the following options:
 /// - `-s, --scan` - Scan directory for projects

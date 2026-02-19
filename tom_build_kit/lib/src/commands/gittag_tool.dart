@@ -15,8 +15,7 @@ class GitTagTool extends ToolBase {
   String get toolKey => 'gittag';
 
   @override
-  String get toolDescription =>
-      'Create or list tags across all repositories';
+  String get toolDescription => 'Create or list tags across all repositories';
 
   /// If true, auto-inject --inner-first-git when running standalone.
   bool autoInnerFirst = false;
@@ -24,28 +23,26 @@ class GitTagTool extends ToolBase {
   @override
   void addToolOptions(ArgParser parser) {
     parser
-      ..addOption('create',
-          abbr: 'c',
-          help: 'Create a new tag')
-      ..addOption('message',
-          abbr: 'm',
-          help: 'Tag message (creates annotated tag)')
-      ..addOption('delete',
-          abbr: 'd',
-          help: 'Delete a tag')
-      ..addFlag('push',
-          negatable: false,
-          help: 'Push tags to remote after creating')
-      ..addFlag('list-tags',
-          negatable: false,
-          help: 'List tags in each repo')
-      ..addOption('remote',
-          defaultsTo: 'origin',
-          help: 'Remote name for push')
-      ..addFlag('guide',
-          abbr: 'g',
-          negatable: false,
-          help: 'Guided mode - step-by-step prompts');
+      ..addOption('create', abbr: 'c', help: 'Create a new tag')
+      ..addOption(
+        'message',
+        abbr: 'm',
+        help: 'Tag message (creates annotated tag)',
+      )
+      ..addOption('delete', abbr: 'd', help: 'Delete a tag')
+      ..addFlag(
+        'push',
+        negatable: false,
+        help: 'Push tags to remote after creating',
+      )
+      ..addFlag('list-tags', negatable: false, help: 'List tags in each repo')
+      ..addOption('remote', defaultsTo: 'origin', help: 'Remote name for push')
+      ..addFlag(
+        'guide',
+        abbr: 'g',
+        negatable: false,
+        help: 'Guided mode - step-by-step prompts',
+      );
   }
 
   @override
@@ -73,7 +70,10 @@ class GitTagTool extends ToolBase {
     String executionRoot;
 
     try {
-      (results, navArgs, executionRoot) = parseArgsWithExecutionMode(parser, effectiveArgs);
+      (results, navArgs, executionRoot) = parseArgsWithExecutionMode(
+        parser,
+        effectiveArgs,
+      );
     } on FormatException catch (e) {
       print('Error: $e');
       _printUsage(parser);
@@ -89,7 +89,9 @@ class GitTagTool extends ToolBase {
     }
 
     if (!navArgs.innerFirstGit && !navArgs.outerFirstGit) {
-      print('Error: gittag requires --inner-first-git (-i) or --outer-first-git (-o)');
+      print(
+        'Error: gittag requires --inner-first-git (-i) or --outer-first-git (-o)',
+      );
       print('');
       print('Recommended: --inner-first-git (-i)');
       print('  Tag submodules first so parent references tagged versions.');
@@ -119,7 +121,7 @@ class GitTagTool extends ToolBase {
         log: (msg) => print(msg),
       );
     }
-    
+
     if (repos.isEmpty) {
       print('No git repositories found in: $executionRoot');
       return true;
@@ -184,7 +186,7 @@ class GitTagTool extends ToolBase {
 
     for (final repoPath in repos) {
       final relPath = p.relative(repoPath, from: executionRoot);
-      
+
       if (!await _runGit(repoPath, gitArgs, relPath)) {
         allSuccess = false;
         continue;
@@ -194,7 +196,11 @@ class GitTagTool extends ToolBase {
       if (pushTags && createTag != null) {
         await _runGit(repoPath, ['push', remote, createTag], relPath);
       } else if (pushTags && deleteTag != null) {
-        await _runGit(repoPath, ['push', remote, ':refs/tags/$deleteTag'], relPath);
+        await _runGit(repoPath, [
+          'push',
+          remote,
+          ':refs/tags/$deleteTag',
+        ], relPath);
       }
     }
 
@@ -205,14 +211,19 @@ class GitTagTool extends ToolBase {
   }
 
   bool _hasGitTraversalFlag(List<String> args) {
-    return args.contains('-i') || args.contains('--inner-first-git') ||
-           args.contains('-o') || args.contains('--outer-first-git');
+    return args.contains('-i') ||
+        args.contains('--inner-first-git') ||
+        args.contains('-o') ||
+        args.contains('--outer-first-git');
   }
 
   Future<List<String>> _listTags(String repoPath) async {
     try {
-      final result = await ProcessRunner.run('git', ['tag', '-l', '--sort=-version:refname'],
-          workingDirectory: repoPath);
+      final result = await ProcessRunner.run('git', [
+        'tag',
+        '-l',
+        '--sort=-version:refname',
+      ], workingDirectory: repoPath);
       return result.stdout.split('\n').where((l) => l.isNotEmpty).toList();
     } catch (_) {
       return [];
@@ -221,8 +232,11 @@ class GitTagTool extends ToolBase {
 
   Future<String?> _getLatestTag(String repoPath) async {
     try {
-      final result = await ProcessRunner.run('git', ['describe', '--tags', '--abbrev=0'],
-          workingDirectory: repoPath);
+      final result = await ProcessRunner.run('git', [
+        'describe',
+        '--tags',
+        '--abbrev=0',
+      ], workingDirectory: repoPath);
       if (result.exitCode == 0) {
         return result.stdout.trim();
       }
@@ -232,14 +246,22 @@ class GitTagTool extends ToolBase {
     }
   }
 
-  Future<bool> _runGit(String repoPath, List<String> args, String relPath) async {
+  Future<bool> _runGit(
+    String repoPath,
+    List<String> args,
+    String relPath,
+  ) async {
     if (dryRun) {
       print('[DRY RUN] $relPath: git ${args.join(' ')}');
       return true;
     }
     print('$relPath: git ${args.join(' ')}');
     try {
-      final result = await ProcessRunner.run('git', args, workingDirectory: repoPath);
+      final result = await ProcessRunner.run(
+        'git',
+        args,
+        workingDirectory: repoPath,
+      );
       if (result.exitCode != 0) {
         final stderr = result.stderr.trim();
         if (stderr.isNotEmpty) print('  Error: $stderr');
@@ -256,12 +278,16 @@ class GitTagTool extends ToolBase {
     printUsageHeader();
     print('');
     print('WHAT IT DOES:');
-    print('  Manages tags across all repositories: create, delete, list, or push.');
+    print(
+      '  Manages tags across all repositories: create, delete, list, or push.',
+    );
     print('  With no action specified, shows latest tag of each repo.');
     print('');
     print('COMMANDS EXECUTED:');
     print('  git describe --tags --abbrev=0    (show latest tag, default)');
-    print('  git tag <name>                    (with -c, create lightweight tag)');
+    print(
+      '  git tag <name>                    (with -c, create lightweight tag)',
+    );
     print('  git tag -a <name> -m <msg>        (with -c -m, annotated tag)');
     print('  git tag -d <name>                 (with -d, delete tag)');
     print('  git push origin <name>            (with --push, push tag)');
@@ -272,14 +298,20 @@ class GitTagTool extends ToolBase {
     print('  - Milestone: mark a consistent state across repos');
     print('  - Cleanup: delete obsolete tags');
     print('');
-    print('Traversal: Fixed to inner-first (submodules tagged before parents).');
+    print(
+      'Traversal: Fixed to inner-first (submodules tagged before parents).',
+    );
     print('           Do NOT specify -i/-o flags via buildkit.');
     print('');
     print('COMMAND OPTIONS:');
     print('  -c, --create <name>    Create a new tag with given name.');
-    print('  -m, --message <msg>    Tag message (creates annotated tag with author/date).');
+    print(
+      '  -m, --message <msg>    Tag message (creates annotated tag with author/date).',
+    );
     print('  -d, --delete <name>    Delete the specified tag.');
-    print('  --push                 Push tags to remote after creating/deleting.');
+    print(
+      '  --push                 Push tags to remote after creating/deleting.',
+    );
     print('  --list-tags            List all tags in each repository.');
     print('  --remote <name>        Remote for push (default: origin).');
     print('');
@@ -294,7 +326,9 @@ class GitTagTool extends ToolBase {
     print('  gittag -c v1.0.0                  # Create lightweight tag');
     print('  gittag -c v1.0.0 -m "Release 1.0" # Create annotated tag');
     print('  gittag -c v1.0.0 --push           # Create and push tag');
-    print('  gittag -d v0.9.0 --push           # Delete tag locally and remotely');
+    print(
+      '  gittag -d v0.9.0 --push           # Delete tag locally and remotely',
+    );
     print('  gittag --list-tags                # List all tags per repo');
     print('');
     print('VIA BUILDKIT:');

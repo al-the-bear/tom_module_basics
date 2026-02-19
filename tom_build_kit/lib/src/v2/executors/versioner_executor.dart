@@ -45,7 +45,8 @@ class VersionerConfig {
       output: options['output'] as String? ?? 'lib/src/version.versioner.dart',
       includeGitCommit: options['includeGitCommit'] as bool? ?? true,
       versionOverride: options['version'] as String?,
-      variablePrefix: options['variable-prefix'] as String? ??
+      variablePrefix:
+          options['variable-prefix'] as String? ??
           options['variablePrefix'] as String?,
     );
   }
@@ -60,7 +61,8 @@ class VersionerConfig {
       output: options['output'] as String? ?? 'lib/src/version.versioner.dart',
       includeGitCommit: options['includeGitCommit'] as bool? ?? true,
       versionOverride: options['version'] as String?,
-      variablePrefix: options['variable-prefix'] as String? ??
+      variablePrefix:
+          options['variable-prefix'] as String? ??
           options['variablePrefix'] as String?,
     );
   }
@@ -71,7 +73,9 @@ class VersionerConfig {
   /// The [other] is the lower-priority config (e.g., project YAML).
   VersionerConfig merge(VersionerConfig other) {
     return VersionerConfig(
-      output: output != 'lib/src/version.versioner.dart' ? output : other.output,
+      output: output != 'lib/src/version.versioner.dart'
+          ? output
+          : other.output,
       includeGitCommit: includeGitCommit,
       versionOverride: versionOverride ?? other.versionOverride,
       variablePrefix: variablePrefix ?? other.variablePrefix,
@@ -122,7 +126,8 @@ class VersionerExecutor extends CommandExecutor {
 
     // Load workspace config (cached)
     _wsRoot ??= findWorkspaceRoot(context.executionRoot);
-    _wsConfig ??= VersionerConfig.loadFromMasterYaml(_wsRoot!) ?? const VersionerConfig();
+    _wsConfig ??=
+        VersionerConfig.loadFromMasterYaml(_wsRoot!) ?? const VersionerConfig();
 
     // Build CLI config from parsed args
     final cliConfig = _buildCliConfig(args);
@@ -300,8 +305,10 @@ class VersionerExecutor extends CommandExecutor {
         print('    Build: $buildNumber');
         if (gitCommit != null) print('    Git: $gitCommit');
       } else {
-        print('  Version file generated: ${p.basename(projectPath)} '
-            'v$version build $buildNumber');
+        print(
+          '  Version file generated: ${p.basename(projectPath)} '
+          'v$version build $buildNumber',
+        );
       }
 
       return true;
@@ -314,11 +321,11 @@ class VersionerExecutor extends CommandExecutor {
   /// Get short git commit hash.
   Future<String?> _getGitCommit(String projectPath) async {
     try {
-      final result = await ProcessRunner.run(
-        'git',
-        ['rev-parse', '--short', 'HEAD'],
-        workingDirectory: projectPath,
-      );
+      final result = await ProcessRunner.run('git', [
+        'rev-parse',
+        '--short',
+        'HEAD',
+      ], workingDirectory: projectPath);
       if (result.exitCode == 0) {
         return result.stdout.trim();
       }

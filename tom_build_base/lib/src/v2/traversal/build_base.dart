@@ -41,7 +41,8 @@ class ProcessingResult {
   void recordError(String path, Object error) => _errors[path] = error;
 
   @override
-  String toString() => 'ProcessingResult(success: $successCount, failed: $failureCount, total: $total)';
+  String toString() =>
+      'ProcessingResult(success: $successCount, failed: $failureCount, total: $total)';
 }
 
 /// Main entry point for workspace traversal.
@@ -98,12 +99,14 @@ abstract class BuildBase {
     // Create contexts from filtered folders
     final contexts = <CommandContext>[];
     for (final folder in folders) {
-      contexts.add(CommandContext(
-        fsFolder: folder,
-        natures: folder.natures.whereType<RunFolder>().toList(),
-        executionRoot: info.executionRoot,
-        traversal: info,
-      ));
+      contexts.add(
+        CommandContext(
+          fsFolder: folder,
+          natures: folder.natures.whereType<RunFolder>().toList(),
+          executionRoot: info.executionRoot,
+          traversal: info,
+        ),
+      );
     }
 
     // Apply ordering based on traversal type
@@ -114,7 +117,11 @@ abstract class BuildBase {
             ? sorter.sortByInnerFirst(contexts, (c) => c.path)
             : sorter.sortByOuterFirst(contexts, (c) => c.path);
       case ProjectTraversalInfo pi when pi.buildOrder:
-        ordered = sorter.sortByBuildOrder(contexts, (c) => c.path, (c) => c.name);
+        ordered = sorter.sortByBuildOrder(
+          contexts,
+          (c) => c.path,
+          (c) => c.name,
+        );
       default:
         ordered = contexts;
     }
@@ -139,7 +146,9 @@ abstract class BuildBase {
 
       try {
         final success = await run(ctx);
-        success ? result.recordSuccess(ctx.path) : result.recordFailure(ctx.path);
+        success
+            ? result.recordSuccess(ctx.path)
+            : result.recordFailure(ctx.path);
       } catch (e) {
         result.recordError(ctx.path, e);
       }
@@ -149,7 +158,10 @@ abstract class BuildBase {
   }
 
   /// Scan for projects based on ProjectTraversalInfo.
-  static Future<List<FsFolder>> _scanProjects(ProjectTraversalInfo info, {bool verbose = false}) async {
+  static Future<List<FsFolder>> _scanProjects(
+    ProjectTraversalInfo info, {
+    bool verbose = false,
+  }) async {
     final scanner = FolderScanner(verbose: verbose);
     return await scanner.scan(
       info.scan,
@@ -194,18 +206,24 @@ abstract class BuildBase {
 
     final filtered = filter.applyProjectFilters(folders, info);
 
-    return filtered.map((folder) {
-      final natures = detector.detectNatures(folder);
-      folder.natures.addAll(natures);
-      return CommandContext(
-        fsFolder: folder,
-        natures: natures,
-        executionRoot: info.executionRoot,
-      );
-    }).where((ctx) =>
-        requiredNatures == null ||
-        requiredNatures.every((t) => ctx.natures.any((n) => n.runtimeType == t))
-    ).toList();
+    return filtered
+        .map((folder) {
+          final natures = detector.detectNatures(folder);
+          folder.natures.addAll(natures);
+          return CommandContext(
+            fsFolder: folder,
+            natures: natures,
+            executionRoot: info.executionRoot,
+          );
+        })
+        .where(
+          (ctx) =>
+              requiredNatures == null ||
+              requiredNatures.every(
+                (t) => ctx.natures.any((n) => n.runtimeType == t),
+              ),
+        )
+        .toList();
   }
 
   /// Convenience method to iterate over all Dart projects.
@@ -246,9 +264,6 @@ abstract class BuildBase {
       skipModules: skipModules ?? [],
     );
 
-    return traverse(
-      info: info,
-      run: run,
-    );
+    return traverse(info: info, run: run);
   }
 }

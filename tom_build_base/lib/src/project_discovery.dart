@@ -9,16 +9,16 @@ import 'package:yaml/yaml.dart';
 import 'build_config.dart';
 
 /// Enhanced project discovery with proper scan vs recursive behavior.
-/// 
+///
 /// Behavior:
 /// - `scan`: Scans subfolders until it finds a project, then stops at that boundary
 /// - `recursive`: Also scans inside found projects for nested projects (e.g., test projects)
-/// 
+///
 /// When inside a project, skips directories like bin/, lib/, build/, etc.
 class ProjectDiscovery {
   /// Whether to print verbose output.
   final bool verbose;
-  
+
   /// Output function for verbose messages.
   final void Function(String) log;
 
@@ -114,7 +114,7 @@ class ProjectDiscovery {
       resolvedPattern = pattern.substring(2);
     } else if (pattern == '.') {
       // Single dot means current directory
-      if (_isProject(basePath) && 
+      if (_isProject(basePath) &&
           (projectFilter == null || projectFilter(basePath))) {
         return [basePath];
       }
@@ -127,9 +127,11 @@ class ProjectDiscovery {
     }
 
     // Simple path - check if it's a valid project
-    final fullPath = truepath(p.isAbsolute(resolvedPattern)
-        ? resolvedPattern
-        : p.join(basePath, resolvedPattern));
+    final fullPath = truepath(
+      p.isAbsolute(resolvedPattern)
+          ? resolvedPattern
+          : p.join(basePath, resolvedPattern),
+    );
 
     if (_isProject(fullPath) &&
         (projectFilter == null || projectFilter(fullPath))) {
@@ -137,12 +139,17 @@ class ProjectDiscovery {
     }
 
     // If pattern is a simple name (no path separators), search the workspace
-    if (!resolvedPattern.contains('/') && !resolvedPattern.contains(p.separator)) {
+    if (!resolvedPattern.contains('/') &&
+        !resolvedPattern.contains(p.separator)) {
       final workspaceRoot = findWorkspaceRoot(basePath);
       _log('Searching workspace for project: $resolvedPattern');
-      
+
       // Search workspace recursively for a project with matching name
-      final found = await _findProjectByName(workspaceRoot, resolvedPattern, projectFilter);
+      final found = await _findProjectByName(
+        workspaceRoot,
+        resolvedPattern,
+        projectFilter,
+      );
       if (found != null) {
         _log('Found project at: $found');
         return [found];
@@ -174,15 +181,17 @@ class ProjectDiscovery {
 
     try {
       // Use DCli find to search recursively for directories
-      for (final dirPath in find('*',
-              workingDirectory: rootDir,
-              recursive: true,
-              types: [Find.directory])
-          .toList()) {
+      for (final dirPath in find(
+        '*',
+        workingDirectory: rootDir,
+        recursive: true,
+        types: [Find.directory],
+      ).toList()) {
         final dirName = p.basename(dirPath);
 
         // Skip hidden directories and known non-project directories
-        if (dirName.startsWith('.') || alwaysSkipDirectories.contains(dirName)) {
+        if (dirName.startsWith('.') ||
+            alwaysSkipDirectories.contains(dirName)) {
           continue;
         }
 
@@ -223,7 +232,8 @@ class ProjectDiscovery {
         final yaml = loadYaml(content);
         if (yaml is Map) {
           // Check project_id and short-id
-          final projectId = yaml['project_id'] as String? ?? yaml['short-id'] as String?;
+          final projectId =
+              yaml['project_id'] as String? ?? yaml['short-id'] as String?;
           if (projectId != null && projectId.toLowerCase() == lowerSearch) {
             return _ConfigMatch.id;
           }
@@ -276,7 +286,7 @@ class ProjectDiscovery {
 
     try {
       final glob = Glob(pattern);
-      
+
       await for (final entity in glob.list(root: basePath)) {
         if (entity is Directory) {
           final path = truepath(entity.path);
@@ -299,11 +309,11 @@ class ProjectDiscovery {
   }
 
   /// Scan for projects in a directory.
-  /// 
+  ///
   /// [scanDir] - The directory to start scanning from
   /// [recursive] - If true, also scan inside found projects for nested projects
   /// [toolKey] - Optional tool key for project-level recursive override lookup
-  /// 
+  ///
   /// Returns a list of project directory paths.
   Future<List<String>> scanForProjects(
     String scanDir, {
@@ -482,11 +492,12 @@ class ProjectDiscovery {
   }) async {
     try {
       // Use DCli find to get immediate subdirectories
-      for (final subDirPath in find('*',
-              workingDirectory: dirPath,
-              recursive: false,
-              types: [Find.directory])
-          .toList()) {
+      for (final subDirPath in find(
+        '*',
+        workingDirectory: dirPath,
+        recursive: false,
+        types: [Find.directory],
+      ).toList()) {
         await _scanDirectory(
           subDirPath,
           projects,
@@ -503,14 +514,16 @@ class ProjectDiscovery {
   }
 
   /// Check if a project has recursive override in buildkit.yaml.
-  /// 
+  ///
   /// Looks for:
   /// - `buildkit.recursive: true/false` (global for all tools)
   /// - `{toolKey}.recursive: true/false` (tool-specific)
-  /// 
+  ///
   /// Returns null if not specified (use default), true/false if explicitly set.
   static bool? getProjectRecursiveSetting(String projectPath, String? toolKey) {
-    final buildkitYamlFile = File(p.join(projectPath, TomBuildConfig.projectFilename));
+    final buildkitYamlFile = File(
+      p.join(projectPath, TomBuildConfig.projectFilename),
+    );
     if (!buildkitYamlFile.existsSync()) return null;
 
     try {
@@ -589,7 +602,7 @@ class ProjectDiscovery {
   };
 
   /// Find the workspace root by looking for tom_workspace.yaml or tom.code-workspace.
-  /// 
+  ///
   /// Starts from [startPath] and traverses up the directory tree.
   /// Returns [startPath] if no workspace root is found.
   static String findWorkspaceRoot(String startPath) {
@@ -699,7 +712,9 @@ class ProjectDiscovery {
           paths.add(match.value);
         } else {
           if (verbose) {
-            logFn('Warning: Unknown module "$name". Available: ${repos.keys.join(', ')}');
+            logFn(
+              'Warning: Unknown module "$name". Available: ${repos.keys.join(', ')}',
+            );
           }
         }
       }
@@ -753,7 +768,9 @@ class ProjectDiscovery {
     if (modulePaths.isEmpty) {
       // No valid modules found - return empty (strict filtering)
       if (verbose) {
-        (log ?? print)('Warning: No valid modules found, no projects will be processed');
+        (log ?? print)(
+          'Warning: No valid modules found, no projects will be processed',
+        );
       }
       return [];
     }

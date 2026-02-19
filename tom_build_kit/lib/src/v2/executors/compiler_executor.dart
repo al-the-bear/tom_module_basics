@@ -163,7 +163,9 @@ class CompilerExecutor extends CommandExecutor {
       config = config.merge(_CompilerConfig(targetFilter: targetFilter));
     }
     if (executableFilter.isNotEmpty) {
-      config = config.merge(_CompilerConfig(executableFilter: executableFilter));
+      config = config.merge(
+        _CompilerConfig(executableFilter: executableFilter),
+      );
     }
 
     if (config.compileSections.isEmpty) {
@@ -233,8 +235,9 @@ class CompilerExecutor extends CommandExecutor {
         if (config.executableFilter.isNotEmpty) {
           files = files.where((f) {
             final fileName = p.basename(f);
-            return config.executableFilter.any((filter) =>
-                fileName == filter || f.endsWith(filter));
+            return config.executableFilter.any(
+              (filter) => fileName == filter || f.endsWith(filter),
+            );
           }).toList();
           if (files.isEmpty) {
             if (args.verbose) print('  No files match executable filter');

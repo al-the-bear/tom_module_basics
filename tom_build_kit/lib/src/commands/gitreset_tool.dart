@@ -15,8 +15,7 @@ class GitResetTool extends ToolBase {
   String get toolKey => 'gitreset';
 
   @override
-  String get toolDescription =>
-      'Reset all repositories to a specific state';
+  String get toolDescription => 'Reset all repositories to a specific state';
 
   /// If true, auto-inject --outer-first-git when running standalone.
   bool autoOuterFirst = false;
@@ -24,25 +23,34 @@ class GitResetTool extends ToolBase {
   @override
   void addToolOptions(ArgParser parser) {
     parser
-      ..addFlag('soft',
-          negatable: false,
-          help: 'Soft reset (keep changes staged)')
-      ..addFlag('mixed',
-          negatable: false,
-          help: 'Mixed reset (unstage changes, keep working tree)')
-      ..addFlag('hard',
-          negatable: false,
-          help: 'Hard reset (discard all changes)')
-      ..addOption('to',
-          help: 'Reset to commit/branch/tag (default: HEAD)')
-      ..addFlag('upstream',
-          abbr: 'u',
-          negatable: false,
-          help: 'Reset to upstream tracking branch')
-      ..addFlag('guide',
-          abbr: 'g',
-          negatable: false,
-          help: 'Guided mode - step-by-step prompts');
+      ..addFlag(
+        'soft',
+        negatable: false,
+        help: 'Soft reset (keep changes staged)',
+      )
+      ..addFlag(
+        'mixed',
+        negatable: false,
+        help: 'Mixed reset (unstage changes, keep working tree)',
+      )
+      ..addFlag(
+        'hard',
+        negatable: false,
+        help: 'Hard reset (discard all changes)',
+      )
+      ..addOption('to', help: 'Reset to commit/branch/tag (default: HEAD)')
+      ..addFlag(
+        'upstream',
+        abbr: 'u',
+        negatable: false,
+        help: 'Reset to upstream tracking branch',
+      )
+      ..addFlag(
+        'guide',
+        abbr: 'g',
+        negatable: false,
+        help: 'Guided mode - step-by-step prompts',
+      );
   }
 
   @override
@@ -70,7 +78,10 @@ class GitResetTool extends ToolBase {
     String executionRoot;
 
     try {
-      (results, navArgs, executionRoot) = parseArgsWithExecutionMode(parser, effectiveArgs);
+      (results, navArgs, executionRoot) = parseArgsWithExecutionMode(
+        parser,
+        effectiveArgs,
+      );
     } on FormatException catch (e) {
       print('Error: $e');
       _printUsage(parser);
@@ -86,7 +97,9 @@ class GitResetTool extends ToolBase {
     }
 
     if (!navArgs.innerFirstGit && !navArgs.outerFirstGit) {
-      print('Error: gitreset requires --outer-first-git (-o) or --inner-first-git (-i)');
+      print(
+        'Error: gitreset requires --outer-first-git (-o) or --inner-first-git (-i)',
+      );
       print('');
       print('Recommended: --outer-first-git (-o)');
       print('  Reset parent first to get correct submodule references.');
@@ -122,7 +135,7 @@ class GitResetTool extends ToolBase {
         log: (msg) => print(msg),
       );
     }
-    
+
     if (repos.isEmpty) {
       print('No git repositories found in: $executionRoot');
       return true;
@@ -152,13 +165,13 @@ class GitResetTool extends ToolBase {
 
     for (final repoPath in repos) {
       final relPath = p.relative(repoPath, from: executionRoot);
-      
+
       // Build reset command for this repo
       final gitArgs = ['reset'];
       if (soft) gitArgs.add('--soft');
       if (mixed) gitArgs.add('--mixed');
       if (hard) gitArgs.add('--hard');
-      
+
       if (upstream) {
         final upstreamRef = await _getUpstreamRef(repoPath);
         if (upstreamRef == null) {
@@ -186,16 +199,20 @@ class GitResetTool extends ToolBase {
   }
 
   bool _hasGitTraversalFlag(List<String> args) {
-    return args.contains('-i') || args.contains('--inner-first-git') ||
-           args.contains('-o') || args.contains('--outer-first-git');
+    return args.contains('-i') ||
+        args.contains('--inner-first-git') ||
+        args.contains('-o') ||
+        args.contains('--outer-first-git');
   }
 
   Future<String?> _getUpstreamRef(String repoPath) async {
     try {
-      final result = await ProcessRunner.run(
-        'git', ['rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{u}'],
-        workingDirectory: repoPath,
-      );
+      final result = await ProcessRunner.run('git', [
+        'rev-parse',
+        '--abbrev-ref',
+        '--symbolic-full-name',
+        '@{u}',
+      ], workingDirectory: repoPath);
       if (result.exitCode == 0) {
         return result.stdout.trim();
       }
@@ -205,14 +222,22 @@ class GitResetTool extends ToolBase {
     }
   }
 
-  Future<bool> _runGit(String repoPath, List<String> args, String relPath) async {
+  Future<bool> _runGit(
+    String repoPath,
+    List<String> args,
+    String relPath,
+  ) async {
     if (dryRun) {
       print('[DRY RUN] $relPath: git ${args.join(' ')}');
       return true;
     }
     print('$relPath: git ${args.join(' ')}');
     try {
-      final result = await ProcessRunner.run('git', args, workingDirectory: repoPath);
+      final result = await ProcessRunner.run(
+        'git',
+        args,
+        workingDirectory: repoPath,
+      );
       if (result.exitCode != 0) {
         final stderr = result.stderr.trim();
         if (stderr.isNotEmpty) print('  Error: $stderr');
@@ -233,9 +258,13 @@ class GitResetTool extends ToolBase {
     print('  Default: --mixed reset to HEAD (unstage changes, keep files).');
     print('');
     print('COMMANDS EXECUTED:');
-    print('  git reset --mixed HEAD            (default, unstage but keep changes)');
+    print(
+      '  git reset --mixed HEAD            (default, unstage but keep changes)',
+    );
     print('  git reset --soft HEAD             (with --soft, keep staged)');
-    print('  git reset --hard HEAD             (with --hard, discard everything)');
+    print(
+      '  git reset --hard HEAD             (with --hard, discard everything)',
+    );
     print('  git reset --mixed origin/<branch> (with -u, reset to upstream)');
     print('');
     print('RESET MODES EXPLAINED:');
@@ -250,25 +279,37 @@ class GitResetTool extends ToolBase {
     print('  - Discard all local changes (--hard)');
     print('  - Sync with remote, discarding local work (--hard -u)');
     print('');
-    print('Traversal: Fixed to outer-first (parent repos reset before sub-repos).');
+    print(
+      'Traversal: Fixed to outer-first (parent repos reset before sub-repos).',
+    );
     print('           Do NOT specify -i/-o flags via buildkit.');
     print('');
     print('COMMAND OPTIONS:');
     print('  --soft              Keep changes staged.');
-    print('  --mixed             Unstage changes, keep working tree. (default)');
+    print(
+      '  --mixed             Unstage changes, keep working tree. (default)',
+    );
     print('  --hard              Discard all changes. DESTRUCTIVE.');
-    print('  --to <ref>          Reset to specific commit/branch/tag (default: HEAD).');
+    print(
+      '  --to <ref>          Reset to specific commit/branch/tag (default: HEAD).',
+    );
     print('  -u, --upstream      Reset to upstream tracking branch.');
     print('');
     print('STANDARD OPTIONS:');
     print(parser.usage);
     print('');
     print('EXAMPLES:');
-    print('  gitreset                      # Unstage all changes (--mixed HEAD)');
+    print(
+      '  gitreset                      # Unstage all changes (--mixed HEAD)',
+    );
     print('  gitreset --soft               # Keep changes staged');
     print('  gitreset --hard               # Discard all local changes');
-    print('  gitreset --hard -u            # Reset to upstream (discard local)');
-    print('  gitreset --soft --to HEAD~1   # Undo last commit, keep changes staged');
+    print(
+      '  gitreset --hard -u            # Reset to upstream (discard local)',
+    );
+    print(
+      '  gitreset --soft --to HEAD~1   # Undo last commit, keep changes staged',
+    );
     print('');
     print('VIA BUILDKIT:');
     print('  bk :gitreset');

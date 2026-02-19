@@ -24,18 +24,12 @@ Future<ProcessRunResult> _runGit(
 
 /// Get current branch name.
 Future<String?> _getCurrentBranch(String dir) async {
-  final result =
-      await _runGit(['rev-parse', '--abbrev-ref', 'HEAD'], dir);
-  return result.exitCode == 0
-      ? result.stdout.trim()
-      : null;
+  final result = await _runGit(['rev-parse', '--abbrev-ref', 'HEAD'], dir);
+  return result.exitCode == 0 ? result.stdout.trim() : null;
 }
 
 /// Get per-command options for a git command.
-Map<String, dynamic> _getGitCmdOpts(
-  CliArgs args,
-  List<String> commandNames,
-) {
+Map<String, dynamic> _getGitCmdOpts(CliArgs args, List<String> commandNames) {
   for (final cmd in args.commands) {
     if (commandNames.contains(cmd)) {
       final cmdArgs = args.commandArgs[cmd];
@@ -62,7 +56,11 @@ class GitStatusExecutor extends CommandExecutor {
     try {
       // Fetch (unless --no-fetch)
       if (!noFetch && !args.dryRun) {
-        await _runGit(['fetch', '--all', '--quiet'], dir, verbose: args.verbose);
+        await _runGit(
+          ['fetch', '--all', '--quiet'],
+          dir,
+          verbose: args.verbose,
+        );
       }
 
       final branch = await _getCurrentBranch(dir) ?? 'unknown';
@@ -74,8 +72,7 @@ class GitStatusExecutor extends CommandExecutor {
 
       // Unpushed
       var unpushed = 0;
-      final logResult =
-          await _runGit(['log', '@{u}..HEAD', '--oneline'], dir);
+      final logResult = await _runGit(['log', '@{u}..HEAD', '--oneline'], dir);
       if (logResult.exitCode == 0) {
         final logOut = logResult.stdout.trim();
         unpushed = logOut.isEmpty ? 0 : logOut.split('\n').length;
@@ -153,7 +150,11 @@ class GitCommitExecutor extends CommandExecutor {
     if (args.dryRun) {
       final action = amend ? 'amend' : 'commit "${message ?? "..."}"';
       print('  [DRY RUN] ${context.name}: $action${push ? ' + push' : ''}');
-      return ItemResult.success(path: dir, name: context.name, message: 'dry-run');
+      return ItemResult.success(
+        path: dir,
+        name: context.name,
+        message: 'dry-run',
+      );
     }
 
     // Stage
@@ -163,24 +164,39 @@ class GitCommitExecutor extends CommandExecutor {
 
     // Commit
     if (amend) {
-      final result =
-          await _runGit(['commit', '--amend', '--no-edit'], dir, verbose: args.verbose);
+      final result = await _runGit(
+        ['commit', '--amend', '--no-edit'],
+        dir,
+        verbose: args.verbose,
+      );
       if (result.exitCode != 0) {
         return ItemResult.failure(
-          path: dir, name: context.name, error: 'amend failed');
+          path: dir,
+          name: context.name,
+          error: 'amend failed',
+        );
       }
       print('  ${context.name}: amended');
     } else {
       if (message == null || message.isEmpty) {
         return ItemResult.failure(
-          path: dir, name: context.name, error: 'no commit message');
+          path: dir,
+          name: context.name,
+          error: 'no commit message',
+        );
       }
-      final result =
-          await _runGit(['commit', '-m', message], dir, verbose: args.verbose);
+      final result = await _runGit(
+        ['commit', '-m', message],
+        dir,
+        verbose: args.verbose,
+      );
       if (result.exitCode != 0) {
         final stderr = result.stderr.trim();
         return ItemResult.failure(
-          path: dir, name: context.name, error: 'commit failed: $stderr');
+          path: dir,
+          name: context.name,
+          error: 'commit failed: $stderr',
+        );
       }
       print('  ${context.name}: committed "$message"');
     }
@@ -196,7 +212,10 @@ class GitCommitExecutor extends CommandExecutor {
     }
 
     return ItemResult.success(
-      path: dir, name: context.name, message: 'committed');
+      path: dir,
+      name: context.name,
+      message: 'committed',
+    );
   }
 }
 
@@ -216,7 +235,11 @@ class GitPullExecutor extends CommandExecutor {
     if (args.dryRun) {
       final mode = rebase ? '--rebase' : (ffOnly ? '--ff-only' : 'merge');
       print('  [DRY RUN] ${context.name}: pull ($mode)');
-      return ItemResult.success(path: dir, name: context.name, message: 'dry-run');
+      return ItemResult.success(
+        path: dir,
+        name: context.name,
+        message: 'dry-run',
+      );
     }
 
     final pullArgs = ['pull'];
@@ -234,13 +257,19 @@ class GitPullExecutor extends CommandExecutor {
       print('  ${context.name}: pull failed');
       if (args.verbose && stderr.isNotEmpty) print('    $stderr');
       return ItemResult.failure(
-        path: dir, name: context.name, error: 'pull failed');
+        path: dir,
+        name: context.name,
+        error: 'pull failed',
+      );
     }
 
     final isUpToDate = output.contains('Already up to date');
     print('  ${context.name}: ${isUpToDate ? 'up to date' : 'pulled'}');
     return ItemResult.success(
-      path: dir, name: context.name, message: isUpToDate ? 'up to date' : 'pulled');
+      path: dir,
+      name: context.name,
+      message: isUpToDate ? 'up to date' : 'pulled',
+    );
   }
 }
 
@@ -261,29 +290,51 @@ class GitBranchExecutor extends CommandExecutor {
     if (create != null) {
       if (args.dryRun) {
         print('  [DRY RUN] ${context.name}: create branch $create');
-        return ItemResult.success(path: dir, name: context.name, message: 'dry-run');
+        return ItemResult.success(
+          path: dir,
+          name: context.name,
+          message: 'dry-run',
+        );
       }
       final result = await _runGit(['checkout', '-b', create], dir);
       if (result.exitCode != 0) {
         return ItemResult.failure(
-          path: dir, name: context.name, error: 'create branch failed');
+          path: dir,
+          name: context.name,
+          error: 'create branch failed',
+        );
       }
       print('  ${context.name}: created $create');
-      return ItemResult.success(path: dir, name: context.name, message: 'created $create');
+      return ItemResult.success(
+        path: dir,
+        name: context.name,
+        message: 'created $create',
+      );
     }
 
     if (delete != null) {
       if (args.dryRun) {
         print('  [DRY RUN] ${context.name}: delete branch $delete');
-        return ItemResult.success(path: dir, name: context.name, message: 'dry-run');
+        return ItemResult.success(
+          path: dir,
+          name: context.name,
+          message: 'dry-run',
+        );
       }
       final result = await _runGit(['branch', '-d', delete], dir);
       if (result.exitCode != 0) {
         return ItemResult.failure(
-          path: dir, name: context.name, error: 'delete branch failed');
+          path: dir,
+          name: context.name,
+          error: 'delete branch failed',
+        );
       }
       print('  ${context.name}: deleted $delete');
-      return ItemResult.success(path: dir, name: context.name, message: 'deleted $delete');
+      return ItemResult.success(
+        path: dir,
+        name: context.name,
+        message: 'deleted $delete',
+      );
     }
 
     // List branches
@@ -316,7 +367,11 @@ class GitTagExecutor extends CommandExecutor {
     if (create != null) {
       if (args.dryRun) {
         print('  [DRY RUN] ${context.name}: create tag $create');
-        return ItemResult.success(path: dir, name: context.name, message: 'dry-run');
+        return ItemResult.success(
+          path: dir,
+          name: context.name,
+          message: 'dry-run',
+        );
       }
       final tagArgs = message != null
           ? ['tag', '-a', create, '-m', message]
@@ -324,23 +379,38 @@ class GitTagExecutor extends CommandExecutor {
       final result = await _runGit(tagArgs, dir);
       if (result.exitCode != 0) {
         return ItemResult.failure(
-          path: dir, name: context.name, error: 'create tag failed');
+          path: dir,
+          name: context.name,
+          error: 'create tag failed',
+        );
       }
       print('  ${context.name}: tagged $create');
       if (pushTags) {
         await _runGit(['push', '--tags'], dir);
       }
-      return ItemResult.success(path: dir, name: context.name, message: 'tagged $create');
+      return ItemResult.success(
+        path: dir,
+        name: context.name,
+        message: 'tagged $create',
+      );
     }
 
     if (delete != null) {
       if (args.dryRun) {
         print('  [DRY RUN] ${context.name}: delete tag $delete');
-        return ItemResult.success(path: dir, name: context.name, message: 'dry-run');
+        return ItemResult.success(
+          path: dir,
+          name: context.name,
+          message: 'dry-run',
+        );
       }
       await _runGit(['tag', '-d', delete], dir);
       print('  ${context.name}: deleted tag $delete');
-      return ItemResult.success(path: dir, name: context.name, message: 'deleted $delete');
+      return ItemResult.success(
+        path: dir,
+        name: context.name,
+        message: 'deleted $delete',
+      );
     }
 
     // List tags
@@ -370,12 +440,19 @@ class GitCheckoutExecutor extends CommandExecutor {
 
     if (branch == null) {
       return ItemResult.failure(
-        path: dir, name: context.name, error: 'no branch specified');
+        path: dir,
+        name: context.name,
+        error: 'no branch specified',
+      );
     }
 
     if (args.dryRun) {
       print('  [DRY RUN] ${context.name}: checkout $branch');
-      return ItemResult.success(path: dir, name: context.name, message: 'dry-run');
+      return ItemResult.success(
+        path: dir,
+        name: context.name,
+        message: 'dry-run',
+      );
     }
 
     final checkoutArgs = createNew
@@ -386,12 +463,18 @@ class GitCheckoutExecutor extends CommandExecutor {
     if (result.exitCode != 0) {
       final stderr = result.stderr.trim();
       return ItemResult.failure(
-        path: dir, name: context.name, error: 'checkout failed: $stderr');
+        path: dir,
+        name: context.name,
+        error: 'checkout failed: $stderr',
+      );
     }
 
     print('  ${context.name}: checked out $branch');
     return ItemResult.success(
-      path: dir, name: context.name, message: 'checked out $branch');
+      path: dir,
+      name: context.name,
+      message: 'checked out $branch',
+    );
   }
 }
 
@@ -416,15 +499,28 @@ class GitResetExecutor extends CommandExecutor {
 
     if (args.dryRun) {
       print('  [DRY RUN] ${context.name}: git ${resetArgs.join(' ')}');
-      return ItemResult.success(path: dir, name: context.name, message: 'dry-run');
+      return ItemResult.success(
+        path: dir,
+        name: context.name,
+        message: 'dry-run',
+      );
     }
 
     final result = await _runGit(resetArgs, dir);
     if (result.exitCode != 0) {
       return ItemResult.failure(
-        path: dir, name: context.name, error: 'reset failed');
+        path: dir,
+        name: context.name,
+        error: 'reset failed',
+      );
     }
-    print('  ${context.name}: reset${hard ? ' (hard)' : soft ? ' (soft)' : ''}');
+    print(
+      '  ${context.name}: reset${hard
+          ? ' (hard)'
+          : soft
+          ? ' (soft)'
+          : ''}',
+    );
     return ItemResult.success(path: dir, name: context.name, message: 'reset');
   }
 }
@@ -448,8 +544,7 @@ class GitCleanExecutor extends CommandExecutor {
 
     if (args.dryRun) {
       // Show what would be cleaned
-      final dryResult =
-          await _runGit([...cleanArgs, '-n'], dir);
+      final dryResult = await _runGit([...cleanArgs, '-n'], dir);
       final output = dryResult.stdout.trim();
       if (output.isEmpty) {
         print('  ${context.name}: nothing to clean');
@@ -459,16 +554,27 @@ class GitCleanExecutor extends CommandExecutor {
           print('    $line');
         }
       }
-      return ItemResult.success(path: dir, name: context.name, message: 'dry-run');
+      return ItemResult.success(
+        path: dir,
+        name: context.name,
+        message: 'dry-run',
+      );
     }
 
     final result = await _runGit(cleanArgs, dir);
     if (result.exitCode != 0) {
       return ItemResult.failure(
-        path: dir, name: context.name, error: 'clean failed');
+        path: dir,
+        name: context.name,
+        error: 'clean failed',
+      );
     }
     print('  ${context.name}: cleaned');
-    return ItemResult.success(path: dir, name: context.name, message: 'cleaned');
+    return ItemResult.success(
+      path: dir,
+      name: context.name,
+      message: 'cleaned',
+    );
   }
 }
 
@@ -486,7 +592,11 @@ class GitSyncExecutor extends CommandExecutor {
 
     if (args.dryRun) {
       print('  [DRY RUN] ${context.name}: sync${rebase ? ' (rebase)' : ''}');
-      return ItemResult.success(path: dir, name: context.name, message: 'dry-run');
+      return ItemResult.success(
+        path: dir,
+        name: context.name,
+        message: 'dry-run',
+      );
     }
 
     // Fetch
@@ -497,7 +607,10 @@ class GitSyncExecutor extends CommandExecutor {
     final result = await _runGit(pullArgs, dir);
     if (result.exitCode != 0) {
       return ItemResult.failure(
-        path: dir, name: context.name, error: 'sync failed');
+        path: dir,
+        name: context.name,
+        error: 'sync failed',
+      );
     }
 
     print('  ${context.name}: synced');
@@ -519,14 +632,24 @@ class GitPruneExecutor extends CommandExecutor {
 
     if (args.dryRun) {
       print('  [DRY RUN] ${context.name}: prune $remote');
-      return ItemResult.success(path: dir, name: context.name, message: 'dry-run');
+      return ItemResult.success(
+        path: dir,
+        name: context.name,
+        message: 'dry-run',
+      );
     }
 
-    final result =
-        await _runGit(['remote', 'prune', remote], dir, verbose: args.verbose);
+    final result = await _runGit(
+      ['remote', 'prune', remote],
+      dir,
+      verbose: args.verbose,
+    );
     if (result.exitCode != 0) {
       return ItemResult.failure(
-        path: dir, name: context.name, error: 'prune failed');
+        path: dir,
+        name: context.name,
+        error: 'prune failed',
+      );
     }
     print('  ${context.name}: pruned $remote');
     return ItemResult.success(path: dir, name: context.name, message: 'pruned');
@@ -547,8 +670,14 @@ class GitStashExecutor extends CommandExecutor {
     final includeUntracked = opts['include-untracked'] == true;
 
     if (args.dryRun) {
-      print('  [DRY RUN] ${context.name}: stash${message != null ? ' "$message"' : ''}');
-      return ItemResult.success(path: dir, name: context.name, message: 'dry-run');
+      print(
+        '  [DRY RUN] ${context.name}: stash${message != null ? ' "$message"' : ''}',
+      );
+      return ItemResult.success(
+        path: dir,
+        name: context.name,
+        message: 'dry-run',
+      );
     }
 
     final stashArgs = ['stash', 'push'];
@@ -587,7 +716,11 @@ class GitUnstashExecutor extends CommandExecutor {
 
     if (args.dryRun) {
       print('  [DRY RUN] ${context.name}: ${pop ? 'pop' : 'apply'} stash');
-      return ItemResult.success(path: dir, name: context.name, message: 'dry-run');
+      return ItemResult.success(
+        path: dir,
+        name: context.name,
+        message: 'dry-run',
+      );
     }
 
     final stashArgs = ['stash', pop ? 'pop' : 'apply'];
@@ -599,14 +732,23 @@ class GitUnstashExecutor extends CommandExecutor {
       if (stderr.contains('No stash entries')) {
         print('  ${context.name}: no stash entries');
         return ItemResult.success(
-          path: dir, name: context.name, message: 'no stash');
+          path: dir,
+          name: context.name,
+          message: 'no stash',
+        );
       }
       return ItemResult.failure(
-        path: dir, name: context.name, error: 'unstash failed');
+        path: dir,
+        name: context.name,
+        error: 'unstash failed',
+      );
     }
     print('  ${context.name}: ${pop ? 'popped' : 'applied'} stash');
     return ItemResult.success(
-      path: dir, name: context.name, message: pop ? 'popped' : 'applied');
+      path: dir,
+      name: context.name,
+      message: pop ? 'popped' : 'applied',
+    );
   }
 }
 
@@ -639,7 +781,10 @@ class GitCompareExecutor extends CommandExecutor {
       }
     }
     return ItemResult.success(
-      path: dir, name: context.name, message: 'compared with $base');
+      path: dir,
+      name: context.name,
+      message: 'compared with $base',
+    );
   }
 }
 
@@ -659,12 +804,19 @@ class GitMergeExecutor extends CommandExecutor {
 
     if (branch == null) {
       return ItemResult.failure(
-        path: dir, name: context.name, error: 'no branch to merge');
+        path: dir,
+        name: context.name,
+        error: 'no branch to merge',
+      );
     }
 
     if (args.dryRun) {
       print('  [DRY RUN] ${context.name}: merge $branch');
-      return ItemResult.success(path: dir, name: context.name, message: 'dry-run');
+      return ItemResult.success(
+        path: dir,
+        name: context.name,
+        message: 'dry-run',
+      );
     }
 
     final mergeArgs = ['merge', branch];
@@ -674,11 +826,17 @@ class GitMergeExecutor extends CommandExecutor {
     final result = await _runGit(mergeArgs, dir);
     if (result.exitCode != 0) {
       return ItemResult.failure(
-        path: dir, name: context.name, error: 'merge failed');
+        path: dir,
+        name: context.name,
+        error: 'merge failed',
+      );
     }
     print('  ${context.name}: merged $branch');
     return ItemResult.success(
-      path: dir, name: context.name, message: 'merged $branch');
+      path: dir,
+      name: context.name,
+      message: 'merged $branch',
+    );
   }
 }
 
@@ -705,15 +863,21 @@ class GitSquashExecutor extends CommandExecutor {
 
     if (args.dryRun) {
       print('  [DRY RUN] ${context.name}: squash last $count commits');
-      return ItemResult.success(path: dir, name: context.name, message: 'dry-run');
+      return ItemResult.success(
+        path: dir,
+        name: context.name,
+        message: 'dry-run',
+      );
     }
 
     // Soft reset to squash
-    final resetResult =
-        await _runGit(['reset', '--soft', 'HEAD~$count'], dir);
+    final resetResult = await _runGit(['reset', '--soft', 'HEAD~$count'], dir);
     if (resetResult.exitCode != 0) {
       return ItemResult.failure(
-        path: dir, name: context.name, error: 'squash reset failed');
+        path: dir,
+        name: context.name,
+        error: 'squash reset failed',
+      );
     }
 
     // Commit with message
@@ -721,12 +885,18 @@ class GitSquashExecutor extends CommandExecutor {
     final commitResult = await _runGit(commitArgs, dir);
     if (commitResult.exitCode != 0) {
       return ItemResult.failure(
-        path: dir, name: context.name, error: 'squash commit failed');
+        path: dir,
+        name: context.name,
+        error: 'squash commit failed',
+      );
     }
 
     print('  ${context.name}: squashed $count commits');
     return ItemResult.success(
-      path: dir, name: context.name, message: 'squashed $count');
+      path: dir,
+      name: context.name,
+      message: 'squashed $count',
+    );
   }
 }
 
@@ -748,26 +918,47 @@ class GitRebaseExecutor extends CommandExecutor {
     if (continueRebase) {
       final result = await _runGit(['rebase', '--continue'], dir);
       final success = result.exitCode == 0;
-      print('  ${context.name}: rebase ${success ? 'continued' : 'continue failed'}');
+      print(
+        '  ${context.name}: rebase ${success ? 'continued' : 'continue failed'}',
+      );
       return success
-          ? ItemResult.success(path: dir, name: context.name, message: 'continued')
-          : ItemResult.failure(path: dir, name: context.name, error: 'continue failed');
+          ? ItemResult.success(
+              path: dir,
+              name: context.name,
+              message: 'continued',
+            )
+          : ItemResult.failure(
+              path: dir,
+              name: context.name,
+              error: 'continue failed',
+            );
     }
 
     if (abort) {
       await _runGit(['rebase', '--abort'], dir);
       print('  ${context.name}: rebase aborted');
-      return ItemResult.success(path: dir, name: context.name, message: 'aborted');
+      return ItemResult.success(
+        path: dir,
+        name: context.name,
+        message: 'aborted',
+      );
     }
 
     if (onto == null) {
       return ItemResult.failure(
-        path: dir, name: context.name, error: 'no --onto branch specified');
+        path: dir,
+        name: context.name,
+        error: 'no --onto branch specified',
+      );
     }
 
     if (args.dryRun) {
       print('  [DRY RUN] ${context.name}: rebase onto $onto');
-      return ItemResult.success(path: dir, name: context.name, message: 'dry-run');
+      return ItemResult.success(
+        path: dir,
+        name: context.name,
+        message: 'dry-run',
+      );
     }
 
     final rebaseArgs = ['rebase'];
@@ -777,11 +968,17 @@ class GitRebaseExecutor extends CommandExecutor {
     final result = await _runGit(rebaseArgs, dir);
     if (result.exitCode != 0) {
       return ItemResult.failure(
-        path: dir, name: context.name, error: 'rebase failed');
+        path: dir,
+        name: context.name,
+        error: 'rebase failed',
+      );
     }
     print('  ${context.name}: rebased onto $onto');
     return ItemResult.success(
-      path: dir, name: context.name, message: 'rebased onto $onto');
+      path: dir,
+      name: context.name,
+      message: 'rebased onto $onto',
+    );
   }
 }
 
@@ -799,12 +996,19 @@ class GitPassthroughExecutor extends CommandExecutor {
     final gitArgs = args.positionalArgs;
     if (gitArgs.isEmpty) {
       return ItemResult.failure(
-        path: dir, name: context.name, error: 'no git command specified');
+        path: dir,
+        name: context.name,
+        error: 'no git command specified',
+      );
     }
 
     if (args.dryRun) {
       print('  [DRY RUN] ${context.name}: git ${gitArgs.join(' ')}');
-      return ItemResult.success(path: dir, name: context.name, message: 'dry-run');
+      return ItemResult.success(
+        path: dir,
+        name: context.name,
+        message: 'dry-run',
+      );
     }
 
     final result = await _runGit(gitArgs, dir, verbose: args.verbose);

@@ -19,12 +19,17 @@ class NatureDetector {
 
     if (_isGitFolder(folder.path)) natures.add(_createGitNature(folder));
     if (_isDartProject(folder.path)) natures.add(_createDartNature(folder));
-    if (_isVsCodeExtension(folder.path)) natures.add(_createVsCodeNature(folder));
-    if (_isTypeScriptProject(folder.path)) natures.add(_createTypeScriptNature(folder));
-    if (_hasBuildkitYaml(folder.path)) natures.add(_createBuildkitNature(folder));
+    if (_isVsCodeExtension(folder.path))
+      natures.add(_createVsCodeNature(folder));
+    if (_isTypeScriptProject(folder.path))
+      natures.add(_createTypeScriptNature(folder));
+    if (_hasBuildkitYaml(folder.path))
+      natures.add(_createBuildkitNature(folder));
     if (_hasBuildYaml(folder.path)) natures.add(BuildRunnerFolder(folder));
-    if (_hasTomProjectYaml(folder.path)) natures.add(_createTomProjectNature(folder));
-    if (_hasTomMasterYaml(folder.path)) natures.add(TomBuildMasterFolder(folder));
+    if (_hasTomProjectYaml(folder.path))
+      natures.add(_createTomProjectNature(folder));
+    if (_hasTomMasterYaml(folder.path))
+      natures.add(TomBuildMasterFolder(folder));
 
     return natures;
   }
@@ -93,7 +98,10 @@ class NatureDetector {
       if (configFile.existsSync()) {
         final content = configFile.readAsStringSync();
         final remoteRegex = RegExp(r'\[remote "([^"]+)"\]');
-        remotes = remoteRegex.allMatches(content).map((m) => m.group(1)!).toList();
+        remotes = remoteRegex
+            .allMatches(content)
+            .map((m) => m.group(1)!)
+            .toList();
       }
     } catch (_) {
       // Ignore errors reading git info
@@ -176,12 +184,16 @@ class NatureDetector {
         pubspec = Map<String, dynamic>.from(yaml);
         projectName = pubspec['name'] as String? ?? folder.name;
         version = pubspec['version'] as String?;
-        
+
         if (pubspec['dependencies'] is Map) {
-          dependencies = Map<String, dynamic>.from(pubspec['dependencies'] as Map);
+          dependencies = Map<String, dynamic>.from(
+            pubspec['dependencies'] as Map,
+          );
         }
         if (pubspec['dev_dependencies'] is Map) {
-          devDependencies = Map<String, dynamic>.from(pubspec['dev_dependencies'] as Map);
+          devDependencies = Map<String, dynamic>.from(
+            pubspec['dev_dependencies'] as Map,
+          );
         }
       }
     } catch (_) {
@@ -195,7 +207,8 @@ class NatureDetector {
 
     if (hasFlutter) {
       final platforms = _detectFlutterPlatforms(folder.path);
-      final isPlugin = pubspec.containsKey('flutter') &&
+      final isPlugin =
+          pubspec.containsKey('flutter') &&
           (pubspec['flutter'] as Map?)?.containsKey('plugin') == true;
       return FlutterProjectFolder(
         folder,
@@ -255,21 +268,24 @@ class NatureDetector {
 
   List<String> _detectFlutterPlatforms(String path) {
     final platforms = <String>[];
-    if (Directory(p.join(path, 'android')).existsSync()) platforms.add('android');
+    if (Directory(p.join(path, 'android')).existsSync())
+      platforms.add('android');
     if (Directory(p.join(path, 'ios')).existsSync()) platforms.add('ios');
     if (Directory(p.join(path, 'web')).existsSync()) platforms.add('web');
     if (Directory(p.join(path, 'linux')).existsSync()) platforms.add('linux');
     if (Directory(p.join(path, 'macos')).existsSync()) platforms.add('macos');
-    if (Directory(p.join(path, 'windows')).existsSync()) platforms.add('windows');
+    if (Directory(p.join(path, 'windows')).existsSync())
+      platforms.add('windows');
     return platforms;
   }
 
   List<String> _detectExecutables(String path) {
     final binDir = Directory(p.join(path, 'bin'));
     if (!binDir.existsSync()) return [];
-    
+
     try {
-      return binDir.listSync()
+      return binDir
+          .listSync()
           .whereType<File>()
           .where((f) => f.path.endsWith('.dart'))
           .map((f) => p.basenameWithoutExtension(f.path))
@@ -335,7 +351,8 @@ class NatureDetector {
         config = Map<String, dynamic>.from(yaml);
         projectName = config['name'] as String?;
         // Support both project_id (underscore) and short-id (hyphen) formats
-        shortId = config['project_id'] as String? ?? config['short-id'] as String?;
+        shortId =
+            config['project_id'] as String? ?? config['short-id'] as String?;
       }
     } catch (_) {}
 

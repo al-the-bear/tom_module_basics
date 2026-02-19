@@ -30,20 +30,24 @@ class GitStatusTool extends ToolBase {
   @override
   void addToolOptions(ArgParser parser) {
     parser
-      ..addFlag('details',
-          abbr: 'd',
-          negatable: false,
-          help: 'Show detailed output (files, commits)')
-      ..addFlag('no-fetch',
-          negatable: false,
-          help: 'Skip fetching from remote (fetch is default)')
-      ..addFlag('stash',
-          negatable: false,
-          help: 'Include stash information')
-      ..addFlag('guide',
-          abbr: 'g',
-          negatable: false,
-          help: 'Guided mode - step-by-step prompts');
+      ..addFlag(
+        'details',
+        abbr: 'd',
+        negatable: false,
+        help: 'Show detailed output (files, commits)',
+      )
+      ..addFlag(
+        'no-fetch',
+        negatable: false,
+        help: 'Skip fetching from remote (fetch is default)',
+      )
+      ..addFlag('stash', negatable: false, help: 'Include stash information')
+      ..addFlag(
+        'guide',
+        abbr: 'g',
+        negatable: false,
+        help: 'Guided mode - step-by-step prompts',
+      );
   }
 
   @override
@@ -72,7 +76,10 @@ class GitStatusTool extends ToolBase {
     String executionRoot;
 
     try {
-      (results, navArgs, executionRoot) = parseArgsWithExecutionMode(parser, effectiveArgs);
+      (results, navArgs, executionRoot) = parseArgsWithExecutionMode(
+        parser,
+        effectiveArgs,
+      );
     } on FormatException catch (e) {
       print('Error: $e');
       _printUsage(parser);
@@ -89,11 +96,15 @@ class GitStatusTool extends ToolBase {
 
     // Require git traversal flag (unless auto-injected)
     if (!navArgs.innerFirstGit && !navArgs.outerFirstGit) {
-      print('Error: gitstatus requires --inner-first-git (-i) or --outer-first-git (-o)');
+      print(
+        'Error: gitstatus requires --inner-first-git (-i) or --outer-first-git (-o)',
+      );
       print('');
       print('Examples:');
       print('  gitstatus -i              # Inner repos first (deepest first)');
-      print('  gitstatus -o              # Outer repos first (shallowest first)');
+      print(
+        '  gitstatus -o              # Outer repos first (shallowest first)',
+      );
       print('  bk :gitstatus -i          # Via buildkit');
       return false;
     }
@@ -119,7 +130,7 @@ class GitStatusTool extends ToolBase {
         log: (msg) => print(msg),
       );
     }
-    
+
     if (repos.isEmpty) {
       print('No git repositories found in: $executionRoot');
       return true;
@@ -138,7 +149,9 @@ class GitStatusTool extends ToolBase {
     });
 
     if (listMode) {
-      print('Git repositories (${navArgs.innerFirstGit ? 'inner-first' : 'outer-first'}):');
+      print(
+        'Git repositories (${navArgs.innerFirstGit ? 'inner-first' : 'outer-first'}):',
+      );
       for (final repo in repos) {
         print('  ${p.relative(repo, from: executionRoot)}');
       }
@@ -157,11 +170,7 @@ class GitStatusTool extends ToolBase {
     // Analyze each repository
     for (final repoPath in repos) {
       final status = await _analyzeRepo(repoPath, showStash: showStash);
-      _printRepoStatus(
-        status, 
-        executionRoot, 
-        showDetails: showDetails,
-      );
+      _printRepoStatus(status, executionRoot, showDetails: showDetails);
     }
 
     return true;
@@ -169,30 +178,37 @@ class GitStatusTool extends ToolBase {
 
   bool _hasGitTraversalFlag(List<String> args) {
     return args.contains('-i') ||
-           args.contains('--inner-first-git') ||
-           args.contains('-o') ||
-           args.contains('--outer-first-git');
+        args.contains('--inner-first-git') ||
+        args.contains('-o') ||
+        args.contains('--outer-first-git');
   }
 
   Future<void> _gitFetch(String repoPath) async {
     try {
-      await ProcessRunner.run('git', ['fetch', '--all', '--quiet'],
-          workingDirectory: repoPath);
+      await ProcessRunner.run('git', [
+        'fetch',
+        '--all',
+        '--quiet',
+      ], workingDirectory: repoPath);
     } catch (_) {
       // Ignore fetch errors
     }
   }
 
-  Future<_RepoStatus> _analyzeRepo(String repoPath, {bool showStash = false}) async {
+  Future<_RepoStatus> _analyzeRepo(
+    String repoPath, {
+    bool showStash = false,
+  }) async {
     final name = p.basename(repoPath);
-    
+
     // Get current branch
     String branch;
     try {
-      final result = await ProcessRunner.run(
-        'git', ['rev-parse', '--abbrev-ref', 'HEAD'],
-        workingDirectory: repoPath,
-      );
+      final result = await ProcessRunner.run('git', [
+        'rev-parse',
+        '--abbrev-ref',
+        'HEAD',
+      ], workingDirectory: repoPath);
       branch = result.stdout.trim();
     } catch (_) {
       branch = 'unknown';
@@ -202,19 +218,19 @@ class GitStatusTool extends ToolBase {
     List<String> stagedFiles = [];
     List<String> unstagedFiles = [];
     List<String> untrackedFiles = [];
-    
+
     try {
-      final result = await ProcessRunner.run(
-        'git', ['status', '--porcelain'],
-        workingDirectory: repoPath,
-      );
+      final result = await ProcessRunner.run('git', [
+        'status',
+        '--porcelain',
+      ], workingDirectory: repoPath);
       final lines = result.stdout.split('\n').where((l) => l.isNotEmpty);
       for (final line in lines) {
         if (line.length < 3) continue;
         final indexStatus = line[0];
         final workStatus = line[1];
         final file = line.substring(3);
-        
+
         if (indexStatus == '?' && workStatus == '?') {
           untrackedFiles.add(file);
         } else {
@@ -233,10 +249,11 @@ class GitStatusTool extends ToolBase {
     // Get unpushed commits
     List<String> unpushedCommits = [];
     try {
-      final result = await ProcessRunner.run(
-        'git', ['log', '@{u}..HEAD', '--oneline'],
-        workingDirectory: repoPath,
-      );
+      final result = await ProcessRunner.run('git', [
+        'log',
+        '@{u}..HEAD',
+        '--oneline',
+      ], workingDirectory: repoPath);
       if (result.exitCode == 0) {
         unpushedCommits = result.stdout
             .split('\n')
@@ -251,10 +268,10 @@ class GitStatusTool extends ToolBase {
     int stashCount = 0;
     if (showStash) {
       try {
-        final result = await ProcessRunner.run(
-          'git', ['stash', 'list'],
-          workingDirectory: repoPath,
-        );
+        final result = await ProcessRunner.run('git', [
+          'stash',
+          'list',
+        ], workingDirectory: repoPath);
         stashCount = result.stdout
             .split('\n')
             .where((l) => l.isNotEmpty)
@@ -284,8 +301,8 @@ class GitStatusTool extends ToolBase {
     final relPath = p.relative(status.path, from: wsRoot);
     final issues = <String>[];
 
-    final hasUncommitted = status.stagedFiles.isNotEmpty || 
-                           status.unstagedFiles.isNotEmpty;
+    final hasUncommitted =
+        status.stagedFiles.isNotEmpty || status.unstagedFiles.isNotEmpty;
     final hasUntracked = status.untrackedFiles.isNotEmpty;
     final hasUnpushed = status.unpushedCommits.isNotEmpty;
 
@@ -342,7 +359,9 @@ class GitStatusTool extends ToolBase {
     print('');
     print('WHAT IT DOES:');
     print('  Checks the git status of all repositories in the workspace.');
-    print('  For each repo shows: branch, uncommitted changes, unpushed commits.');
+    print(
+      '  For each repo shows: branch, uncommitted changes, unpushed commits.',
+    );
     print('');
     print('COMMANDS EXECUTED:');
     print('  git fetch origin              (default, skip with --no-fetch)');
@@ -357,8 +376,12 @@ class GitStatusTool extends ToolBase {
     print('Traversal: Defaults to inner-first (-i). Can override with -o.');
     print('');
     print('COMMAND OPTIONS:');
-    print('  -d, --details     Show file-level details (staged/unstaged/untracked files)');
-    print('  --no-fetch        Skip fetching from remote (faster, but may miss remote changes)');
+    print(
+      '  -d, --details     Show file-level details (staged/unstaged/untracked files)',
+    );
+    print(
+      '  --no-fetch        Skip fetching from remote (faster, but may miss remote changes)',
+    );
     print('  --stash           Include count of stashed changes');
     print('');
     print('STANDARD OPTIONS:');

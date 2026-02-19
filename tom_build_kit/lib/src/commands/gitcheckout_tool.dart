@@ -25,27 +25,27 @@ class GitCheckoutTool extends ToolBase {
   @override
   void addToolOptions(ArgParser parser) {
     parser
-      ..addOption('branch',
-          abbr: 'b',
-          help: 'Branch to checkout')
-      ..addOption('tag',
-          abbr: 't',
-          help: 'Tag to checkout')
-      ..addOption('commit',
-          abbr: 'c',
-          help: 'Commit hash to checkout')
-      ..addFlag('create',
-          abbr: 'B',
-          negatable: false,
-          help: 'Create branch if it does not exist')
-      ..addFlag('force',
-          abbr: 'f',
-          negatable: false,
-          help: 'Force checkout (discard changes)')
-      ..addFlag('guide',
-          abbr: 'g',
-          negatable: false,
-          help: 'Guided mode - step-by-step prompts');
+      ..addOption('branch', abbr: 'b', help: 'Branch to checkout')
+      ..addOption('tag', abbr: 't', help: 'Tag to checkout')
+      ..addOption('commit', abbr: 'c', help: 'Commit hash to checkout')
+      ..addFlag(
+        'create',
+        abbr: 'B',
+        negatable: false,
+        help: 'Create branch if it does not exist',
+      )
+      ..addFlag(
+        'force',
+        abbr: 'f',
+        negatable: false,
+        help: 'Force checkout (discard changes)',
+      )
+      ..addFlag(
+        'guide',
+        abbr: 'g',
+        negatable: false,
+        help: 'Guided mode - step-by-step prompts',
+      );
   }
 
   @override
@@ -73,7 +73,10 @@ class GitCheckoutTool extends ToolBase {
     String executionRoot;
 
     try {
-      (results, navArgs, executionRoot) = parseArgsWithExecutionMode(parser, effectiveArgs);
+      (results, navArgs, executionRoot) = parseArgsWithExecutionMode(
+        parser,
+        effectiveArgs,
+      );
     } on FormatException catch (e) {
       print('Error: $e');
       _printUsage(parser);
@@ -89,7 +92,9 @@ class GitCheckoutTool extends ToolBase {
     }
 
     if (!navArgs.innerFirstGit && !navArgs.outerFirstGit) {
-      print('Error: gitcheckout requires --outer-first-git (-o) or --inner-first-git (-i)');
+      print(
+        'Error: gitcheckout requires --outer-first-git (-o) or --inner-first-git (-i)',
+      );
       print('');
       print('Recommended: --outer-first-git (-o)');
       print('  Checkout parent first to get correct submodule references.');
@@ -129,7 +134,7 @@ class GitCheckoutTool extends ToolBase {
         log: (msg) => print(msg),
       );
     }
-    
+
     if (repos.isEmpty) {
       print('No git repositories found in: $executionRoot');
       return true;
@@ -175,7 +180,7 @@ class GitCheckoutTool extends ToolBase {
 
     for (final repoPath in repos) {
       final relPath = p.relative(repoPath, from: executionRoot);
-      
+
       if (!await _runGit(repoPath, gitArgs, relPath)) {
         allSuccess = false;
         continue;
@@ -190,18 +195,28 @@ class GitCheckoutTool extends ToolBase {
   }
 
   bool _hasGitTraversalFlag(List<String> args) {
-    return args.contains('-i') || args.contains('--inner-first-git') ||
-           args.contains('-o') || args.contains('--outer-first-git');
+    return args.contains('-i') ||
+        args.contains('--inner-first-git') ||
+        args.contains('-o') ||
+        args.contains('--outer-first-git');
   }
 
-  Future<bool> _runGit(String repoPath, List<String> args, String relPath) async {
+  Future<bool> _runGit(
+    String repoPath,
+    List<String> args,
+    String relPath,
+  ) async {
     if (dryRun) {
       print('[DRY RUN] $relPath: git ${args.join(' ')}');
       return true;
     }
     print('$relPath: git ${args.join(' ')}');
     try {
-      final result = await ProcessRunner.run('git', args, workingDirectory: repoPath);
+      final result = await ProcessRunner.run(
+        'git',
+        args,
+        workingDirectory: repoPath,
+      );
       if (result.exitCode != 0) {
         final stderr = result.stderr.trim();
         if (stderr.isNotEmpty) print('  Error: $stderr');
@@ -225,14 +240,18 @@ class GitCheckoutTool extends ToolBase {
     print('  git checkout <branch>         (with -b, checkout branch)');
     print('  git checkout <tag>            (with -t, checkout tag)');
     print('  git checkout <commit>         (with -c, checkout commit)');
-    print('  git checkout -b <branch>      (with -B, create branch if missing)');
+    print(
+      '  git checkout -b <branch>      (with -B, create branch if missing)',
+    );
     print('');
     print('WHEN TO USE:');
     print('  - Switch to release tag across all repos');
     print('  - Check out specific branch for review');
     print('  - Return to known good state via tag or commit');
     print('');
-    print('Traversal: Fixed to outer-first (parent repos checked out before sub-repos).');
+    print(
+      'Traversal: Fixed to outer-first (parent repos checked out before sub-repos).',
+    );
     print('           Do NOT specify -i/-o flags via buildkit.');
     print('');
     print('COMMAND OPTIONS:');
@@ -240,7 +259,9 @@ class GitCheckoutTool extends ToolBase {
     print('  -t, --tag <name>       Checkout specified tag (detached HEAD).');
     print('  -c, --commit <hash>    Checkout specific commit (detached HEAD).');
     print('  -B, --create           Create branch if it doesn\'t exist.');
-    print('  -f, --force            Force checkout (discard uncommitted changes).');
+    print(
+      '  -f, --force            Force checkout (discard uncommitted changes).',
+    );
     print('');
     print('NOTES:');
     print('  - Checking out tag/commit creates detached HEAD state');
