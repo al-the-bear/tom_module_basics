@@ -425,7 +425,7 @@ class CompilerExecutor extends CommandExecutor {
           final result = await script_utils.executeWithStdin(
             command: _replaceEnvVars(parsed.command),
             stdinContent: parsed.stdinContent,
-            workingDirectory: projectPath,
+            workingDirectory: Directory.current.path,
             environment: Platform.environment,
             dryRun: args.dryRun,
             verbose: args.verbose,
@@ -455,7 +455,7 @@ class CompilerExecutor extends CommandExecutor {
       final result = await Process.run(
         '/bin/sh',
         ['-c', command],
-        workingDirectory: projectPath,
+        workingDirectory: Directory.current.path,
         environment: Platform.environment,
       );
       if (result.stdout.toString().isNotEmpty) stdout.write(result.stdout);

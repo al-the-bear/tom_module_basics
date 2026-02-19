@@ -217,7 +217,8 @@ class ToolRunner {
     final actualCmdName = cmd.name;
 
     // Check for per-command --help (check both original and resolved names)
-    final cmdArgs = cliArgs.commandArgs[cmdName] ?? cliArgs.commandArgs[actualCmdName];
+    final cmdArgs =
+        cliArgs.commandArgs[cmdName] ?? cliArgs.commandArgs[actualCmdName];
     if (cmdArgs != null && cmdArgs.options['help'] == true) {
       output.writeln(HelpGenerator.generateCommandHelp(cmd, tool: tool));
       return const ToolResult.success();

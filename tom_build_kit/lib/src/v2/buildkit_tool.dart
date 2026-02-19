@@ -414,7 +414,8 @@ const executeOptions = <OptionDefinition>[
   OptionDefinition.option(
     name: 'condition',
     abbr: 'c',
-    description: 'Boolean placeholder condition to filter folders (e.g., dart.exists)',
+    description:
+        'Boolean placeholder condition to filter folders (e.g., dart.exists)',
     valueName: 'placeholder',
   ),
 ];
@@ -604,7 +605,8 @@ const buildsorterCommand = CommandDefinition(
 
 const executeCommand = CommandDefinition(
   name: 'execute',
-  description: 'Execute shell command in each traversed folder with placeholder support',
+  description:
+      'Execute shell command in each traversed folder with placeholder support',
   aliases: ['exec', 'x'],
   options: executeOptions,
   supportsProjectTraversal: true,

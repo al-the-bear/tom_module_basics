@@ -84,15 +84,18 @@ void main() {
   });
 
   group('parseEntryFromLabel', () {
-    test('TK-MDT-15: should parse full label with ID, date, and expectation',
-        () {
-      final entry = parseEntryFromLabel(
-          'TK-BUG-1: Some test [2026-02-10 08:00] (FAIL)');
-      expect(entry.id, equals('TK-BUG-1'));
-      expect(entry.description, equals('Some test'));
-      expect(entry.creationDate, equals(DateTime(2026, 2, 10, 8, 0)));
-      expect(entry.expectation, equals('FAIL'));
-    });
+    test(
+      'TK-MDT-15: should parse full label with ID, date, and expectation',
+      () {
+        final entry = parseEntryFromLabel(
+          'TK-BUG-1: Some test [2026-02-10 08:00] (FAIL)',
+        );
+        expect(entry.id, equals('TK-BUG-1'));
+        expect(entry.description, equals('Some test'));
+        expect(entry.creationDate, equals(DateTime(2026, 2, 10, 8, 0)));
+        expect(entry.expectation, equals('FAIL'));
+      },
+    );
 
     test('TK-MDT-16: should parse label without ID', () {
       final entry = parseEntryFromLabel('Some test without ID');
@@ -100,20 +103,24 @@ void main() {
       expect(entry.description, equals('Some test without ID'));
     });
 
-    test('TK-MDT-17: should parse label with ID but no date or expectation',
-        () {
-      final entry = parseEntryFromLabel('TK-1: Simple description');
-      expect(entry.id, equals('TK-1'));
-      expect(entry.description, equals('Simple description'));
-      expect(entry.expectation, equals('OK'));
-      expect(entry.creationDate, isNull);
-    });
+    test(
+      'TK-MDT-17: should parse label with ID but no date or expectation',
+      () {
+        final entry = parseEntryFromLabel('TK-1: Simple description');
+        expect(entry.id, equals('TK-1'));
+        expect(entry.description, equals('Simple description'));
+        expect(entry.expectation, equals('OK'));
+        expect(entry.creationDate, isNull);
+      },
+    );
 
-    test('TK-MDT-18: should default expectation to OK when PASS is specified',
-        () {
-      final entry = parseEntryFromLabel('Test that passes (PASS)');
-      expect(entry.expectation, equals('OK'));
-    });
+    test(
+      'TK-MDT-18: should default expectation to OK when PASS is specified',
+      () {
+        final entry = parseEntryFromLabel('Test that passes (PASS)');
+        expect(entry.expectation, equals('OK'));
+      },
+    );
   });
 
   group('parseEntryFromColumns', () {
@@ -128,8 +135,10 @@ void main() {
       expect(entry.description, equals('should zero-pad single digit'));
       // fullDescription does NOT include (PASS) - dart test only includes
       // (FAIL) if explicitly in the test name
-      expect(entry.fullDescription,
-          equals('TK-FMT-1: should zero-pad single digit'));
+      expect(
+        entry.fullDescription,
+        equals('TK-FMT-1: should zero-pad single digit'),
+      );
     });
 
     test('TK-MDT-20: should handle empty ID and groups', () {
@@ -156,8 +165,10 @@ void main() {
       expect(entry.description, equals('some test'));
       expect(entry.creationDate, equals(DateTime(2026, 2, 10, 8, 0)));
       expect(entry.expectation, equals('FAIL'));
-      expect(entry.fullDescription,
-          equals('TK-1: some test [2026-02-10 08:00] (FAIL)'));
+      expect(
+        entry.fullDescription,
+        equals('TK-1: some test [2026-02-10 08:00] (FAIL)'),
+      );
     });
   });
 }

@@ -54,10 +54,11 @@ class ExecutePlaceholderContext {
     required this.folder,
     String? currentOs,
     String? currentArch,
-  })  : currentOs = currentOs ?? Platform.operatingSystem,
-        currentArch = currentArch ?? _detectArch(),
-        currentPlatform = '${_normalizeOs(currentOs ?? Platform.operatingSystem)}-'
-            '${currentArch ?? _detectArch()}';
+  }) : currentOs = currentOs ?? Platform.operatingSystem,
+       currentArch = currentArch ?? _detectArch(),
+       currentPlatform =
+           '${_normalizeOs(currentOs ?? Platform.operatingSystem)}-'
+           '${currentArch ?? _detectArch()}';
 
   static String _detectArch() {
     final dartExe = Platform.resolvedExecutable;
@@ -122,7 +123,8 @@ class ExecutePlaceholderContext {
   DartConsoleFolder? get console => getNature<DartConsoleFolder>();
   GitFolder? get git => getNature<GitFolder>();
   TypeScriptFolder? get typescript => getNature<TypeScriptFolder>();
-  VsCodeExtensionFolder? get vscodeExtension => getNature<VsCodeExtensionFolder>();
+  VsCodeExtensionFolder? get vscodeExtension =>
+      getNature<VsCodeExtensionFolder>();
   BuildkitFolder? get buildkit => getNature<BuildkitFolder>();
   TomBuildFolder? get tomProject => getNature<TomBuildFolder>();
 }
@@ -349,17 +351,15 @@ class ExecutePlaceholderResolver {
   static final _simplePlaceholderRegex = RegExp(r'\$\{([a-zA-Z0-9._-]+)\}');
 
   /// Regex to match `${placeholder?(true):(false)}` (ternary).
-  static final _ternaryPlaceholderRegex =
-      RegExp(r'\$\{([a-zA-Z0-9._-]+)\?\(([^)]*)\):\(([^)]*)\)\}');
+  static final _ternaryPlaceholderRegex = RegExp(
+    r'\$\{([a-zA-Z0-9._-]+)\?\(([^)]*)\):\(([^)]*)\)\}',
+  );
 
   /// Resolve all placeholders in a command string.
   ///
   /// Throws [UnresolvedPlaceholderException] if any placeholder cannot be
   /// resolved for the current context.
-  static String resolveCommand(
-    String command,
-    ExecutePlaceholderContext ctx,
-  ) {
+  static String resolveCommand(String command, ExecutePlaceholderContext ctx) {
     var result = command;
 
     // First, resolve ternary expressions
@@ -395,10 +395,7 @@ class ExecutePlaceholderResolver {
   /// The [condition] should be a boolean placeholder name without `${}` wrapper.
   /// Returns true if the condition is satisfied, false otherwise.
   /// Throws [UnresolvedPlaceholderException] if not a valid boolean placeholder.
-  static bool checkCondition(
-    String condition,
-    ExecutePlaceholderContext ctx,
-  ) {
+  static bool checkCondition(String condition, ExecutePlaceholderContext ctx) {
     if (!isBooleanPlaceholder(condition)) {
       throw UnresolvedPlaceholderException(
         condition,

@@ -75,8 +75,10 @@ class ExecuteExecutor extends CommandExecutor {
     // Check condition if specified
     if (condition != null && condition.isNotEmpty) {
       try {
-        final conditionMet =
-            ExecutePlaceholderResolver.checkCondition(condition, placeholderCtx);
+        final conditionMet = ExecutePlaceholderResolver.checkCondition(
+          condition,
+          placeholderCtx,
+        );
         if (!conditionMet) {
           if (verbose) {
             print('  [SKIP] ${context.name}: condition "$condition" not met');
@@ -99,8 +101,10 @@ class ExecuteExecutor extends CommandExecutor {
     // Resolve placeholders in command
     String resolvedCommand;
     try {
-      resolvedCommand =
-          ExecutePlaceholderResolver.resolveCommand(commandTemplate, placeholderCtx);
+      resolvedCommand = ExecutePlaceholderResolver.resolveCommand(
+        commandTemplate,
+        placeholderCtx,
+      );
     } on UnresolvedPlaceholderException catch (e) {
       return ItemResult.failure(
         path: context.path,

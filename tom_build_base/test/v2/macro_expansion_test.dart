@@ -40,7 +40,9 @@ void main() {
         final args = ['@vp', 'tom_build_base', '--list'];
         final result = expandMacros(args, macros);
         expect(
-            result, equals([':versioner', '--project', 'tom_build_base', '--list']));
+          result,
+          equals([':versioner', '--project', 'tom_build_base', '--list']),
+        );
       });
     });
 
@@ -49,8 +51,10 @@ void main() {
         final macros = {'gs': ':gitstatus --project \$1 --modules \$2'};
         final args = ['@gs', 'tom_core', 'inner'];
         final result = expandMacros(args, macros);
-        expect(result,
-            equals([':gitstatus', '--project', 'tom_core', '--modules', 'inner']));
+        expect(
+          result,
+          equals([':gitstatus', '--project', 'tom_core', '--modules', 'inner']),
+        );
       });
 
       test('handles non-sequential placeholders', () {
@@ -66,8 +70,10 @@ void main() {
         final macros = {'all': ':versioner \$\$'};
         final args = ['@all', '--project', 'tom_build_base', '--list'];
         final result = expandMacros(args, macros);
-        expect(result,
-            equals([':versioner', '--project', 'tom_build_base', '--list']));
+        expect(
+          result,
+          equals([':versioner', '--project', 'tom_build_base', '--list']),
+        );
       });
 
       test('\$\$ with no remaining args expands to empty', () {
@@ -83,8 +89,16 @@ void main() {
         final macros = {'cmd': ':compiler --project \$1 \$\$'};
         final args = ['@cmd', 'myproj', '--targets', 'linux-x64'];
         final result = expandMacros(args, macros);
-        expect(result,
-            equals([':compiler', '--project', 'myproj', '--targets', 'linux-x64']));
+        expect(
+          result,
+          equals([
+            ':compiler',
+            '--project',
+            'myproj',
+            '--targets',
+            'linux-x64',
+          ]),
+        );
       });
     });
 
@@ -131,10 +145,7 @@ void main() {
 
     group('BB-MAC-09: multiple macros in args', () {
       test('expands multiple macros in sequence', () {
-        final macros = {
-          'opt1': '--verbose',
-          'opt2': '--list',
-        };
+        final macros = {'opt1': '--verbose', 'opt2': '--list'};
         final args = ['@opt1', ':versioner', '@opt2'];
         final result = expandMacros(args, macros);
         expect(result, equals(['--verbose', ':versioner', '--list']));

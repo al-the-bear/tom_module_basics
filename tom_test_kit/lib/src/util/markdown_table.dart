@@ -196,7 +196,8 @@ TestEntry parseEntryFromColumns({
   String dateBracket = '';
   if (creationDate != null) {
     final d = creationDate;
-    dateBracket = ' [${d.year.toString().padLeft(4, '0')}-'
+    dateBracket =
+        ' [${d.year.toString().padLeft(4, '0')}-'
         '${d.month.toString().padLeft(2, '0')}-'
         '${d.day.toString().padLeft(2, '0')} '
         '${d.hour.toString().padLeft(2, '0')}:'

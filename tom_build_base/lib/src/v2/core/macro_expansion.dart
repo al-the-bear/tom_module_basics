@@ -53,8 +53,13 @@ List<String> expandMacros(List<String> args, Map<String, String> macros) {
 
       if (macroValue != null) {
         // Expand this macro
-        final (expanded, consumed) =
-            _expandMacro(macroName, macroValue, args, i + 1, macros);
+        final (expanded, consumed) = _expandMacro(
+          macroName,
+          macroValue,
+          args,
+          i + 1,
+          macros,
+        );
         result.addAll(expanded);
         i += 1 + consumed; // Skip macro token + consumed args
       } else {
@@ -105,8 +110,7 @@ List<String> expandMacros(List<String> args, Map<String, String> macros) {
     throw MacroExpansionException(
       'Not enough arguments for macro',
       name,
-      detail:
-          'requires $requiredArgs argument(s), got $availableArgs',
+      detail: 'requires $requiredArgs argument(s), got $availableArgs',
     );
   }
 
@@ -118,7 +122,9 @@ List<String> expandMacros(List<String> args, Map<String, String> macros) {
 
   // Get rest args
   final restStart = argStart + requiredArgs;
-  final restArgs = restStart < args.length ? args.sublist(restStart) : <String>[];
+  final restArgs = restStart < args.length
+      ? args.sublist(restStart)
+      : <String>[];
 
   // Process each token in the expanded value, preserving argument boundaries
   final resultTokens = <String>[];
@@ -138,28 +144,30 @@ List<String> expandMacros(List<String> args, Map<String, String> macros) {
     } else if (token.contains(r'$')) {
       // Token contains placeholders mixed with other text
       var processed = token;
-      
+
       // Handle escaped placeholders first
       const escapeMarker = '\x00ESC\x00';
       processed = processed.replaceAllMapped(
         RegExp(r'\\(\$\d|\$\$)'),
         (m) => '$escapeMarker${m.group(1)}$escapeMarker',
       );
-      
+
       // Substitute positional placeholders
       for (final entry in positionalArgs.entries) {
         processed = processed.replaceAll('\$${entry.key}', entry.value);
       }
-      
+
       // Substitute rest placeholder
       processed = processed.replaceAll(r'$$', restArgs.join(' '));
-      
+
       // Restore escaped placeholders
       processed = processed.replaceAllMapped(
-        RegExp('${RegExp.escape(escapeMarker)}(.*?)${RegExp.escape(escapeMarker)}'),
+        RegExp(
+          '${RegExp.escape(escapeMarker)}(.*?)${RegExp.escape(escapeMarker)}',
+        ),
         (m) => m.group(1)!,
       );
-      
+
       resultTokens.add(processed);
     } else {
       // No placeholders - keep as-is

@@ -227,17 +227,21 @@ class ToolDefinition {
 
     // Add feature-specific options (not in commonOptions)
     if (features.jsonOutput) {
-      result.add(const OptionDefinition.flag(
-        name: 'json',
-        description: 'Output results in JSON format',
-      ));
+      result.add(
+        const OptionDefinition.flag(
+          name: 'json',
+          description: 'Output results in JSON format',
+        ),
+      );
     }
     if (features.interactiveMode) {
-      result.add(const OptionDefinition.flag(
-        name: 'interactive',
-        abbr: 'i',
-        description: 'Run in interactive mode',
-      ));
+      result.add(
+        const OptionDefinition.flag(
+          name: 'interactive',
+          abbr: 'i',
+          description: 'Run in interactive mode',
+        ),
+      );
     }
 
     return result;

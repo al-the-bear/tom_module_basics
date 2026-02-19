@@ -340,8 +340,9 @@ class DefinesExecutor extends CommandExecutor {
       print('No macros defined.');
     } else {
       print('Defined macros:');
-      final maxLen =
-          macros.keys.map((k) => k.length).reduce((a, b) => a > b ? a : b);
+      final maxLen = macros.keys
+          .map((k) => k.length)
+          .reduce((a, b) => a > b ? a : b);
       for (final entry in macros.entries) {
         print('  @${entry.key.padRight(maxLen)} = ${entry.value}');
       }

@@ -140,9 +140,14 @@ void main() {
     group('BB-CPM-05: findCommandsWithPrefix', () {
       test('returns all commands starting with prefix', () {
         final matches = tool.findCommandsWithPrefix('co');
-        expect(matches.length, equals(2)); // compiler, config (cleanup starts with 'cl')
-        expect(matches.map((m) => m.name).toSet(),
-            equals({'compiler', 'config'}));
+        expect(
+          matches.length,
+          equals(2),
+        ); // compiler, config (cleanup starts with 'cl')
+        expect(
+          matches.map((m) => m.name).toSet(),
+          equals({'compiler', 'config'}),
+        );
       });
 
       test('returns single command for unambiguous prefix', () {
@@ -181,10 +186,7 @@ void main() {
         name: 'testtool',
         description: 'Test tool',
         commands: [
-          const CommandDefinition(
-            name: 'run',
-            description: 'Run command',
-          ),
+          const CommandDefinition(name: 'run', description: 'Run command'),
           const CommandDefinition(
             name: 'runner',
             description: 'Runner command',

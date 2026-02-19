@@ -1,4 +1,5 @@
 #!/usr/bin/env dart
+
 /// Tom Build Kit - Pipeline-based build orchestration tool (v2).
 ///
 /// This is the v2 implementation using ToolRunner for command execution
@@ -76,8 +77,10 @@ void _saveMacros() {
 
 Future<void> main(List<String> args) async {
   // Check for version command early
-  if (args.isNotEmpty && 
-      (args.first.toLowerCase() == 'version' || args.first == '--version' || args.first == '-V')) {
+  if (args.isNotEmpty &&
+      (args.first.toLowerCase() == 'version' ||
+          args.first == '--version' ||
+          args.first == '-V')) {
     print('Build Kit $_version');
     return;
   }
@@ -90,11 +93,11 @@ Future<void> main(List<String> args) async {
 
   // Pre-process args to handle -R without argument
   final (processedArgs, bareRootFlag) = _preprocessRootFlag(args);
-  
+
   // Parse global options
   final globalParser = _createGlobalParser();
   ArgResults globalResults;
-  
+
   try {
     globalResults = globalParser.parse(processedArgs);
   } catch (e) {
@@ -106,17 +109,19 @@ Future<void> main(List<String> args) async {
 
   _verbose = globalResults['verbose'] as bool;
   _dryRun = globalResults['dry-run'] as bool;
-  
+
   // Determine workspace/project mode
   final currentDir = Directory.current.path;
-  final isWorkspaceMode = bareRootFlag || globalResults['root'] != null ||
-      (globalResults['inner-first-git'] as bool) || 
+  final isWorkspaceMode =
+      bareRootFlag ||
+      globalResults['root'] != null ||
+      (globalResults['inner-first-git'] as bool) ||
       (globalResults['outer-first-git'] as bool);
   final rootPath = bareRootFlag
       ? _findWorkspaceRoot(currentDir)
-      : (globalResults['root'] as String?) ?? 
-        (isWorkspaceMode ? _findWorkspaceRoot(currentDir) : currentDir);
-  
+      : (globalResults['root'] as String?) ??
+            (isWorkspaceMode ? _findWorkspaceRoot(currentDir) : currentDir);
+
   // Initialize macro persistence
   _rootPath = rootPath;
   _loadMacros();
@@ -145,13 +150,10 @@ Future<void> main(List<String> args) async {
 
   // Parse execution steps (commands with :, pipelines without)
   final steps = _parseExecutionSteps(expandedRest, globalResults);
-  
+
   // Load pipeline config
-  final config = PipelineConfig.load(
-    projectPath: rootPath,
-    rootPath: rootPath,
-  );
-  
+  final config = PipelineConfig.load(projectPath: rootPath, rootPath: rootPath);
+
   // Create tool runner for direct commands
   final executors = createBuildkitExecutors(
     onDefine: (name, value) {
@@ -165,13 +167,13 @@ Future<void> main(List<String> args) async {
     },
     getMacros: () => Map.unmodifiable(_macros),
   );
-  
+
   final runner = ToolRunner(
     tool: buildkitTool,
     executors: executors,
     verbose: _verbose,
   );
-  
+
   // Execute each step
   for (final step in steps) {
     if (_verbose && steps.length > 1) {
@@ -180,16 +182,22 @@ Future<void> main(List<String> args) async {
       print('▶ ${step.displayName}');
       print('─' * 40);
     }
-    
+
     bool success;
     if (step.isCommand) {
       // Direct command via ToolRunner
-      success = await _executeCommand(runner, step, globalResults, rootPath, isWorkspaceMode);
+      success = await _executeCommand(
+        runner,
+        step,
+        globalResults,
+        rootPath,
+        isWorkspaceMode,
+      );
     } else {
       // Pipeline via PipelineExecutor
       success = await _executePipeline(config, step, globalResults, rootPath);
     }
-    
+
     if (!success) {
       exit(1);
     }
@@ -207,24 +215,56 @@ ArgParser _createGlobalParser() {
     ..addFlag('help', abbr: 'h', negatable: false, help: 'Show this help')
     ..addFlag('version', abbr: 'V', negatable: false, help: 'Show version')
     ..addFlag('verbose', abbr: 'v', negatable: false, help: 'Verbose output')
-    ..addFlag('dry-run', abbr: 'n', negatable: false, help: 'Show what would be executed')
-    ..addFlag('list', abbr: 'l', negatable: false, help: 'List available pipelines')
-    ..addFlag('recursive', abbr: 'r', negatable: true, defaultsTo: false,
-        help: 'Scan directories recursively')
-    ..addFlag('inner-first-git', abbr: 'i', negatable: false,
-        help: 'Process innermost git repos first (for commit/push)')
-    ..addFlag('outer-first-git', abbr: 'o', negatable: false,
-        help: 'Process outermost git repos first (for pull/fetch)')
-    ..addFlag('workspace-recursion', abbr: 'w', negatable: false,
-        help: 'Shell out to sub-workspaces')
+    ..addFlag(
+      'dry-run',
+      abbr: 'n',
+      negatable: false,
+      help: 'Show what would be executed',
+    )
+    ..addFlag(
+      'list',
+      abbr: 'l',
+      negatable: false,
+      help: 'List available pipelines',
+    )
+    ..addFlag(
+      'recursive',
+      abbr: 'r',
+      negatable: true,
+      defaultsTo: false,
+      help: 'Scan directories recursively',
+    )
+    ..addFlag(
+      'inner-first-git',
+      abbr: 'i',
+      negatable: false,
+      help: 'Process innermost git repos first (for commit/push)',
+    )
+    ..addFlag(
+      'outer-first-git',
+      abbr: 'o',
+      negatable: false,
+      help: 'Process outermost git repos first (for pull/fetch)',
+    )
+    ..addFlag(
+      'workspace-recursion',
+      abbr: 'w',
+      negatable: false,
+      help: 'Shell out to sub-workspaces',
+    )
     ..addOption('scan', abbr: 's', help: 'Scan directory for projects')
     ..addOption('root', abbr: 'R', help: 'Workspace root path')
     ..addOption('project', abbr: 'p', help: 'Project filter (glob patterns)')
     ..addMultiOption('exclude', abbr: 'x', help: 'Exclude patterns')
     ..addMultiOption('exclude-projects', help: 'Exclude projects by name')
     ..addOption('modules', abbr: 'm', help: 'Git modules filter')
-    ..addFlag('build-order', abbr: 'b', negatable: true, defaultsTo: false,
-        help: 'Sort projects in dependency build order');
+    ..addFlag(
+      'build-order',
+      abbr: 'b',
+      negatable: true,
+      defaultsTo: false,
+      help: 'Sort projects in dependency build order',
+    );
 }
 
 /// Represents an execution step.
@@ -252,27 +292,30 @@ class _ExecutionStep {
 ///
 /// Handles commands (`:xxx`) and pipeline names. Options and their values
 /// that follow a command are treated as command args, not pipeline names.
-List<_ExecutionStep> _parseExecutionSteps(List<String> rest, ArgResults global) {
+List<_ExecutionStep> _parseExecutionSteps(
+  List<String> rest,
+  ArgResults global,
+) {
   final steps = <_ExecutionStep>[];
   var i = 0;
 
   while (i < rest.length) {
     final arg = rest[i];
     final suppressions = <String>{};
-    
+
     // Check for command (starts with :)
     if (arg.startsWith(':')) {
       final name = arg.substring(1);
       final stepArgs = <String>[];
       i++;
-      
+
       // Collect args until next command or standalone pipeline name.
       // If a token is preceded by an option (e.g., --scan <value>),
       // it is the option's value, not a pipeline name.
       var prevWasValueOption = false;
       while (i < rest.length && !rest[i].startsWith(':')) {
         final stepArg = rest[i];
-        
+
         // If the previous token was a value-taking option, this is its value
         if (prevWasValueOption) {
           stepArgs.add(stepArg);
@@ -280,11 +323,13 @@ List<_ExecutionStep> _parseExecutionSteps(List<String> rest, ArgResults global) 
           i++;
           continue;
         }
-        
+
         // Check if this is an option that takes a value
         if (stepArg.startsWith('-')) {
           // Check for option suppression (-X-)
-          if (stepArg.length == 3 && stepArg[0] == '-' && stepArg[2] == '-' &&
+          if (stepArg.length == 3 &&
+              stepArg[0] == '-' &&
+              stepArg[2] == '-' &&
               !stepArg.startsWith('--')) {
             suppressions.add(stepArg[1]);
           } else if (stepArg.contains('=')) {
@@ -301,19 +346,21 @@ List<_ExecutionStep> _parseExecutionSteps(List<String> rest, ArgResults global) 
           i++;
           continue;
         }
-        
+
         // Non-option, non-command token: could be positional arg or pipeline name
         // If we're collecting command args, treat as positional
         stepArgs.add(stepArg);
         i++;
       }
-      
-      steps.add(_ExecutionStep(
-        isCommand: true,
-        name: name,
-        args: stepArgs,
-        suppressedOptions: suppressions,
-      ));
+
+      steps.add(
+        _ExecutionStep(
+          isCommand: true,
+          name: name,
+          args: stepArgs,
+          suppressedOptions: suppressions,
+        ),
+      );
     } else if (!arg.startsWith('-')) {
       // Check if this is a macro keyword (handled as a command)
       const macroKeywords = {'define', 'defines', 'undefine'};
@@ -321,19 +368,19 @@ List<_ExecutionStep> _parseExecutionSteps(List<String> rest, ArgResults global) 
       final name = arg;
       final stepArgs = <String>[];
       i++;
-      
+
       // Collect args until next command/pipeline
       var prevWasValueOption = false;
       while (i < rest.length && !rest[i].startsWith(':')) {
         final stepArg = rest[i];
-        
+
         if (prevWasValueOption) {
           stepArgs.add(stepArg);
           prevWasValueOption = false;
           i++;
           continue;
         }
-        
+
         if (stepArg.startsWith('-')) {
           if (stepArg.contains('=')) {
             stepArgs.add(stepArg);
@@ -346,17 +393,15 @@ List<_ExecutionStep> _parseExecutionSteps(List<String> rest, ArgResults global) 
           i++;
           continue;
         }
-        
+
         // Non-option: treat as pipeline arg (positional)
         stepArgs.add(stepArg);
         i++;
       }
-      
-      steps.add(_ExecutionStep(
-        isCommand: isCommand,
-        name: name,
-        args: stepArgs,
-      ));
+
+      steps.add(
+        _ExecutionStep(isCommand: isCommand, name: name, args: stepArgs),
+      );
     } else {
       // Unexpected flag in rest - skip
       i++;
@@ -370,19 +415,33 @@ List<_ExecutionStep> _parseExecutionSteps(List<String> rest, ArgResults global) 
 bool _isValueOption(String opt) {
   // Known value-taking options
   const valueOptions = {
-    '--scan', '-s',
-    '--project', '-p',
-    '--root', '-R',
-    '--exclude', '-x',
+    '--scan',
+    '-s',
+    '--project',
+    '-p',
+    '--root',
+    '-R',
+    '--exclude',
+    '-x',
     '--exclude-projects',
     '--modules',
     '--message',
-    '--type', '--set',
-    '--target', '--builder',
-    '--prefix', '--branch',
-    '--base', '--onto', '--create', '--delete',
-    '--remote', '--index', '--count', '-n',
-    '--to', '--depth',
+    '--type',
+    '--set',
+    '--target',
+    '--builder',
+    '--prefix',
+    '--branch',
+    '--base',
+    '--onto',
+    '--create',
+    '--delete',
+    '--remote',
+    '--index',
+    '--count',
+    '-n',
+    '--to',
+    '--depth',
     '--init-source',
     '--config',
   };
@@ -402,12 +461,12 @@ Future<bool> _executeCommand(
   // all options after a :command as per-command options.
   final globalArgs = <String>[];
   final cmdArgs = <String>[];
-  
+
   // Global navigation options first
   if (isWorkspaceMode) {
     globalArgs.addAll(['--root', rootPath]);
   }
-  
+
   final scanPath = global['scan'] as String?;
   if (scanPath != null && !step.suppressedOptions.contains('s')) {
     globalArgs.addAll(['--scan', scanPath]);
@@ -415,29 +474,29 @@ Future<bool> _executeCommand(
     // In workspace mode, default to scanning from workspace root recursively.
     globalArgs.addAll(['--scan', rootPath]);
   }
-  
+
   if (global['recursive'] == true && !step.suppressedOptions.contains('r')) {
     globalArgs.add('--recursive');
   } else if (isWorkspaceMode && scanPath == null) {
     globalArgs.add('--recursive');
   }
-  
+
   if (global['inner-first-git'] == true) {
     globalArgs.add('--inner-first-git');
   }
-  
+
   if (global['outer-first-git'] == true) {
     globalArgs.add('--outer-first-git');
   }
-  
+
   if (global['workspace-recursion'] == true) {
     globalArgs.add('--workspace-recursion');
   }
-  
+
   if (global['build-order'] == true) {
     globalArgs.add('--build-order');
   }
-  
+
   // Global common options
   if (_verbose && !step.suppressedOptions.contains('v')) {
     globalArgs.add('--verbose');
@@ -445,7 +504,7 @@ Future<bool> _executeCommand(
   if (_dryRun && !step.suppressedOptions.contains('n')) {
     globalArgs.add('--dry-run');
   }
-  
+
   final project = global['project'] as String?;
   if (project != null && !step.suppressedOptions.contains('p')) {
     globalArgs.addAll(['--project', project]);
@@ -455,38 +514,38 @@ Future<bool> _executeCommand(
       globalArgs.addAll(['--scan', '.', '--recursive']);
     }
   }
-  
+
   final excludes = global['exclude'] as List<String>?;
   if (excludes != null) {
     for (final x in excludes) {
       globalArgs.addAll(['--exclude', x]);
     }
   }
-  
+
   final excludeProjects = global['exclude-projects'] as List<String>?;
   if (excludeProjects != null) {
     for (final x in excludeProjects) {
       globalArgs.addAll(['--exclude-projects', x]);
     }
   }
-  
+
   final modules = global['modules'] as String?;
   if (modules != null) {
     globalArgs.addAll(['--modules', modules]);
   }
-  
+
   // Command comes after global args, followed by command-specific args
   cmdArgs.addAll(globalArgs);
   cmdArgs.add(':${step.name}');
   cmdArgs.addAll(step.args);
-  
+
   // Run via ToolRunner
   final result = await runner.run(cmdArgs);
-  
+
   if (!result.success && result.errorMessage != null) {
     print('Error: ${result.errorMessage}');
   }
-  
+
   return result.success;
 }
 
@@ -500,7 +559,7 @@ Future<bool> _executePipeline(
   final scanPath = global['scan'] as String?;
   final recursive = global['recursive'] as bool;
   final project = global['project'] as String?;
-  
+
   // Validate project directory when --project is used without --scan
   if (project != null && scanPath == null) {
     final projectDir = Directory(p.join(rootPath, project));
@@ -509,7 +568,7 @@ Future<bool> _executePipeline(
       return false;
     }
   }
-  
+
   if (scanPath != null) {
     // Execute pipeline across scanned projects
     return _executePipelineAcrossProjects(
@@ -542,14 +601,14 @@ Future<bool> _executePipelineAcrossProjects({
 }) async {
   final scanner = FolderScanner(toolBasename: 'buildkit', verbose: _verbose);
   final folders = await scanner.scan(scanPath, recursive: recursive);
-  
+
   var allSuccess = true;
   for (final folder in folders) {
     if (_verbose) {
       print('');
       print('▶ ${folder.name}');
     }
-    
+
     final executor = PipelineExecutor(
       config: config,
       projectPath: folder.path,
@@ -557,7 +616,7 @@ Future<bool> _executePipelineAcrossProjects({
       verbose: _verbose,
       dryRun: _dryRun,
     );
-    
+
     final success = await executor.execute(pipelineName);
     if (!success) {
       allSuccess = false;
@@ -565,19 +624,14 @@ Future<bool> _executePipelineAcrossProjects({
       // For now, continue to see all failures
     }
   }
-  
+
   return allSuccess;
 }
 
-
-
 /// List available pipelines.
 Future<void> _listPipelines(String rootPath) async {
-  final config = PipelineConfig.load(
-    projectPath: rootPath,
-    rootPath: rootPath,
-  );
-  
+  final config = PipelineConfig.load(projectPath: rootPath, rootPath: rootPath);
+
   print('Available pipelines:');
   for (final entry in config.pipelines.entries) {
     final pipeline = entry.value;
@@ -623,7 +677,7 @@ String _findWorkspaceRoot(String fromPath) {
     if (masterFile.existsSync()) {
       return current;
     }
-    
+
     final parent = p.dirname(current);
     if (parent == current) {
       // Reached root without finding workspace
