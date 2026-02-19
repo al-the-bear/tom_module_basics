@@ -253,8 +253,12 @@ abstract class ToolBase {
 
     List<String> results;
     if (project != null) {
-      // Validate --project path existence for non-glob patterns
-      if (!project.contains('*') &&
+      // Validate --project path existence for non-glob patterns that look like paths.
+      // Simple names (no path separators) are searched by resolveProjectPatterns.
+      final looksLikePath =
+          project.contains('/') || project.contains(p.separator);
+      if (looksLikePath &&
+          !project.contains('*') &&
           !project.contains('?') &&
           !project.contains('[') &&
           !project.contains(',')) {
