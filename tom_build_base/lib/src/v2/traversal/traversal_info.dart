@@ -71,7 +71,7 @@ class ProjectTraversalInfo extends BaseTraversalInfo {
     this.recursionExclude = const [],
     this.projectPatterns = const [],
     this.excludeProjects = const [],
-    this.buildOrder = false,
+    this.buildOrder = true,
   });
 
   @override

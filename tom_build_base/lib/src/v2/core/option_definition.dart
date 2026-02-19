@@ -156,7 +156,7 @@ const List<OptionDefinition> projectTraversalOptions = [
   OptionDefinition.flag(
     name: 'build-order',
     abbr: 'b',
-    description: 'Sort by dependency order',
+    description: 'Sort by dependency order (default)',
   ),
 ];
 

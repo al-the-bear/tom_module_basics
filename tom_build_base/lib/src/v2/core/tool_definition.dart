@@ -222,6 +222,13 @@ class ToolDefinition {
   List<OptionDefinition> get allGlobalOptions {
     final result = <OptionDefinition>[...globalOptions];
 
+    if (features.projectTraversal) {
+      result.addAll(projectTraversalOptions);
+    }
+    if (features.gitTraversal) {
+      result.addAll(gitTraversalOptions);
+    }
+
     // Add common options (includes standard options like --help, --version, --dry-run)
     result.addAll(commonOptions);
 
@@ -244,7 +251,12 @@ class ToolDefinition {
       );
     }
 
-    return result;
+    final deduped = <String, OptionDefinition>{};
+    for (final option in result) {
+      deduped[option.name] = option;
+    }
+
+    return deduped.values.toList();
   }
 
   @override

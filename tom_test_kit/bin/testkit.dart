@@ -15,9 +15,11 @@ import 'package:tom_test_kit/src/tui/commands/baseline_tui_command.dart';
 import 'package:tom_test_kit/src/tui/commands/test_tui_command.dart';
 
 void main(List<String> args) async {
+  final normalizedArgs = _normalizeHelpArgs(args);
+
   // Parse args to check for TUI mode first
   final parser = CliArgParser(toolDefinition: testkitTool);
-  final cliArgs = parser.parse(args);
+  final cliArgs = parser.parse(normalizedArgs);
 
   // Check for --tui mode
   if (cliArgs.extraOptions['tui'] == true) {
@@ -32,12 +34,26 @@ void main(List<String> args) async {
   );
 
   // Run the tool
-  final result = await runner.run(args);
+  final result = await runner.run(normalizedArgs);
 
   // Set exit code based on result
   if (!result.success) {
     exitCode = 1;
   }
+}
+
+List<String> _normalizeHelpArgs(List<String> args) {
+  if (args.isEmpty) return args;
+
+  final first = args.first.trim();
+  if (first == 'help' || first == '-help') {
+    final rest = args.skip(1).toList();
+    if (!rest.contains('--help') && !rest.contains('-h')) {
+      return ['--help', ...rest];
+    }
+  }
+
+  return args;
 }
 
 /// Run TUI mode with the existing TUI implementation.

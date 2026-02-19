@@ -128,7 +128,7 @@ class CliArgs {
     this.innerFirstGit = false,
     this.outerFirstGit = false,
     this.topRepo = false,
-    this.buildOrder = false,
+    this.buildOrder = true,
     this.workspaceRecursion = false,
     this.verbose = false,
     this.dryRun = false,
@@ -701,7 +701,7 @@ class _ParseState {
   bool innerFirstGit = false;
   bool outerFirstGit = false;
   bool topRepo = false;
-  bool buildOrder = false;
+  bool buildOrder = true;
   bool workspaceRecursion = false;
   bool verbose = false;
   bool dryRun = false;
