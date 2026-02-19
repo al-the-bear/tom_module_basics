@@ -601,6 +601,10 @@ class CompilerTool extends ToolBase {
     final currentOS = PlatformUtils.getTargetOS(currentPlatform);
     final currentArch = PlatformUtils.getTargetArch(currentPlatform);
 
+    if (!dryRun) {
+      print('  Compiling $fileName for $targetPlatform');
+    }
+
     for (final template in commandTemplates) {
       var command = template
           // File placeholders
@@ -643,10 +647,7 @@ class CompilerTool extends ToolBase {
             continue;
           }
           if (verbose) {
-            print('  Compiling $fileName for $targetPlatform (stdin)...');
-            print('    Command: ${parsed.command}');
-          } else {
-            print('  Compiling $fileName for $targetPlatform (stdin)');
+            print('    Command (stdin): ${parsed.command}');
           }
           final result = await script_utils.executeWithStdin(
             command: expandedCmd,
@@ -676,10 +677,7 @@ class CompilerTool extends ToolBase {
       }
 
       if (verbose) {
-        print('  Compiling $fileName for $targetPlatform...');
         print('    Command: $command');
-      } else {
-        print('  Compiling $fileName for $targetPlatform');
       }
 
       final result = await ProcessRunner.runShell(

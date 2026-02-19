@@ -446,6 +446,10 @@ class CompilerExecutor extends CommandExecutor {
     final currentOS = PlatformUtils.getTargetOS(currentPlatform);
     final currentArch = PlatformUtils.getTargetArch(currentPlatform);
 
+    if (!args.dryRun) {
+      print('  Compiling $fileName for $targetPlatform');
+    }
+
     for (final template in commandTemplates) {
       var command = _resolvePlaceholders(
         template,
@@ -473,7 +477,9 @@ class CompilerExecutor extends CommandExecutor {
             );
             continue;
           }
-          print('  Compiling $fileName for $targetPlatform (stdin)');
+          if (args.verbose) {
+            print('    Command (stdin): ${parsed.command}');
+          }
           final result = await script_utils.executeWithStdin(
             command: _replaceEnvVars(parsed.command),
             stdinContent: parsed.stdinContent,
@@ -500,10 +506,7 @@ class CompilerExecutor extends CommandExecutor {
       }
 
       if (args.verbose) {
-        print('  Compiling $fileName for $targetPlatform...');
         print('    Command: $command');
-      } else {
-        print('  Compiling $fileName for $targetPlatform');
       }
 
       final result = await ProcessRunner.runShell(
@@ -541,6 +544,10 @@ class CompilerExecutor extends CommandExecutor {
     final currentOS = PlatformUtils.getTargetOS(currentPlatform);
     final currentArch = PlatformUtils.getTargetArch(currentPlatform);
 
+    if (!args.dryRun) {
+      print('  Compiling $fileName for $targetPlatform (builtin)');
+    }
+
     for (final template in commandTemplates) {
       var command = _resolvePlaceholders(
         template,
@@ -562,7 +569,6 @@ class CompilerExecutor extends CommandExecutor {
         print('  [DRY RUN] compile builtin ($targetPlatform): $command');
         continue;
       }
-      print('  Compiling $fileName for $targetPlatform (builtin)');
 
       final builtinCommands = BuiltinCommands(
         projectPath: projectPath,
