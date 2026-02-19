@@ -14,8 +14,27 @@ import 'package:tom_issue_kit/src/v2/issuekit_executors.dart';
 import 'package:tom_issue_kit/src/v2/issuekit_tool.dart';
 
 void main(List<String> args) async {
+  final normalizedArgs = _normalizeHelpArgs(args);
+
+  final preParser = CliArgParser(toolDefinition: issuekitTool);
+  final preArgs = preParser.parse(normalizedArgs);
+  final hasHelpFlag = normalizedArgs.contains('--help') ||
+      normalizedArgs.contains('-h') ||
+      normalizedArgs.contains('-help');
+  if (preArgs.help || preArgs.version || hasHelpFlag) {
+    final preRunner = ToolRunner(
+      tool: issuekitTool,
+      executors: const <String, CommandExecutor>{},
+    );
+    final preResult = await preRunner.run(normalizedArgs);
+    if (!preResult.success) {
+      exitCode = 1;
+    }
+    return;
+  }
+
   // Load configuration from workspace root (current directory by default)
-  final workspaceRoot = Platform.environment['TOM_WORKSPACE_ROOT'] ?? 
+  final workspaceRoot = Platform.environment['TOM_WORKSPACE_ROOT'] ??
       Directory.current.path;
   final config = await IssueKitConfig.load(workspaceRoot);
 
@@ -54,7 +73,7 @@ void main(List<String> args) async {
     );
 
     // Run the tool
-    final result = await runner.run(args);
+    final result = await runner.run(normalizedArgs);
 
     // Set exit code based on result
     if (!result.success) {
@@ -63,4 +82,18 @@ void main(List<String> args) async {
   } finally {
     service.close();
   }
+}
+
+List<String> _normalizeHelpArgs(List<String> args) {
+  if (args.isEmpty) return args;
+
+  final first = args.first.trim();
+  if (first == 'help' || first == '-help') {
+    final rest = args.skip(1).toList();
+    if (!rest.contains('--help') && !rest.contains('-h')) {
+      return ['--help', ...rest];
+    }
+  }
+
+  return args;
 }
