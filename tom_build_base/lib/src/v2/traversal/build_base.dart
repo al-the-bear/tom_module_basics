@@ -3,6 +3,7 @@ import 'dart:io';
 import '../folder/fs_folder.dart';
 import '../folder/run_folder.dart';
 import '../folder/natures/dart_project_folder.dart';
+import 'build_order.dart';
 import 'command_context.dart';
 import 'filter_pipeline.dart';
 import 'folder_scanner.dart';
@@ -54,8 +55,26 @@ abstract class BuildBase {
   ///
   /// [info] - ProjectTraversalInfo or GitTraversalInfo configuration.
   /// [run] - Callback for each matching folder.
-  /// [requiredNatures] - Folder MUST have ALL of these natures (null = no requirement).
-  /// [worksWithNatures] - Natures the callback can handle (informational).
+  /// [requiredNatures] - Nature filter (see below).
+  /// [worksWithNatures] - Supported natures (see below).
+  ///
+  /// ## Nature Filtering Logic
+  ///
+  /// The two nature parameters work together in a three-tier system:
+  ///
+  /// 1. **requiredNatures is null** → No nature filtering; all folders
+  ///    are processed (backward-compatible default).
+  /// 2. **requiredNatures is non-empty** → Folder MUST have ALL required
+  ///    natures. `worksWithNatures` is ignored.
+  /// 3. **requiredNatures is empty** → Falls through to `worksWithNatures`:
+  ///    - If `worksWithNatures` is non-empty → folder must have at least
+  ///      ONE of the supported natures.
+  ///    - If `worksWithNatures` is also empty → folder is NOT processed
+  ///      (command/tool has no nature configuration).
+  ///
+  /// **Special types:**
+  /// - [FsFolder] in either set always matches (every folder is an FsFolder).
+  /// - [DartProjectFolder] matches any Dart project subtype (hierarchy check).
   static Future<ProcessingResult> traverse({
     required BaseTraversalInfo info,
     required Future<bool> Function(CommandContext) run,
@@ -85,6 +104,11 @@ abstract class BuildBase {
       // Store natures in folder for filter pipeline access
       folder.natures.addAll(natures);
     }
+
+    // Preserve unfiltered list for build order computation.
+    // Build order must be computed from ALL scanned folders so that
+    // dependency ordering is correct even when filters are applied.
+    final allScannedFolders = List<FsFolder>.of(folders);
 
     // Apply filters AFTER nature detection (so ID/name matching works)
     switch (info) {
@@ -117,10 +141,18 @@ abstract class BuildBase {
             ? sorter.sortByInnerFirst(contexts, (c) => c.path)
             : sorter.sortByOuterFirst(contexts, (c) => c.path);
       case ProjectTraversalInfo pi when pi.buildOrder:
+        // Build order: compute order from ALL scanned folders (pre-filter),
+        // then sort the filtered contexts by that global order.
+        final allDartPaths = allScannedFolders
+            .where((f) => File('${f.path}/pubspec.yaml').existsSync())
+            .map((f) => f.path)
+            .toList();
+        final globalOrder =
+            BuildOrderComputer.computeBuildOrder(allDartPaths) ?? [];
         ordered = sorter.sortByBuildOrder(
           contexts,
           (c) => c.path,
-          (c) => c.name,
+          globalOrder,
         );
       default:
         ordered = contexts;
@@ -128,20 +160,18 @@ abstract class BuildBase {
 
     // Execute on each context
     for (final ctx in ordered) {
-      // Check required natures using type hierarchy (is-a relationship)
-      if (requiredNatures != null && requiredNatures.isNotEmpty) {
-        final hasAll = requiredNatures.every((requiredType) {
-          return ctx.natures.any((nature) {
-            // Check exact match first
-            if (nature.runtimeType == requiredType) return true;
-            // Handle DartProjectFolder hierarchy - any Dart project type satisfies DartProjectFolder
-            if (requiredType == DartProjectFolder) {
-              return nature is DartProjectFolder;
-            }
-            return false;
-          });
-        });
-        if (!hasAll) continue;
+      // Three-tier nature filtering:
+      // 1. null requiredNatures → no filtering (process all)
+      // 2. non-empty requiredNatures → must have ALL required
+      // 3. empty requiredNatures → check worksWithNatures
+      //    a. non-empty worksWithNatures → must have at least ONE
+      //    b. both empty → skip (no nature configuration)
+      if (!_shouldInvokeForNatures(
+        ctx.natures,
+        requiredNatures,
+        worksWithNatures,
+      )) {
+        continue;
       }
 
       try {
@@ -155,6 +185,58 @@ abstract class BuildBase {
     }
 
     return result;
+  }
+
+  /// Determine whether a folder should be invoked based on nature filtering.
+  ///
+  /// Implements the three-tier filtering logic:
+  /// 1. `requiredNatures == null` → true (no filtering, backward compat)
+  /// 2. `requiredNatures` non-empty → true only if folder has ALL required
+  /// 3. `requiredNatures` empty → falls through to `worksWithNatures`
+  ///    - non-empty → true if folder has at least ONE supported nature
+  ///    - both empty → false (no nature configuration)
+  static bool _shouldInvokeForNatures(
+    List<RunFolder> natures,
+    Set<Type>? requiredNatures,
+    Set<Type> worksWithNatures,
+  ) {
+    if (requiredNatures == null) {
+      // Tier 1: No nature filtering at all (backward compatible default)
+      return true;
+    }
+
+    if (requiredNatures.isNotEmpty) {
+      // Tier 2: Must have ALL required natures
+      return requiredNatures.every((type) => _matchesNature(natures, type));
+    }
+
+    // Tier 3: requiredNatures is empty set {}
+    if (worksWithNatures.isNotEmpty) {
+      // Must have at least ONE supported nature
+      return worksWithNatures.any((type) => _matchesNature(natures, type));
+    }
+
+    // Both empty → don't invoke
+    return false;
+  }
+
+  /// Check whether a list of natures satisfies a single type requirement.
+  ///
+  /// Special cases:
+  /// - [FsFolder] always matches (every folder is an FsFolder by definition)
+  /// - [DartProjectFolder] matches any Dart project subtype (hierarchy check)
+  static bool _matchesNature(List<RunFolder> natures, Type type) {
+    // FsFolder always matches — every traversed folder is an FsFolder
+    if (type == FsFolder) return true;
+
+    // Check actual natures using type hierarchy
+    return natures.any((nature) {
+      // Exact runtime type match
+      if (nature.runtimeType == type) return true;
+      // DartProjectFolder hierarchy — any Dart project subtype satisfies
+      if (type == DartProjectFolder) return nature is DartProjectFolder;
+      return false;
+    });
   }
 
   /// Scan for projects based on ProjectTraversalInfo.

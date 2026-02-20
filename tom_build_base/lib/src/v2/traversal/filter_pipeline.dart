@@ -278,15 +278,40 @@ class FilterPipeline {
 class FolderSorter {
   /// Sort folders by dependency order (for project traversal).
   ///
-  /// Projects that are dependencies of others come first.
+  /// Uses a pre-computed global build order to sort the filtered contexts.
+  /// [globalOrder] contains all project paths in dependency-first order,
+  /// computed from the full unfiltered scan.
+  ///
+  /// Folders present in [globalOrder] appear first (in dependency order),
+  /// followed by folders not in the order (e.g., non-Dart projects).
   List<T> sortByBuildOrder<T>(
     List<T> folders,
     String Function(T) getPath,
-    String Function(T) getName,
+    List<String> globalOrder,
   ) {
-    // TODO: Implement topological sort based on pubspec.yaml dependencies
-    // For now, return as-is
-    return folders;
+    if (globalOrder.isEmpty) return folders;
+
+    // Build position map for O(1) lookup
+    final positionMap = <String, int>{};
+    for (var i = 0; i < globalOrder.length; i++) {
+      positionMap[globalOrder[i]] = i;
+    }
+
+    final sorted = List<T>.from(folders);
+    sorted.sort((a, b) {
+      final posA = positionMap[getPath(a)];
+      final posB = positionMap[getPath(b)];
+
+      // Both in order → sort by position
+      if (posA != null && posB != null) return posA.compareTo(posB);
+      // Only one in order → it comes first
+      if (posA != null) return -1;
+      if (posB != null) return 1;
+      // Neither in order → preserve relative order (stable sort)
+      return 0;
+    });
+
+    return sorted;
   }
 
   /// Sort git repos by inner-first order.
