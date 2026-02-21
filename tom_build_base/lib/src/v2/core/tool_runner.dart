@@ -302,14 +302,34 @@ class ToolRunner {
       return executor.executeWithoutTraversal(cliArgs);
     }
 
+    // Validate nature configuration — every traversal command must declare
+    // its nature requirements. Use FsFolder to traverse all folders.
+    final reqNatures = cmd?.requiredNatures;
+    final workNatures = cmd?.worksWithNatures ?? const <Type>{};
+    final hasRequired = reqNatures != null && reqNatures.isNotEmpty;
+    final hasWorksWith = workNatures.isNotEmpty;
+    if (!hasRequired && !hasWorksWith) {
+      final cmdLabel = cmd != null ? ' "${cmd.name}"' : '';
+      output.writeln(
+        'Error: Command$cmdLabel has no nature configuration.',
+      );
+      output.writeln(
+        'Set requiredNatures or worksWithNatures '
+        '(use FsFolder for all folders).',
+      );
+      return ToolResult.failure(
+        'Command$cmdLabel has no nature configuration',
+      );
+    }
+
     // Execute with traversal
     final results = <ItemResult>[];
 
     await BuildBase.traverse(
       info: traversalInfo,
       verbose: verbose,
-      requiredNatures: cmd?.requiredNatures,
-      worksWithNatures: cmd?.worksWithNatures ?? const {},
+      requiredNatures: reqNatures,
+      worksWithNatures: workNatures,
       run: (context) async {
         // Apply per-command filters for project traversal
         if (traversalInfo is ProjectTraversalInfo) {

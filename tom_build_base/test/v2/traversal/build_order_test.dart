@@ -241,6 +241,7 @@ void main() {
           executionRoot: tempDir.path,
           buildOrder: true,
         ),
+        requiredNatures: {FsFolder},
         run: (ctx) async {
           names.add(ctx.name);
           return true;
@@ -274,6 +275,7 @@ void main() {
           // Filter: only app and lib_core (skip lib_utils)
           projectPatterns: ['app', 'lib_core'],
         ),
+        requiredNatures: {FsFolder},
         run: (ctx) async {
           names.add(ctx.name);
           return true;
@@ -304,6 +306,7 @@ void main() {
           executionRoot: tempDir.path,
           buildOrder: false,
         ),
+        requiredNatures: {FsFolder},
         run: (ctx) async {
           names.add(ctx.name);
           return true;

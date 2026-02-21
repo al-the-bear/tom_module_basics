@@ -1,12 +1,12 @@
-/// Tests for the three-tier nature filtering logic in BuildBase.traverse().
+/// Tests for the nature filtering logic in BuildBase.traverse().
 ///
 /// Verifies the behavior documented in BuildBase.traverse():
 ///
-/// 1. requiredNatures == null → No filtering, all folders processed
-/// 2. requiredNatures non-empty → Must have ALL required natures
-/// 3. requiredNatures empty → Falls through to worksWithNatures:
-///    a. worksWithNatures non-empty → Must have at least ONE
-///    b. Both empty → Folder NOT processed
+/// 1. requiredNatures non-empty → Must have ALL required natures
+/// 2. worksWithNatures non-empty → Must have at least ONE
+/// 3. Neither set → ArgumentError (tool must configure natures)
+///
+/// To traverse all folders, use FsFolder explicitly.
 ///
 /// Special: FsFolder in either set always matches (every folder is an FsFolder).
 @TestOn('vm')
@@ -95,35 +95,44 @@ void main() {
     return names;
   }
 
-  group('Tier 1 — requiredNatures is null (no filtering)', () {
-    test('NF-T1-1: null requiredNatures processes ALL folders [2026-02-20]',
+  group('Error — no nature configuration (ArgumentError)', () {
+    test(
+        'NF-ERR-1: null requiredNatures + empty worksWithNatures throws ArgumentError [2026-02-21]',
         () async {
-      final names = await traverseWithNatures(
-        requiredNatures: null,
-        worksWithNatures: {},
+      expect(
+        () => traverseWithNatures(
+          requiredNatures: null,
+          worksWithNatures: {},
+        ),
+        throwsA(isA<ArgumentError>()),
       );
-
-      // Should include root + all child directories
-      expect(names, contains('dart_console'));
-      expect(names, contains('dart_package'));
-      expect(names, contains('dart_generic'));
-      expect(names, contains('ts_project'));
-      expect(names, contains('plain_dir'));
-      expect(names, contains('git_dart'));
-      expect(names, contains('buildkit_proj'));
     });
 
     test(
-        'NF-T1-2: null requiredNatures with non-empty worksWithNatures still processes all [2026-02-20]',
+        'NF-ERR-2: empty requiredNatures + empty worksWithNatures throws ArgumentError [2026-02-21]',
         () async {
-      // worksWithNatures should be ignored when requiredNatures is null
+      expect(
+        () => traverseWithNatures(
+          requiredNatures: {},
+          worksWithNatures: {},
+        ),
+        throwsA(isA<ArgumentError>()),
+      );
+    });
+
+    test(
+        'NF-ERR-3: null requiredNatures + non-empty worksWithNatures does NOT throw [2026-02-21]',
+        () async {
+      // worksWithNatures is configured → filtering applies (no error)
       final names = await traverseWithNatures(
         requiredNatures: null,
         worksWithNatures: {TypeScriptFolder},
       );
 
-      expect(names, contains('dart_console'));
-      expect(names, contains('plain_dir'));
+      // Only TypeScript folder matches
+      expect(names, contains('ts_project'));
+      expect(names, isNot(contains('dart_console')));
+      expect(names, isNot(contains('plain_dir')));
     });
   });
 
@@ -227,7 +236,7 @@ void main() {
     });
   });
 
-  group('Tier 3a — requiredNatures empty, worksWithNatures set', () {
+  group('worksWithNatures — requiredNatures empty, worksWithNatures set', () {
     test(
         'NF-T3a-1: worksWithNatures {DartProjectFolder} invokes on any Dart project [2026-02-20]',
         () async {
@@ -295,38 +304,8 @@ void main() {
     });
   });
 
-  group('Tier 3b — both empty (no nature configuration)', () {
-    test(
-        'NF-T3b-1: empty requiredNatures + empty worksWithNatures invokes NOTHING [2026-02-20]',
-        () async {
-      final names = await traverseWithNatures(
-        requiredNatures: {},
-        worksWithNatures: {},
-      );
-
-      expect(names, isEmpty);
-    });
-
-    test(
-        'NF-T3b-2: ProcessingResult reflects zero invocations [2026-02-20]',
-        () async {
-      final result = await BuildBase.traverse(
-        info: ProjectTraversalInfo(
-          scan: tempDir.path,
-          recursive: true,
-          executionRoot: tempDir.path,
-        ),
-        requiredNatures: {},
-        worksWithNatures: {},
-        run: (ctx) async {
-          fail('Should not be invoked');
-        },
-      );
-
-      expect(result.total, equals(0));
-      expect(result.allSucceeded, isTrue);
-    });
-  });
+  // Tier 3b tests moved to 'Error — no nature configuration' group above
+  // (both empty now throws ArgumentError instead of silently skipping)
 
   group('Edge cases', () {
     test(
@@ -366,17 +345,20 @@ void main() {
     });
 
     test(
-        'NF-EDGE-4: plain directory has no natures — only matched by FsFolder or null [2026-02-20]',
+        'NF-EDGE-4: plain directory has no natures — only matched by FsFolder [2026-02-21]',
         () async {
-      // With null requiredNatures
-      final namesNull = await traverseWithNatures(requiredNatures: null);
-      expect(namesNull, contains('plain_dir'));
-
-      // With FsFolder
+      // With FsFolder in requiredNatures
       final namesFsFolder = await traverseWithNatures(
         requiredNatures: {FsFolder},
       );
       expect(namesFsFolder, contains('plain_dir'));
+
+      // With FsFolder in worksWithNatures
+      final namesFsWorks = await traverseWithNatures(
+        requiredNatures: {},
+        worksWithNatures: {FsFolder},
+      );
+      expect(namesFsWorks, contains('plain_dir'));
 
       // With DartProjectFolder
       final namesDart = await traverseWithNatures(

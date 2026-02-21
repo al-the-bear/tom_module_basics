@@ -98,6 +98,7 @@ Future<Map<String, dynamic>> _runTraversal(List<String> args) async {
   await BuildBase.traverse(
     info: traversalInfo,
     verbose: cliArgs.verbose,
+    requiredNatures: {FsFolder},
     run: (ctx) async {
       folders.add({
         'name': ctx.name,

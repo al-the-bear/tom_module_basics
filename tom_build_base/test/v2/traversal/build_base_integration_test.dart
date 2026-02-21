@@ -207,6 +207,7 @@ void main() {
 
       await BuildBase.traverse(
         info: info,
+        requiredNatures: {FsFolder},
         run: (ctx) async {
           foundProjects.add(ctx.name);
           return true;
@@ -230,6 +231,7 @@ void main() {
 
       await BuildBase.traverse(
         info: info,
+        requiredNatures: {FsFolder},
         run: (ctx) async {
           foundProjects.add(ctx.name);
           return true;
@@ -258,7 +260,8 @@ void main() {
 
       await BuildBase.traverse(
         info: info,
-        // No requiredNatures - should find ALL project types
+        requiredNatures: {FsFolder},
+        // No requiredNatures filter - should find ALL project types
         run: (ctx) async {
           foundProjects.add(ctx.name);
           projectNatures[ctx.name] = ctx.natures.map((n) => n.runtimeType.toString()).toList();
@@ -349,6 +352,7 @@ void main() {
 
       await BuildBase.traverse(
         info: info,
+        requiredNatures: {FsFolder},
         run: (ctx) async {
           gitRepos.add(ctx.name);
           // Check if GitFolder nature is present
@@ -377,6 +381,7 @@ void main() {
 
       await BuildBase.traverse(
         info: info,
+        requiredNatures: {FsFolder},
         run: (ctx) async {
           order.add(ctx.path);
           return true;
@@ -405,6 +410,7 @@ void main() {
 
       await BuildBase.traverse(
         info: info,
+        requiredNatures: {FsFolder},
         run: (ctx) async {
           order.add(ctx.path);
           return true;

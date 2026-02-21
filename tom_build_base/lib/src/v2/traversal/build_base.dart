@@ -60,17 +60,15 @@ abstract class BuildBase {
   ///
   /// ## Nature Filtering Logic
   ///
-  /// The two nature parameters work together in a three-tier system:
+  /// At least one of the two nature parameters must be configured. If neither
+  /// is set, an [ArgumentError] is thrown. To traverse all folders, set
+  /// `requiredNatures: {FsFolder}` or `worksWithNatures: {FsFolder}`.
   ///
-  /// 1. **requiredNatures is null** → No nature filtering; all folders
-  ///    are processed (backward-compatible default).
-  /// 2. **requiredNatures is non-empty** → Folder MUST have ALL required
+  /// 1. **requiredNatures is non-empty** → Folder MUST have ALL required
   ///    natures. `worksWithNatures` is ignored.
-  /// 3. **requiredNatures is empty** → Falls through to `worksWithNatures`:
-  ///    - If `worksWithNatures` is non-empty → folder must have at least
-  ///      ONE of the supported natures.
-  ///    - If `worksWithNatures` is also empty → folder is NOT processed
-  ///      (command/tool has no nature configuration).
+  /// 2. **worksWithNatures is non-empty** → Folder must have at least ONE
+  ///    of the supported natures.
+  /// 3. **Both unset/empty** → [ArgumentError] is thrown.
   ///
   /// **Special types:**
   /// - [FsFolder] in either set always matches (every folder is an FsFolder).
@@ -158,14 +156,23 @@ abstract class BuildBase {
         ordered = contexts;
     }
 
+    // Validate nature configuration — at least one must be set.
+    // Tools that want all folders must explicitly use FsFolder.
+    final hasRequired =
+        requiredNatures != null && requiredNatures.isNotEmpty;
+    final hasWorksWith = worksWithNatures.isNotEmpty;
+    if (!hasRequired && !hasWorksWith) {
+      throw ArgumentError(
+        'Neither requiredNatures nor worksWithNatures is configured. '
+        'Set requiredNatures or worksWithNatures (use FsFolder for all folders).',
+      );
+    }
+
     // Execute on each context
     for (final ctx in ordered) {
-      // Three-tier nature filtering:
-      // 1. null requiredNatures → no filtering (process all)
-      // 2. non-empty requiredNatures → must have ALL required
-      // 3. empty requiredNatures → check worksWithNatures
-      //    a. non-empty worksWithNatures → must have at least ONE
-      //    b. both empty → skip (no nature configuration)
+      // Nature filtering:
+      // 1. non-empty requiredNatures → must have ALL required
+      // 2. non-empty worksWithNatures → must have at least ONE
       if (!_shouldInvokeForNatures(
         ctx.natures,
         requiredNatures,
@@ -189,35 +196,30 @@ abstract class BuildBase {
 
   /// Determine whether a folder should be invoked based on nature filtering.
   ///
-  /// Implements the three-tier filtering logic:
-  /// 1. `requiredNatures == null` → true (no filtering, backward compat)
-  /// 2. `requiredNatures` non-empty → true only if folder has ALL required
-  /// 3. `requiredNatures` empty → falls through to `worksWithNatures`
-  ///    - non-empty → true if folder has at least ONE supported nature
-  ///    - both empty → false (no nature configuration)
+  /// Caller must ensure at least one nature set is configured (validated
+  /// at the start of [traverse]).
+  ///
+  /// 1. `requiredNatures` non-empty → true only if folder has ALL required
+  /// 2. `worksWithNatures` non-empty → true if folder has at least ONE
   static bool _shouldInvokeForNatures(
     List<RunFolder> natures,
     Set<Type>? requiredNatures,
     Set<Type> worksWithNatures,
   ) {
-    if (requiredNatures == null) {
-      // Tier 1: No nature filtering at all (backward compatible default)
-      return true;
-    }
-
-    if (requiredNatures.isNotEmpty) {
-      // Tier 2: Must have ALL required natures
+    if (requiredNatures != null && requiredNatures.isNotEmpty) {
+      // Must have ALL required natures
       return requiredNatures.every((type) => _matchesNature(natures, type));
     }
 
-    // Tier 3: requiredNatures is empty set {}
     if (worksWithNatures.isNotEmpty) {
       // Must have at least ONE supported nature
       return worksWithNatures.any((type) => _matchesNature(natures, type));
     }
 
-    // Both empty → don't invoke
-    return false;
+    // Should not reach here — validated at traverse() entry
+    throw StateError(
+      'Neither requiredNatures nor worksWithNatures is configured.',
+    );
   }
 
   /// Check whether a list of natures satisfies a single type requirement.

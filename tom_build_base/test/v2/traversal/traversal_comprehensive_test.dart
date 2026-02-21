@@ -44,6 +44,7 @@ void main() {
       final found = <String>[];
       await BuildBase.traverse(
         info: info,
+        requiredNatures: {FsFolder},
         run: (ctx) async {
           found.add(ctx.name);
           return true;
@@ -69,6 +70,7 @@ void main() {
       final found = <String>[];
       await BuildBase.traverse(
         info: info,
+        requiredNatures: {FsFolder},
         run: (ctx) async {
           found.add(ctx.name);
           return true;
@@ -96,6 +98,7 @@ void main() {
       final found = <String>[];
       await BuildBase.traverse(
         info: info,
+        requiredNatures: {FsFolder},
         run: (ctx) async {
           found.add(ctx.name);
           return true;
@@ -121,6 +124,7 @@ void main() {
       final relativePaths = <String, String>{};
       await BuildBase.traverse(
         info: info,
+        requiredNatures: {FsFolder},
         run: (ctx) async {
           relativePaths[ctx.name] = ctx.relativePath;
           return true;
@@ -155,6 +159,7 @@ void main() {
       final found = <String>[];
       await BuildBase.traverse(
         info: info,
+        requiredNatures: {FsFolder},
         run: (ctx) async {
           found.add(ctx.name);
           return true;
@@ -179,6 +184,7 @@ void main() {
       final found = <String>[];
       await BuildBase.traverse(
         info: info,
+        requiredNatures: {FsFolder},
         run: (ctx) async {
           found.add(ctx.name);
           return true;
@@ -201,6 +207,7 @@ void main() {
       final found = <String>[];
       await BuildBase.traverse(
         info: info,
+        requiredNatures: {FsFolder},
         run: (ctx) async {
           found.add(ctx.name);
           return true;
@@ -228,6 +235,7 @@ void main() {
       final found = <String>[];
       await BuildBase.traverse(
         info: info,
+        requiredNatures: {FsFolder},
         run: (ctx) async {
           found.add(ctx.path);
           return true;
@@ -255,6 +263,7 @@ void main() {
       final found = <String>[];
       await BuildBase.traverse(
         info: info,
+        requiredNatures: {FsFolder},
         run: (ctx) async {
           found.add(ctx.name);
           return true;
@@ -280,6 +289,7 @@ void main() {
       final paths = <String>[];
       await BuildBase.traverse(
         info: info,
+        requiredNatures: {FsFolder},
         run: (ctx) async {
           paths.add(ctx.path);
           return true;
@@ -308,6 +318,7 @@ void main() {
       final paths = <String>[];
       await BuildBase.traverse(
         info: info,
+        requiredNatures: {FsFolder},
         run: (ctx) async {
           paths.add(ctx.path);
           return true;
@@ -336,6 +347,7 @@ void main() {
       final naturesPerRepo = <String, List<String>>{};
       await BuildBase.traverse(
         info: info,
+        requiredNatures: {FsFolder},
         run: (ctx) async {
           naturesPerRepo[ctx.name] =
               ctx.natures.map((n) => n.runtimeType.toString()).toList();
@@ -367,6 +379,7 @@ void main() {
       final found = <String>[];
       await BuildBase.traverse(
         info: info,
+        requiredNatures: {FsFolder},
         run: (ctx) async {
           found.add(ctx.name);
           return true;
@@ -397,6 +410,7 @@ void main() {
       final found = <String>[];
       await BuildBase.traverse(
         info: info,
+        requiredNatures: {FsFolder},
         run: (ctx) async {
           found.add(ctx.name);
           return true;
@@ -425,6 +439,7 @@ void main() {
       final found = <String>[];
       await BuildBase.traverse(
         info: info,
+        requiredNatures: {FsFolder},
         run: (ctx) async {
           found.add(ctx.name);
           return true;
@@ -475,6 +490,7 @@ void main() {
       final found = <String>[];
       await BuildBase.traverse(
         info: info,
+        requiredNatures: {FsFolder},
         run: (ctx) async {
           found.add(ctx.name);
           return true;
@@ -504,6 +520,7 @@ void main() {
       final natures = <String, List<String>>{};
       await BuildBase.traverse(
         info: info,
+        requiredNatures: {FsFolder},
         run: (ctx) async {
           natures[ctx.name] =
               ctx.natures.map((n) => n.runtimeType.toString()).toList();
@@ -532,6 +549,7 @@ void main() {
       final natures = <String, List<String>>{};
       await BuildBase.traverse(
         info: info,
+        requiredNatures: {FsFolder},
         run: (ctx) async {
           natures[ctx.name] =
               ctx.natures.map((n) => n.runtimeType.toString()).toList();
@@ -559,6 +577,7 @@ void main() {
       final natures = <String, List<String>>{};
       await BuildBase.traverse(
         info: info,
+        requiredNatures: {FsFolder},
         run: (ctx) async {
           natures[ctx.name] =
               ctx.natures.map((n) => n.runtimeType.toString()).toList();
@@ -980,6 +999,7 @@ void main() {
 
       final result = await BuildBase.traverse(
         info: info,
+        requiredNatures: {FsFolder},
         run: (ctx) async => true,
       );
 
@@ -999,6 +1019,7 @@ void main() {
 
       final result = await BuildBase.traverse(
         info: info,
+        requiredNatures: {FsFolder},
         run: (ctx) async => false,
       );
 
@@ -1017,6 +1038,7 @@ void main() {
 
       final result = await BuildBase.traverse(
         info: info,
+        requiredNatures: {FsFolder},
         run: (ctx) async => throw Exception('test error'),
       );
 
@@ -1043,6 +1065,7 @@ void main() {
         final found = <String>[];
         await BuildBase.traverse(
           info: info,
+          requiredNatures: {FsFolder},
           run: (ctx) async {
             found.add(ctx.name);
             return true;
@@ -1067,6 +1090,7 @@ void main() {
 
       final result = await BuildBase.traverse(
         info: info,
+        requiredNatures: {FsFolder},
         run: (ctx) async => true,
       );
 
@@ -1085,8 +1109,8 @@ void main() {
 
       // Run two traversals concurrently
       final results = await Future.wait([
-        BuildBase.traverse(info: info, run: (ctx) async => true),
-        BuildBase.traverse(info: info, run: (ctx) async => true),
+        BuildBase.traverse(info: info, requiredNatures: {FsFolder}, run: (ctx) async => true),
+        BuildBase.traverse(info: info, requiredNatures: {FsFolder}, run: (ctx) async => true),
       ]);
 
       expect(results[0].successCount, equals(results[1].successCount),
@@ -1107,6 +1131,7 @@ void main() {
       final found = <String>[];
       await BuildBase.traverse(
         info: info,
+        requiredNatures: {FsFolder},
         run: (ctx) async {
           found.add(ctx.name);
           return true;
