@@ -501,6 +501,7 @@ const testingCommand = CommandDefinition(
   name: 'testing',
   description: 'Mark that a reproduction test has been created',
   options: [],
+  worksWithNatures: {DartProjectFolder},
   supportsProjectTraversal: true,
   examples: [
     'issuekit :testing 42',
@@ -510,8 +511,7 @@ const testingCommand = CommandDefinition(
 const verifyCommand = CommandDefinition(
   name: 'verify',
   description: 'Check if linked tests pass — move to VERIFYING if all pass',
-  options: [],
-  supportsProjectTraversal: true,
+  options: [],  worksWithNatures: {DartProjectFolder},  supportsProjectTraversal: true,
   examples: [
     'issuekit :verify 42',
   ],
@@ -568,6 +568,7 @@ const showCommand = CommandDefinition(
   name: 'show',
   description: 'Show full details of one issue',
   options: [],
+  worksWithNatures: {DartProjectFolder},
   supportsProjectTraversal: true,
   examples: [
     'issuekit :show 42',
@@ -590,6 +591,7 @@ const scanCommand = CommandDefinition(
   name: 'scan',
   description: 'Scan workspace for tests linked to issues via ID convention',
   options: scanOptions,
+  worksWithNatures: {DartProjectFolder},
   supportsProjectTraversal: true,
   examples: [
     'issuekit :scan 42',
@@ -615,6 +617,7 @@ const promoteCommand = CommandDefinition(
   name: 'promote',
   description: 'Promote a regular test to issue-linked (insert issue number)',
   options: promoteOptions,
+  worksWithNatures: {DartProjectFolder},
   supportsProjectTraversal: true,
   examples: [
     'issuekit :promote D4-PAR-15 --issue 42',
@@ -626,6 +629,7 @@ const validateCommand = CommandDefinition(
   name: 'validate',
   description: 'Check test ID uniqueness across the workspace',
   options: validateOptions,
+  worksWithNatures: {DartProjectFolder},
   supportsProjectTraversal: true,
   examples: [
     'issuekit :validate',
@@ -648,8 +652,7 @@ const linkCommand = CommandDefinition(
 const syncCommand = CommandDefinition(
   name: 'sync',
   description: 'Sync issue states with test results — detect fixes/regressions',
-  options: syncOptions,
-  supportsProjectTraversal: true,
+  options: syncOptions,  worksWithNatures: {DartProjectFolder},  supportsProjectTraversal: true,
   examples: [
     'issuekit :sync --dry-run',
     'issuekit :sync --auto',
@@ -661,6 +664,7 @@ const aggregateCommand = CommandDefinition(
   name: 'aggregate',
   description: 'Aggregate testkit baselines into tom_tests consolidated view',
   options: aggregateOptions,
+  worksWithNatures: {DartProjectFolder},
   supportsProjectTraversal: true,
   examples: [
     'issuekit :aggregate',

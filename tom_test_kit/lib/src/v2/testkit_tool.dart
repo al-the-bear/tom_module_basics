@@ -130,6 +130,7 @@ const baselineCommand = CommandDefinition(
   name: 'baseline',
   description: 'Create a new baseline tracking file',
   options: baselineOptions,
+  worksWithNatures: {DartProjectFolder},
   supportsProjectTraversal: true,
   examples: [
     'testkit :baseline',
@@ -143,6 +144,7 @@ const testCommand = CommandDefinition(
   name: 'test',
   description: 'Run tests and append results to the tracking file',
   options: testOptions,
+  worksWithNatures: {DartProjectFolder},
   supportsProjectTraversal: true,
   examples: [
     'testkit :test',
@@ -156,6 +158,7 @@ const runsCommand = CommandDefinition(
   name: 'runs',
   description: 'List run timestamps in the tracking file',
   options: analysisOptions,
+  worksWithNatures: {DartProjectFolder},
   supportsProjectTraversal: true,
 );
 
@@ -163,6 +166,7 @@ const statusCommand = CommandDefinition(
   name: 'status',
   description: 'Quick summary — pass/fail counts, regressions/fixes',
   options: analysisOptions,
+  worksWithNatures: {DartProjectFolder},
   supportsProjectTraversal: true,
 );
 
@@ -170,6 +174,7 @@ const basediffCommand = CommandDefinition(
   name: 'basediff',
   description: 'Diff baseline vs latest run',
   options: diffOptions,
+  worksWithNatures: {DartProjectFolder},
   supportsProjectTraversal: true,
 );
 
@@ -177,6 +182,7 @@ const lastdiffCommand = CommandDefinition(
   name: 'lastdiff',
   description: 'Diff previous run vs latest run',
   options: diffOptions,
+  worksWithNatures: {DartProjectFolder},
   supportsProjectTraversal: true,
 );
 
@@ -184,6 +190,7 @@ const diffCommand = CommandDefinition(
   name: 'diff',
   description: 'Diff two arbitrary runs by timestamp',
   options: diffOptions,
+  worksWithNatures: {DartProjectFolder},
   supportsProjectTraversal: true,
   examples: ['testkit :diff 0211_1430', 'testkit :diff 0211_1430 0212_0900'],
 );
@@ -192,6 +199,7 @@ const historyCommand = CommandDefinition(
   name: 'history',
   description: 'Show all results for a test across runs',
   options: analysisOptions,
+  worksWithNatures: {DartProjectFolder},
   supportsProjectTraversal: true,
   examples: ['testkit :history "parser"', 'testkit :history ID001'],
 );
@@ -200,6 +208,7 @@ const flakyCommand = CommandDefinition(
   name: 'flaky',
   description: 'List tests with inconsistent results',
   options: analysisOptions,
+  worksWithNatures: {DartProjectFolder},
   supportsProjectTraversal: true,
 );
 
@@ -208,6 +217,7 @@ const crossreferenceCommand = CommandDefinition(
   description: 'Map tests to source files',
   aliases: ['crossref', 'xref'],
   options: analysisOptions,
+  worksWithNatures: {DartProjectFolder},
   supportsProjectTraversal: true,
 );
 
@@ -216,6 +226,7 @@ const trimCommand = CommandDefinition(
   name: 'trim',
   description: 'Keep only the last N runs',
   options: trimOptions,
+  worksWithNatures: {DartProjectFolder},
   supportsProjectTraversal: true,
   examples: ['testkit :trim 5', 'testkit :trim 10 -r'],
 );
@@ -224,6 +235,7 @@ const resetCommand = CommandDefinition(
   name: 'reset',
   description: 'Delete all tracking files',
   options: resetOptions,
+  worksWithNatures: {DartProjectFolder},
   supportsProjectTraversal: true,
   examples: ['testkit :reset', 'testkit :reset --force'],
 );

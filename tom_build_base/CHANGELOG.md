@@ -11,6 +11,14 @@
 
 - **`handleSpecialCommands()`** — New utility function for tools to handle `help` and `version` commands consistently without custom parsing.
 
+- **`BuildOrderComputer`** — Topological sort (Kahn's algorithm) moved from tom_build_kit to tom_build_base. Available for any tool that needs dependency-ordered traversal.
+
+### Breaking Changes
+
+- **Nature filtering is now mandatory** — `BuildBase.traverse()` throws `ArgumentError` if neither `requiredNatures` nor `worksWithNatures` is configured. Previously, `null` `requiredNatures` silently visited all folders. Tools that want all folders must now set `requiredNatures: {FsFolder}` or `worksWithNatures: {FsFolder}` explicitly.
+
+- **ToolRunner validates nature config** — `ToolRunner._runWithTraversal()` returns `ToolResult.failure` with an error message before traversal starts if no nature configuration is present on the command.
+
 ### Bug Fixes
 
 - **Nature detection before filter application** — Fixed `BuildBase.traverse()` to detect folder natures before applying project filters. Previously, `applyProjectFilters()` was called before `detectNatures()`, causing ID/name-based `--project` matching to always fail.
