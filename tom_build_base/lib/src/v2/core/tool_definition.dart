@@ -136,6 +136,18 @@ class ToolDefinition {
   /// Footer text for help output.
   final String? helpFooter;
 
+  /// Nature types that ALL must be present on a folder for the tool to run.
+  ///
+  /// Used for singleCommand tools where there is no [CommandDefinition].
+  /// If non-empty, [worksWithNatures] is ignored.
+  final Set<Type>? requiredNatures;
+
+  /// Nature types where at least ONE must be present on a folder.
+  ///
+  /// Used for singleCommand tools where there is no [CommandDefinition].
+  /// Only used when [requiredNatures] is null or empty.
+  final Set<Type> worksWithNatures;
+
   const ToolDefinition({
     required this.name,
     required this.description,
@@ -146,6 +158,8 @@ class ToolDefinition {
     this.commands = const [],
     this.defaultCommand,
     this.helpFooter,
+    this.requiredNatures,
+    this.worksWithNatures = const {},
   });
 
   /// Find command by name, alias, or unambiguous prefix.

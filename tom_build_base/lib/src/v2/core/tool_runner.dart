@@ -304,8 +304,10 @@ class ToolRunner {
 
     // Validate nature configuration — every traversal command must declare
     // its nature requirements. Use FsFolder to traverse all folders.
-    final reqNatures = cmd?.requiredNatures;
-    final workNatures = cmd?.worksWithNatures ?? const <Type>{};
+    // For singleCommand tools (cmd == null), fall back to tool-level natures.
+    final reqNatures = cmd?.requiredNatures ?? tool.requiredNatures;
+    final workNatures =
+        cmd?.worksWithNatures ?? (cmd == null ? tool.worksWithNatures : const <Type>{});
     final hasRequired = reqNatures != null && reqNatures.isNotEmpty;
     final hasWorksWith = workNatures.isNotEmpty;
     if (!hasRequired && !hasWorksWith) {

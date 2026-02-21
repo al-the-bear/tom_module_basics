@@ -38,6 +38,7 @@ class BuildSorterExecutor extends CommandExecutor {
     final projectPaths = <String>[];
     await BuildBase.traverse(
       info: traversalInfo,
+      worksWithNatures: {DartProjectFolder},
       run: (context) async {
         if (File('${context.path}/pubspec.yaml').existsSync()) {
           projectPaths.add(context.path);

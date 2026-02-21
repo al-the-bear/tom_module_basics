@@ -66,6 +66,7 @@ class BumpVersionExecutor extends CommandExecutor {
       print('Projects with pubspec.yaml:');
       await BuildBase.traverse(
         info: traversalInfo,
+        worksWithNatures: {DartProjectFolder},
         run: (context) async {
           if (File('${context.path}/pubspec.yaml').existsSync()) {
             print('  ${context.relativePath}');
@@ -83,6 +84,7 @@ class BumpVersionExecutor extends CommandExecutor {
 
     await BuildBase.traverse(
       info: traversalInfo,
+      worksWithNatures: {DartProjectFolder},
       run: (context) async {
         final pubspecFile = File('${context.path}/pubspec.yaml');
         if (!pubspecFile.existsSync()) {
@@ -147,6 +149,7 @@ class BumpVersionExecutor extends CommandExecutor {
       final versionerExecutor = VersionerExecutor();
       await BuildBase.traverse(
         info: traversalInfo,
+        worksWithNatures: {DartProjectFolder},
         run: (context) async {
           final result = await versionerExecutor.execute(context, args);
           return result.success;

@@ -3,6 +3,7 @@ import 'dart:io';
 import '../folder/fs_folder.dart';
 import '../folder/run_folder.dart';
 import '../folder/natures/dart_project_folder.dart';
+import '../folder/natures/git_folder.dart';
 import 'build_order.dart';
 import 'command_context.dart';
 import 'filter_pipeline.dart';
@@ -328,9 +329,8 @@ abstract class BuildBase {
 
     return traverse(
       info: info,
+      worksWithNatures: {DartProjectFolder},
       run: run,
-      // Note: Using runtime type checking in the callback instead of requiredNatures
-      // because DartProjectFolder is abstract
     );
   }
 
@@ -348,6 +348,6 @@ abstract class BuildBase {
       skipModules: skipModules ?? [],
     );
 
-    return traverse(info: info, run: run);
+    return traverse(info: info, worksWithNatures: {GitFolder}, run: run);
   }
 }
