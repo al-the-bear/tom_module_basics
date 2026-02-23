@@ -78,7 +78,9 @@ class GotoExecutor extends CommandExecutor {
     final discovery = ProjectDiscovery(verbose: verbose);
 
     for (final anchor in anchors) {
-      stderr.writeln('Goto: scanning $anchor');
+      if (verbose) {
+        stderr.writeln('Goto: scanning $anchor');
+      }
 
       try {
         final results = await discovery.resolveProjectPatterns(
