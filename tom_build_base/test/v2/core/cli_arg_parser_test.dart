@@ -27,7 +27,7 @@ void main() {
         expect(args.innerFirstGit, isFalse);
         expect(args.outerFirstGit, isFalse);
         expect(args.topRepo, isFalse);
-        expect(args.buildOrder, isFalse);
+        expect(args.buildOrder, isTrue);
         expect(args.workspaceRecursion, isFalse);
         expect(args.verbose, isFalse);
         expect(args.dryRun, isFalse);

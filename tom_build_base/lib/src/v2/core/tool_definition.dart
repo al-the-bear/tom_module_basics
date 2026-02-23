@@ -265,9 +265,11 @@ class ToolDefinition {
       );
     }
 
+    // Deduplicate by name, keeping first occurrence so user-defined
+    // globalOptions take precedence over commonOptions defaults.
     final deduped = <String, OptionDefinition>{};
     for (final option in result) {
-      deduped[option.name] = option;
+      deduped.putIfAbsent(option.name, () => option);
     }
 
     return deduped.values.toList();

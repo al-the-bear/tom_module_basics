@@ -100,9 +100,9 @@ class CompletionGenerator {
     for (final opt in tool.allGlobalOptions) {
       final desc = opt.description.replaceAll("'", "\\'");
       if (opt.abbr != null) {
-        buf.writeln("  '-${opt.abbr}[${desc}]'");
+        buf.writeln("  '-${opt.abbr}[$desc]'");
       }
-      buf.writeln("  '--${opt.name}[${desc}]'");
+      buf.writeln("  '--${opt.name}[$desc]'");
     }
     buf.writeln(')');
     buf.writeln('');
@@ -131,9 +131,9 @@ class CompletionGenerator {
       for (final opt in cmd.allOptions) {
         final desc = opt.description.replaceAll("'", "\\'");
         if (opt.abbr != null) {
-          buf.writeln("            '-${opt.abbr}[${desc}]'");
+          buf.writeln("            '-${opt.abbr}[$desc]'");
         }
-        buf.writeln("            '--${opt.name}[${desc}]'");
+        buf.writeln("            '--${opt.name}[$desc]'");
       }
       buf.writeln('          )');
       buf.writeln('          _describe -t options "options" ${cmd.name}_opts');
@@ -174,7 +174,7 @@ class CompletionGenerator {
     buf.writeln('# Global options');
     for (final opt in tool.allGlobalOptions) {
       final short = opt.abbr != null ? '-s ${opt.abbr} ' : '';
-      buf.writeln('complete -c $name ${short}-l ${opt.name} -d "${opt.description}"');
+      buf.writeln('complete -c $name $short-l ${opt.name} -d "${opt.description}"');
     }
     buf.writeln('');
 
@@ -183,7 +183,7 @@ class CompletionGenerator {
       buf.writeln('# :${cmd.name} options');
       for (final opt in cmd.options) {
         final short = opt.abbr != null ? '-s ${opt.abbr} ' : '';
-        buf.writeln('complete -c $name -n "__fish_seen_subcommand_from :${cmd.name}" ${short}-l ${opt.name} -d "${opt.description}"');
+        buf.writeln('complete -c $name -n "__fish_seen_subcommand_from :${cmd.name}" $short-l ${opt.name} -d "${opt.description}"');
       }
       buf.writeln('');
     }

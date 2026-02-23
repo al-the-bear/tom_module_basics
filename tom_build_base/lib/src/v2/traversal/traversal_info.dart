@@ -61,6 +61,10 @@ class ProjectTraversalInfo extends BaseTraversalInfo {
   /// Sort by dependency order (based on pubspec.yaml dependencies).
   final bool buildOrder;
 
+  /// When true, ignore workspace boundaries and *_skip.yaml markers.
+  /// Activated by `--all` / `-a`.
+  final bool ignoreSkipMarkers;
+
   const ProjectTraversalInfo({
     required super.executionRoot,
     super.excludePatterns,
@@ -72,6 +76,7 @@ class ProjectTraversalInfo extends BaseTraversalInfo {
     this.projectPatterns = const [],
     this.excludeProjects = const [],
     this.buildOrder = true,
+    this.ignoreSkipMarkers = false,
   });
 
   @override
@@ -86,6 +91,7 @@ class ProjectTraversalInfo extends BaseTraversalInfo {
     List<String>? projectPatterns,
     List<String>? excludeProjects,
     bool? buildOrder,
+    bool? ignoreSkipMarkers,
   }) {
     return ProjectTraversalInfo(
       executionRoot: executionRoot ?? this.executionRoot,
@@ -98,6 +104,7 @@ class ProjectTraversalInfo extends BaseTraversalInfo {
       projectPatterns: projectPatterns ?? this.projectPatterns,
       excludeProjects: excludeProjects ?? this.excludeProjects,
       buildOrder: buildOrder ?? this.buildOrder,
+      ignoreSkipMarkers: ignoreSkipMarkers ?? this.ignoreSkipMarkers,
     );
   }
 

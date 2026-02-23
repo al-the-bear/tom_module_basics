@@ -247,7 +247,10 @@ abstract class BuildBase {
     ProjectTraversalInfo info, {
     bool verbose = false,
   }) async {
-    final scanner = FolderScanner(verbose: verbose);
+    final scanner = FolderScanner(
+      verbose: verbose,
+      ignoreSkipMarkers: info.ignoreSkipMarkers,
+    );
     return await scanner.scan(
       info.scan,
       recursive: info.recursive,

@@ -19,17 +19,22 @@ class NatureDetector {
 
     if (_isGitFolder(folder.path)) natures.add(_createGitNature(folder));
     if (_isDartProject(folder.path)) natures.add(_createDartNature(folder));
-    if (_isVsCodeExtension(folder.path))
+    if (_isVsCodeExtension(folder.path)) {
       natures.add(_createVsCodeNature(folder));
-    if (_isTypeScriptProject(folder.path))
+    }
+    if (_isTypeScriptProject(folder.path)) {
       natures.add(_createTypeScriptNature(folder));
-    if (_hasBuildkitYaml(folder.path))
+    }
+    if (_hasBuildkitYaml(folder.path)) {
       natures.add(_createBuildkitNature(folder));
+    }
     if (_hasBuildYaml(folder.path)) natures.add(BuildRunnerFolder(folder));
-    if (_hasTomProjectYaml(folder.path))
+    if (_hasTomProjectYaml(folder.path)) {
       natures.add(_createTomProjectNature(folder));
-    if (_hasTomMasterYaml(folder.path))
+    }
+    if (_hasTomMasterYaml(folder.path)) {
       natures.add(TomBuildMasterFolder(folder));
+    }
 
     return natures;
   }
@@ -268,14 +273,16 @@ class NatureDetector {
 
   List<String> _detectFlutterPlatforms(String path) {
     final platforms = <String>[];
-    if (Directory(p.join(path, 'android')).existsSync())
+    if (Directory(p.join(path, 'android')).existsSync()) {
       platforms.add('android');
+    }
     if (Directory(p.join(path, 'ios')).existsSync()) platforms.add('ios');
     if (Directory(p.join(path, 'web')).existsSync()) platforms.add('web');
     if (Directory(p.join(path, 'linux')).existsSync()) platforms.add('linux');
     if (Directory(p.join(path, 'macos')).existsSync()) platforms.add('macos');
-    if (Directory(p.join(path, 'windows')).existsSync())
+    if (Directory(p.join(path, 'windows')).existsSync()) {
       platforms.add('windows');
+    }
     return platforms;
   }
 

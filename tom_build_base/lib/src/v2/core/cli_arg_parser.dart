@@ -98,6 +98,7 @@ class CliArgs {
   final String? configPath;
   final bool help;
   final bool version;
+  final bool all;
 
   // Test project options
   final bool includeTestProjects;
@@ -139,6 +140,7 @@ class CliArgs {
     this.configPath,
     this.help = false,
     this.version = false,
+    this.all = false,
     this.includeTestProjects = false,
     this.testProjectsOnly = false,
     this.positionalArgs = const [],
@@ -203,6 +205,7 @@ class CliArgs {
       buildOrder: buildOrder,
       includeTestProjects: includeTestProjects,
       testProjectsOnly: testProjectsOnly,
+      ignoreSkipMarkers: all,
     );
   }
 
@@ -509,6 +512,10 @@ class CliArgParser {
       case 'V':
         state.version = true;
         break;
+      case 'all':
+      case 'a':
+        state.all = true;
+        break;
       case 'include-test-projects':
         state.includeTestProjects = true;
         break;
@@ -587,6 +594,7 @@ class CliArgParser {
       'f': 'force',
       'h': 'help',
       'V': 'version',
+      'a': 'all',
     };
     if (mapping.containsKey(short)) return mapping[short]!;
 
@@ -712,6 +720,7 @@ class _ParseState {
   String? configPath;
   bool help = false;
   bool version = false;
+  bool all = false;
   bool includeTestProjects = false;
   bool testProjectsOnly = false;
   final List<String> positionalArgs = [];
@@ -749,6 +758,7 @@ class _ParseState {
       configPath: configPath,
       help: help,
       version: version,
+      all: all,
       includeTestProjects: includeTestProjects,
       testProjectsOnly: testProjectsOnly,
       positionalArgs: positionalArgs,

@@ -21,7 +21,7 @@ void main() {
         expect(info.recursionExclude, isEmpty);
         expect(info.projectPatterns, isEmpty);
         expect(info.excludeProjects, isEmpty);
-        expect(info.buildOrder, isFalse);
+        expect(info.buildOrder, isTrue);
         expect(info.excludePatterns, isEmpty);
         expect(info.includeTestProjects, isFalse);
         expect(info.testProjectsOnly, isFalse);

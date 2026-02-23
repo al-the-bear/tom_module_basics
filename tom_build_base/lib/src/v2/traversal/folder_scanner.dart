@@ -30,11 +30,20 @@ class FolderScanner {
   /// Whether to print verbose messages for skipped directories.
   final bool verbose;
 
+  /// When true, ignore all skip markers (workspace boundaries, *_skip.yaml)
+  /// and traverse into everything. Activated by `--all` / `-a`.
+  final bool ignoreSkipMarkers;
+
   /// Create a FolderScanner.
   ///
   /// [toolBasename] - Tool name for tool-specific skip files. Defaults to 'buildkit'.
-  /// [verbose] - If true, print messages when directories are skipped.
-  FolderScanner({this.toolBasename = 'buildkit', this.verbose = false});
+  /// [verbose] - If true, print extra messages.
+  /// [ignoreSkipMarkers] - If true, traverse into skipped folders anyway.
+  FolderScanner({
+    this.toolBasename = 'buildkit',
+    this.verbose = false,
+    this.ignoreSkipMarkers = false,
+  });
 
   /// Tool-specific skip filename.
   String get skipFilename => '${toolBasename}_skip.yaml';
@@ -78,17 +87,18 @@ class FolderScanner {
     final skipMarker = !isRoot ? _getSkipMarker(dir.path) : null;
     
     if (skipMarker != null) {
-      // Any skip marker (workspace boundary, global skip, or tool skip)
-      // means we should NOT include this folder and NOT descend further.
-      if (verbose) {
-        final skipFile = switch (skipMarker) {
-          _SkipType.globalSkip => kTomSkipYaml,
-          _SkipType.toolSkip => skipFilename,
-          _SkipType.workspaceBoundary => '${toolBasename}_master.yaml',
-        };
-        print('Skipping ($skipFile): ${p.basename(dir.path)}');
+      final folderName = p.basename(dir.path);
+      // Always print skip messages to stderr so the user knows what's excluded.
+      switch (skipMarker) {
+        case _SkipType.workspaceBoundary:
+          stderr.writeln('Skipping subworkspace: $folderName');
+        case _SkipType.globalSkip:
+          stderr.writeln('Skipping - $kTomSkipYaml found: $folderName');
+        case _SkipType.toolSkip:
+          stderr.writeln('Skipping - $skipFilename found: $folderName');
       }
-      return;
+      // When --all is active, continue into skipped folders instead of returning.
+      if (!ignoreSkipMarkers) return;
     }
     
     // No skip marker — add this directory
