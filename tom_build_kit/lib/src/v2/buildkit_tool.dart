@@ -471,6 +471,9 @@ const dcliOptions = <OptionDefinition>[
   ),
 ];
 
+/// Options for goto command.
+const gotoOptions = <OptionDefinition>[];
+
 /// Options for define command.
 const defineOptions = <OptionDefinition>[];
 
@@ -965,6 +968,24 @@ const gitrebaseCommand = CommandDefinition(
 // Command Definitions - Other
 // =============================================================================
 
+const gotoCommand = CommandDefinition(
+  name: 'goto',
+  description: 'Resolve project by name/ID/folder and print its path',
+  aliases: ['go', 'cdp'],
+  options: gotoOptions,
+  worksWithNatures: {DartProjectFolder},
+  requiresTraversal: false,
+  supportsProjectTraversal: false,
+  supportsGitTraversal: false,
+  canRunStandalone: true,
+  examples: [
+    'buildkit :goto tom_build_kit',
+    'buildkit :goto buildkit',
+    'buildkit :goto Tom Build Kit',
+    r'cdp() { local d; d="$(buildkit :goto "$@")" && cd "$d"; }',
+  ],
+);
+
 const dcliCommand = CommandDefinition(
   name: 'dcli',
   description: 'Execute Dart scripts via dcli',
@@ -1078,6 +1099,7 @@ final buildkitTool = ToolDefinition(
     gitsquashCommand,
     gitrebaseCommand,
     // Other
+    gotoCommand,
     dcliCommand,
     defineCommand,
     undefineCommand,
