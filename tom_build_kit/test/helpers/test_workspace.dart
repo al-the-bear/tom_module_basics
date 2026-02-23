@@ -531,7 +531,7 @@ class TestWorkspace {
         .map((line) => line.trim())
         .where((line) => line.isNotEmpty)
         // Exclude submodule pointer changes — they don't affect tests
-        .where((line) => !RegExp(r'^\s*M\s+xternal/').hasMatch(line))
+        .where((line) => !RegExp(r'^\s*[Mm]\s+xternal/').hasMatch(line))
         .toList();
   }
 
