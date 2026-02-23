@@ -67,7 +67,11 @@ class GotoExecutor extends CommandExecutor {
     final verbose = args.verbose;
 
     // Collect anchors from startDir upward.
-    final anchors = _collectAnchors(startDir, verbose: verbose);
+    final walker = AnchorWalker(
+      verbose: verbose,
+      log: (msg) => stderr.writeln('  $msg'),
+    );
+    final anchors = walker.collectAnchors(startDir);
 
     if (anchors.isEmpty) {
       // No anchors found at all — use startDir itself as the only candidate.
@@ -116,52 +120,5 @@ class GotoExecutor extends CommandExecutor {
 
     stderr.writeln('Project not found: $searchTerm');
     return ToolResult.failure('Project not found: $searchTerm');
-  }
-
-  /// Walk up from [startDir] collecting anchor directories.
-  ///
-  /// An **anchor** is a directory that contains:
-  /// - `.git` (directory or file — submodules use a file)
-  /// - `buildkit_master.yaml`
-  ///
-  /// Returns anchors ordered closest-first (starting directory first).
-  /// Stops at the filesystem root or on permission errors.
-  static List<String> _collectAnchors(String startDir, {bool verbose = false}) {
-    final anchors = <String>[];
-    var current = p.normalize(p.absolute(startDir));
-    final root = p.rootPrefix(current);
-
-    while (current != root) {
-      try {
-        if (_isAnchor(current)) {
-          anchors.add(current);
-        }
-      } on FileSystemException {
-        // Permission denied or other OS error — treat as boundary.
-        if (verbose) {
-          stderr.writeln('  (stopped: permission denied at $current)');
-        }
-        break;
-      }
-      current = p.dirname(current);
-    }
-
-    // Also check the filesystem root itself.
-    try {
-      if (_isAnchor(root)) {
-        anchors.add(root);
-      }
-    } on FileSystemException {
-      // Ignore.
-    }
-
-    return anchors;
-  }
-
-  /// Whether [dir] is an anchor directory.
-  static bool _isAnchor(String dir) {
-    return Directory(p.join(dir, '.git')).existsSync() ||
-        File(p.join(dir, '.git')).existsSync() ||
-        File(p.join(dir, 'buildkit_master.yaml')).existsSync();
   }
 }

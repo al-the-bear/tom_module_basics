@@ -1,3 +1,9 @@
+## 1.14.0
+
+### Features
+
+- **`AnchorWalker` class** — New utility for walking up the directory tree to find workspace/repository root "anchor" directories. Anchors are identified by `.git` (directory or file), `tom_workspace.yaml`, or `buildkit_master.yaml` markers. Enables reusable upward-search logic for tools like `goto`.
+
 ## 1.13.0
 
 ### Features
