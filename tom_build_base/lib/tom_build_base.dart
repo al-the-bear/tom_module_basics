@@ -6,8 +6,7 @@
 /// ## Features
 ///
 /// - Unified `tom_build.yaml` configuration loading
-/// - Project directory traversal with glob pattern support
-/// - Unified project navigation via [ProjectNavigator]
+/// - Workspace root detection via [findWorkspaceRoot]
 /// - Path containment validation
 /// - Processing result tracking
 ///
@@ -22,12 +21,8 @@
 ///   toolKey: 'dartgen',
 /// );
 ///
-/// // Use ProjectNavigator for unified navigation
-/// final navigator = ProjectNavigator(
-///   config: NavigationConfig.all(),
-///   verbose: true,
-/// );
-/// final result = await navigator.navigate(navArgs, basePath: root);
+/// // Find workspace root
+/// final wsRoot = findWorkspaceRoot(Directory.current.path);
 ///
 /// // Check if build.yaml defines a builder (should be ignored by CLI tools)
 /// if (isBuildYamlBuilderDefinition(projectPath)) {
@@ -44,13 +39,15 @@ export 'src/config_loader.dart';
 export 'src/config_merger.dart';
 export 'src/path_utils.dart';
 export 'src/processing_result.dart';
-export 'src/project_discovery.dart';
-export 'src/project_navigator.dart';
-export 'src/project_scanner.dart';
 export 'src/tool_logging.dart';
-export 'src/workspace_mode.dart';
 export 'src/yaml_utils.dart';
 export 'src/show_versions.dart';
+
+// V2 workspace utilities (constants, findWorkspaceRoot)
+export 'src/v2/workspace_utils.dart';
+
+// V2 navigation bridge (ArgParser integration)
+export 'src/v2/navigation_bridge.dart';
 
 // V2 traversal API
 export 'src/v2/folder/fs_folder.dart';

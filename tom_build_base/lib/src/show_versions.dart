@@ -1,4 +1,8 @@
+import 'dart:io';
+
 import 'package:dcli/dcli.dart';
+import 'package:glob/glob.dart';
+import 'package:glob/list_local_fs.dart';
 import 'package:path/path.dart' as p;
 import 'package:yaml/yaml.dart';
 
@@ -57,8 +61,7 @@ class ShowVersionsOptions {
 ///
 ///   • [TomBuildConfig] — loading and merging workspace / project config
 ///   • [ConfigMerger] — additive exclude-list merging
-///   • [ProjectScanner] — directory-walk with custom validation
-///   • [ProjectDiscovery] — glob-based project resolution
+///   • Directory scanning — recursive project discovery
 ///   • build.yaml utilities — skipping builder-definition packages
 ///   • Path utilities — containment validation
 ///   • [ProcessingResult] — batch success / failure tracking
@@ -113,36 +116,23 @@ Future<ShowVersionsResult> showVersions(ShowVersionsOptions options) async {
   List<String> projectPaths;
 
   if (config.projects.isNotEmpty) {
-    // Glob-based discovery via ProjectDiscovery
-    final discovery = ProjectDiscovery(
+    // Glob-based discovery
+    projectPaths = await _resolveGlobPatterns(
+      config.projects,
+      basePath: basePath,
+      projectFilter: (path) => !isBuildYamlBuilderDefinition(path),
       verbose: effectiveVerbose,
       log: (msg) => log('[discovery] $msg'),
     );
-
-    projectPaths = await discovery.resolveProjectPatterns(
-      config.projects.join(','),
-      basePath: basePath,
-      projectFilter: (path) => !isBuildYamlBuilderDefinition(path),
-    );
-    log('ProjectDiscovery found ${projectPaths.length} projects (glob)');
+    log('Glob discovery found ${projectPaths.length} projects');
   } else {
-    // ProjectScanner — recursive directory scan with custom validator
-    final scanner = ProjectScanner(
-      toolKey: toolKey,
-      basePath: basePath,
-      verbose: effectiveVerbose,
-      log: (msg) => log('[scanner] $msg'),
-      projectValidator: (dirPath, _) =>
-          exists(p.join(dirPath, 'pubspec.yaml')),
-    );
-
-    projectPaths = scanner.scanForProjects(basePath, mergedExclude);
-    log('ProjectScanner found ${projectPaths.length} projects (scan)');
+    // Recursive directory scan
+    projectPaths = _scanForProjects(basePath, verbose: effectiveVerbose);
+    log('Directory scan found ${projectPaths.length} projects');
   }
 
   // Apply exclusions
-  final scanner = ProjectScanner(toolKey: toolKey, basePath: basePath);
-  projectPaths = scanner.applyExclusions(projectPaths, mergedExclude);
+  projectPaths = _applyExclusions(projectPaths, mergedExclude, basePath);
 
   log('After exclusions: ${projectPaths.length} projects');
 
@@ -212,4 +202,127 @@ String? readPubspecVersion(String projectPath) {
   } catch (_) {
     return null;
   }
+}
+
+// =============================================================================
+// Internal helpers (replacing deleted v1 ProjectDiscovery / ProjectScanner)
+// =============================================================================
+
+/// Directories to always skip during scanning.
+const _alwaysSkipDirectories = {
+  '.dart_tool',
+  '.git',
+  '.idea',
+  '.vscode',
+  'build',
+  'node_modules',
+  'coverage',
+  '.pub-cache',
+  '.pub',
+  '__pycache__',
+};
+
+/// Resolve glob patterns to a list of project paths.
+Future<List<String>> _resolveGlobPatterns(
+  List<String> patterns, {
+  required String basePath,
+  bool Function(String)? projectFilter,
+  bool verbose = false,
+  void Function(String)? log,
+}) async {
+  final results = <String>[];
+  final seen = <String>{};
+
+  for (final pattern in patterns) {
+    final trimmed = pattern.trim();
+    if (trimmed.isEmpty) continue;
+
+    try {
+      final glob = Glob(trimmed);
+      await for (final entity in glob.list(root: basePath)) {
+        if (entity is Directory) {
+          final path = p.normalize(p.absolute(entity.path));
+          if (File(p.join(path, 'pubspec.yaml')).existsSync() &&
+              (projectFilter == null || projectFilter(path)) &&
+              !seen.contains(path)) {
+            seen.add(path);
+            results.add(path);
+          }
+        }
+      }
+    } catch (e) {
+      if (verbose) {
+        log?.call('Warning: Error resolving glob "$trimmed": $e');
+      }
+    }
+  }
+
+  return results;
+}
+
+/// Scan a directory recursively for Dart projects (containing pubspec.yaml).
+List<String> _scanForProjects(String basePath, {bool verbose = false}) {
+  final projects = <String>[];
+  final baseDir = Directory(basePath);
+  if (!baseDir.existsSync()) return projects;
+
+  try {
+    for (final entity in baseDir.listSync(recursive: true)) {
+      if (entity is! File) continue;
+      if (p.basename(entity.path) != 'pubspec.yaml') continue;
+
+      final dirPath = p.dirname(entity.path);
+      final dirName = p.basename(dirPath);
+
+      // Skip hidden and non-project directories
+      final parts = p.split(p.relative(dirPath, from: basePath));
+      if (parts.any(
+        (part) => part.startsWith('.') || _alwaysSkipDirectories.contains(part),
+      )) {
+        continue;
+      }
+
+      // Skip directories that aren't useful project candidates
+      if (dirName.startsWith('.')) continue;
+
+      projects.add(p.normalize(p.absolute(dirPath)));
+    }
+  } catch (e) {
+    if (verbose) {
+      // ignore: avoid_print
+      print('Warning: Error scanning $basePath: $e');
+    }
+  }
+
+  return projects;
+}
+
+/// Apply exclusion patterns to a list of project paths.
+List<String> _applyExclusions(
+  List<String> projectPaths,
+  List<String> excludePatterns,
+  String basePath,
+) {
+  if (excludePatterns.isEmpty) return projectPaths;
+
+  final globs = excludePatterns
+      .map((pattern) {
+        try {
+          return Glob(pattern);
+        } catch (_) {
+          return null;
+        }
+      })
+      .whereType<Glob>()
+      .toList();
+
+  if (globs.isEmpty) return projectPaths;
+
+  return projectPaths.where((projectPath) {
+    final relative = p.relative(projectPath, from: basePath);
+    final dirName = p.basename(projectPath);
+    return !globs.any(
+      (glob) => glob.matches(relative) || glob.matches(dirName),
+    );
+  }).toList();
 }

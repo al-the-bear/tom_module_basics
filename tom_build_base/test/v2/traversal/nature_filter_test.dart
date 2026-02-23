@@ -14,7 +14,6 @@ library;
 
 import 'dart:io';
 
-import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 import 'package:tom_build_base/tom_build_base_v2.dart';
 

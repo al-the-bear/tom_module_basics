@@ -13,7 +13,6 @@
 
 import 'dart:io';
 
-import 'package:args/args.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 import 'package:tom_build_base/tom_build_base.dart';
@@ -438,73 +437,6 @@ deploy:
 
         expect(deployConfig?['target'], 'staging');
         expect(deployConfig?['region'], 'us-west-2');
-      });
-    });
-
-    group('CLI Mode Override', () {
-      test('spec: --modes option parsed correctly', () {
-        final parser = ArgParser();
-        addNavigationOptions(parser);
-
-        final results = parser.parse(['--modes=DEV,CI']);
-        final navArgs = parseNavigationArgs(results);
-
-        expect(navArgs.modes, ['DEV', 'CI']);
-      });
-
-      test('spec: --modes= (empty) means no modes', () {
-        final parser = ArgParser();
-        addNavigationOptions(parser);
-
-        final results = parser.parse(['--modes=']);
-        final navArgs = parseNavigationArgs(results);
-
-        expect(navArgs.modes, isEmpty);
-      });
-
-      test('spec: modes are case-insensitive (uppercased)', () {
-        final parser = ArgParser();
-        addNavigationOptions(parser);
-
-        final results = parser.parse(['--modes=dev,ci,Prod']);
-        final navArgs = parseNavigationArgs(results);
-
-        expect(navArgs.modes, ['DEV', 'CI', 'PROD']);
-      });
-    });
-
-    group('Project Navigation with Modes', () {
-      test('spec: ProjectNavigator passes toolBasename for skip files', () async {
-        // Create project structure with skip files
-        final proj1 = p.join(workspaceRoot, 'proj1');
-        final proj2 = p.join(workspaceRoot, 'proj2');
-        final proj3 = p.join(workspaceRoot, 'proj3');
-        Directory(proj1).createSync();
-        Directory(proj2).createSync();
-        Directory(proj3).createSync();
-        File(p.join(proj1, 'pubspec.yaml')).writeAsStringSync('name: proj1');
-        File(p.join(proj2, 'pubspec.yaml')).writeAsStringSync('name: proj2');
-        File(p.join(proj3, 'pubspec.yaml')).writeAsStringSync('name: proj3');
-
-        // proj2 skipped for minitool only
-        File(p.join(proj2, 'minitool_skip.yaml')).writeAsStringSync('');
-
-        final navigator = ProjectNavigator(
-          config: const NavigationConfig.all(),
-          toolBasename: 'minitool',
-        );
-
-        final navArgs = WorkspaceNavigationArgs(
-          scan: '.',
-          recursive: true,
-        );
-
-        final result = await navigator.navigate(navArgs, basePath: workspaceRoot);
-
-        // proj2 should be skipped
-        expect(result.paths.any((p) => p.endsWith('proj1')), true);
-        expect(result.paths.any((p) => p.endsWith('proj2')), false);
-        expect(result.paths.any((p) => p.endsWith('proj3')), true);
       });
     });
 

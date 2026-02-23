@@ -21,8 +21,9 @@ library;
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
-import 'package:tom_build_base/tom_build_base.dart';
 import 'package:tom_build_base/tom_build_base_v2.dart';
+
+import 'project_resolver.dart';
 
 /// Executor for the `:findproject` command.
 ///
@@ -79,7 +80,10 @@ class FindProjectExecutor extends CommandExecutor {
     }
 
     // Try each anchor, closest first.
-    final discovery = ProjectDiscovery(verbose: verbose);
+    final resolver = ProjectResolver(
+      verbose: verbose,
+      log: (msg) => stderr.writeln('  $msg'),
+    );
 
     for (final anchor in anchors) {
       if (verbose) {
@@ -87,7 +91,7 @@ class FindProjectExecutor extends CommandExecutor {
       }
 
       try {
-        final results = await discovery.resolveProjectPatterns(
+        final results = await resolver.resolveProjectPatterns(
           searchTerm,
           basePath: anchor,
         );

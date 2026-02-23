@@ -85,6 +85,36 @@ class RunnerExecutor extends CommandExecutor {
       );
     }
 
+    // List mode: just print project path
+    if (args.listOnly) {
+      print('  ${p.relative(projectPath, from: context.executionRoot)}');
+      return ItemResult.success(
+        path: projectPath,
+        name: context.name,
+        message: 'listed',
+      );
+    }
+
+    // Dump config mode: show builder information
+    if (args.dumpConfig) {
+      final builders = _extractBuilders(projectPath);
+      print('  ${context.name}:');
+      print('    build.yaml: $projectPath/build.yaml');
+      if (builders.isNotEmpty) {
+        print('    builders:');
+        for (final b in builders) {
+          print('      - $b');
+        }
+      } else {
+        print('    builders: (none detected)');
+      }
+      return ItemResult.success(
+        path: projectPath,
+        name: context.name,
+        message: 'config shown',
+      );
+    }
+
     final cmdOpts = _getCmdOpts(args);
     final command = cmdOpts['command']?.toString() ?? 'build';
     final deleteConflicting = cmdOpts['delete-conflicting'] == true;

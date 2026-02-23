@@ -10,7 +10,7 @@ import 'command_executor.dart';
 import '../traversal/traversal_info.dart';
 import '../traversal/build_base.dart';
 import '../traversal/filter_pipeline.dart';
-import '../../workspace_mode.dart';
+import '../workspace_utils.dart';
 
 /// Result of running a tool or command.
 class ToolResult {

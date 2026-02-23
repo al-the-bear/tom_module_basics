@@ -146,6 +146,43 @@ class CleanupExecutor extends CommandExecutor {
       );
     }
 
+    // List mode: just print project path
+    if (args.listOnly) {
+      print('  ${p.relative(projectPath, from: context.executionRoot)}');
+      return ItemResult.success(
+        path: projectPath,
+        name: context.name,
+        message: 'listed',
+      );
+    }
+
+    // Dump config mode: show cleanup configuration
+    if (args.dumpConfig) {
+      final config = CleanupConfig.loadFromYaml(projectPath);
+      print('  ${context.name}:');
+      if (config != null && config.cleanupSections.isNotEmpty) {
+        for (final section in config.cleanupSections) {
+          print('    globs: ${section.globs.join(', ')}');
+          if (section.excludes.isNotEmpty) {
+            print('    excludes: ${section.excludes.join(', ')}');
+          }
+        }
+        if (config.globalExcludes.isNotEmpty) {
+          print('    global-excludes: ${config.globalExcludes.join(', ')}');
+        }
+        if (config.protectedFolders.isNotEmpty) {
+          print('    protected: ${config.protectedFolders.join(', ')}');
+        }
+      } else {
+        print('    cleanup: (using defaults)');
+      }
+      return ItemResult.success(
+        path: projectPath,
+        name: context.name,
+        message: 'config shown',
+      );
+    }
+
     final cmdOpts = _getCmdOpts(args);
     final force = cmdOpts['force'] == true || args.force;
     final maxFiles =

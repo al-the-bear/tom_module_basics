@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:args/args.dart';
+import 'package:glob/glob.dart';
+import 'package:glob/list_local_fs.dart';
 import 'package:path/path.dart' as p;
 import 'package:tom_build_base/tom_build_base.dart';
 
@@ -132,22 +134,14 @@ class PubGetCommand {
 
     // Determine projects to process
     final currentDir = Directory.current.path;
-    final discovery = ProjectDiscovery(verbose: isVerbose);
     List<String> projectPaths;
 
     if (scanPath != null) {
       final scanDir =
           p.isAbsolute(scanPath) ? scanPath : p.join(currentDir, scanPath);
-      projectPaths = await discovery.scanForProjects(
-        scanDir,
-        recursive: recursive,
-        toolKey: null, // Scan all projects, not just those with buildkit config
-      );
+      projectPaths = _scanForProjects(scanDir, recursive: recursive);
     } else if (projectArg != null) {
-      projectPaths = await discovery.resolveProjectPatterns(
-        projectArg,
-        basePath: currentDir,
-      );
+      projectPaths = _resolveProjectPatterns(projectArg, basePath: currentDir);
     } else {
       // Default: current directory
       projectPaths = [currentDir];
@@ -325,5 +319,51 @@ class PubGetCommand {
         print('   ✗ Failed');
       }
     }
+  }
+
+  /// Scan a directory for Dart projects (directories containing pubspec.yaml).
+  List<String> _scanForProjects(String dir, {bool recursive = false}) {
+    final root = Directory(dir);
+    if (!root.existsSync()) return [];
+
+    final results = <String>[];
+    if (recursive) {
+      for (final entity in root.listSync(recursive: true)) {
+        if (entity is File && p.basename(entity.path) == 'pubspec.yaml') {
+          results.add(p.dirname(entity.path));
+        }
+      }
+    } else {
+      for (final entity in root.listSync()) {
+        if (entity is Directory) {
+          final pubspec = File(p.join(entity.path, 'pubspec.yaml'));
+          if (pubspec.existsSync()) results.add(entity.path);
+        }
+      }
+      // Also check root itself
+      final rootPubspec = File(p.join(dir, 'pubspec.yaml'));
+      if (rootPubspec.existsSync()) results.insert(0, dir);
+    }
+    return results;
+  }
+
+  /// Resolve comma-separated project patterns (globs or paths).
+  List<String> _resolveProjectPatterns(String patterns, {required String basePath}) {
+    final results = <String>[];
+    for (final pattern in patterns.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty)) {
+      if (pattern.contains('*') || pattern.contains('?') || pattern.contains('[')) {
+        final glob = Glob(pattern);
+        for (final entity in glob.listSync(root: basePath)) {
+          if (entity is Directory) {
+            final pubspec = File(p.join(entity.path, 'pubspec.yaml'));
+            if (pubspec.existsSync()) results.add(entity.path);
+          }
+        }
+      } else {
+        final resolved = p.isAbsolute(pattern) ? pattern : p.join(basePath, pattern);
+        if (Directory(resolved).existsSync()) results.add(resolved);
+      }
+    }
+    return results;
   }
 }

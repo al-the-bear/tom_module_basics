@@ -152,11 +152,11 @@ void main() {
       log.expectation('_build listed', hasBuild);
     });
 
-    test('--show displays cleanup config', () async {
-      log.start('CLN_SHW01', '--show displays cleanup config');
+    test('--dump-config displays cleanup config', () async {
+      log.start('CLN_SHW01', '--dump-config displays cleanup config');
       final result =
-          await ws.runTool('cleanup', ['--project', '_build', '--show']);
-      log.capture('cleanup --project _build --show', result);
+          await ws.runTool('cleanup', ['--project', '_build', '--dump-config']);
+      log.capture('cleanup --project _build --dump-config', result);
 
       final stdout = (result.stdout as String);
       expect(result.exitCode, equals(0));

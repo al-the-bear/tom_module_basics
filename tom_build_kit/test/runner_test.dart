@@ -79,16 +79,16 @@ void main() {
       }
     });
 
-    test('--show displays runner config and builders', () async {
-      log.start('RUN_SHW01', '--show displays runner config');
+    test('--dump-config displays runner config and builders', () async {
+      log.start('RUN_SHW01', '--dump-config displays runner config');
       final result = await ws.runTool(
-          'runner', ['--project', '_build', '--show']);
-      log.capture('runner --project _build --show', result);
+          'runner', ['--project', '_build', '--dump-config']);
+      log.capture('runner --project _build --dump-config', result);
 
       final stdout = (result.stdout as String);
       expect(result.exitCode, equals(0));
 
-      // --show should display builder information or runner config
+      // --dump-config should display builder information or runner config
       final hasRunnerInfo = stdout.contains('builder') ||
           stdout.contains('build.yaml') ||
           stdout.contains('_build') ||

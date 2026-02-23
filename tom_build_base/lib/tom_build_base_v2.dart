@@ -54,5 +54,8 @@ export 'src/v2/core/completion_generator.dart';
 export 'src/v2/core/macro_expansion.dart';
 export 'src/v2/core/special_commands.dart';
 
-// Workspace mode utilities (navigation args, options parsing)
-export 'src/workspace_mode.dart';
+// Workspace utilities (constants, findWorkspaceRoot)
+export 'src/v2/workspace_utils.dart';
+
+// Navigation bridge (ArgParser integration)
+export 'src/v2/navigation_bridge.dart';

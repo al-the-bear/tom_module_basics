@@ -127,6 +127,49 @@ class CompilerExecutor extends CommandExecutor {
       );
     }
 
+    // List mode: just print project path
+    if (args.listOnly) {
+      print('  ${p.relative(projectPath, from: context.executionRoot)}');
+      return ItemResult.success(
+        path: projectPath,
+        name: context.name,
+        message: 'listed',
+      );
+    }
+
+    // Dump config mode: show compiler configuration
+    if (args.dumpConfig) {
+      final config = _CompilerConfig.loadFromYaml(projectPath);
+      print('  ${context.name}:');
+      if (config != null) {
+        if (config.compileSections.isNotEmpty) {
+          print('    compile sections: ${config.compileSections.length}');
+          for (final section in config.compileSections) {
+            final desc = section.files.isNotEmpty
+                ? section.files.join(', ')
+                : section.commandlines.join(', ');
+            final tgt = section.targets.isNotEmpty
+                ? ' → ${section.targets.join(', ')}'
+                : '';
+            print('      - $desc$tgt');
+          }
+        }
+        if (config.precompileSections.isNotEmpty) {
+          print('    precompile: ${config.precompileSections.length} sections');
+        }
+        if (config.postcompileSections.isNotEmpty) {
+          print('    postcompile: ${config.postcompileSections.length} sections');
+        }
+      } else {
+        print('    compiler: (no config)');
+      }
+      return ItemResult.success(
+        path: projectPath,
+        name: context.name,
+        message: 'config shown',
+      );
+    }
+
     final cmdOpts = _getCmdOpts(args);
 
     // Parse target filter from CLI

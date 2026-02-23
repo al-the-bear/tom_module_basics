@@ -5,25 +5,6 @@ import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 import 'package:tom_build_base/tom_build_base.dart';
 
-import 'commands/buildsorter_tool.dart';
-import 'commands/cleanup_tool.dart';
-import 'commands/gitbranch_tool.dart';
-import 'commands/gitcheckout_tool.dart';
-import 'commands/gitclean_tool.dart';
-import 'commands/gitcommit_tool.dart';
-import 'commands/gitpull_tool.dart';
-import 'commands/gitreset_tool.dart';
-import 'commands/gitstatus_tool.dart';
-import 'commands/gitsync_tool.dart';
-import 'commands/gittag_tool.dart';
-import 'commands/publisher_tool.dart';
-import 'commands/versioner_tool.dart';
-import 'commands/bumpversion_tool.dart';
-import 'commands/bumppubspec_tool.dart';
-import 'commands/compiler_tool.dart';
-import 'commands/runner_tool.dart';
-import 'commands/dependencies_tool.dart';
-import 'commands/status_tool.dart';
 import 'pubget_command.dart';
 import 'pubupdate_command.dart';
 
@@ -244,169 +225,106 @@ class BuiltinCommands {
     }
   }
 
-  Future<bool> _runVersioner(List<String> args) async {
-    if (verbose) print('  [builtin] Running versioner...');
-    final tool = VersionerTool()
-      ..verbose = verbose
-      ..dryRun = dryRun;
-    return tool.run(args);
-  }
+  Future<bool> _runVersioner(List<String> args) =>
+      _runViaBuildkit('versioner', args);
 
-  Future<bool> _runBumpVersion(List<String> args) async {
-    if (verbose) print('  [builtin] Running bumpversion...');
-    final tool = BumpVersionTool()
-      ..verbose = verbose
-      ..dryRun = dryRun;
-    return tool.run(args);
-  }
+  Future<bool> _runBumpVersion(List<String> args) =>
+      _runViaBuildkit('bumpversion', args);
 
-  Future<bool> _runBumpPubspec(List<String> args) async {
-    if (verbose) print('  [builtin] Running bumppubspec...');
-    final tool = BumpPubspecTool()
-      ..verbose = verbose
-      ..dryRun = dryRun;
-    return tool.run(args);
-  }
+  Future<bool> _runBumpPubspec(List<String> args) =>
+      _runViaBuildkit('bumppubspec', args);
 
-  Future<bool> _runCompiler(List<String> args) async {
-    if (verbose) print('  [builtin] Running compiler...');
+  Future<bool> _runCompiler(List<String> args) =>
+      _runViaBuildkit('compiler', args);
+
+  Future<bool> _runRunner(List<String> args) =>
+      _runViaBuildkit('runner', args);
+
+  Future<bool> _runCleanup(List<String> args) =>
+      _runViaBuildkit('cleanup', args);
+
+  Future<bool> _runDependencies(List<String> args) =>
+      _runViaBuildkit('dependencies', args);
+
+  Future<bool> _runBuildSorter(List<String> args) =>
+      _runViaBuildkit('buildsorter', args);
+
+  Future<bool> _runPublisher(List<String> args) =>
+      _runViaBuildkit('publisher', args);
+
+  Future<bool> _runGitStatus(List<String> args) =>
+      _runViaBuildkit('gitstatus', args);
+
+  Future<bool> _runGitCommit(List<String> args) =>
+      _runViaBuildkit('gitcommit', args);
+
+  Future<bool> _runGitPull(List<String> args) =>
+      _runViaBuildkit('gitpull', args);
+
+  Future<bool> _runGitBranch(List<String> args) =>
+      _runViaBuildkit('gitbranch', args);
+
+  Future<bool> _runGitTag(List<String> args) =>
+      _runViaBuildkit('gittag', args);
+
+  Future<bool> _runGitClean(List<String> args) =>
+      _runViaBuildkit('gitclean', args);
+
+  Future<bool> _runGitCheckout(List<String> args) =>
+      _runViaBuildkit('gitcheckout', args);
+
+  Future<bool> _runGitReset(List<String> args) =>
+      _runViaBuildkit('gitreset', args);
+
+  Future<bool> _runGitSync(List<String> args) =>
+      _runViaBuildkit('gitsync', args);
+
+  Future<bool> _runStatus(List<String> args) =>
+      _runViaBuildkit('status', args);
+
+  /// Run a command by spawning `buildkit :command` as a subprocess.
+  ///
+  /// This replaces the old in-process v1 tool execution. All builtin tools
+  /// now have v2 executors registered in the buildkit CLI, so they can be
+  /// invoked as `buildkit :command [args...]`.
+  Future<bool> _runViaBuildkit(String command, List<String> args) async {
+    if (verbose) print('  [builtin] Running $command...');
     if (dryRun) {
-      print('  [DRY RUN] Would run compiler with args: $args');
+      print('  [DRY RUN] Would run buildkit :$command ${args.join(' ')}'
+          .trimRight());
       return true;
     }
-    final tool = CompilerTool()
-      ..verbose = verbose
-      ..dryRun = dryRun;
-    return tool.run(args);
-  }
 
-  Future<bool> _runRunner(List<String> args) async {
-    if (verbose) print('  [builtin] Running build runner...');
-    if (dryRun) {
-      print('  [DRY RUN] Would run runner with args: $args');
+    try {
+      final result = await ProcessRunner.run(
+        'buildkit',
+        [':$command', ...args],
+        workingDirectory: projectPath,
+        environment: {
+          ...Platform.environment,
+          'BUILDKIT_PROJECT': projectPath,
+          'BUILDKIT_ROOT': rootPath,
+        },
+      );
+
+      if (result.stdout.isNotEmpty) {
+        stdout.write(result.stdout);
+      }
+      if (result.stderr.isNotEmpty) {
+        stderr.write(result.stderr);
+      }
+
+      if (result.exitCode != 0) {
+        print('  $command failed with exit code ${result.exitCode}');
+        return false;
+      }
+
       return true;
+    } catch (e) {
+      print('  Error executing $command: $e');
+      print('  Make sure buildkit is installed and on your PATH.');
+      return false;
     }
-    final tool = RunnerTool()
-      ..verbose = verbose
-      ..dryRun = dryRun;
-    return tool.run(args);
-  }
-
-  Future<bool> _runCleanup(List<String> args) async {
-    if (verbose) print('  [builtin] Running cleanup...');
-    if (dryRun) {
-      print('  [DRY RUN] Would run cleanup with args: $args');
-      return true;
-    }
-    final tool = CleanupTool()
-      ..verbose = verbose
-      ..dryRun = dryRun;
-    return tool.run(args);
-  }
-
-  Future<bool> _runDependencies(List<String> args) async {
-    if (verbose) print('  [builtin] Running dependencies...');
-    final tool = DependenciesTool()
-      ..verbose = verbose
-      ..dryRun = dryRun;
-    return tool.run(args);
-  }
-
-  Future<bool> _runBuildSorter(List<String> args) async {
-    if (verbose) print('  [builtin] Running buildsorter...');
-    final tool = BuildSorterTool()
-      ..verbose = verbose
-      ..dryRun = dryRun;
-    return tool.run(args);
-  }
-
-  Future<bool> _runPublisher(List<String> args) async {
-    if (verbose) print('  [builtin] Running publisher...');
-    final tool = PublisherTool()
-      ..verbose = verbose
-      ..dryRun = dryRun;
-    return tool.run(args);
-  }
-
-  Future<bool> _runGitStatus(List<String> args) async {
-    if (verbose) print('  [builtin] Running gitstatus...');
-    final tool = GitStatusTool()
-      ..verbose = verbose
-      ..dryRun = dryRun;
-    return tool.run(args);
-  }
-
-  Future<bool> _runGitCommit(List<String> args) async {
-    if (verbose) print('  [builtin] Running gitcommit...');
-    final tool = GitCommitTool()
-      ..verbose = verbose
-      ..dryRun = dryRun
-      ..autoInnerFirst = true; // Auto-inject -i like standalone binary
-    return tool.run(args);
-  }
-
-  Future<bool> _runGitPull(List<String> args) async {
-    if (verbose) print('  [builtin] Running gitpull...');
-    final tool = GitPullTool()
-      ..verbose = verbose
-      ..dryRun = dryRun;
-    return tool.run(args);
-  }
-
-  Future<bool> _runGitBranch(List<String> args) async {
-    if (verbose) print('  [builtin] Running gitbranch...');
-    final tool = GitBranchTool()
-      ..verbose = verbose
-      ..dryRun = dryRun;
-    return tool.run(args);
-  }
-
-  Future<bool> _runGitTag(List<String> args) async {
-    if (verbose) print('  [builtin] Running gittag...');
-    final tool = GitTagTool()
-      ..verbose = verbose
-      ..dryRun = dryRun;
-    return tool.run(args);
-  }
-
-  Future<bool> _runGitClean(List<String> args) async {
-    if (verbose) print('  [builtin] Running gitclean...');
-    final tool = GitCleanTool()
-      ..verbose = verbose
-      ..dryRun = dryRun;
-    return tool.run(args);
-  }
-
-  Future<bool> _runGitCheckout(List<String> args) async {
-    if (verbose) print('  [builtin] Running gitcheckout...');
-    final tool = GitCheckoutTool()
-      ..verbose = verbose
-      ..dryRun = dryRun;
-    return tool.run(args);
-  }
-
-  Future<bool> _runGitReset(List<String> args) async {
-    if (verbose) print('  [builtin] Running gitreset...');
-    final tool = GitResetTool()
-      ..verbose = verbose
-      ..dryRun = dryRun;
-    return tool.run(args);
-  }
-
-  Future<bool> _runGitSync(List<String> args) async {
-    if (verbose) print('  [builtin] Running gitsync...');
-    final tool = GitSyncTool()
-      ..verbose = verbose
-      ..dryRun = dryRun;
-    return tool.run(args);
-  }
-
-  Future<bool> _runStatus(List<String> args) async {
-    if (verbose) print('  [builtin] Running status...');
-    final tool = StatusTool()
-      ..verbose = verbose
-      ..dryRun = dryRun;
-    return tool.run(args);
   }
 
   Future<bool> _runPubGet(List<String> args) async {

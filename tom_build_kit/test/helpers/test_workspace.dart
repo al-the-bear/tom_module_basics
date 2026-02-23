@@ -544,20 +544,113 @@ class TestWorkspace {
   /// Executes the tool binary directly via `dart run <path/to/bin/tool.dart>`.
   /// Runs from the workspace root so that path validation passes and
   /// workspace root discovery works correctly.
+  ///
+  /// Routes through `buildkit :tool` since standalone v1 bin files have been
+  /// removed. All tools are now v2 executors invoked via the buildkit CLI.
+  ///
+  /// Navigation args (--scan, --recursive, --project, --root, --exclude, etc.)
+  /// are placed BEFORE `:tool` because the v2 CLI parser treats everything
+  /// after `:command` as command-specific options.
   Future<ProcessResult> runTool(
     String tool,
     List<String> args, {
     String? workingDirectory,
   }) async {
-    final binPath = p.join(buildkitRoot, 'bin', '$tool.dart');
-    print('    🔧 Running: $tool ${args.join(' ')}');
+    final binPath = p.join(buildkitRoot, 'bin', 'buildkit.dart');
+
+    // Separate navigation/global args (before :command) from
+    // command-specific args (after :command).
+    final globalArgs = <String>[];
+    final cmdArgs = <String>[];
+    _splitArgs(args, globalArgs, cmdArgs);
+
+    final allArgs = [
+      'run',
+      binPath,
+      ...globalArgs,
+      ':$tool',
+      ...cmdArgs,
+    ];
+    print('    🔧 Running: buildkit ${[...globalArgs, ':$tool', ...cmdArgs].join(' ')}');
     final result = await Process.run(
       'dart',
-      ['run', binPath, ...args],
+      allArgs,
       workingDirectory: workingDirectory ?? workspaceRoot,
     );
     print('    ✓ $tool exited with code ${result.exitCode}');
     return result;
+  }
+
+  /// Split args into global (navigation) args and command-specific args.
+  ///
+  /// Known navigation options that must come before `:command`:
+  /// `--scan`, `--recursive`, `--no-recursive`, `--project`, `--root`,
+  /// `--build-order`, `--inner-first-git`, `--outer-first-git`, `--top-repo`,
+  /// `--workspace-recursion`, `--exclude`, `--exclude-projects`,
+  /// `--recursion-exclude`, `--modules`, `--no-skip`, `--modes`,
+  /// `--verbose`, `--dry-run`, and their abbreviations.
+  static void _splitArgs(
+    List<String> args,
+    List<String> globalArgs,
+    List<String> cmdArgs,
+  ) {
+    const globalFlags = {
+      '--scan', '-s',
+      '--recursive', '-r', '--no-recursive',
+      '--project', '-p',
+      '--root', '-R',
+      '--build-order', '-b',
+      '--inner-first-git', '-i',
+      '--outer-first-git', '-o',
+      '--top-repo', '-T',
+      '--workspace-recursion',
+      '--exclude', '-x',
+      '--exclude-projects',
+      '--recursion-exclude',
+      '--modules', '-m',
+      '--skip-modules',
+      '--no-skip',
+      '--verbose', '-v',
+      '--dry-run', '-n',
+      '--list', '-l',
+      '--force', '-f',
+      '--help', '-h',
+      '--dump-config',
+      '--guide',
+      '--config',
+      '--version', '-V',
+      '--include-test-projects',
+      '--test-projects-only',
+    };
+
+    // Options that take a value argument.
+    const valueGlobals = {
+      '--scan', '-s',
+      '--project', '-p',
+      '--root', '-R',
+      '--exclude', '-x',
+      '--exclude-projects',
+      '--recursion-exclude',
+      '--modules', '-m',
+      '--skip-modules',
+      '--config',
+    };
+
+    var i = 0;
+    while (i < args.length) {
+      final arg = args[i];
+      if (globalFlags.contains(arg)) {
+        globalArgs.add(arg);
+        if (valueGlobals.contains(arg) && i + 1 < args.length) {
+          i++;
+          globalArgs.add(args[i]);
+        }
+      } else {
+        // Everything else is command-specific.
+        cmdArgs.add(arg);
+      }
+      i++;
+    }
   }
 
   /// Run a buildkit pipeline.

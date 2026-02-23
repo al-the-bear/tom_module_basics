@@ -1,12 +1,21 @@
+/// Native v2 executor for the :status command.
+///
+/// Shows buildkit version, binary status, and git state.
+/// Replaces the v1 StatusTool that extended ToolBase.
+library;
+
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:args/args.dart';
 import 'package:path/path.dart' as p;
 import 'package:tom_build_base/tom_build_base.dart';
+import 'package:tom_build_base/tom_build_base_v2.dart';
 
-import '../version.versioner.dart';
-import 'tool_base.dart';
+import '../../version.versioner.dart';
+
+// =============================================================================
+// Data classes (moved from v1 status_tool.dart)
+// =============================================================================
 
 /// Status information for a buildkit tool binary.
 class ToolStatus {
@@ -44,16 +53,16 @@ class ToolStatus {
   }
 
   Map<String, dynamic> toJson() => {
-    'name': name,
-    'available': available,
-    'conformant': conformant,
-    if (version != null) 'version': version,
-    if (buildNumber != null) 'buildNumber': buildNumber,
-    if (gitCommit != null) 'gitCommit': gitCommit,
-    if (buildTime != null) 'buildTime': buildTime,
-    if (dartSdkVersion != null) 'dartSdkVersion': dartSdkVersion,
-    if (error != null) 'error': error,
-  };
+        'name': name,
+        'available': available,
+        'conformant': conformant,
+        if (version != null) 'version': version,
+        if (buildNumber != null) 'buildNumber': buildNumber,
+        if (gitCommit != null) 'gitCommit': gitCommit,
+        if (buildTime != null) 'buildTime': buildTime,
+        if (dartSdkVersion != null) 'dartSdkVersion': dartSdkVersion,
+        if (error != null) 'error': error,
+      };
 }
 
 /// Git status information for a repository.
@@ -87,16 +96,16 @@ class GitRepoStatus {
       stagedFiles.length + unstagedFiles.length + untrackedFiles.length;
 
   Map<String, dynamic> toJson() => {
-    'path': path,
-    'name': name,
-    'branch': branch,
-    'hasChanges': hasChanges,
-    'hasUnpushed': hasUnpushed,
-    'staged': stagedFiles,
-    'unstaged': unstagedFiles,
-    'untracked': untrackedFiles,
-    'unpushedCommits': unpushedCommits,
-  };
+        'path': path,
+        'name': name,
+        'branch': branch,
+        'hasChanges': hasChanges,
+        'hasUnpushed': hasUnpushed,
+        'staged': stagedFiles,
+        'unstaged': unstagedFiles,
+        'untracked': untrackedFiles,
+        'unpushedCommits': unpushedCommits,
+      };
 }
 
 /// Overall status result.
@@ -124,29 +133,26 @@ class StatusResult {
   });
 
   Map<String, dynamic> toJson() => {
-    'source': {
-      'version': sourceVersion,
-      'buildNumber': sourceBuildNumber,
-      'gitCommit': sourceCommit,
-      'buildTime': sourceBuildTime,
-      'dartSdkVersion': sourceDartSdk,
-    },
-    'tools': tools.map((t) => t.toJson()).toList(),
-    'repos': repos.map((r) => r.toJson()).toList(),
-    'commitsSinceOldest': commitsSinceOldest,
-    if (oldestToolCommit != null) 'oldestToolCommit': oldestToolCommit,
-  };
+        'source': {
+          'version': sourceVersion,
+          'buildNumber': sourceBuildNumber,
+          'gitCommit': sourceCommit,
+          'buildTime': sourceBuildTime,
+          'dartSdkVersion': sourceDartSdk,
+        },
+        'tools': tools.map((t) => t.toJson()).toList(),
+        'repos': repos.map((r) => r.toJson()).toList(),
+        'commitsSinceOldest': commitsSinceOldest,
+        if (oldestToolCommit != null) 'oldestToolCommit': oldestToolCommit,
+      };
 }
 
-/// Status tool - shows buildkit version, binary status, and git state.
-///
-/// Displays:
-/// - Source version (from version.versioner.dart)
-/// - Binary currency for all buildkit tools
-/// - Git status (pending changes, unpushed commits)
-///
-/// This is an internal command, not a standalone executable.
-class StatusTool extends ToolBase {
+// =============================================================================
+// Executor
+// =============================================================================
+
+/// Executor for :status — shows buildkit version, binary status, and git state.
+class StatusExecutor extends CommandExecutor {
   /// List of buildkit tools to check.
   static const _toolNames = [
     'buildkit',
@@ -177,75 +183,35 @@ class StatusTool extends ToolBase {
   ];
 
   @override
-  String get toolKey => 'status';
-
-  @override
-  String get toolDescription =>
-      'Show buildkit version, binary status, and git state';
-
-  @override
-  void addToolOptions(ArgParser parser) {
-    parser
-      ..addFlag('json', negatable: false, help: 'Output in JSON format')
-      ..addFlag(
-        'skip-binaries',
-        negatable: false,
-        help: 'Skip binary version checks',
-      )
-      ..addFlag('skip-git', negatable: false, help: 'Skip git status checks');
+  Future<ItemResult> execute(CommandContext context, CliArgs args) async {
+    return ItemResult.failure(
+      path: context.path,
+      name: context.name,
+      error: 'status uses executeWithoutTraversal',
+    );
   }
 
   @override
-  bool isToolProject(String dirPath) {
-    // Status tool checks git repos
-    final gitPath = p.join(dirPath, '.git');
-    return Directory(gitPath).existsSync() || File(gitPath).existsSync();
-  }
+  Future<ToolResult> executeWithoutTraversal(CliArgs args) async {
+    final verbose = args.verbose;
+    final root = args.scan ?? args.root ?? Directory.current.path;
 
-  @override
-  Future<bool> run(List<String> args) async {
-    if (checkVersionArg(args)) return true;
-    if (checkHelpArg(args)) {
-      _printUsage(createParser());
-      return true;
-    }
+    // Extract per-command options
+    final perCmd = args.commandArgs['status'];
+    final options = perCmd?.options ?? {};
 
-    final parser = createParser();
-    ArgResults results;
-    WorkspaceNavigationArgs navArgs;
-    String executionRoot;
-
-    try {
-      (results, navArgs, executionRoot) = parseArgsWithExecutionMode(
-        parser,
-        args,
-      );
-    } on FormatException catch (e) {
-      print('Error: $e');
-      _printUsage(parser);
-      return false;
-    } on ArgumentError catch (e) {
-      print('Error: $e');
-      return false;
-    }
-
-    if (results['help'] as bool) {
-      _printUsage(parser);
-      return true;
-    }
-
-    verbose = results['verbose'] as bool;
-    dryRun = results['dry-run'] as bool;
-    final jsonOutput = results['json'] as bool;
-    final skipBinaries = results['skip-binaries'] as bool;
-    final skipGit = results['skip-git'] as bool;
+    final jsonOutput = options['json'] == true;
+    final skipBinaries = options['skip-binaries'] == true;
+    final skipGit = options['skip-git'] == true;
 
     // Collect status information
     final result = await _collectStatus(
-      executionRoot: executionRoot,
-      navArgs: navArgs,
+      executionRoot: root,
+      innerFirstGit: args.innerFirstGit,
+      outerFirstGit: args.outerFirstGit,
       skipBinaries: skipBinaries,
       skipGit: skipGit,
+      verbose: verbose,
     );
 
     if (jsonOutput) {
@@ -254,14 +220,20 @@ class StatusTool extends ToolBase {
       _printStatus(result, verbose: verbose);
     }
 
-    return true;
+    return const ToolResult.success();
   }
+
+  // ---------------------------------------------------------------------------
+  // Data collection
+  // ---------------------------------------------------------------------------
 
   Future<StatusResult> _collectStatus({
     required String executionRoot,
-    required WorkspaceNavigationArgs navArgs,
+    required bool innerFirstGit,
+    required bool outerFirstGit,
     required bool skipBinaries,
     required bool skipGit,
+    required bool verbose,
   }) async {
     // Get tool status
     List<ToolStatus> tools = [];
@@ -272,10 +244,7 @@ class StatusTool extends ToolBase {
         final status = await _checkToolVersion(toolName);
         tools.add(status);
 
-        // Track oldest commit for comparison
         if (status.conformant && status.gitCommit != null) {
-          // We'll use the first one as reference for simplicity
-          // In a more sophisticated implementation, we could compare commits
           oldestCommit ??= status.gitCommit;
         }
       }
@@ -286,30 +255,21 @@ class StatusTool extends ToolBase {
     int commitsSinceOldest = 0;
 
     if (!skipGit) {
-      // Find git repos based on navigation args
-      if (navArgs.innerFirstGit || navArgs.outerFirstGit) {
-        final projects = await findProjectsFromNavArgs(
-          navArgs,
-          basePath: executionRoot,
-        );
-        for (final projectPath in projects) {
-          final status = await _analyzeGitRepo(projectPath);
-          if (status != null) {
-            repos.add(status);
-          }
+      if (innerFirstGit || outerFirstGit) {
+        // Find git repos by scanning for .git directories
+        final gitRoots = _findGitRepos(executionRoot);
+        for (final repoPath in gitRoots) {
+          final status = await _analyzeGitRepo(repoPath);
+          if (status != null) repos.add(status);
         }
       } else {
-        // Default: find the git root starting from execution root
-        final gitRoot = await _findGitRoot(executionRoot);
+        final gitRoot = _findGitRoot(executionRoot);
         if (gitRoot != null) {
           final status = await _analyzeGitRepo(gitRoot);
-          if (status != null) {
-            repos.add(status);
-          }
+          if (status != null) repos.add(status);
         }
       }
 
-      // Count commits since oldest tool
       if (oldestCommit != null && repos.isNotEmpty) {
         commitsSinceOldest = await _countCommitsSince(
           repos.first.path,
@@ -331,31 +291,39 @@ class StatusTool extends ToolBase {
     );
   }
 
+  // ---------------------------------------------------------------------------
+  // Git helpers
+  // ---------------------------------------------------------------------------
+
   /// Find the git repository root starting from [startPath].
-  ///
-  /// Walks up the directory tree until a .git directory/file is found.
-  /// Returns null if no git repo is found.
-  Future<String?> _findGitRoot(String startPath) async {
+  String? _findGitRoot(String startPath) {
     var current = startPath;
     while (true) {
       final gitDir = Directory(p.join(current, '.git'));
       final gitFile = File(p.join(current, '.git'));
-      if (gitDir.existsSync() || gitFile.existsSync()) {
-        return current;
-      }
+      if (gitDir.existsSync() || gitFile.existsSync()) return current;
+
       final parent = p.dirname(current);
-      if (parent == current) {
-        // Reached root
-        return null;
-      }
+      if (parent == current) return null;
       current = parent;
     }
   }
 
+  /// Find all git repositories under a directory.
+  List<String> _findGitRepos(String rootDir) {
+    final repos = <String>[];
+    final root = Directory(rootDir);
+    if (!root.existsSync()) return repos;
+
+    for (final entity in root.listSync(recursive: true, followLinks: false)) {
+      if (entity is Directory && p.basename(entity.path) == '.git') {
+        repos.add(p.dirname(entity.path));
+      }
+    }
+    return repos;
+  }
+
   /// Check a tool's version by running `<tool> --version`.
-  ///
-  /// Parses the expected format:
-  /// `<tool> <version>+<build>.<commit> (<timestamp>) [Dart <sdk>]`
   Future<ToolStatus> _checkToolVersion(String toolName) async {
     try {
       final result = await ProcessRunner.run(toolName, ['--version']);
@@ -388,23 +356,16 @@ class StatusTool extends ToolBase {
     }
   }
 
-  /// Parse version output in the expected format.
+  /// Parse version output.
   ///
   /// Expected: `<tool> <version>+<build>.<commit> (<timestamp>) [Dart <sdk>]`
-  /// Example: `versioner 1.5.0+10.c71e193 (2026-02-10T12:53:24.233913Z) [Dart 3.10.4]`
-  /// Also handles multi-word names like "Build Kit 1.5.0+10..."
   ToolStatus _parseVersionOutput(String toolName, String output) {
-    // Pattern: <name (can have spaces)> <version>+<build>.<commit> (<time>) [Dart <sdk>]
-    // Use .+? to match tool name (non-greedy to stop before version)
     final regex = RegExp(
       r'^(.+?)\s+(\d+\.\d+\.\d+)\+(\d+)\.([a-f0-9]+)\s+\(([^)]+)\)\s+\[Dart\s+([^\]]+)\]$',
     );
 
     final match = regex.firstMatch(output);
-    if (match == null) {
-      // Try to extract what we can
-      return _parsePartialVersion(toolName, output);
-    }
+    if (match == null) return _parsePartialVersion(toolName, output);
 
     return ToolStatus(
       name: toolName,
@@ -424,23 +385,14 @@ class StatusTool extends ToolBase {
     String? buildNumber;
     String? gitCommit;
 
-    // Try to find version pattern (x.y.z)
     final versionMatch = RegExp(r'(\d+\.\d+\.\d+)').firstMatch(output);
-    if (versionMatch != null) {
-      version = versionMatch.group(1);
-    }
+    if (versionMatch != null) version = versionMatch.group(1);
 
-    // Try to find build number (+N)
     final buildMatch = RegExp(r'\+(\d+)').firstMatch(output);
-    if (buildMatch != null) {
-      buildNumber = buildMatch.group(1);
-    }
+    if (buildMatch != null) buildNumber = buildMatch.group(1);
 
-    // Try to find git commit (7-char hex after .)
     final commitMatch = RegExp(r'\.([a-f0-9]{7})').firstMatch(output);
-    if (commitMatch != null) {
-      gitCommit = commitMatch.group(1);
-    }
+    if (commitMatch != null) gitCommit = commitMatch.group(1);
 
     return ToolStatus(
       name: toolName,
@@ -457,35 +409,34 @@ class StatusTool extends ToolBase {
   Future<GitRepoStatus?> _analyzeGitRepo(String repoPath) async {
     final gitDir = Directory(p.join(repoPath, '.git'));
     final gitFile = File(p.join(repoPath, '.git'));
-    if (!gitDir.existsSync() && !gitFile.existsSync()) {
-      return null;
-    }
+    if (!gitDir.existsSync() && !gitFile.existsSync()) return null;
 
     final name = p.basename(repoPath);
 
     // Get current branch
     String branch;
     try {
-      final result = await ProcessRunner.run('git', [
-        'rev-parse',
-        '--abbrev-ref',
-        'HEAD',
-      ], workingDirectory: repoPath);
+      final result = await ProcessRunner.run(
+        'git',
+        ['rev-parse', '--abbrev-ref', 'HEAD'],
+        workingDirectory: repoPath,
+      );
       branch = result.stdout.trim();
     } catch (_) {
       branch = 'unknown';
     }
 
-    // Get status (staged, unstaged, untracked)
+    // Get status
     List<String> stagedFiles = [];
     List<String> unstagedFiles = [];
     List<String> untrackedFiles = [];
 
     try {
-      final result = await ProcessRunner.run('git', [
-        'status',
-        '--porcelain',
-      ], workingDirectory: repoPath);
+      final result = await ProcessRunner.run(
+        'git',
+        ['status', '--porcelain'],
+        workingDirectory: repoPath,
+      );
       final lines = result.stdout.split('\n').where((l) => l.isNotEmpty);
       for (final line in lines) {
         if (line.length < 3) continue;
@@ -511,16 +462,14 @@ class StatusTool extends ToolBase {
     // Get unpushed commits
     List<String> unpushedCommits = [];
     try {
-      final result = await ProcessRunner.run('git', [
-        'log',
-        '@{u}..HEAD',
-        '--oneline',
-      ], workingDirectory: repoPath);
+      final result = await ProcessRunner.run(
+        'git',
+        ['log', '@{u}..HEAD', '--oneline'],
+        workingDirectory: repoPath,
+      );
       if (result.exitCode == 0) {
-        unpushedCommits = result.stdout
-            .split('\n')
-            .where((l) => l.isNotEmpty)
-            .toList();
+        unpushedCommits =
+            result.stdout.split('\n').where((l) => l.isNotEmpty).toList();
       }
     } catch (_) {
       // No upstream or other error
@@ -540,11 +489,11 @@ class StatusTool extends ToolBase {
   /// Count commits since a given commit hash.
   Future<int> _countCommitsSince(String repoPath, String commitHash) async {
     try {
-      final result = await ProcessRunner.run('git', [
-        'rev-list',
-        '--count',
-        '$commitHash..HEAD',
-      ], workingDirectory: repoPath);
+      final result = await ProcessRunner.run(
+        'git',
+        ['rev-list', '--count', '$commitHash..HEAD'],
+        workingDirectory: repoPath,
+      );
       if (result.exitCode == 0) {
         return int.tryParse(result.stdout.trim()) ?? 0;
       }
@@ -554,8 +503,11 @@ class StatusTool extends ToolBase {
     return 0;
   }
 
+  // ---------------------------------------------------------------------------
+  // Display
+  // ---------------------------------------------------------------------------
+
   void _printStatus(StatusResult result, {required bool verbose}) {
-    // Source Version
     print('╔═══════════════════════════════════════════════════════════════╗');
     print('║                     BUILDKIT STATUS                           ║');
     print('╚═══════════════════════════════════════════════════════════════╝');
@@ -570,7 +522,6 @@ class StatusTool extends ToolBase {
     print('  Dart SDK:     ${result.sourceDartSdk}');
     print('');
 
-    // Binary Status
     if (result.tools.isNotEmpty) {
       print('Binary Status');
       print('─────────────');
@@ -598,20 +549,23 @@ class StatusTool extends ToolBase {
 
       if (current.isNotEmpty) {
         print(
-          '  ✓ Current (${current.length}): ${current.map((t) => t.name).join(', ')}',
+          '  ✓ Current (${current.length}): '
+          '${current.map((t) => t.name).join(', ')}',
         );
       }
       if (outdated.isNotEmpty) {
         print('  ⚠ Outdated (${outdated.length}):');
         for (final tool in outdated) {
           print(
-            '    ${tool.name}: ${tool.version}+${tool.buildNumber}.${tool.gitCommit}',
+            '    ${tool.name}: '
+            '${tool.version}+${tool.buildNumber}.${tool.gitCommit}',
           );
         }
       }
       if (unavailable.isNotEmpty) {
         print(
-          '  ✗ Unavailable (${unavailable.length}): ${unavailable.map((t) => t.name).join(', ')}',
+          '  ✗ Unavailable (${unavailable.length}): '
+          '${unavailable.map((t) => t.name).join(', ')}',
         );
       }
       if (nonConformant.isNotEmpty) {
@@ -623,27 +577,26 @@ class StatusTool extends ToolBase {
       print('');
     }
 
-    // Git Status
     if (result.repos.isNotEmpty) {
       print('Git Status');
       print('──────────');
 
-      final reposWithChanges = result.repos.where((r) => r.hasChanges).toList();
-      final reposWithUnpushed = result.repos
-          .where((r) => r.hasUnpushed)
-          .toList();
+      final reposWithChanges =
+          result.repos.where((r) => r.hasChanges).toList();
+      final reposWithUnpushed =
+          result.repos.where((r) => r.hasUnpushed).toList();
 
       if (reposWithChanges.isEmpty && reposWithUnpushed.isEmpty) {
         print('  All repositories are clean and up to date.');
       } else {
-        // Pending Changes
         if (reposWithChanges.isNotEmpty) {
           final totalFiles = reposWithChanges.fold<int>(
             0,
             (sum, r) => sum + r.totalChanges,
           );
           print(
-            '  Pending Changes: ${reposWithChanges.length} repo(s), $totalFiles file(s)',
+            '  Pending Changes: ${reposWithChanges.length} repo(s), '
+            '$totalFiles file(s)',
           );
 
           if (verbose) {
@@ -667,14 +620,14 @@ class StatusTool extends ToolBase {
           print('');
         }
 
-        // Unpushed Commits
         if (reposWithUnpushed.isNotEmpty) {
           final totalCommits = reposWithUnpushed.fold<int>(
             0,
             (sum, r) => sum + r.unpushedCommits.length,
           );
           print(
-            '  Unpushed Commits: ${reposWithUnpushed.length} repo(s), $totalCommits commit(s)',
+            '  Unpushed Commits: ${reposWithUnpushed.length} repo(s), '
+            '$totalCommits commit(s)',
           );
 
           if (verbose) {
@@ -686,7 +639,8 @@ class StatusTool extends ToolBase {
             }
           } else {
             print(
-              '    (Specify --verbose to see the $totalCommits unpushed commits)',
+              '    (Specify --verbose to see the $totalCommits '
+              'unpushed commits)',
             );
           }
         }
@@ -695,25 +649,10 @@ class StatusTool extends ToolBase {
       if (result.commitsSinceOldest > 0 && result.oldestToolCommit != null) {
         print('');
         print(
-          '  Note: ${result.commitsSinceOldest} commit(s) since oldest binary (${result.oldestToolCommit})',
+          '  Note: ${result.commitsSinceOldest} commit(s) since oldest '
+          'binary (${result.oldestToolCommit})',
         );
       }
     }
-  }
-
-  void _printUsage(ArgParser parser) {
-    printUsageHeader();
-    print('');
-    print('Options:');
-    print(parser.usage);
-    print('');
-    printNavigationHelp();
-    print('');
-    print('Examples:');
-    print('  bk :status                 # Quick status check');
-    print('  bk :status -v              # Verbose with file details');
-    print('  bk :status --json          # JSON output');
-    print('  bk :status -i              # Include all git repos (inner-first)');
-    print('  bk :status --skip-binaries # Skip binary checks');
   }
 }

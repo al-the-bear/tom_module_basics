@@ -13,11 +13,10 @@ import 'dart:io';
 import 'package:tom_build_base/tom_build_base.dart';
 import 'package:tom_build_base/tom_build_base_v2.dart';
 
-import '../commands/bumppubspec_tool.dart';
-import '../commands/status_tool.dart';
 import '../pubget_command.dart';
 import '../pubupdate_command.dart';
 import 'executors/buildsorter_executor.dart';
+import 'executors/bumppubspec_executor.dart';
 import 'executors/bumpversion_executor.dart';
 import 'executors/cleanup_executor.dart';
 import 'executors/compiler_executor.dart';
@@ -27,6 +26,7 @@ import 'executors/git_executors.dart';
 import 'executors/findproject_executor.dart';
 import 'executors/publisher_executor.dart';
 import 'executors/runner_executor.dart';
+import 'executors/status_executor.dart';
 import 'executors/versioner_executor.dart';
 
 // =============================================================================
@@ -192,139 +192,6 @@ class PubUpdateAllExecutor extends CommandExecutor {
     return success
         ? const ToolResult.success()
         : const ToolResult.failure('pub upgrade failed');
-  }
-}
-
-/// Passthrough executor for :bumppubspec.
-class BumpPubspecExecutor extends CommandExecutor {
-  @override
-  Future<ItemResult> execute(CommandContext context, CliArgs args) async {
-    return ItemResult.failure(
-      path: context.path,
-      name: context.name,
-      error: 'bumppubspec uses executeWithoutTraversal',
-    );
-  }
-
-  @override
-  Future<ToolResult> executeWithoutTraversal(CliArgs args) async {
-    final tool = BumpPubspecTool()
-      ..verbose = args.verbose
-      ..dryRun = args.dryRun;
-
-    final cmdArgs = _buildLegacyToolArgs(args, commandName: 'bumppubspec');
-    final success = await tool.run(cmdArgs);
-    return success
-        ? const ToolResult.success()
-        : const ToolResult.failure('bumppubspec failed');
-  }
-}
-
-/// Passthrough executor for :status.
-class StatusExecutor extends CommandExecutor {
-  @override
-  Future<ItemResult> execute(CommandContext context, CliArgs args) async {
-    return ItemResult.failure(
-      path: context.path,
-      name: context.name,
-      error: 'status uses executeWithoutTraversal',
-    );
-  }
-
-  @override
-  Future<ToolResult> executeWithoutTraversal(CliArgs args) async {
-    final tool = StatusTool()
-      ..verbose = args.verbose
-      ..dryRun = args.dryRun;
-
-    final cmdArgs = _buildLegacyToolArgs(args, commandName: 'status');
-    final success = await tool.run(cmdArgs);
-    return success
-        ? const ToolResult.success()
-        : const ToolResult.failure('status failed');
-  }
-}
-
-List<String> _buildLegacyToolArgs(CliArgs args, {required String commandName}) {
-  final cmdArgs = <String>[];
-
-  if (args.scan != null && args.scan!.isNotEmpty) {
-    cmdArgs.addAll(['--scan', args.scan!]);
-  }
-  if (args.recursive) {
-    cmdArgs.add('--recursive');
-  }
-  if (args.notRecursive) {
-    cmdArgs.add('--not-recursive');
-  }
-  if (args.root != null && args.root!.isNotEmpty) {
-    cmdArgs.addAll(['--root', args.root!]);
-  }
-  if (args.bareRoot) {
-    cmdArgs.add('--root');
-  }
-
-  for (final pattern in args.projectPatterns) {
-    cmdArgs.addAll(['--project', pattern]);
-  }
-  for (final pattern in args.excludePatterns) {
-    cmdArgs.addAll(['--exclude', pattern]);
-  }
-  for (final pattern in args.excludeProjects) {
-    cmdArgs.addAll(['--exclude-projects', pattern]);
-  }
-  for (final pattern in args.recursionExclude) {
-    cmdArgs.addAll(['--recursion-exclude', pattern]);
-  }
-  for (final module in args.modules) {
-    cmdArgs.addAll(['--modules', module]);
-  }
-
-  if (args.innerFirstGit) cmdArgs.add('--inner-first-git');
-  if (args.outerFirstGit) cmdArgs.add('--outer-first-git');
-  if (args.buildOrder) cmdArgs.add('--build-order');
-  if (args.verbose) cmdArgs.add('--verbose');
-  if (args.dryRun) cmdArgs.add('--dry-run');
-  if (args.listOnly) cmdArgs.add('--list');
-  if (args.dumpConfig) cmdArgs.add('--show');
-  if (args.guide) cmdArgs.add('--guide');
-
-  final perCmd = args.commandArgs[commandName];
-  if (perCmd != null) {
-    for (final pattern in perCmd.projectPatterns) {
-      cmdArgs.addAll(['--project', pattern]);
-    }
-    for (final pattern in perCmd.excludePatterns) {
-      cmdArgs.addAll(['--exclude', pattern]);
-    }
-    _appendOptionMap(cmdArgs, perCmd.options);
-  }
-
-  return cmdArgs;
-}
-
-void _appendOptionMap(List<String> cmdArgs, Map<String, dynamic> options) {
-  for (final entry in options.entries) {
-    final key = entry.key;
-    final value = entry.value;
-
-    if (value is bool) {
-      if (value) {
-        cmdArgs.add('--$key');
-      }
-      continue;
-    }
-
-    if (value is List) {
-      for (final item in value) {
-        cmdArgs.addAll(['--$key', item.toString()]);
-      }
-      continue;
-    }
-
-    if (value != null) {
-      cmdArgs.addAll(['--$key', value.toString()]);
-    }
   }
 }
 

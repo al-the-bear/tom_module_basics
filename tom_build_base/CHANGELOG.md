@@ -1,3 +1,47 @@
+## 2.1.0
+
+### Added
+
+- **`navigation_bridge.dart`** — Re-introduces `WorkspaceNavigationArgs`, `addNavigationOptions()`, `preprocessRootFlag()`, `parseNavigationArgs()`, `resolveExecutionRoot()`, `isVersionCommand()`, `isHelpCommand()` as v2-clean code (dart:io only, no DCli dependency). These bridge the `package:args` ArgParser to the v2 traversal system for tools that use `ArgParser` for global option parsing.
+- Exported from both `tom_build_base.dart` and `tom_build_base_v2.dart` barrels.
+
+## 2.0.0
+
+### Breaking Changes — V1 Navigation System Removed
+
+Deleted the entire v1 project navigation/discovery system:
+
+- **`workspace_mode.dart`** — `WorkspaceNavigationArgs`, `ExecutionMode`, `addNavigationOptions()`, `parseNavigationArgs()`, `preprocessRootFlag()`, `resolveExecutionRoot()`, and related helpers are removed.
+- **`project_discovery.dart`** — `ProjectDiscovery` class (including `scanForProjects()`, `resolveProjectPatterns()`, `hasSkipFile()`, `getSkipFileName()`, `applyModulesFilter()`, `findGitRepositories()`, `filterByModules()`, `resolveModulePaths()`) is removed.
+- **`project_navigator.dart`** — `ProjectNavigator`, `NavigationConfig`, `NavigationResult`, `NavigationDefaults` are removed.
+- **`project_scanner.dart`** — `ProjectScanner` class is removed.
+
+### Migration
+
+All these APIs have v2 replacements in `tom_build_base_v2.dart`:
+
+| Removed V1 API | V2 Replacement |
+|----------------|----------------|
+| `WorkspaceNavigationArgs` | `CliArgs` (from `cli_arg_parser.dart`) |
+| `addNavigationOptions` / `parseNavigationArgs` | `CliArgParser` + `OptionDefinition` |
+| `ProjectDiscovery.scanForProjects` | `FolderScanner` + `BuildBase.traverse` |
+| `ProjectNavigator.navigate` | `BuildBase.traverse` |
+| `ProjectScanner` | `FolderScanner` |
+| `ProjectDiscovery.hasSkipFile` | `FolderScanner` skip logic |
+| `ProjectDiscovery.applyModulesFilter` | `FilterPipeline` module filtering |
+
+### Preserved APIs
+
+- **`findWorkspaceRoot()`** — Moved to `workspace_utils.dart` (exported from both barrels). Same API, now uses `dart:io` instead of DCli.
+- **`kBuildkitMasterYaml`**, **`kTomWorkspaceYaml`**, **`kTomCodeWorkspace`**, **`kBuildkitSkipYaml`** — Constants moved to `workspace_utils.dart`.
+- **`isWorkspaceBoundary()`** — Moved to `workspace_utils.dart`.
+- All shared utility files (`build_config.dart`, `config_loader.dart`, `config_merger.dart`, `tool_logging.dart`, `path_utils.dart`, `processing_result.dart`, `yaml_utils.dart`, `build_yaml_utils.dart`, `show_versions.dart`) are unchanged.
+
+### Internal
+
+- `show_versions.dart` — Migrated from `ProjectDiscovery`/`ProjectScanner` to inline directory scanning with `dart:io` and `glob`.
+- Removed v1-specific tests (10 tests removed; 547 remaining tests pass).
+
 ## 1.15.0
 
 ### Breaking Changes

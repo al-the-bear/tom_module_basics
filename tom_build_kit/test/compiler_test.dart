@@ -62,11 +62,11 @@ void main() {
       log.expectation('_build listed', stdout.contains('_build'));
     });
 
-    test('--show displays compiler config', () async {
-      log.start('CMP_SHW01', '--show displays compiler config');
+    test('--dump-config displays compiler config', () async {
+      log.start('CMP_SHW01', '--dump-config displays compiler config');
       final result = await ws.runTool(
-          'compiler', ['--project', '_build', '--show']);
-      log.capture('compiler --project _build --show', result);
+          'compiler', ['--project', '_build', '--dump-config']);
+      log.capture('compiler --project _build --dump-config', result);
 
       final stdout = (result.stdout as String);
       expect(result.exitCode, equals(0));

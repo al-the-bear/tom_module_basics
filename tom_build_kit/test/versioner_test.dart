@@ -174,15 +174,15 @@ void main() {
       expect(result.stdout as String, contains('_build'));
     });
 
-    test('--show displays versioner config from buildkit.yaml', () async {
-      log.start('VER_SHW01', '--show displays versioner config');
+    test('--dump-config displays versioner config from buildkit.yaml', () async {
+      log.start('VER_SHW01', '--dump-config displays versioner config');
       await ws.installFixture('versioner');
 
       final result = await ws.runTool(
         'versioner',
-        ['--project', targetProject, '--show'],
+        ['--project', targetProject, '--dump-config'],
       );
-      log.capture('versioner --project _build --show', result);
+      log.capture('versioner --project _build --dump-config', result);
 
       log.expectation('exit code 0', result.exitCode == 0);
       expect(result.exitCode, 0);
