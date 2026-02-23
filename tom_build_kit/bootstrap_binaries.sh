@@ -64,6 +64,7 @@ TOOLS=(
     bumpversion
     buildsorter
     publisher
+    goto
     # Git tools
     git
     gitbranch
