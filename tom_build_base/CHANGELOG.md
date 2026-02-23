@@ -1,3 +1,20 @@
+## 1.13.0
+
+### Features
+
+- **`--all` / `-a` flag** — New CLI option to traverse into folders that would normally be skipped (subworkspaces, `tom_skip.yaml`, `<tool>_skip.yaml`). Skip messages still print but traversal continues.
+
+- **Skip messages to stderr** — FolderScanner now always prints skip messages to stderr when encountering workspace boundaries or skip marker files: "Skipping subworkspace: \<folder\>", "Skipping - tom_skip.yaml found: \<folder\>", "Skipping - \<tool\>_skip.yaml found: \<folder\>".
+
+### Bug Fixes
+
+- **`allGlobalOptions` dedup precedence** — Fixed option deduplication to use first-wins (`putIfAbsent`) instead of last-wins. User-defined `globalOptions` now correctly take precedence over `commonOptions` defaults.
+
+### Code Quality
+
+- Fixed `unnecessary_brace_in_string_interps` lint issues in `completion_generator.dart`.
+- Fixed `curly_braces_in_flow_control_structures` lint issues in `nature_detector.dart`.
+
 ## 1.12.0
 
 ### Features

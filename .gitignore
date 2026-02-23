@@ -297,3 +297,6 @@ bk_master.yaml
 
 # Local development folders (repo-specific - add as needed)
 # /some_local_folder/
+
+# External development repos (not managed by this repo)
+dcli/
