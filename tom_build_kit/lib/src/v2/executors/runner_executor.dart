@@ -75,18 +75,21 @@ class RunnerExecutor extends CommandExecutor {
   @override
   Future<ItemResult> execute(CommandContext context, CliArgs args) async {
     final projectPath = context.path;
+    final hasBuildYaml = File('$projectPath/build.yaml').existsSync();
 
-    // Requires build.yaml to be a runner project
-    if (!File('$projectPath/build.yaml').existsSync()) {
-      return ItemResult.success(
-        path: projectPath,
-        name: context.name,
-        message: 'skipped (no build.yaml)',
-      );
-    }
+    // Parse command options early so skip messages can include the command name
+    final cmdOpts = _getCmdOpts(args);
+    final command = cmdOpts['command']?.toString() ?? 'build';
 
-    // List mode: just print project path
+    // List mode: print project path if it has build.yaml
     if (args.listOnly) {
+      if (!hasBuildYaml) {
+        return ItemResult.success(
+          path: projectPath,
+          name: context.name,
+          message: 'skipped (no build.yaml)',
+        );
+      }
       print('  ${p.relative(projectPath, from: context.executionRoot)}');
       return ItemResult.success(
         path: projectPath,
@@ -95,8 +98,16 @@ class RunnerExecutor extends CommandExecutor {
       );
     }
 
-    // Dump config mode: show builder information
+    // Dump config mode: show builder information (even if no build.yaml)
     if (args.dumpConfig) {
+      if (!hasBuildYaml) {
+        print('  ${context.name}: (no build.yaml)');
+        return ItemResult.success(
+          path: projectPath,
+          name: context.name,
+          message: 'no build.yaml',
+        );
+      }
       final builders = _extractBuilders(projectPath);
       print('  ${context.name}:');
       print('    build.yaml: $projectPath/build.yaml');
@@ -115,8 +126,23 @@ class RunnerExecutor extends CommandExecutor {
       );
     }
 
-    final cmdOpts = _getCmdOpts(args);
-    final command = cmdOpts['command']?.toString() ?? 'build';
+    // Requires build.yaml for actual execution
+    if (!hasBuildYaml) {
+      if (args.dryRun) {
+        print('  [DRY RUN] ${context.name}: skipped $command (no build.yaml)');
+        return ItemResult.success(
+          path: projectPath,
+          name: context.name,
+          message: 'skipped (no build.yaml)',
+        );
+      }
+      return ItemResult.success(
+        path: projectPath,
+        name: context.name,
+        message: 'skipped (no build.yaml)',
+      );
+    }
+
     final deleteConflicting = cmdOpts['delete-conflicting'] == true;
     final configName = cmdOpts['config']?.toString();
     final release = cmdOpts['release'] == true;

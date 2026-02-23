@@ -616,13 +616,16 @@ class TestWorkspace {
       '--dry-run', '-n',
       '--list', '-l',
       '--force', '-f',
-      '--help', '-h',
       '--dump-config',
       '--guide',
       '--config',
-      '--version', '-V',
+      '-V',
       '--include-test-projects',
       '--test-projects-only',
+      // Note: --help and --version are NOT global flags here — when used
+      // with a :command, they should be per-command options (e.g.,
+      // :bumpversion --help shows bumpversion help, not buildkit help).
+      // handleSpecialCommands() catches bare --help/--version as first arg.
     };
 
     // Options that take a value argument.

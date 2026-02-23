@@ -558,7 +558,7 @@ const runnerCommand = CommandDefinition(
   description: 'Build_runner wrapper with builder filtering',
   aliases: ['run'],
   options: runnerOptions,
-  worksWithNatures: {BuildRunnerFolder},
+  worksWithNatures: {DartProjectFolder},
   supportsProjectTraversal: true,
   supportsGitTraversal: false,
   requiresTraversal: true,

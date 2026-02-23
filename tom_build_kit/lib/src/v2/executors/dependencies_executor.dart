@@ -68,6 +68,16 @@ class DependenciesExecutor extends CommandExecutor {
       );
     }
 
+    // List mode: just print project path
+    if (args.listOnly) {
+      print('  ${p.relative(projectPath, from: context.executionRoot)}');
+      return ItemResult.success(
+        path: projectPath,
+        name: context.name,
+        message: 'listed',
+      );
+    }
+
     final cmdOpts = _getCmdOpts(args);
     final showDev = cmdOpts['dev'] == true;
     final showAll = cmdOpts['all'] == true;
@@ -129,7 +139,7 @@ class DependenciesExecutor extends CommandExecutor {
         print('  (no dependencies)');
       } else {
         for (final dep in deps) {
-          final prefix = dep.isDev ? '  [dev] ' : '  ';
+          final prefix = dep.isDev ? '  +> ' : '  -> ';
           print('$prefix${dep.name}: ${dep.displaySource}');
         }
       }

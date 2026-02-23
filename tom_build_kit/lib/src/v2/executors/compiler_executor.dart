@@ -143,7 +143,7 @@ class CompilerExecutor extends CommandExecutor {
       print('  ${context.name}:');
       if (config != null) {
         if (config.compileSections.isNotEmpty) {
-          print('    compile sections: ${config.compileSections.length}');
+          print('    compiles: ${config.compileSections.length} sections');
           for (final section in config.compileSections) {
             final desc = section.files.isNotEmpty
                 ? section.files.join(', ')

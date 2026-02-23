@@ -115,19 +115,22 @@ class VersionerExecutor extends CommandExecutor {
     final projectPath = context.path;
     final projectName = context.name;
 
+    // Load workspace config (cached)
+    _wsRoot ??= findWorkspaceRoot(context.executionRoot);
+    _wsConfig ??=
+        VersionerConfig.loadFromMasterYaml(_wsRoot!) ?? const VersionerConfig();
+
     // Only process projects with versioner config in buildkit.yaml
-    if (!hasTomBuildConfig(projectPath, 'versioner')) {
+    // or workspace-level versioner config in buildkit_master.yaml
+    final hasLocalConfig = hasTomBuildConfig(projectPath, 'versioner');
+    final hasWsConfig = _wsConfig != const VersionerConfig();
+    if (!hasLocalConfig && !hasWsConfig) {
       return ItemResult.success(
         path: projectPath,
         name: projectName,
         message: 'skipped (no versioner config)',
       );
     }
-
-    // Load workspace config (cached)
-    _wsRoot ??= findWorkspaceRoot(context.executionRoot);
-    _wsConfig ??=
-        VersionerConfig.loadFromMasterYaml(_wsRoot!) ?? const VersionerConfig();
 
     // Build CLI config from parsed args
     final cliConfig = _buildCliConfig(args);

@@ -42,6 +42,18 @@ bool _verbose = false;
 /// Dry-run flag.
 bool _dryRun = false;
 
+/// List mode flag.
+bool _listMode = false;
+
+/// Force mode flag.
+bool _forceMode = false;
+
+/// Dump-config mode flag.
+bool _dumpConfigMode = false;
+
+/// Guide mode flag.
+bool _guideMode = false;
+
 /// Workspace root path (set during initialization).
 String _rootPath = '';
 
@@ -107,6 +119,10 @@ Future<void> main(List<String> args) async {
 
   _verbose = globalResults['verbose'] as bool;
   _dryRun = globalResults['dry-run'] as bool;
+  _listMode = globalResults['list'] as bool;
+  _forceMode = globalResults['force'] as bool;
+  _dumpConfigMode = globalResults['dump-config'] as bool;
+  _guideMode = globalResults['guide'] as bool;
 
   // Initialize central logging verbose flag
   ToolLogger.verbose = _verbose;
@@ -130,7 +146,7 @@ Future<void> main(List<String> args) async {
   final rest = globalResults.rest;
   if (rest.isEmpty) {
     // Just global options - show list if --list
-    if (globalResults['list'] as bool) {
+    if (_listMode) {
       await _listPipelines(rootPath);
     } else {
       _printUsage();
@@ -229,6 +245,22 @@ ArgParser _createGlobalParser() {
       abbr: 'l',
       negatable: false,
       help: 'List available pipelines',
+    )
+    ..addFlag(
+      'force',
+      abbr: 'f',
+      negatable: false,
+      help: 'Force operation',
+    )
+    ..addFlag(
+      'dump-config',
+      negatable: false,
+      help: 'Show configuration for the command',
+    )
+    ..addFlag(
+      'guide',
+      negatable: false,
+      help: 'Show guided help for the command',
     );
 
   // Add all navigation options from tom_build_base (single source of truth)
@@ -434,8 +466,29 @@ Future<bool> _executeCommand(
   // all options after a :command as per-command options.
   final cmdArgs = <String>[];
 
-  // Apply navigation defaults for workspace mode
+  // Normalize --project when given as an absolute/relative path.
+  // The v2 traversal filter matches by project name (folder basename), not
+  // by full path.  Convert `/abs/path/to/_build` → `_build`.
   var effectiveNavArgs = navArgs;
+  if (navArgs.project != null &&
+      (navArgs.project!.contains('/') ||
+          navArgs.project!.contains(r'\'))) {
+    // Security: reject absolute paths outside workspace root
+    final projectPath = p.normalize(p.absolute(navArgs.project!));
+    final normalizedRoot = p.normalize(rootPath);
+    if (!projectPath.startsWith(normalizedRoot)) {
+      print(
+        'Error: --project path is outside the workspace root.\n'
+        '  Project: ${navArgs.project}\n'
+        '  Workspace: $rootPath',
+      );
+      return false;
+    }
+    effectiveNavArgs =
+        navArgs.copyWith(project: p.basename(navArgs.project!));
+  }
+
+  // Apply navigation defaults for workspace mode
   if (isWorkspaceMode) {
     if (navArgs.scan == null) {
       // In workspace mode without explicit scan, default to scanning from
@@ -463,6 +516,12 @@ Future<bool> _executeCommand(
     cmdArgs.add('--dry-run');
   }
 
+  // Global action flags
+  if (_listMode) cmdArgs.add('--list');
+  if (_forceMode) cmdArgs.add('--force');
+  if (_dumpConfigMode) cmdArgs.add('--dump-config');
+  if (_guideMode) cmdArgs.add('--guide');
+
   // When --project is specified without --scan, enable recursive scanning
   // so the project can be found by the traversal engine.
   if (navArgs.project != null && navArgs.scan == null && !isWorkspaceMode) {
@@ -477,6 +536,22 @@ Future<bool> _executeCommand(
 
   // Run via ToolRunner
   final result = await runner.run(cmdArgs);
+
+  // Print item results summary
+  for (final item in result.itemResults) {
+    if (item.success) {
+      if (item.message != null &&
+          item.message!.isNotEmpty &&
+          !item.message!.startsWith('skipped')) {
+        // Capitalize first letter for display
+        final msg =
+            item.message![0].toUpperCase() + item.message!.substring(1);
+        print(msg);
+      }
+    } else if (item.error != null) {
+      print('Error [${item.name}]: ${item.error}');
+    }
+  }
 
   if (!result.success && result.errorMessage != null) {
     print('Error: ${result.errorMessage}');
