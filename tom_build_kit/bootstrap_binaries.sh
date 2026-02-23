@@ -95,8 +95,7 @@ TOOLS=(
     buildsorter
     publisher
     goto
-    # Git tools
-    git
+    # Git tools (no standalone 'git' - use buildkit :git instead)
     gitbranch
     gitcheckout
     gitclean
