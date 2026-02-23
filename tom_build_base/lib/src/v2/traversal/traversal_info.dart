@@ -62,7 +62,7 @@ class ProjectTraversalInfo extends BaseTraversalInfo {
   final bool buildOrder;
 
   /// When true, ignore workspace boundaries and *_skip.yaml markers.
-  /// Activated by `--all` / `-a`.
+  /// Activated by `--no-skip`.
   final bool ignoreSkipMarkers;
 
   const ProjectTraversalInfo({

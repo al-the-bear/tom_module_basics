@@ -31,7 +31,7 @@ class FolderScanner {
   final bool verbose;
 
   /// When true, ignore all skip markers (workspace boundaries, *_skip.yaml)
-  /// and traverse into everything. Activated by `--all` / `-a`.
+  /// and traverse into everything. Activated by `--no-skip`.
   final bool ignoreSkipMarkers;
 
   /// Create a FolderScanner.

@@ -257,6 +257,7 @@ void main() {
       expect(names, contains('project'));
       expect(names, contains('exclude-projects'));
       expect(names, contains('build-order'));
+      expect(names, contains('no-skip'));
     });
 
     test('BB-OPT-19: Scan option has correct attributes [2026-02-12]', () {

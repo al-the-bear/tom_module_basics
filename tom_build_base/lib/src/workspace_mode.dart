@@ -79,6 +79,12 @@ class WorkspaceNavigationArgs {
   /// Use "root" or "tom" to reference the main repository.
   final List<String> modules;
 
+  /// Ignore skip markers (tom_skip.yaml, *_skip.yaml).
+  ///
+  /// When true, projects that contain skip files are processed anyway.
+  /// Corresponds to the `--no-skip` CLI flag.
+  final bool noSkip;
+
   /// Active modes for configuration processing.
   ///
   /// Modes are workspace-wide configuration dimensions (e.g., DEV, CI, PROD).
@@ -101,6 +107,7 @@ class WorkspaceNavigationArgs {
     this.excludeProjects = const [],
     this.recursionExclude = const [],
     this.modules = const [],
+    this.noSkip = false,
     this.modes = const [],
   });
 
@@ -163,6 +170,7 @@ class WorkspaceNavigationArgs {
       excludeProjects: excludeProjects,
       recursionExclude: recursionExclude,
       modules: modules,
+      noSkip: noSkip,
       modes: modes,
     );
   }
@@ -199,6 +207,7 @@ class WorkspaceNavigationArgs {
       excludeProjects: excludeProjects,
       recursionExclude: recursionExclude,
       modules: modules,
+      noSkip: noSkip,
       modes: modes,
     );
   }
@@ -220,6 +229,7 @@ class WorkspaceNavigationArgs {
     List<String>? excludeProjects,
     List<String>? recursionExclude,
     List<String>? modules,
+    bool? noSkip,
     List<String>? modes,
   }) {
     return WorkspaceNavigationArgs(
@@ -239,6 +249,7 @@ class WorkspaceNavigationArgs {
       excludeProjects: excludeProjects ?? this.excludeProjects,
       recursionExclude: recursionExclude ?? this.recursionExclude,
       modules: modules ?? this.modules,
+      noSkip: noSkip ?? this.noSkip,
       modes: modes ?? this.modes,
     );
   }
@@ -249,7 +260,8 @@ class WorkspaceNavigationArgs {
       'recursive=$recursive${recursiveExplicitlySet ? '(explicit)' : ''}, '
       'buildOrder=$buildOrder, project=$project, '
       'root=$root, bareRoot=$bareRoot, workspaceRecursion=$workspaceRecursion, '
-      'innerFirstGit=$innerFirstGit, outerFirstGit=$outerFirstGit, topRepo=$topRepo)';
+      'innerFirstGit=$innerFirstGit, outerFirstGit=$outerFirstGit, topRepo=$topRepo, '
+      'noSkip=$noSkip)';
 
   /// Convert navigation args back to command-line arguments.
   ///
@@ -324,6 +336,11 @@ class WorkspaceNavigationArgs {
       args.addAll(['--recursion-exclude', x]);
     }
 
+    // Ignore skip markers
+    if (noSkip) {
+      args.add('--no-skip');
+    }
+
     // Modules filter
     if (modules.isNotEmpty && !suppress.contains('m')) {
       args.addAll(['--modules', modules.join(',')]);
@@ -353,6 +370,7 @@ class WorkspaceNavigationArgs {
 /// - `--exclude-projects` - Exclude projects by name or path
 /// - `--recursion-exclude` - Exclude patterns during recursive scan
 /// - `-m, --modules` - Include only projects within specified git modules
+/// - `--no-skip` - Ignore skip markers (tom_skip.yaml, *_skip.yaml)
 void addNavigationOptions(ArgParser parser) {
   parser.addOption('scan', abbr: 's', help: 'Scan directory for projects');
   parser.addFlag(
@@ -423,6 +441,11 @@ void addNavigationOptions(ArgParser parser) {
     abbr: 'm',
     help:
         'Include only projects within specified git modules (comma-separated, e.g. tom_module_d4rt,tom_module_basics)',
+  );
+  parser.addFlag(
+    'no-skip',
+    negatable: false,
+    help: 'Ignore skip markers (tom_skip.yaml, *_skip.yaml)',
   );
   parser.addOption(
     'modes',
@@ -551,6 +574,7 @@ WorkspaceNavigationArgs parseNavigationArgs(
     excludeProjects: results['exclude-projects'] as List<String>? ?? [],
     recursionExclude: results['recursion-exclude'] as List<String>? ?? [],
     modules: _parseModulesOption(results['modules'] as String?),
+    noSkip: results['no-skip'] as bool? ?? false,
     modes: _parseModesOption(results['modes'] as String?),
   );
 }
@@ -755,6 +779,7 @@ List<String> getNavigationOptionsHelpLines() {
     '      --recursion-exclude=<glob>    Exclude patterns during recursive scan',
     '  -m, --modules=<names>     Include only projects within specified git modules',
     '                            (comma-separated, use "root" or "tom" for main repo)',
+    '      --no-skip             Ignore skip markers (tom_skip.yaml, *_skip.yaml)',
   ];
 }
 

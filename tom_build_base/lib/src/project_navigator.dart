@@ -316,7 +316,7 @@ class ProjectNavigator {
     }
 
     // Apply skip files filter
-    if (config.useSkipFiles) {
+    if (config.useSkipFiles && !navArgs.noSkip) {
       repos = filterSkippedProjects(
         repos,
         verbose: verbose,
@@ -432,6 +432,7 @@ class ProjectNavigator {
         recursive: recursive,
         recursionExclude:
             config.useRecursionExclude ? recursionExclude : const [],
+        noSkip: navArgs.noSkip,
       );
       results = config.usePathExclude ? filterByPath(paths, exclude) : paths;
     } else {
@@ -452,7 +453,7 @@ class ProjectNavigator {
     }
 
     // Phase 3: Remove skipped projects
-    if (config.useSkipFiles) {
+    if (config.useSkipFiles && !navArgs.noSkip) {
       results = filterSkippedProjects(
         results,
         verbose: verbose,

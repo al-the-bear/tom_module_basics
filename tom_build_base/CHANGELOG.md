@@ -1,3 +1,15 @@
+## 1.15.0
+
+### Breaking Changes
+
+- **Renamed `--all` / `-a` to `--no-skip`** — The global CLI option that ignores skip markers (`tom_skip.yaml`, `*_skip.yaml`) has been renamed from `--all` / `-a` to `--no-skip` (no abbreviation). This resolves conflicts with per-command `-a/--all` options in buildkit tools (dependencies, publisher, gitcommit, gitbranch).
+
+### Features
+
+- **`--no-skip` flag in v1 system** — Added `noSkip` field to `WorkspaceNavigationArgs`, wired through `addNavigationOptions()`, `parseNavigationArgs()`, `ProjectDiscovery.scanForProjects()`, and `ProjectNavigator`. Both v1 (buildkit ArgParser) and v2 (CliArgs) systems now support `--no-skip`.
+
+- **`--no-skip` in `projectTraversalOptions`** — Added to the standard v2 option definitions for consistent help output.
+
 ## 1.14.0
 
 ### Features
@@ -8,7 +20,7 @@
 
 ### Features
 
-- **`--all` / `-a` flag** — New CLI option to traverse into folders that would normally be skipped (subworkspaces, `tom_skip.yaml`, `<tool>_skip.yaml`). Skip messages still print but traversal continues.
+- **`--all` / `-a` flag** — New CLI option to traverse into folders that would normally be skipped (subworkspaces, `tom_skip.yaml`, `<tool>_skip.yaml`). Skip messages still print but traversal continues. *(Renamed to `--no-skip` in 1.15.0)*
 
 - **Skip messages to stderr** — FolderScanner now always prints skip messages to stderr when encountering workspace boundaries or skip marker files: "Skipping subworkspace: \<folder\>", "Skipping - tom_skip.yaml found: \<folder\>", "Skipping - \<tool\>_skip.yaml found: \<folder\>".
 

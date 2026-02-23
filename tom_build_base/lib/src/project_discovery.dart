@@ -320,6 +320,7 @@ class ProjectDiscovery {
     bool recursive = false,
     String? toolKey,
     List<String> recursionExclude = const [],
+    bool noSkip = false,
   }) async {
     final projects = <String>[];
 
@@ -348,6 +349,7 @@ class ProjectDiscovery {
       toolKey: toolKey,
       recursionGlobs: recursionGlobs,
       scanRoot: scanDir,
+      noSkip: noSkip,
     );
     return projects;
   }
@@ -395,11 +397,12 @@ class ProjectDiscovery {
     String? toolKey,
     List<Glob> recursionGlobs = const [],
     String? scanRoot,
+    bool noSkip = false,
   }) async {
     final dirName = p.basename(dirPath);
 
     // Skip directories that contain a skip marker file
-    if (hasSkipFile(dirPath, basename: toolBasename)) {
+    if (!noSkip && hasSkipFile(dirPath, basename: toolBasename)) {
       if (verbose) {
         final skipFile = getSkipFileName(dirPath, basename: toolBasename);
         _log('  Skipping ($skipFile): $dirPath');
@@ -466,6 +469,7 @@ class ProjectDiscovery {
         toolKey: toolKey,
         recursionGlobs: recursionGlobs,
         scanRoot: scanRoot,
+        noSkip: noSkip,
       );
     } else {
       // Not a project - continue scanning subfolders
@@ -477,6 +481,7 @@ class ProjectDiscovery {
         toolKey: toolKey,
         recursionGlobs: recursionGlobs,
         scanRoot: scanRoot,
+        noSkip: noSkip,
       );
     }
   }
@@ -489,6 +494,7 @@ class ProjectDiscovery {
     String? toolKey,
     List<Glob> recursionGlobs = const [],
     String? scanRoot,
+    bool noSkip = false,
   }) async {
     try {
       // Use DCli find to get immediate subdirectories
@@ -506,6 +512,7 @@ class ProjectDiscovery {
           toolKey: toolKey,
           recursionGlobs: recursionGlobs,
           scanRoot: scanRoot,
+          noSkip: noSkip,
         );
       }
     } catch (e) {

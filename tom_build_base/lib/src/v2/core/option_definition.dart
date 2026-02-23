@@ -158,6 +158,10 @@ const List<OptionDefinition> projectTraversalOptions = [
     abbr: 'b',
     description: 'Sort by dependency order (default)',
   ),
+  OptionDefinition.flag(
+    name: 'no-skip',
+    description: 'Ignore skip markers (tom_skip.yaml, *_skip.yaml)',
+  ),
 ];
 
 /// Standard options for git traversal.

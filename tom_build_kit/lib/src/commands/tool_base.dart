@@ -209,6 +209,7 @@ abstract class ToolBase {
       excludeProjects: navArgs.excludeProjects,
       recursionExclude: navArgs.recursionExclude,
       modules: navArgs.modules,
+      noSkip: navArgs.noSkip,
       basePath: basePath,
     );
   }
@@ -237,6 +238,7 @@ abstract class ToolBase {
     List<String> excludeProjects = const [],
     List<String> recursionExclude = const [],
     List<String> modules = const [],
+    bool noSkip = false,
     required String basePath,
   }) async {
     final discovery = ProjectDiscovery(verbose: verbose);
@@ -296,6 +298,7 @@ abstract class ToolBase {
         recursive: recursive,
         toolKey: toolKey,
         recursionExclude: recursionExclude,
+        noSkip: noSkip,
       );
       results = ProjectNavigator.filterByPath(paths, exclude);
     } else {
@@ -317,7 +320,10 @@ abstract class ToolBase {
     );
 
     // Remove projects that contain buildkit_skip.yaml
-    results = ProjectNavigator.filterSkippedProjects(results, verbose: verbose);
+    if (!noSkip) {
+      results =
+          ProjectNavigator.filterSkippedProjects(results, verbose: verbose);
+    }
 
     // Apply --modules filtering (include only projects within specified modules)
     if (modules.isNotEmpty) {
