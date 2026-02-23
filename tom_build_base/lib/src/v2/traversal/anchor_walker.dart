@@ -93,8 +93,7 @@ class AnchorWalker {
     for (final marker in allMarkers) {
       final markerPath = p.join(dir, marker);
       // Check both file and directory (e.g., .git can be either)
-      if (File(markerPath).existsSync() ||
-          Directory(markerPath).existsSync()) {
+      if (File(markerPath).existsSync() || Directory(markerPath).existsSync()) {
         return true;
       }
     }
@@ -110,8 +109,7 @@ class AnchorWalker {
 
     for (final marker in allMarkers) {
       final markerPath = p.join(dir, marker);
-      if (File(markerPath).existsSync() ||
-          Directory(markerPath).existsSync()) {
+      if (File(markerPath).existsSync() || Directory(markerPath).existsSync()) {
         return marker;
       }
     }

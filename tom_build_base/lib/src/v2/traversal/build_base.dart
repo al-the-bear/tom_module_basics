@@ -148,19 +148,14 @@ abstract class BuildBase {
             .toList();
         final globalOrder =
             BuildOrderComputer.computeBuildOrder(allDartPaths) ?? [];
-        ordered = sorter.sortByBuildOrder(
-          contexts,
-          (c) => c.path,
-          globalOrder,
-        );
+        ordered = sorter.sortByBuildOrder(contexts, (c) => c.path, globalOrder);
       default:
         ordered = contexts;
     }
 
     // Validate nature configuration — at least one must be set.
     // Tools that want all folders must explicitly use FsFolder.
-    final hasRequired =
-        requiredNatures != null && requiredNatures.isNotEmpty;
+    final hasRequired = requiredNatures != null && requiredNatures.isNotEmpty;
     final hasWorksWith = worksWithNatures.isNotEmpty;
     if (!hasRequired && !hasWorksWith) {
       throw ArgumentError(

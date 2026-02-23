@@ -1,11 +1,11 @@
-/// Native v2 executor for the goto command.
+/// Native v2 executor for the findproject command.
 ///
 /// Resolves a project by name, project ID, or folder name and prints
 /// the absolute path to stdout.  Designed to be wrapped by a shell
 /// function for `cd`:
 ///
 /// ```bash
-/// cdp() { local d; d="$(goto "$@")" && cd "$d"; }
+/// goto() { local d; d="$(findproject "$@" 2>/dev/null)"; if [[ -n "$d" && -d "$d" ]]; then cd "$d"; else findproject "$@"; return 1; fi; }
 /// ```
 ///
 /// **Anchor-walking search strategy:**
@@ -24,7 +24,7 @@ import 'package:path/path.dart' as p;
 import 'package:tom_build_base/tom_build_base.dart';
 import 'package:tom_build_base/tom_build_base_v2.dart';
 
-/// Executor for the `:goto` command.
+/// Executor for the `:findproject` command.
 ///
 /// Resolution order per anchor (first match wins):
 /// 1. Folder basename exact match
@@ -33,30 +33,30 @@ import 'package:tom_build_base/tom_build_base_v2.dart';
 ///
 /// Anchor order: walks up from cwd, trying each anchor directory in turn
 /// until the project is found or the filesystem root is reached.
-class GotoExecutor extends CommandExecutor {
+class FindProjectExecutor extends CommandExecutor {
   @override
   Future<ItemResult> execute(CommandContext context, CliArgs args) async {
     return ItemResult.failure(
       path: context.path,
       name: context.name,
-      error: 'goto uses executeWithoutTraversal',
+      error: 'findproject uses executeWithoutTraversal',
     );
   }
 
   @override
   Future<ToolResult> executeWithoutTraversal(CliArgs args) async {
-    // The project name/ID comes from positional args (after :goto).
+    // The project name/ID comes from positional args (after :findproject).
     final positional = args.positionalArgs;
 
     if (positional.isEmpty) {
-      stderr.writeln('Usage: goto <project-name|project-id|folder>');
+      stderr.writeln('Usage: findproject <project-name|project-id|folder>');
       stderr.writeln('');
       stderr.writeln('Resolves a project and prints its absolute path.');
       stderr.writeln('Walks up from the current directory, scanning at each');
       stderr.writeln('anchor (.git or buildkit_master.yaml) until found.');
       stderr.writeln('');
-      stderr.writeln('Shell integration:');
-      stderr.writeln(r'  cdp() { local d; d="$(goto "$@")" && cd "$d"; }');
+      stderr.writeln('Shell integration (add to .zshrc):');
+      stderr.writeln(r'  goto() { local d; d="$(findproject "$@" 2>/dev/null)"; if [[ -n "$d" && -d "$d" ]]; then cd "$d"; else findproject "$@"; return 1; fi; }');
       return const ToolResult.failure('No project specified');
     }
 
@@ -83,7 +83,7 @@ class GotoExecutor extends CommandExecutor {
 
     for (final anchor in anchors) {
       if (verbose) {
-        stderr.writeln('Goto: scanning $anchor');
+        stderr.writeln('FindProject: scanning $anchor');
       }
 
       try {

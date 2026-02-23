@@ -24,7 +24,7 @@ import 'executors/compiler_executor.dart';
 import 'executors/dependencies_executor.dart';
 import 'executors/execute_executor.dart';
 import 'executors/git_executors.dart';
-import 'executors/goto_executor.dart';
+import 'executors/findproject_executor.dart';
 import 'executors/publisher_executor.dart';
 import 'executors/runner_executor.dart';
 import 'executors/versioner_executor.dart';
@@ -545,7 +545,7 @@ Map<String, CommandExecutor> createBuildkitExecutors({
     'gitrebase': GitRebaseExecutor(),
 
     // Other
-    'goto': GotoExecutor(),
+    'findproject': FindProjectExecutor(),
     'dcli': DcliExecutor(),
 
     // Macros

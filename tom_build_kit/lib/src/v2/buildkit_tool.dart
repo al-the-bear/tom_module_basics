@@ -475,8 +475,8 @@ const dcliOptions = <OptionDefinition>[
   ),
 ];
 
-/// Options for goto command.
-const gotoOptions = <OptionDefinition>[];
+/// Options for findproject command.
+const findProjectOptions = <OptionDefinition>[];
 
 /// Options for define command.
 const defineOptions = <OptionDefinition>[];
@@ -972,21 +972,21 @@ const gitrebaseCommand = CommandDefinition(
 // Command Definitions - Other
 // =============================================================================
 
-const gotoCommand = CommandDefinition(
-  name: 'goto',
+const findProjectCommand = CommandDefinition(
+  name: 'findproject',
   description: 'Resolve project by name/ID/folder and print its path',
-  aliases: ['go', 'cdp'],
-  options: gotoOptions,
+  aliases: ['fp'],
+  options: findProjectOptions,
   worksWithNatures: {DartProjectFolder},
   requiresTraversal: false,
   supportsProjectTraversal: false,
   supportsGitTraversal: false,
   canRunStandalone: true,
   examples: [
-    'buildkit :goto tom_build_kit',
-    'buildkit :goto buildkit',
-    'buildkit :goto Tom Build Kit',
-    r'cdp() { local d; d="$(buildkit :goto "$@")" && cd "$d"; }',
+    'buildkit :findproject tom_build_kit',
+    'findproject buildkit',
+    'findproject "Tom Build Kit"',
+    r'goto() { local d; d="$(findproject "$@" 2>/dev/null)"; if [[ -n "$d" && -d "$d" ]]; then cd "$d"; else findproject "$@"; return 1; fi; }',
   ],
 );
 
@@ -1103,7 +1103,7 @@ final buildkitTool = ToolDefinition(
     gitsquashCommand,
     gitrebaseCommand,
     // Other
-    gotoCommand,
+    findProjectCommand,
     dcliCommand,
     defineCommand,
     undefineCommand,

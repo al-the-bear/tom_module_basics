@@ -109,7 +109,8 @@ class ProjectTraversalInfo extends BaseTraversalInfo {
   }
 
   @override
-  String toString() => 'ProjectTraversalInfo(scan: $scan, recursive: $recursive)';
+  String toString() =>
+      'ProjectTraversalInfo(scan: $scan, recursive: $recursive)';
 }
 
 /// Configuration for git repository traversal.

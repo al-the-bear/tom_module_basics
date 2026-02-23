@@ -94,7 +94,7 @@ TOOLS=(
     bumpversion
     buildsorter
     publisher
-    goto
+    findproject
     # Git tools (no standalone 'git' - use buildkit :git instead)
     gitbranch
     gitcheckout

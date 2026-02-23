@@ -47,9 +47,13 @@ class CompletionGenerator {
     buf.writeln('    if [[ "\$cur" == :* ]]; then');
     buf.writeln('      COMPREPLY=( \$(compgen -W "\$commands" -- "\$cur") )');
     buf.writeln('    elif [[ "\$cur" == -* ]]; then');
-    buf.writeln('      COMPREPLY=( \$(compgen -W "\$global_opts" -- "\$cur") )');
+    buf.writeln(
+      '      COMPREPLY=( \$(compgen -W "\$global_opts" -- "\$cur") )',
+    );
     buf.writeln('    else');
-    buf.writeln('      COMPREPLY=( \$(compgen -W "\$commands \$global_opts" -- "\$cur") )');
+    buf.writeln(
+      '      COMPREPLY=( \$(compgen -W "\$commands \$global_opts" -- "\$cur") )',
+    );
     buf.writeln('    fi');
     buf.writeln('  else');
     buf.writeln('    # Complete command-specific options');
@@ -166,7 +170,9 @@ class CompletionGenerator {
     // Commands
     buf.writeln('# Commands');
     for (final cmd in tool.commands) {
-      buf.writeln('complete -c $name -n "__fish_use_subcommand" -a ":${cmd.name}" -d "${cmd.description}"');
+      buf.writeln(
+        'complete -c $name -n "__fish_use_subcommand" -a ":${cmd.name}" -d "${cmd.description}"',
+      );
     }
     buf.writeln('');
 
@@ -174,7 +180,9 @@ class CompletionGenerator {
     buf.writeln('# Global options');
     for (final opt in tool.allGlobalOptions) {
       final short = opt.abbr != null ? '-s ${opt.abbr} ' : '';
-      buf.writeln('complete -c $name $short-l ${opt.name} -d "${opt.description}"');
+      buf.writeln(
+        'complete -c $name $short-l ${opt.name} -d "${opt.description}"',
+      );
     }
     buf.writeln('');
 
@@ -183,7 +191,9 @@ class CompletionGenerator {
       buf.writeln('# :${cmd.name} options');
       for (final opt in cmd.options) {
         final short = opt.abbr != null ? '-s ${opt.abbr} ' : '';
-        buf.writeln('complete -c $name -n "__fish_seen_subcommand_from :${cmd.name}" $short-l ${opt.name} -d "${opt.description}"');
+        buf.writeln(
+          'complete -c $name -n "__fish_seen_subcommand_from :${cmd.name}" $short-l ${opt.name} -d "${opt.description}"',
+        );
       }
       buf.writeln('');
     }

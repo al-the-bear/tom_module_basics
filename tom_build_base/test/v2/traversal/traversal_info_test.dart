@@ -122,20 +122,23 @@ void main() {
         expect(copy.buildOrder, isTrue);
       });
 
-      test('BB-TRV-10: Copies with changed test project flags [2026-02-12]', () {
-        const original = ProjectTraversalInfo(
-          executionRoot: '/workspace',
-          includeTestProjects: false,
-          testProjectsOnly: false,
-        );
+      test(
+        'BB-TRV-10: Copies with changed test project flags [2026-02-12]',
+        () {
+          const original = ProjectTraversalInfo(
+            executionRoot: '/workspace',
+            includeTestProjects: false,
+            testProjectsOnly: false,
+          );
 
-        var copy = original.copyWith(includeTestProjects: true);
-        expect(copy.includeTestProjects, isTrue);
-        expect(copy.testProjectsOnly, isFalse);
+          var copy = original.copyWith(includeTestProjects: true);
+          expect(copy.includeTestProjects, isTrue);
+          expect(copy.testProjectsOnly, isFalse);
 
-        copy = original.copyWith(testProjectsOnly: true);
-        expect(copy.testProjectsOnly, isTrue);
-      });
+          copy = original.copyWith(testProjectsOnly: true);
+          expect(copy.testProjectsOnly, isTrue);
+        },
+      );
     });
   });
 
@@ -227,20 +230,23 @@ void main() {
   });
 
   group('TraversalInfo comparisons', () {
-    test('BB-TRV-17: ProjectTraversalInfo and GitTraversalInfo are distinct types [2026-02-12]', () {
-      const project = ProjectTraversalInfo(executionRoot: '/workspace');
-      const git = GitTraversalInfo(
-        executionRoot: '/workspace',
-        gitMode: GitTraversalMode.innerFirst,
-      );
+    test(
+      'BB-TRV-17: ProjectTraversalInfo and GitTraversalInfo are distinct types [2026-02-12]',
+      () {
+        const project = ProjectTraversalInfo(executionRoot: '/workspace');
+        const git = GitTraversalInfo(
+          executionRoot: '/workspace',
+          gitMode: GitTraversalMode.innerFirst,
+        );
 
-      expect(project, isA<ProjectTraversalInfo>());
-      expect(project, isA<BaseTraversalInfo>());
-      expect(git, isA<GitTraversalInfo>());
-      expect(git, isA<BaseTraversalInfo>());
-      expect(project, isNot(isA<GitTraversalInfo>()));
-      expect(git, isNot(isA<ProjectTraversalInfo>()));
-    });
+        expect(project, isA<ProjectTraversalInfo>());
+        expect(project, isA<BaseTraversalInfo>());
+        expect(git, isA<GitTraversalInfo>());
+        expect(git, isA<BaseTraversalInfo>());
+        expect(project, isNot(isA<GitTraversalInfo>()));
+        expect(git, isNot(isA<ProjectTraversalInfo>()));
+      },
+    );
 
     test('BB-TRV-18: Base properties are shared [2026-02-12]', () {
       const project = ProjectTraversalInfo(
