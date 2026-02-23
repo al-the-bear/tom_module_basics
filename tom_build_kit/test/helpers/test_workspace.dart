@@ -517,11 +517,11 @@ class TestWorkspace {
   /// that could affect test results.
   ///
   /// Returns a list of changed file paths, or empty if clean.
-  /// Excludes submodule pointer changes (xternal/) since those don't affect
-  /// the test fixtures or tool behavior.
+  /// Excludes submodule pointer changes (xternal/) and untracked generated
+  /// files since those don't affect the test fixtures or tool behavior.
   Future<List<String>> hasUncommittedChanges() async {
     final result = await _git(
-      ['status', '--porcelain'],
+      ['status', '--porcelain', '--ignore-submodules=dirty'],
       workingDirectory: workspaceRoot,
     );
     final output = result.stdout.toString().trim();
@@ -531,7 +531,9 @@ class TestWorkspace {
         .map((line) => line.trim())
         .where((line) => line.isNotEmpty)
         // Exclude submodule pointer changes — they don't affect tests
-        .where((line) => !RegExp(r'^\s*[Mm]\s+xternal/').hasMatch(line))
+        .where((line) => !RegExp(r'^[Mm?\s]{1,2}\s*xternal/').hasMatch(line))
+        // Exclude untracked generated files (e.g., .reflection.dart, .g.dart)
+        .where((line) => !RegExp(r'^\?\?\s.*\.(reflection|g|r|b)\.dart$').hasMatch(line))
         .toList();
   }
 
