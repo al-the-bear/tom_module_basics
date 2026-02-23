@@ -1,26 +1,56 @@
 #!/bin/bash
 # Bootstrap script for tom_build_kit binaries
 # Run this to compile all buildkit tools to native binaries
+#
+# Usage:
+#   ./bootstrap_binaries.sh [platform]
+#
+# Platform defaults to auto-detected value. Override for cross-compilation:
+#   ./bootstrap_binaries.sh darwin-arm64
+#   ./bootstrap_binaries.sh linux-x64
 
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
-# Determine output directory based on platform
-if [[ "$OSTYPE" == "darwin"* ]]; then
-    if [[ "$(uname -m)" == "arm64" ]]; then
-        OUTPUT_DIR="$HOME/.tom/bin/darwin-arm64"
-    else
-        OUTPUT_DIR="$HOME/.tom/bin/darwin-x64"
+# Find tom_binaries directory (walk up from script dir to tom_agent_container)
+TOM_BINARIES_ROOT="$SCRIPT_DIR"
+while [[ "$TOM_BINARIES_ROOT" != "/" ]]; do
+    if [[ -d "$TOM_BINARIES_ROOT/tom_binaries" ]]; then
+        break
     fi
-elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
-    OUTPUT_DIR="$HOME/.tom/bin/linux-x64"
-else
-    echo "Unsupported platform: $OSTYPE"
+    TOM_BINARIES_ROOT="$(dirname "$TOM_BINARIES_ROOT")"
+done
+
+if [[ ! -d "$TOM_BINARIES_ROOT/tom_binaries" ]]; then
+    echo "Error: Could not find tom_binaries directory"
     exit 1
 fi
 
+# Determine platform (auto-detect or use argument)
+if [[ -n "$1" ]]; then
+    PLATFORM="$1"
+else
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        if [[ "$(uname -m)" == "arm64" ]]; then
+            PLATFORM="darwin-arm64"
+        else
+            PLATFORM="darwin-x64"
+        fi
+    elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
+        if [[ "$(uname -m)" == "aarch64" ]]; then
+            PLATFORM="linux-arm64"
+        else
+            PLATFORM="linux-x64"
+        fi
+    else
+        echo "Unsupported platform: $OSTYPE (pass platform as argument)"
+        exit 1
+    fi
+fi
+
+OUTPUT_DIR="$TOM_BINARIES_ROOT/tom_binaries/tom/$PLATFORM"
 mkdir -p "$OUTPUT_DIR"
 
 echo "=== Bootstrap tom_build_kit binaries ==="

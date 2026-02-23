@@ -88,9 +88,7 @@ class GotoExecutor extends CommandExecutor {
 
         if (results.isNotEmpty) {
           if (results.length > 1) {
-            stderr.writeln(
-              'Multiple matches for "$searchTerm" (using first):',
-            );
+            stderr.writeln('Multiple matches for "$searchTerm" (using first):');
             for (final r in results) {
               stderr.writeln('  ${p.relative(r, from: anchor)}');
             }
@@ -126,10 +124,7 @@ class GotoExecutor extends CommandExecutor {
   ///
   /// Returns anchors ordered closest-first (starting directory first).
   /// Stops at the filesystem root or on permission errors.
-  static List<String> _collectAnchors(
-    String startDir, {
-    bool verbose = false,
-  }) {
+  static List<String> _collectAnchors(String startDir, {bool verbose = false}) {
     final anchors = <String>[];
     var current = p.normalize(p.absolute(startDir));
     final root = p.rootPrefix(current);

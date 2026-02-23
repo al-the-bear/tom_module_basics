@@ -88,7 +88,8 @@ const compilerOptions = <OptionDefinition>[
   OptionDefinition.multi(
     name: 'executable',
     abbr: 'e',
-    description: 'Executable file(s) filter (e.g., buildkit.dart,compiler.dart)',
+    description:
+        'Executable file(s) filter (e.g., buildkit.dart,compiler.dart)',
     valueName: 'file',
   ),
 ];
@@ -184,7 +185,10 @@ const statusOptions = <OptionDefinition>[
     name: 'skip-binaries',
     description: 'Skip binary version checks',
   ),
-  OptionDefinition.flag(name: 'skip-git', description: 'Skip git status checks'),
+  OptionDefinition.flag(
+    name: 'skip-git',
+    description: 'Skip git status checks',
+  ),
 ];
 
 // =============================================================================
