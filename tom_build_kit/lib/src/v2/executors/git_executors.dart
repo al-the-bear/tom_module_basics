@@ -916,6 +916,14 @@ class GitRebaseExecutor extends CommandExecutor {
     final abort = opts['abort'] == true;
 
     if (continueRebase) {
+      if (args.dryRun) {
+        print('  [DRY RUN] ${context.name}: would continue rebase');
+        return ItemResult.success(
+          path: dir,
+          name: context.name,
+          message: 'dry-run',
+        );
+      }
       final result = await _runGit(['rebase', '--continue'], dir);
       final success = result.exitCode == 0;
       print(
@@ -935,6 +943,14 @@ class GitRebaseExecutor extends CommandExecutor {
     }
 
     if (abort) {
+      if (args.dryRun) {
+        print('  [DRY RUN] ${context.name}: would abort rebase');
+        return ItemResult.success(
+          path: dir,
+          name: context.name,
+          message: 'dry-run',
+        );
+      }
       await _runGit(['rebase', '--abort'], dir);
       print('  ${context.name}: rebase aborted');
       return ItemResult.success(

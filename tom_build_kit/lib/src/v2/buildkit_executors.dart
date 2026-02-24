@@ -239,6 +239,11 @@ class DcliExecutor extends CommandExecutor {
     }
     dcliArgs.addAll(args.positionalArgs);
 
+    if (args.dryRun) {
+      print('[DRY RUN] Would run: dcli ${dcliArgs.join(' ')}');
+      return const ToolResult.success();
+    }
+
     try {
       final result = await ProcessRunner.run('dcli', dcliArgs);
       if (result.stdout.isNotEmpty) {
@@ -294,6 +299,11 @@ class DefineExecutor extends CommandExecutor {
       ...args.positionalArgs.skip(1),
     ].join(' ').trim();
 
+    if (args.dryRun) {
+      print('[DRY RUN] Would define macro: $name=$value');
+      return const ToolResult.success();
+    }
+
     onDefine(name, value);
     print('Defined macro: $name');
     return const ToolResult.success(processedCount: 1);
@@ -322,6 +332,12 @@ class UndefineExecutor extends CommandExecutor {
     }
 
     final name = args.positionalArgs.first;
+
+    if (args.dryRun) {
+      print('[DRY RUN] Would undefine macro: $name');
+      return const ToolResult.success();
+    }
+
     final removed = onUndefine(name);
 
     if (removed) {

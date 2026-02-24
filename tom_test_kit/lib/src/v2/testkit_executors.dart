@@ -56,6 +56,15 @@ String? _getString(CliArgs args, String name) {
 class BaselineExecutor extends CommandExecutor {
   @override
   Future<ItemResult> execute(CommandContext context, CliArgs args) async {
+    if (args.dryRun) {
+      final outputPath = _getString(args, 'file') ?? 'doc/baseline_<timestamp>.csv';
+      return ItemResult.success(
+        path: context.path,
+        name: context.name,
+        message: '[DRY RUN] Would run tests and create baseline at $outputPath',
+      );
+    }
+
     final success = await BaselineCommand.run(
       projectPath: context.path,
       outputPath: _getString(args, 'file'),
@@ -82,6 +91,22 @@ class BaselineExecutor extends CommandExecutor {
 class TestExecutor extends CommandExecutor {
   @override
   Future<ItemResult> execute(CommandContext context, CliArgs args) async {
+    if (args.dryRun) {
+      final opts = <String>[];
+      if (_getFlag(args, 'baseline')) opts.add('--baseline');
+      if (_getFlag(args, 'failed')) opts.add('--failed');
+      if (_getFlag(args, 'mismatched')) opts.add('--mismatched');
+      if (_getFlag(args, 'no-update')) opts.add('--no-update');
+      final testArgs = _parseTestArgs(args);
+      if (testArgs.isNotEmpty) opts.add('--test-args="${testArgs.join(' ')}"');
+      return ItemResult.success(
+        path: context.path,
+        name: context.name,
+        message: '[DRY RUN] Would run tests and update tracking'
+            '${opts.isNotEmpty ? ' (${opts.join(', ')})' : ''}',
+      );
+    }
+
     final success = await TestCommand.run(
       projectPath: context.path,
       trackingFilePath: _getString(args, 'file'),
@@ -322,6 +347,14 @@ class TrimExecutor extends CommandExecutor {
       );
     }
 
+    if (args.dryRun) {
+      return ItemResult.success(
+        path: context.path,
+        name: context.name,
+        message: '[DRY RUN] Would trim baselines, keeping $keepCount most recent',
+      );
+    }
+
     final success = await TrimCommand.run(
       projectPath: context.path,
       keepCount: keepCount,
@@ -344,6 +377,14 @@ class TrimExecutor extends CommandExecutor {
 class ResetExecutor extends CommandExecutor {
   @override
   Future<ItemResult> execute(CommandContext context, CliArgs args) async {
+    if (args.dryRun) {
+      return ItemResult.success(
+        path: context.path,
+        name: context.name,
+        message: '[DRY RUN] Would reset all tracking data',
+      );
+    }
+
     final success = await ResetCommand.run(
       projectPath: context.path,
       force: args.force,

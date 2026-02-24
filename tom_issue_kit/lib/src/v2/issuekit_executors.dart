@@ -85,6 +85,23 @@ class NewIssueExecutor extends CommandExecutor {
     final title = args.positionalArgs.first;
     final opts = args.extraOptions;
 
+    if (args.dryRun) {
+      final severity = opts['severity'] as String? ?? 'normal';
+      final project = opts['project'] as String? ?? '(none)';
+      return ToolResult(
+        success: true,
+        processedCount: 0,
+        itemResults: [
+          ItemResult.success(
+            path: 'tom_issues',
+            name: ':new',
+            message: '[DRY RUN] Would create issue: "$title" '
+                '(severity: $severity, project: $project)',
+          ),
+        ],
+      );
+    }
+
     try {
       final result = await service.createIssue(
         title: title,
@@ -151,6 +168,28 @@ class EditIssueExecutor extends CommandExecutor {
     }
     final opts = args.extraOptions;
 
+    if (args.dryRun) {
+      final fields = <String>[];
+      if (opts['title'] != null) fields.add('title');
+      if (opts['severity'] != null) fields.add('severity');
+      if (opts['context'] != null) fields.add('context');
+      if (opts['tags'] != null) fields.add('tags');
+      if (opts['project'] != null) fields.add('project');
+      if (opts['assignee'] != null) fields.add('assignee');
+      return ToolResult(
+        success: true,
+        processedCount: 0,
+        itemResults: [
+          ItemResult.success(
+            path: 'tom_issues',
+            name: '#$issueNumber',
+            message: '[DRY RUN] Would update issue #$issueNumber '
+                'fields: ${fields.isEmpty ? '(none)' : fields.join(', ')}',
+          ),
+        ],
+      );
+    }
+
     try {
       final updated = await service.updateIssue(
         issueNumber: issueNumber,
@@ -214,6 +253,22 @@ class AnalyzeExecutor extends CommandExecutor {
       );
     }
     final opts = args.extraOptions;
+
+    if (args.dryRun) {
+      final project = opts['project'] as String?;
+      return ToolResult(
+        success: true,
+        processedCount: 0,
+        itemResults: [
+          ItemResult.success(
+            path: 'tom_issues',
+            name: '#$issueNumber',
+            message: '[DRY RUN] Would analyze issue #$issueNumber'
+                '${project != null ? ' and assign to $project' : ''}',
+          ),
+        ],
+      );
+    }
 
     try {
       final result = await service.analyzeIssue(
@@ -284,6 +339,21 @@ class AssignExecutor extends CommandExecutor {
     if (project == null) {
       return const ToolResult.failure(
         'Missing required option: --project',
+      );
+    }
+
+    if (args.dryRun) {
+      return ToolResult(
+        success: true,
+        processedCount: 0,
+        itemResults: [
+          ItemResult.success(
+            path: 'tom_issues',
+            name: '#$issueNumber',
+            message: '[DRY RUN] Would assign issue #$issueNumber '
+                'to project $project',
+          ),
+        ],
       );
     }
 
@@ -368,13 +438,15 @@ class TestingExecutor extends CommandExecutor {
         : '';
 
     // Per spec: update issue labels to TESTING and test entry to has-tests
-    try {
-      await service.updateIssue(
-        issueNumber: issueNumber,
-        tags: ['testing'],
-      );
-    } on Exception {
-      // API call may fail — scan result is still valid
+    if (!args.dryRun) {
+      try {
+        await service.updateIssue(
+          issueNumber: issueNumber,
+          tags: ['testing'],
+        );
+      } on Exception {
+        // API call may fail — scan result is still valid
+      }
     }
 
     return ItemResult.success(
@@ -447,7 +519,7 @@ class VerifyExecutor extends CommandExecutor {
     final statusLine = allPass ? 'ALL PASS' : 'SOME FAIL';
 
     // Per spec: if all pass, update issue to VERIFYING and test entry to all-pass
-    if (allPass) {
+    if (allPass && !args.dryRun) {
       try {
         await service.updateIssue(
           issueNumber: issueNumber,
@@ -494,6 +566,20 @@ class ResolveExecutor extends CommandExecutor {
       );
     }
     final opts = args.extraOptions;
+
+    if (args.dryRun) {
+      return ToolResult(
+        success: true,
+        processedCount: 0,
+        itemResults: [
+          ItemResult.success(
+            path: 'tom_issues',
+            name: '#$issueNumber',
+            message: '[DRY RUN] Would resolve issue #$issueNumber',
+          ),
+        ],
+      );
+    }
 
     try {
       final resolved = await service.resolveIssue(
@@ -549,6 +635,20 @@ class CloseExecutor extends CommandExecutor {
       );
     }
 
+    if (args.dryRun) {
+      return ToolResult(
+        success: true,
+        processedCount: 0,
+        itemResults: [
+          ItemResult.success(
+            path: 'tom_issues',
+            name: '#$issueNumber',
+            message: '[DRY RUN] Would close issue #$issueNumber',
+          ),
+        ],
+      );
+    }
+
     try {
       final closed = await service.closeIssue(issueNumber);
       return ToolResult(
@@ -594,6 +694,20 @@ class ReopenExecutor extends CommandExecutor {
     if (issueNumber == null) {
       return const ToolResult.failure(
         'Missing required argument: issue number',
+      );
+    }
+
+    if (args.dryRun) {
+      return ToolResult(
+        success: true,
+        processedCount: 0,
+        itemResults: [
+          ItemResult.success(
+            path: 'tom_issues',
+            name: '#$issueNumber',
+            message: '[DRY RUN] Would reopen issue #$issueNumber',
+          ),
+        ],
       );
     }
 
@@ -1259,6 +1373,21 @@ class LinkExecutor extends CommandExecutor {
       );
     }
 
+    if (args.dryRun) {
+      return ToolResult(
+        success: true,
+        processedCount: 0,
+        itemResults: [
+          ItemResult.success(
+            path: 'tom_issues',
+            name: '#$issueNumber',
+            message: '[DRY RUN] Would link test $testId '
+                'to issue #$issueNumber',
+          ),
+        ],
+      );
+    }
+
     try {
       await service.linkTest(
         issueNumber: issueNumber,
@@ -1589,7 +1718,7 @@ class ImportExecutor extends CommandExecutor {
     }
     final filePath = args.positionalArgs.first;
     final opts = args.extraOptions;
-    final dryRun = opts['dry-run'] == true;
+    final dryRun = args.dryRun || opts['dry-run'] == true;
 
     try {
       final repo = opts['repo'] as String? ?? 'issues';
@@ -1675,6 +1804,21 @@ class InitExecutor extends CommandExecutor {
     final repo = opts['repo'] as String? ?? 'both';
     final force = opts['force'] == true;
 
+    if (args.dryRun) {
+      return ToolResult(
+        success: true,
+        processedCount: 0,
+        itemResults: [
+          ItemResult.success(
+            path: 'init',
+            name: 'labels',
+            message: '[DRY RUN] Would initialize labels '
+                'for repo: $repo${force ? ' (force)' : ''}',
+          ),
+        ],
+      );
+    }
+
     try {
       final result = await service.initLabels(repo: repo, force: force);
 
@@ -1719,6 +1863,25 @@ class SnapshotExecutor extends CommandExecutor {
     final opts = args.extraOptions;
     final issuesOnly = opts['issues-only'] == true;
     final testsOnly = opts['tests-only'] == true;
+
+    if (args.dryRun) {
+      final scope = issuesOnly
+          ? 'issues only'
+          : testsOnly
+              ? 'tests only'
+              : 'issues and tests';
+      return ToolResult(
+        success: true,
+        processedCount: 0,
+        itemResults: [
+          ItemResult.success(
+            path: 'snapshot',
+            name: 'snapshot',
+            message: '[DRY RUN] Would create snapshot of $scope',
+          ),
+        ],
+      );
+    }
 
     try {
       final snapshot = await service.createSnapshot(
@@ -1767,6 +1930,21 @@ class RunTestsExecutor extends CommandExecutor {
   @override
   Future<ToolResult> executeWithoutTraversal(CliArgs args) async {
     final wait = args.extraOptions['wait'] == true;
+
+    if (args.dryRun) {
+      return ToolResult(
+        success: true,
+        processedCount: 0,
+        itemResults: [
+          ItemResult.success(
+            path: 'run-tests',
+            name: 'workflow',
+            message: '[DRY RUN] Would trigger test workflow'
+                '${wait ? ' (with wait)' : ''}',
+          ),
+        ],
+      );
+    }
 
     try {
       await service.triggerTestWorkflow(wait: wait);
