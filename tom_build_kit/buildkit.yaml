@@ -8,8 +8,8 @@ compiler:
   compiles:
     # macOS ARM64 - compile for self + all Linux targets
     - commandline:
-        - mkdir -p $HOME/.tom/bin/${target-platform-vs}
-        - dart compile exe ${file} --target-os=${target-os} -o $HOME/.tom/bin/${target-platform-vs}/${file.name}
+        - mkdir -p $TOM_BINARY_PATH/${target-platform-vs}
+        - dart compile exe ${file} --target-os=${target-os} -o $TOM_BINARY_PATH/${target-platform-vs}/${file.name}
       files:
         - bin/buildkit.dart
         - bin/buildsorter.dart
@@ -35,8 +35,8 @@ compiler:
     
     # Other platforms - compile for self only
     - commandline:
-        - mkdir -p $HOME/.tom/bin/${target-platform-vs}
-        - dart compile exe ${file} -o $HOME/.tom/bin/${target-platform-vs}/${file.name}
+        - mkdir -p $TOM_BINARY_PATH/${target-platform-vs}
+        - dart compile exe ${file} -o $TOM_BINARY_PATH/${target-platform-vs}/${file.name}
       files:
         - bin/buildkit.dart
         - bin/buildsorter.dart
@@ -62,12 +62,12 @@ compiler:
   postcompile:
     # Make binaries executable on Unix-like systems
     - commandline:
-        - chmod -R +x $HOME/.tom/bin/${current-platform-vs}/
+        - chmod -R +x $TOM_BINARY_PATH/${current-platform-vs}/
       platforms: [macos, linux]
     
     # Create bk symlink for buildkit
     - commandline:
-        - ln -sf $HOME/.tom/bin/${current-platform-vs}/buildkit $HOME/.tom/bin/${current-platform-vs}/bk
+        - ln -sf $TOM_BINARY_PATH/${current-platform-vs}/buildkit $TOM_BINARY_PATH/${current-platform-vs}/bk
       platforms: [macos, linux]
     - commandline:
         - cmd /c mklink $HOME\.tom\bin\${current-platform-vs}\bk.exe $HOME\.tom\bin\${current-platform-vs}\buildkit.exe

@@ -99,6 +99,7 @@ class FolderScanner {
       }
       // When --all is active, continue into skipped folders instead of returning.
       if (!ignoreSkipMarkers) return;
+      stderr.writeln('Ignoring skip file, --no-skip active');
     }
     
     // No skip marker — add this directory
