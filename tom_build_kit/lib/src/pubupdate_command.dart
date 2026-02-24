@@ -2,10 +2,10 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:args/args.dart';
-import 'package:glob/glob.dart';
-import 'package:glob/list_local_fs.dart';
 import 'package:path/path.dart' as p;
 import 'package:tom_build_base/tom_build_base.dart';
+
+import 'project_scanner.dart';
 
 /// Result of a pub upgrade execution for a single project.
 class PubUpdateResult {
@@ -161,9 +161,10 @@ class PubUpdateCommand {
       final scanDir = p.isAbsolute(scanPath)
           ? scanPath
           : p.join(currentDir, scanPath);
-      projectPaths = _scanForProjects(scanDir, recursive: recursive);
+      projectPaths = scanForDartProjects(scanDir,
+          recursive: recursive, verbose: isVerbose);
     } else if (projectArg != null) {
-      projectPaths = _resolveProjectPatterns(projectArg, basePath: currentDir);
+      projectPaths = resolveProjectPatterns(projectArg, basePath: currentDir);
     } else {
       // Default: current directory
       projectPaths = [currentDir];
@@ -357,60 +358,4 @@ class PubUpdateCommand {
     }
   }
 
-  /// Scan a directory for Dart projects (directories containing pubspec.yaml).
-  List<String> _scanForProjects(String dir, {bool recursive = false}) {
-    final root = Directory(dir);
-    if (!root.existsSync()) return [];
-
-    final results = <String>[];
-    if (recursive) {
-      for (final entity in root.listSync(recursive: true)) {
-        if (entity is File && p.basename(entity.path) == 'pubspec.yaml') {
-          results.add(p.dirname(entity.path));
-        }
-      }
-    } else {
-      for (final entity in root.listSync()) {
-        if (entity is Directory) {
-          final pubspec = File(p.join(entity.path, 'pubspec.yaml'));
-          if (pubspec.existsSync()) results.add(entity.path);
-        }
-      }
-      // Also check root itself
-      final rootPubspec = File(p.join(dir, 'pubspec.yaml'));
-      if (rootPubspec.existsSync()) results.insert(0, dir);
-    }
-    return results;
-  }
-
-  /// Resolve comma-separated project patterns (globs or paths).
-  List<String> _resolveProjectPatterns(
-    String patterns, {
-    required String basePath,
-  }) {
-    final results = <String>[];
-    for (final pattern
-        in patterns
-            .split(',')
-            .map((s) => s.trim())
-            .where((s) => s.isNotEmpty)) {
-      if (pattern.contains('*') ||
-          pattern.contains('?') ||
-          pattern.contains('[')) {
-        final glob = Glob(pattern);
-        for (final entity in glob.listSync(root: basePath)) {
-          if (entity is Directory) {
-            final pubspec = File(p.join(entity.path, 'pubspec.yaml'));
-            if (pubspec.existsSync()) results.add(entity.path);
-          }
-        }
-      } else {
-        final resolved = p.isAbsolute(pattern)
-            ? pattern
-            : p.join(basePath, pattern);
-        if (Directory(resolved).existsSync()) results.add(resolved);
-      }
-    }
-    return results;
-  }
 }
