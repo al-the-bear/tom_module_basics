@@ -26,3 +26,11 @@ compiler:
     - commandline:
         - chmod -R +x $TOM_BINARY_PATH/${current-platform-vs}/
       platforms: [macos, linux]
+    
+    # Create tk symlink for testkit
+    - commandline:
+        - ln -sf $TOM_BINARY_PATH/${current-platform-vs}/testkit $TOM_BINARY_PATH/${current-platform-vs}/tk
+      platforms: [macos, linux]
+    - commandline:
+        - cmd /c mklink $HOME\.tom\bin\${current-platform-vs}\tk.exe $HOME\.tom\bin\${current-platform-vs}\testkit.exe
+      platforms: [win32-*]

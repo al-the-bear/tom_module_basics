@@ -2,3 +2,35 @@
 
 versioner:
   variable-prefix: issueKit
+
+# Compiler tool configuration
+compiler:
+  compiles:
+    # macOS ARM64 - compile for self + all Linux targets
+    - commandline:
+        - mkdir -p $TOM_BINARY_PATH/${target-platform-vs}
+        - dart compile exe ${file} --target-os=${target-os} -o $TOM_BINARY_PATH/${target-platform-vs}/issuekit
+      files: bin/issuekit.dart
+      targets: [darwin-arm64, linux-x64, linux-arm64, linux-armhf]
+      platforms: [darwin-arm64]
+    
+    # Other platforms - compile for self only
+    - commandline:
+        - mkdir -p $TOM_BINARY_PATH/${target-platform-vs}
+        - dart compile exe ${file} -o $TOM_BINARY_PATH/${target-platform-vs}/issuekit
+      files: bin/issuekit.dart
+      platforms: [darwin-x64, linux-*, win32-*]
+
+  postcompile:
+    # Make binaries executable on Unix-like systems
+    - commandline:
+        - chmod -R +x $TOM_BINARY_PATH/${current-platform-vs}/
+      platforms: [macos, linux]
+    
+    # Create ik symlink for issuekit
+    - commandline:
+        - ln -sf $TOM_BINARY_PATH/${current-platform-vs}/issuekit $TOM_BINARY_PATH/${current-platform-vs}/ik
+      platforms: [macos, linux]
+    - commandline:
+        - cmd /c mklink $HOME\.tom\bin\${current-platform-vs}\ik.exe $HOME\.tom\bin\${current-platform-vs}\issuekit.exe
+      platforms: [win32-*]
