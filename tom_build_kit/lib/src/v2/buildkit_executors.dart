@@ -52,6 +52,7 @@ class PubGetExecutor extends CommandExecutor {
     final cmdArgs = <String>['--scan', root];
     if (args.effectiveRecursive) cmdArgs.add('--recursive');
     if (args.verbose) cmdArgs.add('--verbose');
+    if (args.dryRun) cmdArgs.add('--dry-run');
 
     // Pass through extra options
     for (final entry in args.extraOptions.entries) {
@@ -105,6 +106,7 @@ class PubGetAllExecutor extends CommandExecutor {
 
     final cmdArgs = <String>['--scan', wsRoot, '--recursive'];
     if (args.verbose) cmdArgs.add('--verbose');
+    if (args.dryRun) cmdArgs.add('--dry-run');
 
     for (final entry in args.extraOptions.entries) {
       if (entry.value is bool && entry.value == true) {
@@ -138,6 +140,7 @@ class PubUpdateExecutor extends CommandExecutor {
     final cmdArgs = <String>['--scan', root];
     if (args.effectiveRecursive) cmdArgs.add('--recursive');
     if (args.verbose) cmdArgs.add('--verbose');
+    if (args.dryRun) cmdArgs.add('--dry-run');
 
     for (final entry in args.extraOptions.entries) {
       final key = entry.key;
@@ -189,6 +192,7 @@ class PubUpdateAllExecutor extends CommandExecutor {
 
     final cmdArgs = <String>['--scan', wsRoot, '--recursive'];
     if (args.verbose) cmdArgs.add('--verbose');
+    if (args.dryRun) cmdArgs.add('--dry-run');
 
     for (final entry in args.extraOptions.entries) {
       if (entry.value is bool && entry.value == true) {

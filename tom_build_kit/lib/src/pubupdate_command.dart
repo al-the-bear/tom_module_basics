@@ -57,6 +57,12 @@ class PubUpdateCommand {
   static ArgParser get parser => ArgParser()
     ..addFlag('help', abbr: 'h', negatable: false, help: 'Show help')
     ..addFlag(
+      'dry-run',
+      abbr: 'n',
+      negatable: false,
+      help: 'Show what would be done without executing',
+    )
+    ..addFlag(
       'errors',
       abbr: 'e',
       negatable: false,
@@ -121,6 +127,8 @@ class PubUpdateCommand {
   /// Execute pub upgrade across projects.
   ///
   /// Returns true if all projects succeeded, false if any failed.
+  /// Streams output per-project so errors are visible immediately.
+  /// Respects `--dry-run` — prints what would be executed without running.
   Future<bool> execute(List<String> args) async {
     ArgResults results;
     try {
@@ -136,6 +144,7 @@ class PubUpdateCommand {
       return true;
     }
 
+    final dryRun = results['dry-run'] as bool;
     final showErrors = results['errors'] as bool;
     final showChanges = results['changes'] as bool;
     final majorVersions = results['major-versions'] as bool;
@@ -165,28 +174,40 @@ class PubUpdateCommand {
       return false;
     }
 
+    if (dryRun) {
+      print('[DRY RUN] Would run pub upgrade on '
+          '${projectPaths.length} project(s)');
+      if (majorVersions) print('[DRY RUN] with --major-versions');
+      print('');
+      for (final projectPath in projectPaths) {
+        final relativePath = p.relative(projectPath, from: rootPath);
+        final projectName = _getProjectName(projectPath);
+        final cmd = majorVersions
+            ? 'dart pub upgrade --major-versions'
+            : 'dart pub upgrade';
+        print('  [$projectName] $cmd  ($relativePath)');
+      }
+      print('');
+      print('[DRY RUN] ${projectPaths.length} project(s) would be processed');
+      return true;
+    }
+
     print('Running pub upgrade on ${projectPaths.length} project(s)...');
     if (majorVersions) {
       print('(with --major-versions)');
     }
     print('');
 
-    // Execute pub upgrade in all projects and collect results
-    final results2 = <PubUpdateResult>[];
+    // Execute pub upgrade per-project with streaming output
+    var successCount = 0;
+    var failCount = 0;
+    var changesCount = 0;
     var processedCount = 0;
 
     for (final projectPath in projectPaths) {
       final relativePath = p.relative(projectPath, from: rootPath);
       final projectName = _getProjectName(projectPath);
-
-      // Show progress (pad to fixed width to clear previous longer names)
       processedCount++;
-      final progressText =
-          '  Processing ($processedCount/${projectPaths.length}): $projectName';
-      // Pad to 120 chars to overwrite any previous longer text
-      final paddedText = progressText.padRight(120);
-      stdout.write('\r$paddedText');
-      await stdout.flush();
 
       final result = await _runPubUpgrade(
         projectPath,
@@ -194,40 +215,42 @@ class PubUpdateCommand {
         projectName,
         majorVersions: majorVersions,
       );
-      results2.add(result);
+
+      // Track counts
+      if (result.success) {
+        successCount++;
+      } else {
+        failCount++;
+      }
+      if (result.hasChanges) changesCount++;
+
+      // Stream output immediately — apply filters
+      final show = _shouldShow(
+        result,
+        showErrors: showErrors,
+        showChanges: showChanges,
+      );
+      if (show) {
+        _displayResult(result, isVerbose, processedCount, projectPaths.length);
+      } else if (!result.success) {
+        // Always show failures even when filtering
+        _displayResult(result, isVerbose, processedCount, projectPaths.length);
+      } else {
+        // Compact progress for filtered-out successes
+        print('  ($processedCount/${projectPaths.length}) '
+            '$projectName ✓');
+      }
     }
-
-    // Clear progress line
-    stdout.write('\r${' ' * 120}\r');
-
-    // Apply filters and display results
-    final filteredResults = _filterResults(
-      results2,
-      showErrors: showErrors,
-      showChanges: showChanges,
-    );
-
-    // Display results
-    _displayResults(filteredResults, isVerbose);
 
     // Summary
     print('');
     print('=' * 60);
     print('Pub Update Summary');
     print('=' * 60);
-    print('Total projects: ${results2.length}');
-
-    final successCount = results2.where((r) => r.success).length;
-    final failCount = results2.where((r) => !r.success).length;
-    final changesCount = results2.where((r) => r.hasChanges).length;
-
+    print('Total projects: ${projectPaths.length}');
     print('Succeeded: $successCount');
     if (failCount > 0) print('Failed: $failCount');
     if (changesCount > 0) print('With package changes: $changesCount');
-
-    if (showErrors || showChanges) {
-      print('Displayed (filtered): ${filteredResults.length}');
-    }
 
     return failCount == 0;
   }
@@ -288,61 +311,48 @@ class PubUpdateCommand {
     return p.basename(projectPath);
   }
 
-  /// Filter results based on options.
-  List<PubUpdateResult> _filterResults(
-    List<PubUpdateResult> results, {
+  /// Check if a result should be shown based on filter options.
+  bool _shouldShow(
+    PubUpdateResult result, {
     required bool showErrors,
     required bool showChanges,
   }) {
-    // If no filters, show all
-    if (!showErrors && !showChanges) {
-      return results;
-    }
-
-    return results.where((r) {
-      if (showErrors && r.hasError) return true;
-      if (showChanges && r.hasChanges) return true;
-      return false;
-    }).toList();
+    // No filters → show all
+    if (!showErrors && !showChanges) return true;
+    if (showErrors && result.hasError) return true;
+    if (showChanges && result.hasChanges) return true;
+    return false;
   }
 
-  /// Display results.
-  void _displayResults(List<PubUpdateResult> results, bool isVerbose) {
-    for (final result in results) {
-      print('');
-      print('━' * 60);
-      print('📦 ${result.projectName}');
-      print('   ${result.projectPath}');
-      print('');
+  /// Display a single result immediately (streaming output).
+  void _displayResult(
+    PubUpdateResult result,
+    bool isVerbose,
+    int current,
+    int total,
+  ) {
+    final status = result.success ? '✓' : '✗ FAILED';
+    print('  ($current/$total) ${result.projectName}  $status');
+    print('   ${result.projectPath}');
 
-      if (result.stdout.isNotEmpty) {
-        // Clean up output - remove empty lines and indent
-        final lines = result.stdout
-            .split('\n')
-            .where((l) => l.trim().isNotEmpty)
-            .toList();
-        for (final line in lines) {
-          print(line);
-        }
+    if (result.stdout.isNotEmpty) {
+      final lines = result.stdout
+          .split('\n')
+          .where((l) => l.trim().isNotEmpty)
+          .toList();
+      for (final line in lines) {
+        print('    $line');
       }
+    }
 
-      if (result.stderr.isNotEmpty) {
-        print('');
-        print('STDERR:');
-        final lines = result.stderr
-            .split('\n')
-            .where((l) => l.trim().isNotEmpty)
-            .toList();
-        for (final line in lines) {
-          print('  $line');
-        }
-      }
-
-      // Status indicator
-      if (result.success) {
-        print('   ✓ Success');
-      } else {
-        print('   ✗ Failed');
+    if (result.stderr.isNotEmpty) {
+      print('    STDERR:');
+      final lines = result.stderr
+          .split('\n')
+          .where((l) => l.trim().isNotEmpty)
+          .toList();
+      for (final line in lines) {
+        print('    $line');
       }
     }
   }

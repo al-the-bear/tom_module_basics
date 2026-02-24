@@ -328,12 +328,10 @@ class BuiltinCommands {
 
   Future<bool> _runPubGet(List<String> args) async {
     if (verbose) print('  [builtin] Running pubget...');
-    if (dryRun) {
-      print('  [DRY RUN] Would run pubget with args: $args');
-      return true;
-    }
+    final cmdArgs = [...args];
+    if (dryRun) cmdArgs.add('--dry-run');
     final pubGetCommand = PubGetCommand(rootPath: rootPath, verbose: verbose);
-    return pubGetCommand.execute(args);
+    return pubGetCommand.execute(cmdArgs);
   }
 
   Future<bool> _runPubGetAll(List<String> args) async {
@@ -342,26 +340,21 @@ class BuiltinCommands {
     if (verbose) {
       print('  [builtin] Running pubgetall (-R $wsRoot --scan $wsRoot --recursive)...');
     }
-    if (dryRun) {
-      print('  [DRY RUN] Would run pubgetall with args: $args');
-      return true;
-    }
     final pubGetCommand = PubGetCommand(rootPath: wsRoot, verbose: verbose);
     final fullArgs = ['--scan', wsRoot, '--recursive', ...args];
+    if (dryRun) fullArgs.add('--dry-run');
     return pubGetCommand.execute(fullArgs);
   }
 
   Future<bool> _runPubUpdate(List<String> args) async {
     if (verbose) print('  [builtin] Running pubupdate...');
-    if (dryRun) {
-      print('  [DRY RUN] Would run pubupdate with args: $args');
-      return true;
-    }
+    final cmdArgs = [...args];
+    if (dryRun) cmdArgs.add('--dry-run');
     final pubUpdateCommand = PubUpdateCommand(
       rootPath: rootPath,
       verbose: verbose,
     );
-    return pubUpdateCommand.execute(args);
+    return pubUpdateCommand.execute(cmdArgs);
   }
 
   Future<bool> _runPubUpdateAll(List<String> args) async {
@@ -370,15 +363,12 @@ class BuiltinCommands {
     if (verbose) {
       print('  [builtin] Running pubupdateall (-R $wsRoot --scan $wsRoot --recursive)...');
     }
-    if (dryRun) {
-      print('  [DRY RUN] Would run pubupdateall with args: $args');
-      return true;
-    }
     final pubUpdateCommand = PubUpdateCommand(
       rootPath: wsRoot,
       verbose: verbose,
     );
     final fullArgs = ['--scan', wsRoot, '--recursive', ...args];
+    if (dryRun) fullArgs.add('--dry-run');
     return pubUpdateCommand.execute(fullArgs);
   }
 
