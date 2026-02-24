@@ -134,8 +134,12 @@ Future<ShowVersionsResult> showVersions(ShowVersionsOptions options) async {
     );
     log('Glob discovery found ${projectPaths.length} projects');
   } else {
-    // Recursive directory scan
-    projectPaths = _scanForProjects(basePath, verbose: effectiveVerbose);
+    // Recursive directory scan (workspace-boundary-aware)
+    projectPaths = scanForDartProjects(
+      basePath,
+      recursive: true,
+      verbose: effectiveVerbose,
+    );
     log('Directory scan found ${projectPaths.length} projects');
   }
 
@@ -220,19 +224,7 @@ String? readPubspecVersion(String projectPath) {
 // Internal helpers (replacing deleted v1 ProjectDiscovery / ProjectScanner)
 // =============================================================================
 
-/// Directories to always skip during scanning.
-const _alwaysSkipDirectories = {
-  '.dart_tool',
-  '.git',
-  '.idea',
-  '.vscode',
-  'build',
-  'node_modules',
-  'coverage',
-  '.pub-cache',
-  '.pub',
-  '__pycache__',
-};
+
 
 /// Resolve glob patterns to a list of project paths.
 Future<List<String>> _resolveGlobPatterns(
@@ -272,42 +264,7 @@ Future<List<String>> _resolveGlobPatterns(
   return results;
 }
 
-/// Scan a directory recursively for Dart projects (containing pubspec.yaml).
-List<String> _scanForProjects(String basePath, {bool verbose = false}) {
-  final projects = <String>[];
-  final baseDir = Directory(basePath);
-  if (!baseDir.existsSync()) return projects;
 
-  try {
-    for (final entity in baseDir.listSync(recursive: true)) {
-      if (entity is! File) continue;
-      if (p.basename(entity.path) != 'pubspec.yaml') continue;
-
-      final dirPath = p.dirname(entity.path);
-      final dirName = p.basename(dirPath);
-
-      // Skip hidden and non-project directories
-      final parts = p.split(p.relative(dirPath, from: basePath));
-      if (parts.any(
-        (part) => part.startsWith('.') || _alwaysSkipDirectories.contains(part),
-      )) {
-        continue;
-      }
-
-      // Skip directories that aren't useful project candidates
-      if (dirName.startsWith('.')) continue;
-
-      projects.add(p.normalize(p.absolute(dirPath)));
-    }
-  } catch (e) {
-    if (verbose) {
-      // ignore: avoid_print
-      print('Warning: Error scanning $basePath: $e');
-    }
-  }
-
-  return projects;
-}
 
 /// Apply exclusion patterns to a list of project paths.
 List<String> _applyExclusions(

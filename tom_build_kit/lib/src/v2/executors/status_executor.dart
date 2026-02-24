@@ -257,7 +257,7 @@ class StatusExecutor extends CommandExecutor {
     if (!skipGit) {
       if (innerFirstGit || outerFirstGit) {
         // Find git repos by scanning for .git directories
-        final gitRoots = _findGitRepos(executionRoot);
+        final gitRoots = await _findGitRepos(executionRoot);
         for (final repoPath in gitRoots) {
           final status = await _analyzeGitRepo(repoPath);
           if (status != null) repos.add(status);
@@ -310,17 +310,10 @@ class StatusExecutor extends CommandExecutor {
   }
 
   /// Find all git repositories under a directory.
-  List<String> _findGitRepos(String rootDir) {
-    final repos = <String>[];
-    final root = Directory(rootDir);
-    if (!root.existsSync()) return repos;
-
-    for (final entity in root.listSync(recursive: true, followLinks: false)) {
-      if (entity is Directory && p.basename(entity.path) == '.git') {
-        repos.add(p.dirname(entity.path));
-      }
-    }
-    return repos;
+  Future<List<String>> _findGitRepos(String rootDir) async {
+    final finder = GitRepoFinder();
+    final repos = await finder.findAll(rootDir);
+    return repos.map((f) => f.path).toList();
   }
 
   /// Check a tool's version by running `<tool> --version`.

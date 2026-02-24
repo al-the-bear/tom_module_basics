@@ -297,6 +297,14 @@ class GitRepoFinder {
     return topRepo;
   }
 
+  /// Directories that never contain git repos — skip for performance.
+  static const _skipDirectories = {
+    'build',
+    'node_modules',
+    'coverage',
+    '__pycache__',
+  };
+
   Future<void> _findGitRepos(Directory dir, List<FsFolder> results) async {
     if (!dir.existsSync()) return;
 
@@ -314,6 +322,7 @@ class GitRepoFinder {
         if (entity is Directory) {
           final name = p.basename(entity.path);
           if (name.startsWith('.')) continue; // Skip hidden
+          if (_skipDirectories.contains(name)) continue; // Skip non-project
           await _findGitRepos(entity, results);
         }
       }

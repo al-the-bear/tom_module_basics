@@ -35,7 +35,7 @@ library;
 export 'src/build_yaml_utils.dart';
 
 export 'src/build_config.dart';
-export 'src/config_loader.dart';
+export 'src/config_loader.dart' hide kTomSkipYaml;
 export 'src/config_merger.dart';
 export 'src/path_utils.dart';
 export 'src/processing_result.dart';

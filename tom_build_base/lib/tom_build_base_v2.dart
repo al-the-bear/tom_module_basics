@@ -34,7 +34,7 @@ export 'src/v2/folder/natures/natures.dart';
 // Traversal
 export 'src/v2/traversal/traversal_info.dart';
 export 'src/v2/traversal/command_context.dart';
-export 'src/v2/traversal/folder_scanner.dart';
+export 'src/v2/traversal/folder_scanner.dart' hide kTomSkipYaml;
 export 'src/v2/traversal/filter_pipeline.dart';
 export 'src/v2/traversal/nature_detector.dart';
 export 'src/v2/traversal/build_base.dart';

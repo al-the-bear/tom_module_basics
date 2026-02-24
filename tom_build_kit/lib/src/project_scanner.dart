@@ -5,6 +5,11 @@ import 'package:glob/list_local_fs.dart';
 import 'package:path/path.dart' as p;
 import 'package:tom_build_base/tom_build_base.dart';
 
+// NOTE: When tom_build_base is published with scanForDartProjects in
+// workspace_utils.dart, replace this file's copy with:
+//   export 'package:tom_build_base/tom_build_base.dart'
+//       show scanForDartProjects, kAlwaysSkipDirectories;
+
 /// Directories that should always be skipped during recursive scanning.
 ///
 /// These are build artifacts, caches, or hidden infrastructure directories

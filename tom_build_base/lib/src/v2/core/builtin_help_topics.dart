@@ -21,75 +21,152 @@ const placeholdersHelpTopic = HelpTopic(
 const _placeholdersContent = r'''
 **Placeholders**
 
-Placeholders are variables that get replaced with actual values when a
-command runs. They are resolved per folder during workspace traversal.
+Three separate placeholder systems are used depending on context:
 
-<cyan>**Syntax**</cyan>
+  ${...}    Command placeholders — resolved in commands during traversal
+  @{...}    Config placeholders — resolved in YAML config files
+  @[...]    Define placeholders — user-defined values in YAML config files
 
-  ${name}                Simple placeholder
-  ${cond?(yes):(no)}     Ternary (boolean placeholders only)
+Each system is independent and uses its own syntax.
 
-<cyan>**Path Placeholders**</cyan>
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  ${root}                Workspace root (absolute path)
-  ${folder}              Current folder (absolute path)
-  ${folder.name}         Folder basename
-  ${folder.relative}     Folder relative to workspace root
+<cyan>**COMMAND PLACEHOLDERS  ${...}**</cyan>
 
-<cyan>**Platform Placeholders**</cyan>
+  Resolved per folder during workspace traversal in :execute, :compiler,
+  and other commands that run shell commands.
 
-  ${current-os}          Operating system (linux, macos, windows)
-  ${current-arch}        Architecture (x64, arm64, armhf)
-  ${current-platform}    Combined (darwin-arm64, linux-x64, etc.)
+  <cyan>Syntax:</cyan>
+    ${name}                Simple placeholder
+    ${cond?(yes):(no)}     Ternary (boolean placeholders only)
 
-<cyan>**Compiler Placeholders** (buildkit :compiler only)</cyan>
+  <cyan>Path Placeholders</cyan>
 
-  ${file}                Source file path
-  ${file.path}           Source file path (alias)
-  ${file.name}           Source file name without extension
-  ${file.basename}       Source file basename with extension
-  ${file.extension}      Source file extension
-  ${file.dir}            Source file directory
-  ${target-os}           Target OS (linux, macos, windows)
-  ${target-arch}         Target arch (x64, arm64, armhf)
-  ${target-platform}     Target for dart compile (linux, macos, windows)
-  ${target-platform-vs}  Target slug (linux-x64, darwin-arm64, etc.)
-  ${current-platform-vs} Current platform slug
+    ${root}                Workspace root (absolute path)
+    ${folder}              Current folder (absolute path)
+    ${folder.name}         Folder basename
+    ${folder.relative}     Folder relative to workspace root
 
-<cyan>**Nature Detection (boolean)**</cyan>
+  <cyan>Platform Placeholders</cyan>
 
-  ${dart.exists}             true if Dart project (pubspec.yaml)
-  ${flutter.exists}          true if Flutter project
-  ${package.exists}          true if Dart package (has lib/src/)
-  ${console.exists}          true if Dart console app (has bin/)
-  ${git.exists}              true if git repository
-  ${typescript.exists}       true if TypeScript project
-  ${vscode-extension.exists} true if VS Code extension
-  ${buildkit.exists}         true if has buildkit.yaml
-  ${tom-project.exists}      true if has tom_project.yaml
+    ${current-os}          Operating system (linux, macos, windows)
+    ${current-arch}        Architecture (x64, arm64, armhf)
+    ${current-platform}    Combined (darwin-arm64, linux-x64, etc.)
 
-<cyan>**Nature Attributes**</cyan>
+  <cyan>Compiler Placeholders</cyan> (buildkit :compiler only)
 
-  ${dart.name}           Project name from pubspec.yaml
-  ${dart.version}        Version from pubspec.yaml
-  ${dart.publishable}    true if publishable to pub.dev (boolean)
-  ${flutter.platforms}   Comma-separated platform list
-  ${flutter.isPlugin}    true if Flutter plugin (boolean)
-  ${git.branch}          Current branch name
-  ${git.isSubmodule}     true if git submodule (boolean)
-  ${git.hasChanges}      true if uncommitted changes (boolean)
-  ${git.remotes}         Comma-separated remote list
-  ${vscode.name}         Extension name
-  ${vscode.version}      Extension version
+    ${file}                Source file path
+    ${file.path}           Source file path (alias)
+    ${file.name}           Source file name without extension
+    ${file.basename}       Source file basename with extension
+    ${file.extension}      Source file extension
+    ${file.dir}            Source file directory
+    ${target-os}           Target OS (linux, macos, windows)
+    ${target-arch}         Target arch (x64, arm64, armhf)
+    ${target-platform}     Target for dart compile (linux, macos, windows)
+    ${target-platform-vs}  Target slug (linux-x64, darwin-arm64, etc.)
+    ${current-platform-vs} Current platform slug
 
-<cyan>**Ternary Expressions**</cyan>
+  <cyan>Nature Detection (boolean)</cyan>
 
-  Boolean placeholders support conditional substitution:
+    ${dart.exists}             true if Dart project (pubspec.yaml)
+    ${flutter.exists}          true if Flutter project
+    ${package.exists}          true if Dart package (has lib/src/)
+    ${console.exists}          true if Dart console app (has bin/)
+    ${git.exists}              true if git repository
+    ${typescript.exists}       true if TypeScript project
+    ${vscode-extension.exists} true if VS Code extension
+    ${buildkit.exists}         true if has buildkit.yaml
+    ${tom-project.exists}      true if has tom_project.yaml
 
-    ${dart.exists?(dart project):(not dart)}
-    ${git.hasChanges?(DIRTY):(clean)}
+  <cyan>Nature Attributes</cyan>
 
-<yellow>**Environment Variables**</yellow>
+    ${dart.name}           Project name from pubspec.yaml
+    ${dart.version}        Version from pubspec.yaml
+    ${dart.publishable}    true if publishable to pub.dev (boolean)
+    ${flutter.platforms}   Comma-separated platform list
+    ${flutter.isPlugin}    true if Flutter plugin (boolean)
+    ${git.branch}          Current branch name
+    ${git.isSubmodule}     true if git submodule (boolean)
+    ${git.hasChanges}      true if uncommitted changes (boolean)
+    ${git.remotes}         Comma-separated remote list
+    ${vscode.name}         Extension name
+    ${vscode.version}      Extension version
+
+  <cyan>Ternary Expressions</cyan>
+
+    Boolean placeholders support conditional substitution:
+
+      ${dart.exists?(dart project):(not dart)}
+      ${git.hasChanges?(DIRTY):(clean)}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+<cyan>**CONFIG PLACEHOLDERS  @{...}**</cyan>
+
+  Resolved in YAML config files (buildkit.yaml, testkit.yaml,
+  issuekit.yaml, etc.) during config loading. Available in both
+  master and project config files.
+
+  <cyan>Built-in Config Placeholders</cyan>
+
+    @{project-path}        Absolute path to the current project folder
+    @{project-name}        Folder basename of the current project
+    @{workspace-root}      Absolute path to the workspace root
+    @{tool-name}           Name of the current tool (e.g. buildkit)
+    @{tool-version}        Version of the current tool
+
+  Tools may register additional custom @{...} placeholders via the
+  ConfigLoader.toolPlaceholders mechanism.
+
+  <cyan>Resolution</cyan>
+
+    Config placeholders are resolved AFTER mode filtering and BEFORE
+    the config is parsed into commands. They are recursive — a resolved
+    value may contain further @{...} placeholders (max depth 10).
+
+  <cyan>Example</cyan> (buildkit.yaml)
+
+    compiler:
+      binaryPath: @{workspace-root}/tom_binaries/@{tool-name}
+      outputDir: @{project-path}/build/bin
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+<cyan>**DEFINE PLACEHOLDERS  @[...]**</cyan>
+
+  User-defined values declared in the defines: section of YAML config
+  files. They act as reusable constants within that config file.
+
+  <cyan>Syntax</cyan>
+
+    defines:
+      my-var: some-value
+      output: /tmp/results
+
+  Reference anywhere else in the same file:
+
+    @[my-var]     → some-value
+    @[output]     → /tmp/results
+
+  <cyan>Resolution Order</cyan>
+
+    1. Project config defines override master config defines
+    2. Mode-prefixed defines are applied when that mode is active
+       (e.g. DEV-defines: for development mode)
+    3. @[...] placeholders are resolved before @{...} placeholders
+
+  <cyan>Example</cyan> (buildkit.yaml)
+
+    defines:
+      bin-root: @{workspace-root}/tom_binaries
+      arch: darwin-arm64
+    compiler:
+      binaryPath: @[bin-root]/@[arch]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+<yellow>**ENVIRONMENT VARIABLES**</yellow>
 
   Environment variables are resolved in YAML config files and shell
   commands. Use standard shell syntax:
@@ -102,9 +179,26 @@ command runs. They are resolved per folder during workspace traversal.
   2. By the shell when running the command (sh -c)
 
   Environment variables do NOT use curly braces — ${...} is reserved
-  for placeholders. Use $VAR_NAME (no braces) for env vars.
+  for command placeholders. Use $VAR_NAME (no braces) for env vars.
 
-<green>**Examples**</green>
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+<green>**CONTEXT REFERENCE**</green>
+
+  Where each placeholder type is available:
+
+    ┌────────────────────────┬──────────┬──────────┬──────────┐
+    │ Placeholder            │ Commands │ Config   │ Compiler │
+    ├────────────────────────┼──────────┼──────────┼──────────┤
+    │ ${path/platform/nature}│   ✓      │          │   ✓      │
+    │ ${file/target}         │          │          │   ✓      │
+    │ @{tool placeholders}   │          │   ✓      │          │
+    │ @[defines]             │          │   ✓      │          │
+    │ $ENV_VAR               │   ✓ (*)  │   ✓      │   ✓      │
+    └────────────────────────┴──────────┴──────────┴──────────┘
+    (*) resolved by shell, not by the tool
+
+<green>**EXAMPLES**</green>
 
   Execute command with placeholders:
     buildkit :execute "echo ${folder.name} on ${current-platform}"
@@ -115,9 +209,12 @@ command runs. They are resolved per folder during workspace traversal.
   Ternary in commands:
     buildkit :execute "echo ${dart.exists?(Dart: ${dart.name}):(not Dart)}"
 
-  Compiler YAML using env vars:
-    binaryPath: $TOM_BINARY_PATH
-    commands:
-      - mkdir -p $TOM_BINARY_PATH/${target-platform-vs}
-      - dart compile exe ${file} -o $TOM_BINARY_PATH/${target-platform-vs}/${file.name}
+  Config file with all placeholder types:
+    defines:
+      arch: darwin-arm64
+    compiler:
+      binaryPath: @{workspace-root}/tom_binaries/@[arch]
+      commands:
+        - mkdir -p $TOM_BINARY_PATH/${target-platform-vs}
+        - dart compile exe ${file} -o $TOM_BINARY_PATH/${target-platform-vs}/${file.name}
 ''';

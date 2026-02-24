@@ -11,6 +11,8 @@ import 'package:glob/list_local_fs.dart';
 import 'package:path/path.dart' as p;
 import 'package:tom_build_base/tom_build_base.dart' show TomBuildConfig;
 import 'package:tom_build_base/tom_build_base_v2.dart' show findWorkspaceRoot;
+
+import '../../project_scanner.dart' show scanForDartProjects;
 import 'package:yaml/yaml.dart';
 
 /// Resolves project patterns (names, paths, and globs) to absolute paths.
@@ -169,39 +171,32 @@ class ProjectResolver {
     String? idMatch;
     String? nameMatch;
 
-    try {
-      for (final entity in Directory(rootDir).listSync(recursive: true)) {
-        if (entity is! Directory) continue;
+    // Use workspace-aware scanner instead of raw listSync
+    final projectPaths = scanForDartProjects(
+      rootDir,
+      recursive: true,
+      verbose: verbose,
+    );
 
-        final dirPath = entity.path;
-        final dirName = p.basename(dirPath);
+    for (final dirPath in projectPaths) {
+      if (projectFilter != null && !projectFilter(dirPath)) continue;
 
-        // Skip hidden directories and known non-project directories
-        if (dirName.startsWith('.') ||
-            _alwaysSkipDirectories.contains(dirName)) {
-          continue;
-        }
+      final dirName = p.basename(dirPath);
 
-        if (!_isProject(dirPath)) continue;
-        if (projectFilter != null && !projectFilter(dirPath)) continue;
+      // 1. Folder basename exact match (highest priority)
+      if (dirName == projectName) {
+        return p.normalize(p.absolute(dirPath));
+      }
 
-        // 1. Folder basename exact match (highest priority)
-        if (dirName == projectName) {
-          return p.normalize(p.absolute(dirPath));
-        }
-
-        // 2 & 3. Check project ID and name from YAML config files
-        if (idMatch == null || nameMatch == null) {
-          final match = _matchProjectConfig(dirPath, lowerSearch);
-          if (match == _ConfigMatch.id && idMatch == null) {
-            idMatch = p.normalize(p.absolute(dirPath));
-          } else if (match == _ConfigMatch.name && nameMatch == null) {
-            nameMatch = p.normalize(p.absolute(dirPath));
-          }
+      // 2 & 3. Check project ID and name from YAML config files
+      if (idMatch == null || nameMatch == null) {
+        final match = _matchProjectConfig(dirPath, lowerSearch);
+        if (match == _ConfigMatch.id && idMatch == null) {
+          idMatch = p.normalize(p.absolute(dirPath));
+        } else if (match == _ConfigMatch.name && nameMatch == null) {
+          nameMatch = p.normalize(p.absolute(dirPath));
         }
       }
-    } catch (e) {
-      _log('Warning: Error searching workspace: $e');
     }
 
     // Return first match by priority: folder name → ID → name
@@ -294,19 +289,6 @@ class ProjectResolver {
     return File(p.join(dirPath, 'pubspec.yaml')).existsSync();
   }
 
-  /// Directories to always skip when scanning.
-  static const _alwaysSkipDirectories = {
-    '.dart_tool',
-    '.git',
-    '.idea',
-    '.vscode',
-    'build',
-    'node_modules',
-    'coverage',
-    '.pub-cache',
-    '.pub',
-    '__pycache__',
-  };
 }
 
 /// Type of config match found during project search.
