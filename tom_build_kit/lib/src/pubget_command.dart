@@ -107,7 +107,7 @@ class PubGetCommand {
     print('');
     print('Usage: buildkit :pubget [options]');
     print(
-      '       buildkit :pubgetall  # Shortcut for :pubget --scan . --recursive',
+      '       buildkit :pubgetall  # Shortcut: -R <workspace> --scan <workspace> --recursive',
     );
     print('');
     print('Options:');
@@ -117,11 +117,8 @@ class PubGetCommand {
     print('  buildkit :pubget --scan . --recursive');
     print('  buildkit :pubget -s . -R --errors');
     print('  buildkit :pubget --project tom_* --updates');
-    print('  buildkit :pubgetall');
-    print('  buildkit :pubgetall --errors');
-    print(
-      '  buildkit :pubgetall --no-recursive  # Only process top-level projects',
-    );
+    print('  buildkit :pubgetall             # pub get in entire workspace');
+    print('  buildkit :pubgetall --errors    # only show projects with errors');
   }
 
   /// Execute pub get across projects.

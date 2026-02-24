@@ -337,13 +337,17 @@ class BuiltinCommands {
   }
 
   Future<bool> _runPubGetAll(List<String> args) async {
-    if (verbose) print('  [builtin] Running pubgetall (scan . --recursive)...');
+    final wsRoot =
+        rootPath.isNotEmpty ? rootPath : findWorkspaceRoot(Directory.current.path);
+    if (verbose) {
+      print('  [builtin] Running pubgetall (-R $wsRoot --scan $wsRoot --recursive)...');
+    }
     if (dryRun) {
       print('  [DRY RUN] Would run pubgetall with args: $args');
       return true;
     }
-    final pubGetCommand = PubGetCommand(rootPath: rootPath, verbose: verbose);
-    final fullArgs = ['--scan', '.', '--recursive', ...args];
+    final pubGetCommand = PubGetCommand(rootPath: wsRoot, verbose: verbose);
+    final fullArgs = ['--scan', wsRoot, '--recursive', ...args];
     return pubGetCommand.execute(fullArgs);
   }
 
@@ -361,18 +365,20 @@ class BuiltinCommands {
   }
 
   Future<bool> _runPubUpdateAll(List<String> args) async {
+    final wsRoot =
+        rootPath.isNotEmpty ? rootPath : findWorkspaceRoot(Directory.current.path);
     if (verbose) {
-      print('  [builtin] Running pubupdateall (scan . --recursive)...');
+      print('  [builtin] Running pubupdateall (-R $wsRoot --scan $wsRoot --recursive)...');
     }
     if (dryRun) {
       print('  [DRY RUN] Would run pubupdateall with args: $args');
       return true;
     }
     final pubUpdateCommand = PubUpdateCommand(
-      rootPath: rootPath,
+      rootPath: wsRoot,
       verbose: verbose,
     );
-    final fullArgs = ['--scan', '.', '--recursive', ...args];
+    final fullArgs = ['--scan', wsRoot, '--recursive', ...args];
     return pubUpdateCommand.execute(fullArgs);
   }
 

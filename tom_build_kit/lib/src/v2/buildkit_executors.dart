@@ -83,7 +83,10 @@ class PubGetExecutor extends CommandExecutor {
   }
 }
 
-/// Passthrough executor for :pubgetall (pubget --scan . --recursive).
+/// Passthrough executor for :pubgetall (pubget -R `<workspace>` --scan `<workspace>` --recursive).
+///
+/// Always operates on the complete workspace by resolving the workspace root
+/// and passing it as both -R (execution root) and --scan root.
 class PubGetAllExecutor extends CommandExecutor {
   @override
   Future<ItemResult> execute(CommandContext context, CliArgs args) async {
@@ -96,10 +99,11 @@ class PubGetAllExecutor extends CommandExecutor {
 
   @override
   Future<ToolResult> executeWithoutTraversal(CliArgs args) async {
-    final root = args.scan ?? args.root ?? Directory.current.path;
-    final pubGet = PubGetCommand(rootPath: root, verbose: args.verbose);
+    final wsRoot = args.root ??
+        findWorkspaceRoot(args.scan ?? Directory.current.path);
+    final pubGet = PubGetCommand(rootPath: wsRoot, verbose: args.verbose);
 
-    final cmdArgs = <String>['--scan', root, '--recursive'];
+    final cmdArgs = <String>['--scan', wsRoot, '--recursive'];
     if (args.verbose) cmdArgs.add('--verbose');
 
     for (final entry in args.extraOptions.entries) {
@@ -163,7 +167,10 @@ class PubUpdateExecutor extends CommandExecutor {
   }
 }
 
-/// Passthrough executor for :pubupdateall (pubupdate --scan . --recursive).
+/// Passthrough executor for :pubupdateall (pubupdate -R `<workspace>` --scan `<workspace>` --recursive).
+///
+/// Always operates on the complete workspace by resolving the workspace root
+/// and passing it as both -R (execution root) and --scan root.
 class PubUpdateAllExecutor extends CommandExecutor {
   @override
   Future<ItemResult> execute(CommandContext context, CliArgs args) async {
@@ -176,10 +183,11 @@ class PubUpdateAllExecutor extends CommandExecutor {
 
   @override
   Future<ToolResult> executeWithoutTraversal(CliArgs args) async {
-    final root = args.scan ?? args.root ?? Directory.current.path;
-    final pubUpdate = PubUpdateCommand(rootPath: root, verbose: args.verbose);
+    final wsRoot = args.root ??
+        findWorkspaceRoot(args.scan ?? Directory.current.path);
+    final pubUpdate = PubUpdateCommand(rootPath: wsRoot, verbose: args.verbose);
 
-    final cmdArgs = <String>['--scan', root, '--recursive'];
+    final cmdArgs = <String>['--scan', wsRoot, '--recursive'];
     if (args.verbose) cmdArgs.add('--verbose');
 
     for (final entry in args.extraOptions.entries) {

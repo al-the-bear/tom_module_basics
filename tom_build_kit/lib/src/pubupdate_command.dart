@@ -103,7 +103,7 @@ class PubUpdateCommand {
     print('');
     print('Usage: buildkit :pubupdate [options]');
     print(
-      '       buildkit :pubupdateall  # Shortcut for :pubupdate --scan . --recursive',
+      '       buildkit :pubupdateall  # Shortcut: -R <workspace> --scan <workspace> --recursive',
     );
     print('');
     print('Options:');
@@ -114,11 +114,8 @@ class PubUpdateCommand {
     print('  buildkit :pubupdate -s . -R --errors');
     print('  buildkit :pubupdate --project tom_* --changes');
     print('  buildkit :pubupdate --major-versions');
-    print('  buildkit :pubupdateall');
-    print('  buildkit :pubupdateall --errors');
-    print(
-      '  buildkit :pubupdateall --no-recursive  # Only process top-level projects',
-    );
+    print('  buildkit :pubupdateall             # pub upgrade in entire workspace');
+    print('  buildkit :pubupdateall --errors    # only show projects with errors');
   }
 
   /// Execute pub upgrade across projects.
