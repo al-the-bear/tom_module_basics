@@ -1,18 +1,18 @@
-/// Built-in help topics available to all Tom CLI tools.
+/// Buildkit help topics.
 ///
-/// These topics are automatically registered when tools opt in.
-/// Use [defaultHelpTopics] to get all built-in topics.
+/// Overrides [defaultHelpTopics] from tom_build_base with buildkit-specific
+/// content until the next tom_build_base release includes the updates.
 library;
 
-import 'help_topic.dart';
+import 'package:tom_build_base/tom_build_base_v2.dart';
 
-/// All built-in help topics.
+/// Help topics for the buildkit tool.
 ///
-/// Tools can include these in their [ToolDefinition.helpTopics].
-const List<HelpTopic> defaultHelpTopics = [placeholdersHelpTopic];
+/// Contains the full placeholders reference with $[VAR] env syntax,
+/// @[...] define placeholders, and recursive resolution documentation.
+const List<HelpTopic> buildkitHelpTopics = [_placeholdersHelpTopic];
 
-/// Help topic documenting placeholder and environment variable usage.
-const placeholdersHelpTopic = HelpTopic(
+const _placeholdersHelpTopic = HelpTopic(
   name: 'placeholders',
   summary: 'Variable substitution in commands and config files',
   content: _placeholdersContent,
