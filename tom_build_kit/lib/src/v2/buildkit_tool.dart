@@ -6,7 +6,6 @@ library;
 import 'package:tom_build_base/tom_build_base_v2.dart';
 
 import '../version.versioner.dart';
-import 'buildkit_help_topics.dart';
 
 // =============================================================================
 // Common Options
@@ -1046,7 +1045,7 @@ final buildkitTool = ToolDefinition(
   description: 'Pipeline-based build orchestration tool',
   version: BuildkitVersionInfo.version,
   mode: ToolMode.multiCommand,
-  helpTopics: buildkitHelpTopics,
+  helpTopics: defaultHelpTopics,
   features: const NavigationFeatures(
     projectTraversal: true,
     gitTraversal: true,
