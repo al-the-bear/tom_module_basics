@@ -59,11 +59,11 @@ class FolderScanner {
   }) async {
     final folders = <FsFolder>[];
     final rootDir = Directory(root);
-    
+
     if (!rootDir.existsSync()) {
       return folders;
     }
-    
+
     await _scanDirectory(
       rootDir,
       folders,
@@ -71,7 +71,7 @@ class FolderScanner {
       recursionExclude: recursionExclude,
       isRoot: true, // Don't skip the initial scan directory
     );
-    
+
     return folders;
   }
 
@@ -85,7 +85,7 @@ class FolderScanner {
     // Check for skip markers.
     // Skip markers mean "don't include this folder AND don't descend into children"
     final skipMarker = !isRoot ? _getSkipMarker(dir.path) : null;
-    
+
     if (skipMarker != null) {
       final folderName = p.basename(dir.path);
       // Always print skip messages to stderr so the user knows what's excluded.
@@ -101,27 +101,27 @@ class FolderScanner {
       if (!ignoreSkipMarkers) return;
       stderr.writeln('Ignoring skip file, --no-skip active');
     }
-    
+
     // No skip marker — add this directory
     results.add(FsFolder(path: dir.path));
-    
+
     if (!recursive) return;
-    
+
     // Check if this directory has {toolBasename}.yaml with recursive: false
     if (_hasToolConfigRecursiveFalse(dir.path)) return;
-    
+
     // Descend into subdirectories
     try {
       await for (final entity in dir.list()) {
         if (entity is Directory) {
           final name = p.basename(entity.path);
-          
+
           // Skip hidden directories
           if (name.startsWith('.')) continue;
-          
+
           // Apply recursion exclusions
           if (_matchesAny(entity.path, name, recursionExclude)) continue;
-          
+
           await _scanDirectory(
             entity,
             results,
@@ -164,7 +164,7 @@ class FolderScanner {
     final configPath = p.join(dirPath, '$toolBasename.yaml');
     final file = File(configPath);
     if (!file.existsSync()) return false;
-    
+
     try {
       final content = file.readAsStringSync();
       // Simple check - look for recursive: false pattern
@@ -275,16 +275,16 @@ class GitRepoFinder {
   String? findTopRepo(String startPath) {
     var current = p.normalize(p.absolute(startPath));
     String? topRepo;
-    
+
     while (true) {
       // Check if this is a git repo
       final gitDir = Directory(p.join(current, '.git'));
       final gitFile = File(p.join(current, '.git'));
-      
+
       if (gitDir.existsSync() || gitFile.existsSync()) {
         topRepo = current;
       }
-      
+
       // Move to parent directory
       final parent = p.dirname(current);
       if (parent == current) {
@@ -293,21 +293,21 @@ class GitRepoFinder {
       }
       current = parent;
     }
-    
+
     return topRepo;
   }
 
   Future<void> _findGitRepos(Directory dir, List<FsFolder> results) async {
     if (!dir.existsSync()) return;
-    
+
     // Check if this is a git repo
     final gitDir = Directory(p.join(dir.path, '.git'));
     final gitFile = File(p.join(dir.path, '.git'));
-    
+
     if (gitDir.existsSync() || gitFile.existsSync()) {
       results.add(FsFolder(path: dir.path));
     }
-    
+
     // Continue searching subdirectories
     try {
       await for (final entity in dir.list()) {

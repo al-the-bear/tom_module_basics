@@ -40,12 +40,16 @@ class HelpGenerator {
     if (tool.commands.isNotEmpty) {
       buf.writeln('<green>**Commands**</green>');
       for (final cmd in tool.visibleCommands) {
-        final aliasStr = cmd.aliases.isNotEmpty ? ' (${cmd.aliases.join(', ')})' : '';
+        final aliasStr = cmd.aliases.isNotEmpty
+            ? ' (${cmd.aliases.join(', ')})'
+            : '';
         buf.writeln('  :${cmd.name}$aliasStr');
         buf.writeln('      ${cmd.description}');
       }
       buf.writeln();
-      buf.writeln('  Use `${tool.name} :command --help` for command-specific help.');
+      buf.writeln(
+        '  Use `${tool.name} :command --help` for command-specific help.',
+      );
       buf.writeln();
     }
 
@@ -56,7 +60,9 @@ class HelpGenerator {
         buf.writeln('  ${topic.name.padRight(20)} ${topic.summary}');
       }
       buf.writeln();
-      buf.writeln('  Use `${tool.name} help <topic>` for detailed information.');
+      buf.writeln(
+        '  Use `${tool.name} help <topic>` for detailed information.',
+      );
       buf.writeln();
     }
 
@@ -115,13 +121,18 @@ class HelpGenerator {
 
     // Per-command filters
     if (command.supportsPerCommandFilter) {
-      buf.writeln('<dim>This command supports per-command --project and --exclude filters.</dim>');
+      buf.writeln(
+        '<dim>This command supports per-command --project and --exclude filters.</dim>',
+      );
       buf.writeln();
     }
 
     // Nature requirements
-    if (command.requiredNatures != null && command.requiredNatures!.isNotEmpty) {
-      buf.writeln('<dim>Requires: ${command.requiredNatures!.map(_natureName).join(', ')}</dim>');
+    if (command.requiredNatures != null &&
+        command.requiredNatures!.isNotEmpty) {
+      buf.writeln(
+        '<dim>Requires: ${command.requiredNatures!.map(_natureName).join(', ')}</dim>',
+      );
       buf.writeln();
     }
 
@@ -145,10 +156,7 @@ class HelpGenerator {
   }
 
   /// Generate help text for a help topic.
-  static String generateTopicHelp(
-    HelpTopic topic, {
-    ToolDefinition? tool,
-  }) {
+  static String generateTopicHelp(HelpTopic topic, {ToolDefinition? tool}) {
     final buf = StringBuffer();
     if (tool != null) {
       buf.writeln('**${tool.name}** v${tool.version}');
@@ -163,8 +171,13 @@ class HelpGenerator {
     final buf = StringBuffer();
     buf.writeln('Usage: ${tool.name} [options]');
     if (tool.mode == ToolMode.multiCommand && tool.commands.isNotEmpty) {
-      final cmdNames = tool.visibleCommands.take(5).map((c) => ':${c.name}').join(', ');
-      buf.writeln('Commands: $cmdNames${tool.visibleCommands.length > 5 ? '...' : ''}');
+      final cmdNames = tool.visibleCommands
+          .take(5)
+          .map((c) => ':${c.name}')
+          .join(', ');
+      buf.writeln(
+        'Commands: $cmdNames${tool.visibleCommands.length > 5 ? '...' : ''}',
+      );
     }
     buf.writeln();
     buf.writeln('Use --help for more information.');
@@ -230,10 +243,7 @@ class HelpGenerator {
     // Convert DartProjectFolder -> Dart Project
     return name
         .replaceAll('Folder', '')
-        .replaceAllMapped(
-          RegExp(r'([A-Z])'),
-          (m) => ' ${m.group(1)}',
-        )
+        .replaceAllMapped(RegExp(r'([A-Z])'), (m) => ' ${m.group(1)}')
         .trim();
   }
 }

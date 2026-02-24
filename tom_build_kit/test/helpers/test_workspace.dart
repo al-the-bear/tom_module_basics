@@ -80,8 +80,10 @@ class TestLogger {
     final didFail = _failed;
 
     if (didFail) {
-      print('  ✗ FAILED   $_testId: $_testName'
-          '${_failureReason != null ? ' — $_failureReason' : ''}');
+      print(
+        '  ✗ FAILED   $_testId: $_testName'
+        '${_failureReason != null ? ' — $_failureReason' : ''}',
+      );
       _writeLogFile();
     } else {
       print('  ✓ PASSED   $_testId: $_testName');
@@ -96,11 +98,10 @@ class TestLogger {
     final logDir = p.join(_ws.buildkitRoot, '.test-log');
     Directory(logDir).createSync(recursive: true);
     final safeName = _testId.replaceAll(RegExp(r'[^\w]'), '_');
-    final logFile = File(p.join(logDir, '${safeName}${suffix}_log.txt')); // ignore: unnecessary_brace_in_string_interps
-    logFile.writeAsStringSync(
-      '${_entries.join('\n')}\n',
-      mode: FileMode.write,
-    );
+    final logFile = File(
+      p.join(logDir, '${safeName}${suffix}_log.txt'),
+    ); // ignore: unnecessary_brace_in_string_interps
+    logFile.writeAsStringSync('${_entries.join('\n')}\n', mode: FileMode.write);
   }
 }
 
@@ -255,7 +256,8 @@ class TestWorkspace {
       }
 
       final fileList = dirty.map((f) => '  $f').join('\n');
-      final message = '\n'
+      final message =
+          '\n'
           '╔══════════════════════════════════════════════════════╗\n'
           '║  WORKSPACE IS DIRTY — TESTS CANNOT RUN              ║\n'
           '╠══════════════════════════════════════════════════════╣\n'
@@ -334,7 +336,9 @@ class TestWorkspace {
           ? 'main repo'
           : p.relative(path, from: workspaceRoot);
       if (currentSha != savedSha) {
-        print('       ✗ $label: was ${savedSha.substring(0, 8)}, now ${currentSha.substring(0, 8)} — LEAKED!');
+        print(
+          '       ✗ $label: was ${savedSha.substring(0, 8)}, now ${currentSha.substring(0, 8)} — LEAKED!',
+        );
         mismatches.add('$label: was $savedSha, now $currentSha');
       } else {
         print('       ✓ $label: ${currentSha.substring(0, 8)} (unchanged)');
@@ -343,7 +347,8 @@ class TestWorkspace {
 
     if (mismatches.isNotEmpty) {
       final mismatchList = mismatches.map((m) => '  $m').join('\n');
-      final message = '\n'
+      final message =
+          '\n'
           '╔══════════════════════════════════════════════════════╗\n'
           '║  HEAD REFS CHANGED — POSSIBLE LEAKED COMMITS        ║\n'
           '╠══════════════════════════════════════════════════════╣\n'
@@ -396,10 +401,10 @@ class TestWorkspace {
   Future<List<String>> getSubmodulePaths() async {
     if (_submodulePaths != null) return _submodulePaths!;
 
-    final result = await _git(
-      ['submodule', 'status'],
-      workingDirectory: workspaceRoot,
-    );
+    final result = await _git([
+      'submodule',
+      'status',
+    ], workingDirectory: workspaceRoot);
     final output = result.stdout.toString().trim();
     if (output.isEmpty) {
       _submodulePaths = [];
@@ -424,10 +429,10 @@ class TestWorkspace {
 
   /// Get the current HEAD SHA for a git repo.
   Future<String> _getHeadSha(String repoPath) async {
-    final result = await _git(
-      ['rev-parse', 'HEAD'],
-      workingDirectory: repoPath,
-    );
+    final result = await _git([
+      'rev-parse',
+      'HEAD',
+    ], workingDirectory: repoPath);
     return result.stdout.toString().trim();
   }
 
@@ -447,7 +452,7 @@ class TestWorkspace {
   /// would be copied to `<workspace>/_build/buildkit.yaml`.
   Future<void> installFixture(String fixtureName) async {
     final fixtureDir = p.join(fixturesDir, fixtureName);
-    
+
     // Copy buildkit_master.yaml
     final masterSrc = File(p.join(fixtureDir, 'buildkit_master.yaml'));
     if (!masterSrc.existsSync()) {
@@ -456,7 +461,7 @@ class TestWorkspace {
     final masterDst = File(p.join(workspaceRoot, 'buildkit_master.yaml'));
     await masterSrc.copy(masterDst.path);
     print('    📋 Installed fixture "$fixtureName" → buildkit_master.yaml');
-    
+
     // Copy project-level config files if they exist
     final projectsDir = Directory(p.join(fixtureDir, 'projects'));
     if (projectsDir.existsSync()) {
@@ -498,18 +503,21 @@ class TestWorkspace {
 
   /// Revert specific files (paths relative to workspace root).
   Future<void> revertFiles(List<String> relativePaths) async {
-    await _git(
-      ['checkout', '--', ...relativePaths],
-      workingDirectory: workspaceRoot,
-    );
+    await _git([
+      'checkout',
+      '--',
+      ...relativePaths,
+    ], workingDirectory: workspaceRoot);
   }
 
   /// Check if there are uncommitted changes for specific files.
   Future<bool> hasChanges(List<String> relativePaths) async {
-    final result = await _git(
-      ['diff', '--name-only', '--', ...relativePaths],
-      workingDirectory: workspaceRoot,
-    );
+    final result = await _git([
+      'diff',
+      '--name-only',
+      '--',
+      ...relativePaths,
+    ], workingDirectory: workspaceRoot);
     return result.stdout.toString().trim().isNotEmpty;
   }
 
@@ -520,10 +528,11 @@ class TestWorkspace {
   /// Excludes submodule pointer changes (xternal/) and untracked generated
   /// files since those don't affect the test fixtures or tool behavior.
   Future<List<String>> hasUncommittedChanges() async {
-    final result = await _git(
-      ['status', '--porcelain', '--ignore-submodules=dirty'],
-      workingDirectory: workspaceRoot,
-    );
+    final result = await _git([
+      'status',
+      '--porcelain',
+      '--ignore-submodules=dirty',
+    ], workingDirectory: workspaceRoot);
     final output = result.stdout.toString().trim();
     if (output.isEmpty) return [];
     return output
@@ -533,7 +542,10 @@ class TestWorkspace {
         // Exclude submodule pointer changes — they don't affect tests
         .where((line) => !RegExp(r'^[Mm?\s]{1,2}\s*xternal/').hasMatch(line))
         // Exclude untracked generated files (e.g., .reflection.dart, .g.dart)
-        .where((line) => !RegExp(r'^\?\?\s.*\.(reflection|g|r|b)\.dart$').hasMatch(line))
+        .where(
+          (line) =>
+              !RegExp(r'^\?\?\s.*\.(reflection|g|r|b)\.dart$').hasMatch(line),
+        )
         .toList();
   }
 
@@ -566,14 +578,10 @@ class TestWorkspace {
     final cmdArgs = <String>[];
     _splitArgs(args, globalArgs, cmdArgs);
 
-    final allArgs = [
-      'run',
-      binPath,
-      ...globalArgs,
-      ':$tool',
-      ...cmdArgs,
-    ];
-    print('    🔧 Running: buildkit ${[...globalArgs, ':$tool', ...cmdArgs].join(' ')}');
+    final allArgs = ['run', binPath, ...globalArgs, ':$tool', ...cmdArgs];
+    print(
+      '    🔧 Running: buildkit ${[...globalArgs, ':$tool', ...cmdArgs].join(' ')}',
+    );
     final result = await Process.run(
       'dart',
       allArgs,
@@ -630,13 +638,18 @@ class TestWorkspace {
 
     // Options that take a value argument.
     const valueGlobals = {
-      '--scan', '-s',
-      '--project', '-p',
-      '--root', '-R',
-      '--exclude', '-x',
+      '--scan',
+      '-s',
+      '--project',
+      '-p',
+      '--root',
+      '-R',
+      '--exclude',
+      '-x',
       '--exclude-projects',
       '--recursion-exclude',
-      '--modules', '-m',
+      '--modules',
+      '-m',
       '--skip-modules',
       '--config',
     };
@@ -675,12 +688,14 @@ class TestWorkspace {
     final binPath = p.join(buildkitRoot, 'bin', 'buildkit.dart');
     final allArgs = [...globalArgs, pipeline, ...args];
     print('    🔧 Running pipeline: buildkit ${allArgs.join(' ')}');
-    final result = await Process.run(
-      'dart',
-      ['run', binPath, ...allArgs],
-      workingDirectory: workingDirectory ?? workspaceRoot,
+    final result = await Process.run('dart', [
+      'run',
+      binPath,
+      ...allArgs,
+    ], workingDirectory: workingDirectory ?? workspaceRoot);
+    print(
+      '    ✓ buildkit ${allArgs.first} exited with code ${result.exitCode}',
     );
-    print('    ✓ buildkit ${allArgs.first} exited with code ${result.exitCode}');
     return result;
   }
 
@@ -708,8 +723,11 @@ class TestWorkspace {
   /// Returns the absolute path to the created file. Use [removeSkipFile]
   /// or add the returned path to a cleanup list for tearDown.
   String placeSkipFile(String relativeDir) {
-    final absPath =
-        p.join(workspaceRoot, relativeDir, TestWorkspace.skipFileName);
+    final absPath = p.join(
+      workspaceRoot,
+      relativeDir,
+      TestWorkspace.skipFileName,
+    );
     File(absPath).writeAsStringSync(
       '# Temporary skip file placed by integration test.\n'
       '# Should be removed automatically in tearDown.\n',
@@ -720,8 +738,11 @@ class TestWorkspace {
 
   /// Remove a temporary `tom_build_skip.yaml` from a directory.
   void removeSkipFile(String relativeDir) {
-    final absPath =
-        p.join(workspaceRoot, relativeDir, TestWorkspace.skipFileName);
+    final absPath = p.join(
+      workspaceRoot,
+      relativeDir,
+      TestWorkspace.skipFileName,
+    );
     final file = File(absPath);
     if (file.existsSync()) {
       file.deleteSync();

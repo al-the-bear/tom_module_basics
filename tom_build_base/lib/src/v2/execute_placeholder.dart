@@ -72,10 +72,7 @@ class ExecutePlaceholderContext {
     final folder = context.fsFolder;
     folder.natures.clear();
     folder.natures.addAll(context.natures);
-    return ExecutePlaceholderContext(
-      rootPath: rootPath,
-      folder: folder,
-    );
+    return ExecutePlaceholderContext(rootPath: rootPath, folder: folder);
   }
 
   static String _detectArch() {

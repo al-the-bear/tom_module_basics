@@ -136,7 +136,9 @@ void main() {
       projectPath = p.join(workspaceRoot, 'my_project');
       Directory(projectPath).createSync();
       // Create pubspec.yaml to make it a valid project
-      File(p.join(projectPath, 'pubspec.yaml')).writeAsStringSync('name: my_project');
+      File(
+        p.join(projectPath, 'pubspec.yaml'),
+      ).writeAsStringSync('name: my_project');
     });
 
     tearDown(() {
@@ -145,13 +147,15 @@ void main() {
 
     group('Mode Processing', () {
       test('spec: base config used when no modes active', () async {
-        File(p.join(workspaceRoot, 'minitool_master.yaml')).writeAsStringSync('''
+        File(p.join(workspaceRoot, 'minitool_master.yaml')).writeAsStringSync(
+          '''
 build:
   target: release
   optimize: true
   DEV-target: debug
   DEV-optimize: false
-''');
+''',
+        );
 
         final tool = MiniTool(
           basename: 'minitool',
@@ -163,17 +167,22 @@ build:
         expect(config.getCommandConfig('build')?['target'], 'release');
         expect(config.getCommandConfig('build')?['optimize'], true);
         // Mode-prefixed keys should be removed
-        expect(config.getCommandConfig('build')?.containsKey('DEV-target'), false);
+        expect(
+          config.getCommandConfig('build')?.containsKey('DEV-target'),
+          false,
+        );
       });
 
       test('spec: DEV mode overrides base config', () async {
-        File(p.join(workspaceRoot, 'minitool_master.yaml')).writeAsStringSync('''
+        File(p.join(workspaceRoot, 'minitool_master.yaml')).writeAsStringSync(
+          '''
 build:
   target: release
   optimize: true
   DEV-target: debug
   DEV-optimize: false
-''');
+''',
+        );
 
         final tool = MiniTool(
           basename: 'minitool',
@@ -188,7 +197,8 @@ build:
       });
 
       test('spec: multiple modes merge in order', () async {
-        File(p.join(workspaceRoot, 'minitool_master.yaml')).writeAsStringSync('''
+        File(p.join(workspaceRoot, 'minitool_master.yaml')).writeAsStringSync(
+          '''
 minitool:
   defines:
     outputPath: /prod/output
@@ -197,7 +207,8 @@ minitool:
     outputPath: /dev/output
   CLOUD-defines:
     cloudProvider: GCP
-''');
+''',
+        );
 
         final tool = MiniTool(
           basename: 'minitool',
@@ -212,12 +223,14 @@ minitool:
       });
 
       test('spec: CI mode as feature flag', () async {
-        File(p.join(workspaceRoot, 'minitool_master.yaml')).writeAsStringSync('''
+        File(p.join(workspaceRoot, 'minitool_master.yaml')).writeAsStringSync(
+          '''
 test:
   verbose: true
   CI-verbose: false
   CI-parallel: true
-''');
+''',
+        );
 
         // Without CI mode
         var tool = MiniTool(
@@ -243,7 +256,8 @@ test:
 
     group('Placeholder Resolution', () {
       test('spec: @[...] define placeholders resolved at load time', () async {
-        File(p.join(workspaceRoot, 'minitool_master.yaml')).writeAsStringSync('''
+        File(p.join(workspaceRoot, 'minitool_master.yaml')).writeAsStringSync(
+          '''
 minitool:
   defines:
     binPath: /opt/minitool/bin
@@ -251,7 +265,8 @@ minitool:
 build:
   output: "@[outputDir]/main"
   script: "mkdir -p @[binPath]"
-''');
+''',
+        );
 
         final tool = MiniTool(
           basename: 'minitool',
@@ -260,34 +275,52 @@ build:
         );
         final config = await tool.loadConfig(projectPath);
 
-        expect(config.getCommandConfig('build')?['output'], '/opt/minitool/bin/output/main');
-        expect(config.getCommandConfig('build')?['script'], 'mkdir -p /opt/minitool/bin');
+        expect(
+          config.getCommandConfig('build')?['output'],
+          '/opt/minitool/bin/output/main',
+        );
+        expect(
+          config.getCommandConfig('build')?['script'],
+          'mkdir -p /opt/minitool/bin',
+        );
       });
 
-      test('spec: @{...} tool placeholders resolved after mode processing', () async {
-        File(p.join(workspaceRoot, 'minitool_master.yaml')).writeAsStringSync('''
+      test(
+        'spec: @{...} tool placeholders resolved after mode processing',
+        () async {
+          File(p.join(workspaceRoot, 'minitool_master.yaml')).writeAsStringSync(
+            '''
 build:
   workDir: "@{project-path}/build"
   rootDir: "@{workspace-root}"
   projectName: "@{project-name}"
   version: "@{tool-version}"
-''');
+''',
+          );
 
-        final tool = MiniTool(
-          basename: 'minitool',
-          workspaceRoot: workspaceRoot,
-          activeModes: [],
-        );
-        final config = await tool.loadConfig(projectPath);
+          final tool = MiniTool(
+            basename: 'minitool',
+            workspaceRoot: workspaceRoot,
+            activeModes: [],
+          );
+          final config = await tool.loadConfig(projectPath);
 
-        expect(config.getCommandConfig('build')?['workDir'], '$projectPath/build');
-        expect(config.getCommandConfig('build')?['rootDir'], workspaceRoot);
-        expect(config.getCommandConfig('build')?['projectName'], 'my_project');
-        expect(config.getCommandConfig('build')?['version'], '1.0.0');
-      });
+          expect(
+            config.getCommandConfig('build')?['workDir'],
+            '$projectPath/build',
+          );
+          expect(config.getCommandConfig('build')?['rootDir'], workspaceRoot);
+          expect(
+            config.getCommandConfig('build')?['projectName'],
+            'my_project',
+          );
+          expect(config.getCommandConfig('build')?['version'], '1.0.0');
+        },
+      );
 
       test('spec: recursive placeholder resolution (max depth 10)', () async {
-        File(p.join(workspaceRoot, 'minitool_master.yaml')).writeAsStringSync('''
+        File(p.join(workspaceRoot, 'minitool_master.yaml')).writeAsStringSync(
+          '''
 minitool:
   defines:
     level1: "L1"
@@ -296,7 +329,8 @@ minitool:
     level4: "@[level3]/L4"
 build:
   deepPath: "@[level4]/final"
-''');
+''',
+        );
 
         final tool = MiniTool(
           basename: 'minitool',
@@ -305,15 +339,20 @@ build:
         );
         final config = await tool.loadConfig(projectPath);
 
-        expect(config.getCommandConfig('build')?['deepPath'], 'L1/L2/L3/L4/final');
+        expect(
+          config.getCommandConfig('build')?['deepPath'],
+          'L1/L2/L3/L4/final',
+        );
       });
 
       test('spec: unresolved placeholders remain unchanged', () async {
-        File(p.join(workspaceRoot, 'minitool_master.yaml')).writeAsStringSync(r'''
+        File(p.join(workspaceRoot, 'minitool_master.yaml')).writeAsStringSync(
+          r'''
 build:
   # ${file} is a command placeholder - not resolved at load time
   cmd: "compile ${file} to @{project-path}/out"
-''');
+''',
+        );
 
         final tool = MiniTool(
           basename: 'minitool',
@@ -356,12 +395,23 @@ build:
       test('spec: tom_skip.yaml skips directory for ALL tools', () {
         final skipDir = p.join(workspaceRoot, 'legacy_project');
         Directory(skipDir).createSync();
-        File(p.join(skipDir, 'tom_skip.yaml')).writeAsStringSync('reason: Legacy project');
+        File(
+          p.join(skipDir, 'tom_skip.yaml'),
+        ).writeAsStringSync('reason: Legacy project');
 
         // All tools should skip this directory
-        final minitool = MiniTool(basename: 'minitool', workspaceRoot: workspaceRoot);
-        final buildkit = MiniTool(basename: 'buildkit', workspaceRoot: workspaceRoot);
-        final testkit = MiniTool(basename: 'testkit', workspaceRoot: workspaceRoot);
+        final minitool = MiniTool(
+          basename: 'minitool',
+          workspaceRoot: workspaceRoot,
+        );
+        final buildkit = MiniTool(
+          basename: 'buildkit',
+          workspaceRoot: workspaceRoot,
+        );
+        final testkit = MiniTool(
+          basename: 'testkit',
+          workspaceRoot: workspaceRoot,
+        );
 
         expect(minitool.shouldSkip(skipDir), true);
         expect(buildkit.shouldSkip(skipDir), true);
@@ -373,8 +423,14 @@ build:
         Directory(skipDir).createSync();
         File(p.join(skipDir, 'minitool_skip.yaml')).writeAsStringSync('');
 
-        final minitool = MiniTool(basename: 'minitool', workspaceRoot: workspaceRoot);
-        final testkit = MiniTool(basename: 'testkit', workspaceRoot: workspaceRoot);
+        final minitool = MiniTool(
+          basename: 'minitool',
+          workspaceRoot: workspaceRoot,
+        );
+        final testkit = MiniTool(
+          basename: 'testkit',
+          workspaceRoot: workspaceRoot,
+        );
 
         expect(minitool.shouldSkip(skipDir), true);
         expect(testkit.shouldSkip(skipDir), false);
@@ -387,7 +443,10 @@ build:
 reason: "Not actively maintained"
 ''');
 
-        final tool = MiniTool(basename: 'minitool', workspaceRoot: workspaceRoot);
+        final tool = MiniTool(
+          basename: 'minitool',
+          workspaceRoot: workspaceRoot,
+        );
         final reason = tool.getSkipReason(skipDir);
 
         expect(reason, 'Not actively maintained');
@@ -398,7 +457,10 @@ reason: "Not actively maintained"
         Directory(skipDir).createSync();
         File(p.join(skipDir, 'tom_skip.yaml')).writeAsStringSync('');
 
-        final tool = MiniTool(basename: 'minitool', workspaceRoot: workspaceRoot);
+        final tool = MiniTool(
+          basename: 'minitool',
+          workspaceRoot: workspaceRoot,
+        );
         expect(tool.shouldSkip(skipDir), true);
       });
     });
@@ -406,13 +468,15 @@ reason: "Not actively maintained"
     group('Standalone Tool Configuration Inheritance', () {
       test('spec: standalone tool inherits from parent tool config', () async {
         // The "deployer" standalone executable reads from minitool config
-        File(p.join(workspaceRoot, 'minitool_master.yaml')).writeAsStringSync('''
+        File(p.join(workspaceRoot, 'minitool_master.yaml')).writeAsStringSync(
+          '''
 deploy:
   target: production
   region: us-east-1
   DEV-target: staging
   DEV-region: us-west-2
-''');
+''',
+        );
 
         // Standalone tool knows it's part of minitool
         final deployer = DeployerStandalone(
@@ -450,7 +514,8 @@ deploy:
         // 5. Resolve @[...] defines
         // 6. Resolve @{...} tool placeholders
 
-        File(p.join(workspaceRoot, 'minitool_master.yaml')).writeAsStringSync('''
+        File(p.join(workspaceRoot, 'minitool_master.yaml')).writeAsStringSync(
+          '''
 minitool:
   defines:
     env: prod
@@ -461,7 +526,8 @@ build:
   envLabel: "@[env]"
   fullPath: "@{project-path}/@[env]/build"
   DEV-envLabel: "development"
-''');
+''',
+        );
 
         // Step 1: modes = ['DEV']
         final tool = MiniTool(

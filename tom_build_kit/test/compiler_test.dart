@@ -50,56 +50,84 @@ void main() {
   group('compiler', () {
     test('--list shows compiler-configured projects', () async {
       log.start('CMP_LST01', '--list shows compiler-configured projects');
-      final result = await ws.runTool(
-          'compiler', ['--scan', '.', '--recursive', '--list']);
+      final result = await ws.runTool('compiler', [
+        '--scan',
+        '.',
+        '--recursive',
+        '--list',
+      ]);
       log.capture('compiler --scan . -r --list', result);
 
       final stdout = (result.stdout as String);
       expect(result.exitCode, equals(0));
       // _build has compiler config → should be listed
-      expect(stdout, contains('_build'),
-          reason: '_build has compiler config, should appear in --list');
+      expect(
+        stdout,
+        contains('_build'),
+        reason: '_build has compiler config, should appear in --list',
+      );
       log.expectation('_build listed', stdout.contains('_build'));
     });
 
     test('--dump-config displays compiler config', () async {
       log.start('CMP_SHW01', '--dump-config displays compiler config');
-      final result = await ws.runTool(
-          'compiler', ['--project', '_build', '--dump-config']);
+      final result = await ws.runTool('compiler', [
+        '--project',
+        '_build',
+        '--dump-config',
+      ]);
       log.capture('compiler --project _build --dump-config', result);
 
       final stdout = (result.stdout as String);
       expect(result.exitCode, equals(0));
       // Should show compile sections (files, targets, platforms)
-      final hasCompilerInfo = stdout.contains('compiles') ||
+      final hasCompilerInfo =
+          stdout.contains('compiles') ||
           stdout.contains('commandline') ||
           stdout.contains('compiler');
-      expect(hasCompilerInfo, isTrue,
-          reason: 'Should display compiler configuration details');
+      expect(
+        hasCompilerInfo,
+        isTrue,
+        reason: 'Should display compiler configuration details',
+      );
       log.expectation('shows compiler info', hasCompilerInfo);
     });
 
     test('--dry-run shows commands without executing', () async {
       log.start('CMP_DRY01', '--dry-run shows planned commands');
-      final result = await ws.runTool(
-          'compiler', ['--project', '_build', '--dry-run']);
+      final result = await ws.runTool('compiler', [
+        '--project',
+        '_build',
+        '--dry-run',
+      ]);
       log.capture('compiler --project _build --dry-run', result);
 
       final stdout = (result.stdout as String);
       expect(result.exitCode, equals(0));
       // Dry-run should produce [DRY RUN] markers
-      expect(stdout.toLowerCase(), contains('dry run'),
-          reason: 'Dry-run should show planned commands with DRY RUN marker');
+      expect(
+        stdout.toLowerCase(),
+        contains('dry run'),
+        reason: 'Dry-run should show planned commands with DRY RUN marker',
+      );
 
       // No actual binaries should be produced — just verify the marker
-      log.expectation('has DRY RUN output', stdout.toLowerCase().contains('dry run'));
+      log.expectation(
+        'has DRY RUN output',
+        stdout.toLowerCase().contains('dry run'),
+      );
     });
 
     test('--targets filters compilation to specific platforms', () async {
       log.start('CMP_TGT01', '--targets filters platforms');
       // Request only linux-x64 target
-      final result = await ws.runTool('compiler',
-          ['--project', '_build', '--dry-run', '--targets', 'linux-x64']);
+      final result = await ws.runTool('compiler', [
+        '--project',
+        '_build',
+        '--dry-run',
+        '--targets',
+        'linux-x64',
+      ]);
       log.capture('compiler --dry-run --targets linux-x64', result);
 
       final stdout = (result.stdout as String);
@@ -112,20 +140,27 @@ void main() {
       final lines = stdout.split('\n');
       // Only check lines that are compile operations, not postcompile
       final compileLines = lines
-          .where((l) => l.toLowerCase().contains('dry run') &&
-              l.toLowerCase().contains('compile') &&
-              !l.toLowerCase().contains('postcompile') &&
-              !l.toLowerCase().contains('precompile'))
+          .where(
+            (l) =>
+                l.toLowerCase().contains('dry run') &&
+                l.toLowerCase().contains('compile') &&
+                !l.toLowerCase().contains('postcompile') &&
+                !l.toLowerCase().contains('precompile'),
+          )
           .toList();
 
       if (compileLines.isNotEmpty) {
         // Verify compile lines target linux-x64 only
-        final hasDarwinTarget = compileLines.any((l) =>
-            l.contains('(darwin-arm64)') ||
-            l.contains('target-os=macos'));
-        expect(hasDarwinTarget, isFalse,
-            reason: 'With --targets linux-x64, compile lines should not '
-                'target darwin-arm64. Lines: ${compileLines.join('\n')}');
+        final hasDarwinTarget = compileLines.any(
+          (l) => l.contains('(darwin-arm64)') || l.contains('target-os=macos'),
+        );
+        expect(
+          hasDarwinTarget,
+          isFalse,
+          reason:
+              'With --targets linux-x64, compile lines should not '
+              'target darwin-arm64. Lines: ${compileLines.join('\n')}',
+        );
         log.expectation('no darwin-arm64 target in compiles', !hasDarwinTarget);
       } else {
         // On platforms where no compile section matches, no output
@@ -136,8 +171,11 @@ void main() {
 
     test('placeholder resolution in commandlines', () async {
       log.start('CMP_PLC01', 'placeholder resolution');
-      final result = await ws.runTool(
-          'compiler', ['--project', '_build', '--dry-run']);
+      final result = await ws.runTool('compiler', [
+        '--project',
+        '_build',
+        '--dry-run',
+      ]);
       log.capture('compiler --dry-run (placeholder check)', result);
 
       final stdout = (result.stdout as String);
@@ -150,22 +188,37 @@ void main() {
 
       for (final line in dryRunLines) {
         // Common placeholders that should be resolved:
-        expect(line, isNot(contains('\${file}')),
-            reason: 'Placeholder \${file} should be resolved in: $line');
-        expect(line, isNot(contains('\${target-os}')),
-            reason: 'Placeholder \${target-os} should be resolved in: $line');
-        expect(line, isNot(contains('\${target-platform}')),
-            reason: 'Placeholder \${target-platform} should be resolved');
-        expect(line, isNot(contains('\${target-platform-vs}')),
-            reason: 'Placeholder \${target-platform-vs} should be resolved');
+        expect(
+          line,
+          isNot(contains('\${file}')),
+          reason: 'Placeholder \${file} should be resolved in: $line',
+        );
+        expect(
+          line,
+          isNot(contains('\${target-os}')),
+          reason: 'Placeholder \${target-os} should be resolved in: $line',
+        );
+        expect(
+          line,
+          isNot(contains('\${target-platform}')),
+          reason: 'Placeholder \${target-platform} should be resolved',
+        );
+        expect(
+          line,
+          isNot(contains('\${target-platform-vs}')),
+          reason: 'Placeholder \${target-platform-vs} should be resolved',
+        );
       }
       log.expectation('no unresolved placeholders', true);
     });
 
     test('postcompile phase appears in dry-run', () async {
       log.start('CMP_PHS01', 'pre/postcompile phases in dry-run');
-      final result = await ws.runTool(
-          'compiler', ['--project', '_build', '--dry-run']);
+      final result = await ws.runTool('compiler', [
+        '--project',
+        '_build',
+        '--dry-run',
+      ]);
       log.capture('compiler --dry-run (phases check)', result);
 
       final stdout = (result.stdout as String);
@@ -175,16 +228,18 @@ void main() {
       // On macOS (darwin-arm64), the macos platform filter should match.
       final hasPostcompile =
           stdout.toLowerCase().contains('postcompile') ||
-              stdout.contains('chmod');
+          stdout.contains('chmod');
       if (hasPostcompile) {
         log.expectation('postcompile phase present', true);
       } else {
         // If platform doesn't match, postcompile is skipped — still valid
-        print(
-            '    ℹ️  Postcompile not shown (platform filter may not match)');
+        print('    ℹ️  Postcompile not shown (platform filter may not match)');
         // At minimum, compile phase should be present
-        expect(stdout.toLowerCase(), contains('dry run'),
-            reason: 'At least some dry-run output should be present');
+        expect(
+          stdout.toLowerCase(),
+          contains('dry run'),
+          reason: 'At least some dry-run output should be present',
+        );
         log.expectation('compile phase present', true);
       }
     });

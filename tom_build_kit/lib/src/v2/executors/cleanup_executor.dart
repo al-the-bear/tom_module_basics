@@ -34,7 +34,8 @@ class CleanupSection {
       return CleanupSection(globs: globs, excludes: excludes);
     }
     throw ArgumentError(
-        'CleanupSection must be a string or map, got: ${json.runtimeType}');
+      'CleanupSection must be a string or map, got: ${json.runtimeType}',
+    );
   }
 }
 
@@ -81,10 +82,11 @@ class CleanupConfig {
               CleanupSection.fromJson(item),
         ],
         globalExcludes: _toStringList(
-            cleanupYaml['excludes'] ?? cleanupYaml['exclude']),
+          cleanupYaml['excludes'] ?? cleanupYaml['exclude'],
+        ),
         protectedFolders: _toStringList(
-            cleanupYaml['protected-folders'] ??
-                cleanupYaml['protectedFolders']),
+          cleanupYaml['protected-folders'] ?? cleanupYaml['protectedFolders'],
+        ),
       );
     } catch (_) {
       return null;
@@ -119,15 +121,17 @@ const _builtinProtectedFolders = {'.git', '.github', '.vscode', '.idea'};
 
 /// Default cleanup patterns when no config is provided.
 final _defaultSections = [
-  CleanupSection(globs: [
-    'build',
-    '.dart_tool/build',
-    '**/*.g.dart',
-    '**/*.r.dart',
-    '**/*.b.dart',
-    '**/*.reflection.dart',
-    '**/*.reflectable.dart',
-  ]),
+  CleanupSection(
+    globs: [
+      'build',
+      '.dart_tool/build',
+      '**/*.g.dart',
+      '**/*.r.dart',
+      '**/*.b.dart',
+      '**/*.reflection.dart',
+      '**/*.reflectable.dart',
+    ],
+  ),
 ];
 
 /// Native v2 executor for the `:cleanup` command.
@@ -189,7 +193,8 @@ class CleanupExecutor extends CommandExecutor {
         int.tryParse(cmdOpts['max-files']?.toString() ?? '') ?? 100;
 
     // Load workspace config from execution root
-    var config = CleanupConfig.loadFromYaml(context.executionRoot) ??
+    var config =
+        CleanupConfig.loadFromYaml(context.executionRoot) ??
         const CleanupConfig();
 
     // Load project config and merge
@@ -243,8 +248,10 @@ class CleanupExecutor extends CommandExecutor {
     // Safety check
     if (filesToDelete.length > maxFiles && !force) {
       print('');
-      print('WARNING: Cleanup would delete ${filesToDelete.length} files '
-          'in ${context.name} (limit: $maxFiles)');
+      print(
+        'WARNING: Cleanup would delete ${filesToDelete.length} files '
+        'in ${context.name} (limit: $maxFiles)',
+      );
       print('  Use --force or --max-files=${filesToDelete.length} to proceed');
       return ItemResult.failure(
         path: projectPath,

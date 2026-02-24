@@ -51,44 +51,60 @@ class PubUpdateCommand {
   final String rootPath;
   final bool verbose;
 
-  PubUpdateCommand({
-    required this.rootPath,
-    required this.verbose,
-  });
+  PubUpdateCommand({required this.rootPath, required this.verbose});
 
   /// Parse command arguments.
   static ArgParser get parser => ArgParser()
     ..addFlag('help', abbr: 'h', negatable: false, help: 'Show help')
-    ..addFlag('errors',
-        abbr: 'e',
-        negatable: false,
-        help: 'Only show projects with errors')
-    ..addFlag('changes',
-        abbr: 'c',
-        negatable: false,
-        help: 'Only show projects with changed packages')
-    ..addFlag('major-versions',
-        negatable: false,
-        help: 'Allow upgrading to latest resolvable versions (major versions)')
-    ..addFlag('verbose',
-        abbr: 'v', negatable: false, help: 'Show detailed output')
-    ..addFlag('recursive',
-        abbr: 'R',
-        negatable: true,
-        defaultsTo: false,
-        help: 'Scan directories recursively (use --no-recursive to disable)')
-    ..addOption('scan',
-        abbr: 's', help: 'Scan directory for projects to process')
-    ..addOption('project',
-        abbr: 'p',
-        help: 'Project(s) to process (comma-separated, globs supported)');
+    ..addFlag(
+      'errors',
+      abbr: 'e',
+      negatable: false,
+      help: 'Only show projects with errors',
+    )
+    ..addFlag(
+      'changes',
+      abbr: 'c',
+      negatable: false,
+      help: 'Only show projects with changed packages',
+    )
+    ..addFlag(
+      'major-versions',
+      negatable: false,
+      help: 'Allow upgrading to latest resolvable versions (major versions)',
+    )
+    ..addFlag(
+      'verbose',
+      abbr: 'v',
+      negatable: false,
+      help: 'Show detailed output',
+    )
+    ..addFlag(
+      'recursive',
+      abbr: 'R',
+      negatable: true,
+      defaultsTo: false,
+      help: 'Scan directories recursively (use --no-recursive to disable)',
+    )
+    ..addOption(
+      'scan',
+      abbr: 's',
+      help: 'Scan directory for projects to process',
+    )
+    ..addOption(
+      'project',
+      abbr: 'p',
+      help: 'Project(s) to process (comma-separated, globs supported)',
+    );
 
   /// Print usage help.
   static void printUsage() {
     print('Pub Update Command - Run dart pub upgrade across projects');
     print('');
     print('Usage: buildkit :pubupdate [options]');
-    print('       buildkit :pubupdateall  # Shortcut for :pubupdate --scan . --recursive');
+    print(
+      '       buildkit :pubupdateall  # Shortcut for :pubupdate --scan . --recursive',
+    );
     print('');
     print('Options:');
     print(parser.usage);
@@ -100,7 +116,9 @@ class PubUpdateCommand {
     print('  buildkit :pubupdate --major-versions');
     print('  buildkit :pubupdateall');
     print('  buildkit :pubupdateall --errors');
-    print('  buildkit :pubupdateall --no-recursive  # Only process top-level projects');
+    print(
+      '  buildkit :pubupdateall --no-recursive  # Only process top-level projects',
+    );
   }
 
   /// Execute pub upgrade across projects.
@@ -134,8 +152,9 @@ class PubUpdateCommand {
     List<String> projectPaths;
 
     if (scanPath != null) {
-      final scanDir =
-          p.isAbsolute(scanPath) ? scanPath : p.join(currentDir, scanPath);
+      final scanDir = p.isAbsolute(scanPath)
+          ? scanPath
+          : p.join(currentDir, scanPath);
       projectPaths = _scanForProjects(scanDir, recursive: recursive);
     } else if (projectArg != null) {
       projectPaths = _resolveProjectPatterns(projectArg, basePath: currentDir);
@@ -165,7 +184,8 @@ class PubUpdateCommand {
 
       // Show progress (pad to fixed width to clear previous longer names)
       processedCount++;
-      final progressText = '  Processing ($processedCount/${projectPaths.length}): $projectName';
+      final progressText =
+          '  Processing ($processedCount/${projectPaths.length}): $projectName';
       // Pad to 120 chars to overwrite any previous longer text
       final paddedText = progressText.padRight(120);
       stdout.write('\r$paddedText');
@@ -260,8 +280,10 @@ class PubUpdateCommand {
     final pubspecFile = File(p.join(projectPath, 'pubspec.yaml'));
     if (pubspecFile.existsSync()) {
       final content = pubspecFile.readAsStringSync();
-      final nameMatch =
-          RegExp(r'^name:\s*(.+)$', multiLine: true).firstMatch(content);
+      final nameMatch = RegExp(
+        r'^name:\s*(.+)$',
+        multiLine: true,
+      ).firstMatch(content);
       if (nameMatch != null) {
         return nameMatch.group(1)?.trim() ?? p.basename(projectPath);
       }
@@ -355,10 +377,19 @@ class PubUpdateCommand {
   }
 
   /// Resolve comma-separated project patterns (globs or paths).
-  List<String> _resolveProjectPatterns(String patterns, {required String basePath}) {
+  List<String> _resolveProjectPatterns(
+    String patterns, {
+    required String basePath,
+  }) {
     final results = <String>[];
-    for (final pattern in patterns.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty)) {
-      if (pattern.contains('*') || pattern.contains('?') || pattern.contains('[')) {
+    for (final pattern
+        in patterns
+            .split(',')
+            .map((s) => s.trim())
+            .where((s) => s.isNotEmpty)) {
+      if (pattern.contains('*') ||
+          pattern.contains('?') ||
+          pattern.contains('[')) {
         final glob = Glob(pattern);
         for (final entity in glob.listSync(root: basePath)) {
           if (entity is Directory) {
@@ -367,7 +398,9 @@ class PubUpdateCommand {
           }
         }
       } else {
-        final resolved = p.isAbsolute(pattern) ? pattern : p.join(basePath, pattern);
+        final resolved = p.isAbsolute(pattern)
+            ? pattern
+            : p.join(basePath, pattern);
         if (Directory(resolved).existsSync()) results.add(resolved);
       }
     }

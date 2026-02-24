@@ -9,9 +9,7 @@ import 'help_topic.dart';
 /// All built-in help topics.
 ///
 /// Tools can include these in their [ToolDefinition.helpTopics].
-const List<HelpTopic> defaultHelpTopics = [
-  placeholdersHelpTopic,
-];
+const List<HelpTopic> defaultHelpTopics = [placeholdersHelpTopic];
 
 /// Help topic documenting placeholder and environment variable usage.
 const placeholdersHelpTopic = HelpTopic(

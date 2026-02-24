@@ -101,8 +101,7 @@ class DependenciesExecutor extends CommandExecutor {
       final overridesFile = File('$projectPath/pubspec_overrides.yaml');
       if (overridesFile.existsSync()) {
         try {
-          final oYaml =
-              loadYaml(overridesFile.readAsStringSync()) as YamlMap?;
+          final oYaml = loadYaml(overridesFile.readAsStringSync()) as YamlMap?;
           if (oYaml != null) {
             final deps = oYaml['dependency_overrides'] as YamlMap?;
             if (deps != null) overrideNames.addAll(deps.keys.cast<String>());
@@ -185,48 +184,58 @@ class DependenciesExecutor extends CommandExecutor {
       final isOverridden = overrideNames.contains(name);
 
       if (value == null || value is String) {
-        result.add(_DepEntry(
-          name: name,
-          source: 'hosted',
-          version: value?.toString() ?? 'any',
-          isOverridden: isOverridden,
-          isDev: isDev,
-        ));
-      } else if (value is YamlMap) {
-        if (value.containsKey('path')) {
-          result.add(_DepEntry(
+        result.add(
+          _DepEntry(
             name: name,
-            source: 'path',
-            path: value['path'].toString(),
+            source: 'hosted',
+            version: value?.toString() ?? 'any',
             isOverridden: isOverridden,
             isDev: isDev,
-          ));
+          ),
+        );
+      } else if (value is YamlMap) {
+        if (value.containsKey('path')) {
+          result.add(
+            _DepEntry(
+              name: name,
+              source: 'path',
+              path: value['path'].toString(),
+              isOverridden: isOverridden,
+              isDev: isDev,
+            ),
+          );
         } else if (value.containsKey('git')) {
           final git = value['git'];
           final url = git is String ? git : (git as YamlMap?)?.value['url'];
-          result.add(_DepEntry(
-            name: name,
-            source: 'git',
-            path: url?.toString(),
-            isOverridden: isOverridden,
-            isDev: isDev,
-          ));
+          result.add(
+            _DepEntry(
+              name: name,
+              source: 'git',
+              path: url?.toString(),
+              isOverridden: isOverridden,
+              isDev: isDev,
+            ),
+          );
         } else if (value.containsKey('sdk')) {
-          result.add(_DepEntry(
-            name: name,
-            source: 'sdk',
-            version: value['sdk'].toString(),
-            isOverridden: isOverridden,
-            isDev: isDev,
-          ));
+          result.add(
+            _DepEntry(
+              name: name,
+              source: 'sdk',
+              version: value['sdk'].toString(),
+              isOverridden: isOverridden,
+              isDev: isDev,
+            ),
+          );
         } else {
-          result.add(_DepEntry(
-            name: name,
-            source: 'hosted',
-            version: value['version']?.toString() ?? 'any',
-            isOverridden: isOverridden,
-            isDev: isDev,
-          ));
+          result.add(
+            _DepEntry(
+              name: name,
+              source: 'hosted',
+              version: value['version']?.toString() ?? 'any',
+              isOverridden: isOverridden,
+              isDev: isDev,
+            ),
+          );
         }
       }
     }
@@ -262,7 +271,8 @@ class DependenciesExecutor extends CommandExecutor {
         final value = entry.value;
         if (value is YamlMap && value.containsKey('path')) {
           final depPath = p.normalize(
-              p.join(projectPath, value['path'].toString()));
+            p.join(projectPath, value['path'].toString()),
+          );
           print('$indent├── $name (path)');
           if (File('$depPath/pubspec.yaml').existsSync()) {
             _printDeepTree(

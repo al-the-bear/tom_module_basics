@@ -158,7 +158,9 @@ class CompilerExecutor extends CommandExecutor {
           print('    precompile: ${config.precompileSections.length} sections');
         }
         if (config.postcompileSections.isNotEmpty) {
-          print('    postcompile: ${config.postcompileSections.length} sections');
+          print(
+            '    postcompile: ${config.postcompileSections.length} sections',
+          );
         }
       } else {
         print('    compiler: (no config)');

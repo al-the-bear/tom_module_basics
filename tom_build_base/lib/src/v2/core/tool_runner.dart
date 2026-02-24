@@ -314,21 +314,18 @@ class ToolRunner {
     // For singleCommand tools (cmd == null), fall back to tool-level natures.
     final reqNatures = cmd?.requiredNatures ?? tool.requiredNatures;
     final workNatures =
-        cmd?.worksWithNatures ?? (cmd == null ? tool.worksWithNatures : const <Type>{});
+        cmd?.worksWithNatures ??
+        (cmd == null ? tool.worksWithNatures : const <Type>{});
     final hasRequired = reqNatures != null && reqNatures.isNotEmpty;
     final hasWorksWith = workNatures.isNotEmpty;
     if (!hasRequired && !hasWorksWith) {
       final cmdLabel = cmd != null ? ' "${cmd.name}"' : '';
-      output.writeln(
-        'Error: Command$cmdLabel has no nature configuration.',
-      );
+      output.writeln('Error: Command$cmdLabel has no nature configuration.');
       output.writeln(
         'Set requiredNatures or worksWithNatures '
         '(use FsFolder for all folders).',
       );
-      return ToolResult.failure(
-        'Command$cmdLabel has no nature configuration',
-      );
+      return ToolResult.failure('Command$cmdLabel has no nature configuration');
     }
 
     // Execute with traversal

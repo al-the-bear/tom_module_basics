@@ -317,7 +317,8 @@ void addNavigationOptions(ArgParser parser) {
     abbr: 'b',
     negatable: true,
     defaultsTo: false,
-    help: 'Sort projects in dependency build order '
+    help:
+        'Sort projects in dependency build order '
         '(use --no-build-order to disable)',
   );
   parser.addOption(
@@ -361,7 +362,8 @@ void addNavigationOptions(ArgParser parser) {
   );
   parser.addMultiOption(
     'exclude-projects',
-    help: 'Exclude projects by name or path '
+    help:
+        'Exclude projects by name or path '
         '(e.g. zom_*, xternal/tom_module_basics/*)',
   );
   parser.addMultiOption(
@@ -371,7 +373,8 @@ void addNavigationOptions(ArgParser parser) {
   parser.addOption(
     'modules',
     abbr: 'm',
-    help: 'Include only projects within specified git modules '
+    help:
+        'Include only projects within specified git modules '
         '(comma-separated, e.g. tom_module_d4rt,tom_module_basics)',
   );
   parser.addFlag(
@@ -381,7 +384,8 @@ void addNavigationOptions(ArgParser parser) {
   );
   parser.addOption(
     'modes',
-    help: 'Active modes for config processing '
+    help:
+        'Active modes for config processing '
         '(comma-separated, e.g. DEV,CI). '
         'Overrides tom_workspace.yaml default.',
   );

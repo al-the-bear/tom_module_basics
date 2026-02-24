@@ -53,16 +53,16 @@ class ToolStatus {
   }
 
   Map<String, dynamic> toJson() => {
-        'name': name,
-        'available': available,
-        'conformant': conformant,
-        if (version != null) 'version': version,
-        if (buildNumber != null) 'buildNumber': buildNumber,
-        if (gitCommit != null) 'gitCommit': gitCommit,
-        if (buildTime != null) 'buildTime': buildTime,
-        if (dartSdkVersion != null) 'dartSdkVersion': dartSdkVersion,
-        if (error != null) 'error': error,
-      };
+    'name': name,
+    'available': available,
+    'conformant': conformant,
+    if (version != null) 'version': version,
+    if (buildNumber != null) 'buildNumber': buildNumber,
+    if (gitCommit != null) 'gitCommit': gitCommit,
+    if (buildTime != null) 'buildTime': buildTime,
+    if (dartSdkVersion != null) 'dartSdkVersion': dartSdkVersion,
+    if (error != null) 'error': error,
+  };
 }
 
 /// Git status information for a repository.
@@ -96,16 +96,16 @@ class GitRepoStatus {
       stagedFiles.length + unstagedFiles.length + untrackedFiles.length;
 
   Map<String, dynamic> toJson() => {
-        'path': path,
-        'name': name,
-        'branch': branch,
-        'hasChanges': hasChanges,
-        'hasUnpushed': hasUnpushed,
-        'staged': stagedFiles,
-        'unstaged': unstagedFiles,
-        'untracked': untrackedFiles,
-        'unpushedCommits': unpushedCommits,
-      };
+    'path': path,
+    'name': name,
+    'branch': branch,
+    'hasChanges': hasChanges,
+    'hasUnpushed': hasUnpushed,
+    'staged': stagedFiles,
+    'unstaged': unstagedFiles,
+    'untracked': untrackedFiles,
+    'unpushedCommits': unpushedCommits,
+  };
 }
 
 /// Overall status result.
@@ -133,18 +133,18 @@ class StatusResult {
   });
 
   Map<String, dynamic> toJson() => {
-        'source': {
-          'version': sourceVersion,
-          'buildNumber': sourceBuildNumber,
-          'gitCommit': sourceCommit,
-          'buildTime': sourceBuildTime,
-          'dartSdkVersion': sourceDartSdk,
-        },
-        'tools': tools.map((t) => t.toJson()).toList(),
-        'repos': repos.map((r) => r.toJson()).toList(),
-        'commitsSinceOldest': commitsSinceOldest,
-        if (oldestToolCommit != null) 'oldestToolCommit': oldestToolCommit,
-      };
+    'source': {
+      'version': sourceVersion,
+      'buildNumber': sourceBuildNumber,
+      'gitCommit': sourceCommit,
+      'buildTime': sourceBuildTime,
+      'dartSdkVersion': sourceDartSdk,
+    },
+    'tools': tools.map((t) => t.toJson()).toList(),
+    'repos': repos.map((r) => r.toJson()).toList(),
+    'commitsSinceOldest': commitsSinceOldest,
+    if (oldestToolCommit != null) 'oldestToolCommit': oldestToolCommit,
+  };
 }
 
 // =============================================================================
@@ -416,11 +416,11 @@ class StatusExecutor extends CommandExecutor {
     // Get current branch
     String branch;
     try {
-      final result = await ProcessRunner.run(
-        'git',
-        ['rev-parse', '--abbrev-ref', 'HEAD'],
-        workingDirectory: repoPath,
-      );
+      final result = await ProcessRunner.run('git', [
+        'rev-parse',
+        '--abbrev-ref',
+        'HEAD',
+      ], workingDirectory: repoPath);
       branch = result.stdout.trim();
     } catch (_) {
       branch = 'unknown';
@@ -432,11 +432,10 @@ class StatusExecutor extends CommandExecutor {
     List<String> untrackedFiles = [];
 
     try {
-      final result = await ProcessRunner.run(
-        'git',
-        ['status', '--porcelain'],
-        workingDirectory: repoPath,
-      );
+      final result = await ProcessRunner.run('git', [
+        'status',
+        '--porcelain',
+      ], workingDirectory: repoPath);
       final lines = result.stdout.split('\n').where((l) => l.isNotEmpty);
       for (final line in lines) {
         if (line.length < 3) continue;
@@ -462,14 +461,16 @@ class StatusExecutor extends CommandExecutor {
     // Get unpushed commits
     List<String> unpushedCommits = [];
     try {
-      final result = await ProcessRunner.run(
-        'git',
-        ['log', '@{u}..HEAD', '--oneline'],
-        workingDirectory: repoPath,
-      );
+      final result = await ProcessRunner.run('git', [
+        'log',
+        '@{u}..HEAD',
+        '--oneline',
+      ], workingDirectory: repoPath);
       if (result.exitCode == 0) {
-        unpushedCommits =
-            result.stdout.split('\n').where((l) => l.isNotEmpty).toList();
+        unpushedCommits = result.stdout
+            .split('\n')
+            .where((l) => l.isNotEmpty)
+            .toList();
       }
     } catch (_) {
       // No upstream or other error
@@ -489,11 +490,11 @@ class StatusExecutor extends CommandExecutor {
   /// Count commits since a given commit hash.
   Future<int> _countCommitsSince(String repoPath, String commitHash) async {
     try {
-      final result = await ProcessRunner.run(
-        'git',
-        ['rev-list', '--count', '$commitHash..HEAD'],
-        workingDirectory: repoPath,
-      );
+      final result = await ProcessRunner.run('git', [
+        'rev-list',
+        '--count',
+        '$commitHash..HEAD',
+      ], workingDirectory: repoPath);
       if (result.exitCode == 0) {
         return int.tryParse(result.stdout.trim()) ?? 0;
       }
@@ -581,10 +582,10 @@ class StatusExecutor extends CommandExecutor {
       print('Git Status');
       print('──────────');
 
-      final reposWithChanges =
-          result.repos.where((r) => r.hasChanges).toList();
-      final reposWithUnpushed =
-          result.repos.where((r) => r.hasUnpushed).toList();
+      final reposWithChanges = result.repos.where((r) => r.hasChanges).toList();
+      final reposWithUnpushed = result.repos
+          .where((r) => r.hasUnpushed)
+          .toList();
 
       if (reposWithChanges.isEmpty && reposWithUnpushed.isEmpty) {
         print('  All repositories are clean and up to date.');

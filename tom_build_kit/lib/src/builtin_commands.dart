@@ -237,8 +237,7 @@ class BuiltinCommands {
   Future<bool> _runCompiler(List<String> args) =>
       _runViaBuildkit('compiler', args);
 
-  Future<bool> _runRunner(List<String> args) =>
-      _runViaBuildkit('runner', args);
+  Future<bool> _runRunner(List<String> args) => _runViaBuildkit('runner', args);
 
   Future<bool> _runCleanup(List<String> args) =>
       _runViaBuildkit('cleanup', args);
@@ -264,8 +263,7 @@ class BuiltinCommands {
   Future<bool> _runGitBranch(List<String> args) =>
       _runViaBuildkit('gitbranch', args);
 
-  Future<bool> _runGitTag(List<String> args) =>
-      _runViaBuildkit('gittag', args);
+  Future<bool> _runGitTag(List<String> args) => _runViaBuildkit('gittag', args);
 
   Future<bool> _runGitClean(List<String> args) =>
       _runViaBuildkit('gitclean', args);
@@ -279,8 +277,7 @@ class BuiltinCommands {
   Future<bool> _runGitSync(List<String> args) =>
       _runViaBuildkit('gitsync', args);
 
-  Future<bool> _runStatus(List<String> args) =>
-      _runViaBuildkit('status', args);
+  Future<bool> _runStatus(List<String> args) => _runViaBuildkit('status', args);
 
   /// Run a command by spawning `buildkit :command` as a subprocess.
   ///
@@ -290,8 +287,10 @@ class BuiltinCommands {
   Future<bool> _runViaBuildkit(String command, List<String> args) async {
     if (verbose) print('  [builtin] Running $command...');
     if (dryRun) {
-      print('  [DRY RUN] Would run buildkit :$command ${args.join(' ')}'
-          .trimRight());
+      print(
+        '  [DRY RUN] Would run buildkit :$command ${args.join(' ')}'
+            .trimRight(),
+      );
       return true;
     }
 

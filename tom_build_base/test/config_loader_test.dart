@@ -153,10 +153,7 @@ compiler:
   group('resolvePlaceholders', () {
     test('resolves @[...] placeholders', () {
       final values = {'name': 'world'};
-      expect(
-        resolvePlaceholders('Hello @[name]!', values),
-        'Hello world!',
-      );
+      expect(resolvePlaceholders('Hello @[name]!', values), 'Hello world!');
     });
 
     test('resolves @{...} placeholders', () {
@@ -168,18 +165,12 @@ compiler:
     });
 
     test('resolves recursively', () {
-      final values = {
-        'a': '@[b]',
-        'b': 'final',
-      };
+      final values = {'a': '@[b]', 'b': 'final'};
       expect(resolvePlaceholders('@[a]', values), 'final');
     });
 
     test('leaves unresolved placeholders', () {
-      expect(
-        resolvePlaceholders('Hello @[unknown]!', {}),
-        'Hello @[unknown]!',
-      );
+      expect(resolvePlaceholders('Hello @[unknown]!', {}), 'Hello @[unknown]!');
     });
 
     test('resolves environment variables when enabled', () {

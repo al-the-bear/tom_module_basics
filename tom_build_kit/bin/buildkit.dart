@@ -246,12 +246,7 @@ ArgParser _createGlobalParser() {
       negatable: false,
       help: 'List available pipelines',
     )
-    ..addFlag(
-      'force',
-      abbr: 'f',
-      negatable: false,
-      help: 'Force operation',
-    )
+    ..addFlag('force', abbr: 'f', negatable: false, help: 'Force operation')
     ..addFlag(
       'dump-config',
       negatable: false,
@@ -471,8 +466,7 @@ Future<bool> _executeCommand(
   // by full path.  Convert `/abs/path/to/_build` → `_build`.
   var effectiveNavArgs = navArgs;
   if (navArgs.project != null &&
-      (navArgs.project!.contains('/') ||
-          navArgs.project!.contains(r'\'))) {
+      (navArgs.project!.contains('/') || navArgs.project!.contains(r'\'))) {
     // Security: reject absolute paths outside workspace root
     final projectPath = p.normalize(p.absolute(navArgs.project!));
     final normalizedRoot = p.normalize(rootPath);
@@ -493,8 +487,7 @@ Future<bool> _executeCommand(
       );
       return false;
     }
-    effectiveNavArgs =
-        navArgs.copyWith(project: p.basename(navArgs.project!));
+    effectiveNavArgs = navArgs.copyWith(project: p.basename(navArgs.project!));
   }
 
   // Apply navigation defaults for workspace mode
@@ -553,8 +546,7 @@ Future<bool> _executeCommand(
           item.message!.isNotEmpty &&
           !item.message!.startsWith('skipped')) {
         // Capitalize first letter for display
-        final msg =
-            item.message![0].toUpperCase() + item.message!.substring(1);
+        final msg = item.message![0].toUpperCase() + item.message!.substring(1);
         print(msg);
       }
     } else if (item.error != null) {

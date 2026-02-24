@@ -57,7 +57,9 @@ class FindProjectExecutor extends CommandExecutor {
       stderr.writeln('anchor (.git or buildkit_master.yaml) until found.');
       stderr.writeln('');
       stderr.writeln('Shell integration (add to .zshrc):');
-      stderr.writeln(r'  goto() { local d; d="$(findproject "$@" 2>/dev/null)"; if [[ -n "$d" && -d "$d" ]]; then cd "$d"; else findproject "$@"; return 1; fi; }');
+      stderr.writeln(
+        r'  goto() { local d; d="$(findproject "$@" 2>/dev/null)"; if [[ -n "$d" && -d "$d" ]]; then cd "$d"; else findproject "$@"; return 1; fi; }',
+      );
       return const ToolResult.failure('No project specified');
     }
 

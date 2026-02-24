@@ -1,8 +1,7 @@
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
-import 'package:tom_build_base/tom_build_base_v2.dart'
-    show kBuildkitMasterYaml;
+import 'package:tom_build_base/tom_build_base_v2.dart' show kBuildkitMasterYaml;
 import 'package:yaml/yaml.dart';
 
 import 'pipeline_step.dart';
@@ -54,7 +53,11 @@ class Pipeline {
   static List<String> _parseStringList(dynamic value) {
     if (value == null) return [];
     if (value is String) {
-      return value.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
+      return value
+          .split(',')
+          .map((s) => s.trim())
+          .where((s) => s.isNotEmpty)
+          .toList();
     }
     if (value is YamlList) {
       return value.map((e) => e.toString()).toList();
@@ -66,16 +69,19 @@ class Pipeline {
     if (value == null) return [];
     if (value is! YamlList) return [];
 
-    return value.map((e) {
-      if (e is YamlMap) {
-        return PipelineStep.fromYaml(e);
-      }
-      return PipelineStep(commands: []);
-    }).where((step) => step.commands.isNotEmpty).toList();
+    return value
+        .map((e) {
+          if (e is YamlMap) {
+            return PipelineStep.fromYaml(e);
+          }
+          return PipelineStep(commands: []);
+        })
+        .where((step) => step.commands.isNotEmpty)
+        .toList();
   }
 
   /// Merge with project-level overrides.
-  /// 
+  ///
   /// Project-level pipelines replace workspace-level completely (no merging).
   Pipeline mergeWith(Pipeline? projectPipeline) {
     if (projectPipeline == null) return this;
@@ -126,7 +132,7 @@ class PipelineConfig {
   });
 
   /// Load pipeline configuration.
-  /// 
+  ///
   /// Priority (project replaces workspace, no merging):
   /// 1. buildkit.yaml in project directory
   /// 2. buildkit_master.yaml in root directory
@@ -138,7 +144,7 @@ class PipelineConfig {
     final workspaceConfig = _loadFromYaml(
       p.join(rootPath, kBuildkitMasterYaml),
     );
-    
+
     // Then, load project-level config from buildkit.yaml
     final projectConfig = projectPath != rootPath
         ? _loadFromYaml(p.join(projectPath, kBuildkitYaml))
@@ -146,7 +152,7 @@ class PipelineConfig {
 
     // Merge: project replaces workspace for matching pipeline names
     final mergedPipelines = <String, Pipeline>{};
-    
+
     // Start with workspace pipelines
     if (workspaceConfig != null) {
       mergedPipelines.addAll(workspaceConfig.pipelines);
@@ -171,8 +177,8 @@ class PipelineConfig {
     final source = projectConfig != null
         ? 'project buildkit.yaml (with workspace fallback)'
         : workspaceConfig != null
-            ? 'workspace buildkit.yaml'
-            : 'none';
+        ? 'workspace buildkit.yaml'
+        : 'none';
 
     return PipelineConfig(
       pipelines: mergedPipelines,

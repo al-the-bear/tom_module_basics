@@ -9,10 +9,8 @@ import 'dart:io';
 import 'package:glob/glob.dart';
 import 'package:glob/list_local_fs.dart';
 import 'package:path/path.dart' as p;
-import 'package:tom_build_base/tom_build_base.dart'
-    show TomBuildConfig;
-import 'package:tom_build_base/tom_build_base_v2.dart'
-    show findWorkspaceRoot;
+import 'package:tom_build_base/tom_build_base.dart' show TomBuildConfig;
+import 'package:tom_build_base/tom_build_base_v2.dart' show findWorkspaceRoot;
 import 'package:yaml/yaml.dart';
 
 /// Resolves project patterns (names, paths, and globs) to absolute paths.
@@ -23,10 +21,8 @@ class ProjectResolver {
   /// Output function for verbose messages.
   final void Function(String) log;
 
-  ProjectResolver({
-    this.verbose = false,
-    void Function(String)? log,
-  }) : log = log ?? ((msg) => stderr.writeln(msg));
+  ProjectResolver({this.verbose = false, void Function(String)? log})
+    : log = log ?? ((msg) => stderr.writeln(msg));
 
   void _log(String message) {
     if (verbose) log(message);

@@ -269,9 +269,7 @@ String generatePlainToolHelp(ToolDefinition tool) {
       buf.writeln('  ${topic.name.padRight(20)} ${topic.summary}');
     }
     buf.writeln();
-    buf.writeln(
-      'Use "${tool.name} help <topic>" for detailed information.',
-    );
+    buf.writeln('Use "${tool.name} help <topic>" for detailed information.');
     buf.writeln();
   }
 

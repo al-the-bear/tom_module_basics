@@ -15,16 +15,15 @@ import '../version.versioner.dart';
 const outputOptions = <OptionDefinition>[
   OptionDefinition.option(
     name: 'output',
-    description: 'Output format: plain (default), csv, json, md, '
+    description:
+        'Output format: plain (default), csv, json, md, '
         'or <format>:<filename>',
     valueName: 'format',
   ),
 ];
 
 /// Traversal options for workspace scanning commands.
-const traversalOptions = <OptionDefinition>[
-  ...outputOptions,
-];
+const traversalOptions = <OptionDefinition>[...outputOptions];
 
 // =============================================================================
 // Issue Management Command Options
@@ -192,7 +191,8 @@ const reopenOptions = <OptionDefinition>[
 const listOptions = <OptionDefinition>[
   OptionDefinition.option(
     name: 'state',
-    description: 'Filter by state: new, analyzed, assigned, testing, '
+    description:
+        'Filter by state: new, analyzed, assigned, testing, '
         'verifying, resolved',
     valueName: 'state',
   ),
@@ -380,10 +380,7 @@ const exportOptions = <OptionDefinition>[
     description: 'Filter by tags',
     valueName: 't1,t2',
   ),
-  OptionDefinition.flag(
-    name: 'all',
-    description: 'Include closed issues',
-  ),
+  OptionDefinition.flag(name: 'all', description: 'Include closed issues'),
   OptionDefinition.option(
     name: 'repo',
     description: 'Which tracker to export from: issues (default), tests',
@@ -503,18 +500,16 @@ const testingCommand = CommandDefinition(
   options: [],
   worksWithNatures: {DartProjectFolder},
   supportsProjectTraversal: true,
-  examples: [
-    'issuekit :testing 42',
-  ],
+  examples: ['issuekit :testing 42'],
 );
 
 const verifyCommand = CommandDefinition(
   name: 'verify',
   description: 'Check if linked tests pass — move to VERIFYING if all pass',
-  options: [],  worksWithNatures: {DartProjectFolder},  supportsProjectTraversal: true,
-  examples: [
-    'issuekit :verify 42',
-  ],
+  options: [],
+  worksWithNatures: {DartProjectFolder},
+  supportsProjectTraversal: true,
+  examples: ['issuekit :verify 42'],
 );
 
 const resolveCommand = CommandDefinition(
@@ -523,9 +518,7 @@ const resolveCommand = CommandDefinition(
   options: resolveOptions,
   requiresTraversal: false,
   supportsProjectTraversal: false,
-  examples: [
-    'issuekit :resolve 42 --fix "Added null check in parser"',
-  ],
+  examples: ['issuekit :resolve 42 --fix "Added null check in parser"'],
 );
 
 const closeCommand = CommandDefinition(
@@ -534,9 +527,7 @@ const closeCommand = CommandDefinition(
   options: [],
   requiresTraversal: false,
   supportsProjectTraversal: false,
-  examples: [
-    'issuekit :close 42',
-  ],
+  examples: ['issuekit :close 42'],
 );
 
 const reopenCommand = CommandDefinition(
@@ -545,9 +536,7 @@ const reopenCommand = CommandDefinition(
   options: reopenOptions,
   requiresTraversal: false,
   supportsProjectTraversal: false,
-  examples: [
-    'issuekit :reopen 42 --note "Regression detected"',
-  ],
+  examples: ['issuekit :reopen 42 --note "Regression detected"'],
 );
 
 // Discovery and Querying Commands
@@ -570,9 +559,7 @@ const showCommand = CommandDefinition(
   options: [],
   worksWithNatures: {DartProjectFolder},
   supportsProjectTraversal: true,
-  examples: [
-    'issuekit :show 42',
-  ],
+  examples: ['issuekit :show 42'],
 );
 
 const searchCommand = CommandDefinition(
@@ -606,10 +593,7 @@ const summaryCommand = CommandDefinition(
   options: outputOptions,
   requiresTraversal: false,
   supportsProjectTraversal: false,
-  examples: [
-    'issuekit :summary',
-    'issuekit :summary --output=md:summary.md',
-  ],
+  examples: ['issuekit :summary', 'issuekit :summary --output=md:summary.md'],
 );
 
 // Test Management Commands
@@ -631,10 +615,7 @@ const validateCommand = CommandDefinition(
   options: validateOptions,
   worksWithNatures: {DartProjectFolder},
   supportsProjectTraversal: true,
-  examples: [
-    'issuekit :validate',
-    'issuekit :validate --project tom_d4rt',
-  ],
+  examples: ['issuekit :validate', 'issuekit :validate --project tom_d4rt'],
 );
 
 const linkCommand = CommandDefinition(
@@ -643,16 +624,16 @@ const linkCommand = CommandDefinition(
   options: linkOptions,
   requiresTraversal: false,
   supportsProjectTraversal: false,
-  examples: [
-    'issuekit :link 42 --test-id "legacy_parser_test"',
-  ],
+  examples: ['issuekit :link 42 --test-id "legacy_parser_test"'],
 );
 
 // Workflow Integration Commands
 const syncCommand = CommandDefinition(
   name: 'sync',
   description: 'Sync issue states with test results — detect fixes/regressions',
-  options: syncOptions,  worksWithNatures: {DartProjectFolder},  supportsProjectTraversal: true,
+  options: syncOptions,
+  worksWithNatures: {DartProjectFolder},
+  supportsProjectTraversal: true,
   examples: [
     'issuekit :sync --dry-run',
     'issuekit :sync --auto',
@@ -715,10 +696,7 @@ const snapshotCommand = CommandDefinition(
   options: snapshotOptions,
   requiresTraversal: false,
   supportsProjectTraversal: false,
-  examples: [
-    'issuekit :snapshot',
-    'issuekit :snapshot --issues-only',
-  ],
+  examples: ['issuekit :snapshot', 'issuekit :snapshot --issues-only'],
 );
 
 const runTestsCommand = CommandDefinition(
@@ -727,10 +705,7 @@ const runTestsCommand = CommandDefinition(
   options: runTestsOptions,
   requiresTraversal: false,
   supportsProjectTraversal: false,
-  examples: [
-    'issuekit :run-tests',
-    'issuekit :run-tests --wait',
-  ],
+  examples: ['issuekit :run-tests', 'issuekit :run-tests --wait'],
 );
 
 // =============================================================================

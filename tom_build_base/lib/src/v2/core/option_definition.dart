@@ -66,10 +66,10 @@ class OptionDefinition {
     this.defaultValue,
     this.negatable = false,
     this.hidden = false,
-  })  : type = OptionType.flag,
-        allowedValues = null,
-        mandatory = false,
-        valueName = null;
+  }) : type = OptionType.flag,
+       allowedValues = null,
+       mandatory = false,
+       valueName = null;
 
   /// Create a single-value option.
   const OptionDefinition.option({
@@ -81,8 +81,8 @@ class OptionDefinition {
     this.mandatory = false,
     this.valueName,
     this.hidden = false,
-  })  : type = OptionType.option,
-        negatable = false;
+  }) : type = OptionType.option,
+       negatable = false;
 
   /// Create a multi-value option.
   const OptionDefinition.multi({
@@ -93,9 +93,9 @@ class OptionDefinition {
     this.mandatory = false,
     this.valueName,
     this.hidden = false,
-  })  : type = OptionType.multiOption,
-        defaultValue = null,
-        negatable = false;
+  }) : type = OptionType.multiOption,
+       defaultValue = null,
+       negatable = false;
 
   /// Format for help text (e.g., '-v, --verbose').
   String get usage {
@@ -231,8 +231,5 @@ const List<OptionDefinition> commonOptions = [
     abbr: 'h',
     description: 'Show help message',
   ),
-  OptionDefinition.flag(
-    name: 'version',
-    description: 'Show version',
-  ),
+  OptionDefinition.flag(name: 'version', description: 'Show version'),
 ];

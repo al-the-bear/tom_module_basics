@@ -72,8 +72,10 @@ Future<ShowVersionsResult> showVersions(ShowVersionsOptions options) async {
   void log(String msg) => options.log?.call(msg);
 
   // ── 1. Load configuration (master + project, merged) ────────────────────
-  final masterConfig =
-      TomBuildConfig.loadMaster(dir: basePath, toolKey: toolKey);
+  final masterConfig = TomBuildConfig.loadMaster(
+    dir: basePath,
+    toolKey: toolKey,
+  );
   final projectConfig = TomBuildConfig.load(dir: basePath, toolKey: toolKey);
 
   TomBuildConfig config;
@@ -83,7 +85,13 @@ Future<ShowVersionsResult> showVersions(ShowVersionsOptions options) async {
   } else {
     config =
         projectConfig ?? masterConfig ?? const TomBuildConfig(verbose: true);
-    log('Config: ${projectConfig != null ? "project" : masterConfig != null ? "master" : "defaults"}');
+    log(
+      'Config: ${projectConfig != null
+          ? "project"
+          : masterConfig != null
+          ? "master"
+          : "defaults"}',
+    );
   }
 
   // ── 2. ConfigMerger — combine workspace and project exclusions ──────────
@@ -151,11 +159,15 @@ Future<ShowVersionsResult> showVersions(ShowVersionsOptions options) async {
     // Log builder consumer info when verbose
     if (effectiveVerbose) {
       if (hasBuildYamlConsumerConfig(
-          projectPath, 'tom_version_builder:version_builder')) {
+        projectPath,
+        'tom_version_builder:version_builder',
+      )) {
         log('${p.basename(projectPath)} has version_builder consumer config');
       }
       if (isBuildYamlBuilderEnabled(
-          projectPath, 'tom_version_builder:version_builder')) {
+        projectPath,
+        'tom_version_builder:version_builder',
+      )) {
         log('${p.basename(projectPath)} — version_builder is enabled');
       }
       final builderOpts = getBuildYamlBuilderOptions(

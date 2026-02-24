@@ -188,10 +188,7 @@ class BumpPubspecExecutor extends CommandExecutor {
     }
     // Default: scan from root recursively
     final scanDir = args.scan ?? root;
-    return _scanForProjects(
-      scanDir,
-      recursive: args.effectiveRecursive,
-    );
+    return _scanForProjects(scanDir, recursive: args.effectiveRecursive);
   }
 
   /// Scan a directory for projects (directories containing pubspec.yaml).
@@ -225,10 +222,11 @@ class BumpPubspecExecutor extends CommandExecutor {
     required String basePath,
   }) {
     final results = <String>[];
-    for (final pattern in patterns
-        .split(',')
-        .map((s) => s.trim())
-        .where((s) => s.isNotEmpty)) {
+    for (final pattern
+        in patterns
+            .split(',')
+            .map((s) => s.trim())
+            .where((s) => s.isNotEmpty)) {
       if (pattern.contains('*') ||
           pattern.contains('?') ||
           pattern.contains('[')) {
@@ -240,8 +238,9 @@ class BumpPubspecExecutor extends CommandExecutor {
           }
         }
       } else {
-        final resolved =
-            p.isAbsolute(pattern) ? pattern : p.join(basePath, pattern);
+        final resolved = p.isAbsolute(pattern)
+            ? pattern
+            : p.join(basePath, pattern);
         if (Directory(resolved).existsSync()) results.add(resolved);
       }
     }
@@ -389,8 +388,7 @@ class BumpPubspecExecutor extends CommandExecutor {
             editor.update([section, name], newVersion);
             changeCount++;
 
-            final relProjectPath =
-                p.relative(projectPath, from: executionRoot);
+            final relProjectPath = p.relative(projectPath, from: executionRoot);
             if (dryRun) {
               print('[DRY-RUN] $relProjectPath: $name $oldValue → $newVersion');
             } else if (verbose) {
