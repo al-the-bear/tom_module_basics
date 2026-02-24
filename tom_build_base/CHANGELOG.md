@@ -1,3 +1,9 @@
+## 2.5.2
+
+### Changed
+
+- **`repository_id_lookup.dart`** — Removed `CRPT` (tom_module_crypto) and `COM` (tom_module_communication) repository IDs after module consolidation into tom_module_basics.
+
 ## 2.5.1
 
 ### Fixed
