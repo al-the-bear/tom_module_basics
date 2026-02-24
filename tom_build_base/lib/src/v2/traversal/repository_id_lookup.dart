@@ -13,10 +13,8 @@ class RepositoryIdLookup {
     'BSC': 'tom_module_basics',
     'D4': 'tom_module_d4rt',
     'RFL': 'tom_module_reflection',
-    'CRPT': 'tom_module_crypto',
     'DIST': 'tom_module_distributed',
     'VSC': 'tom_module_vscode',
-    'COM': 'tom_module_communication',
     // Apps
     'PASS': 'tom_app_tompass',
     'WW': 'tom_app_webwork',
