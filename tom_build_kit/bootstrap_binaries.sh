@@ -80,43 +80,24 @@ fi
 
 # Step 2: Run versioner to generate proper version file
 echo "Running versioner..."
-dart run bin/versioner.dart --variable-prefix buildkit
+dart run bin/buildkit.dart --scan . --no-recursive :versioner --variable-prefix buildkit
 echo ""
 
 # Step 3: Define tools to compile
+# Only standalone entry points live in bin/ — all other tools
+# (versioner, compiler, cleanup, git*, etc.) are sub-commands of buildkit.
 TOOLS=(
     buildkit
-    versioner
-    compiler
-    cleanup
-    runner
-    dependencies
-    bumpversion
-    buildsorter
-    publisher
     findproject
-    # Git tools (no standalone 'git' - use buildkit :git instead)
-    gitbranch
-    gitcheckout
-    gitclean
-    gitcommit
-    gitcompare
-    gitmerge
-    gitprune
-    gitpull
-    gitrebase
-    gitreset
-    gitsquash
-    gitstash
-    gitstatus
-    gitsync
-    gittag
-    gitunstash
 )
 
 # Step 4: Compile each tool
 echo "Compiling tools to $OUTPUT_DIR..."
 for tool in "${TOOLS[@]}"; do
+    if [[ ! -f "bin/$tool.dart" ]]; then
+        echo "    Warning: bin/$tool.dart not found, skipping"
+        continue
+    fi
     echo "  Compiling $tool..."
     dart compile exe "bin/$tool.dart" -o "$OUTPUT_DIR/$tool" 2>/dev/null || {
         echo "    Warning: Failed to compile $tool"
