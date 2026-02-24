@@ -55,6 +55,7 @@ export 'src/v2/core/macro_expansion.dart';
 export 'src/v2/core/special_commands.dart';
 export 'src/v2/core/help_topic.dart';
 export 'src/v2/core/builtin_help_topics.dart';
+export 'src/v2/core/console_markdown_zone.dart';
 
 // Workspace utilities (constants, findWorkspaceRoot)
 export 'src/v2/workspace_utils.dart';

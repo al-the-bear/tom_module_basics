@@ -1,3 +1,13 @@
+## 2.5.0
+
+### Added
+
+- **`console_markdown_zone.dart`** — Central console_markdown integration via Dart zones. Provides `runWithConsoleMarkdown()` (async) and `runWithConsoleMarkdownSync()` to wrap CLI tool execution in a zone that renders markdown syntax (`**bold**`, `<cyan>text</cyan>`, etc.) to ANSI escape codes.
+- **`console_markdown_zone.dart`** — `ConsoleMarkdownSink` wrapper class for `StringSink` that applies `.toConsole()` rendering to all writes, enabling markdown rendering on `stdout`/`stderr` sinks.
+- **`console_markdown_zone.dart`** — `isConsoleMarkdownActive` getter and `kConsoleMarkdownZoneKey` zone key for double-processing detection. Prevents nested zones (e.g. when tom_d4rt_dcli already wraps output).
+- **`tool_runner.dart`** — `ToolRunner` now automatically wraps its output sink with `ConsoleMarkdownSink` when running inside a console_markdown zone, so all `output.writeln()` calls render markdown.
+- **`pubspec.yaml`** — Added `console_markdown: ^0.0.3` dependency.
+
 ## 2.4.0
 
 ### Added

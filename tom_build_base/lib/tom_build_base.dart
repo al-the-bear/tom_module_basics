@@ -46,6 +46,9 @@ export 'src/show_versions.dart';
 // V2 workspace utilities (constants, findWorkspaceRoot)
 export 'src/v2/workspace_utils.dart';
 
+// Console markdown zone integration
+export 'src/v2/core/console_markdown_zone.dart';
+
 // V2 navigation bridge (ArgParser integration)
 export 'src/v2/navigation_bridge.dart';
 

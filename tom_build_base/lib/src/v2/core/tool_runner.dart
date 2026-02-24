@@ -4,6 +4,7 @@ import 'package:yaml/yaml.dart';
 
 import 'cli_arg_parser.dart';
 import 'command_definition.dart';
+import 'console_markdown_zone.dart';
 import 'help_generator.dart';
 import 'tool_definition.dart';
 import 'command_executor.dart';
@@ -127,7 +128,19 @@ class ToolRunner {
     this.executors = const {},
     this.verbose = true,
     StringSink? output,
-  }) : output = output ?? stdout;
+  }) : output = _resolveOutput(output);
+
+  /// Resolve the output sink.
+  ///
+  /// When running inside a console_markdown zone and no explicit sink is
+  /// provided, wraps [stdout] in a [ConsoleMarkdownSink] so that
+  /// `output.writeln()` calls also render markdown.  When an explicit sink
+  /// is provided (e.g. a test buffer), it is used as-is.
+  static StringSink _resolveOutput(StringSink? explicit) {
+    if (explicit != null) return explicit;
+    if (isConsoleMarkdownActive) return ConsoleMarkdownSink(stdout);
+    return stdout;
+  }
 
   /// Run the tool with command-line arguments.
   Future<ToolResult> run(List<String> args) async {
