@@ -19,10 +19,8 @@ List<String> resolveProjectPatterns(
   required String basePath,
 }) {
   final results = <String>[];
-  for (final pattern in patterns
-      .split(',')
-      .map((s) => s.trim())
-      .where((s) => s.isNotEmpty)) {
+  for (final pattern
+      in patterns.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty)) {
     if (pattern.contains('*') ||
         pattern.contains('?') ||
         pattern.contains('[')) {
@@ -34,8 +32,9 @@ List<String> resolveProjectPatterns(
         }
       }
     } else {
-      final resolved =
-          p.isAbsolute(pattern) ? pattern : p.join(basePath, pattern);
+      final resolved = p.isAbsolute(pattern)
+          ? pattern
+          : p.join(basePath, pattern);
       if (Directory(resolved).existsSync()) results.add(resolved);
     }
   }

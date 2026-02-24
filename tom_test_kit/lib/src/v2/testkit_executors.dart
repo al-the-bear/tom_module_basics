@@ -57,7 +57,8 @@ class BaselineExecutor extends CommandExecutor {
   @override
   Future<ItemResult> execute(CommandContext context, CliArgs args) async {
     if (args.dryRun) {
-      final outputPath = _getString(args, 'file') ?? 'doc/baseline_<timestamp>.csv';
+      final outputPath =
+          _getString(args, 'file') ?? 'doc/baseline_<timestamp>.csv';
       return ItemResult.success(
         path: context.path,
         name: context.name,
@@ -102,7 +103,8 @@ class TestExecutor extends CommandExecutor {
       return ItemResult.success(
         path: context.path,
         name: context.name,
-        message: '[DRY RUN] Would run tests and update tracking'
+        message:
+            '[DRY RUN] Would run tests and update tracking'
             '${opts.isNotEmpty ? ' (${opts.join(', ')})' : ''}',
       );
     }
@@ -351,7 +353,8 @@ class TrimExecutor extends CommandExecutor {
       return ItemResult.success(
         path: context.path,
         name: context.name,
-        message: '[DRY RUN] Would trim baselines, keeping $keepCount most recent',
+        message:
+            '[DRY RUN] Would trim baselines, keeping $keepCount most recent',
       );
     }
 

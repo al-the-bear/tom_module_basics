@@ -335,10 +335,13 @@ class BuiltinCommands {
   }
 
   Future<bool> _runPubGetAll(List<String> args) async {
-    final wsRoot =
-        rootPath.isNotEmpty ? rootPath : findWorkspaceRoot(Directory.current.path);
+    final wsRoot = rootPath.isNotEmpty
+        ? rootPath
+        : findWorkspaceRoot(Directory.current.path);
     if (verbose) {
-      print('  [builtin] Running pubgetall (-R $wsRoot --scan $wsRoot --recursive)...');
+      print(
+        '  [builtin] Running pubgetall (-R $wsRoot --scan $wsRoot --recursive)...',
+      );
     }
     final pubGetCommand = PubGetCommand(rootPath: wsRoot, verbose: verbose);
     final fullArgs = ['--scan', wsRoot, '--recursive', ...args];
@@ -358,10 +361,13 @@ class BuiltinCommands {
   }
 
   Future<bool> _runPubUpdateAll(List<String> args) async {
-    final wsRoot =
-        rootPath.isNotEmpty ? rootPath : findWorkspaceRoot(Directory.current.path);
+    final wsRoot = rootPath.isNotEmpty
+        ? rootPath
+        : findWorkspaceRoot(Directory.current.path);
     if (verbose) {
-      print('  [builtin] Running pubupdateall (-R $wsRoot --scan $wsRoot --recursive)...');
+      print(
+        '  [builtin] Running pubupdateall (-R $wsRoot --scan $wsRoot --recursive)...',
+      );
     }
     final pubUpdateCommand = PubUpdateCommand(
       rootPath: wsRoot,

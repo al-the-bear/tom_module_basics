@@ -28,7 +28,11 @@ int? _parseIssueNumber(CliArgs args) {
 /// Split a comma-separated option value into a list of trimmed strings.
 List<String> _splitTags(String? value) {
   if (value == null || value.isEmpty) return [];
-  return value.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
+  return value
+      .split(',')
+      .map((s) => s.trim())
+      .where((s) => s.isNotEmpty)
+      .toList();
 }
 
 /// Parse an import file (JSON format) into a list of entry maps.
@@ -95,7 +99,8 @@ class NewIssueExecutor extends CommandExecutor {
           ItemResult.success(
             path: 'tom_issues',
             name: ':new',
-            message: '[DRY RUN] Would create issue: "$title" '
+            message:
+                '[DRY RUN] Would create issue: "$title" '
                 '(severity: $severity, project: $project)',
           ),
         ],
@@ -115,7 +120,9 @@ class NewIssueExecutor extends CommandExecutor {
       );
 
       final issue = result.issue;
-      final msg = StringBuffer('Created issue #${issue.number}: ${issue.title}');
+      final msg = StringBuffer(
+        'Created issue #${issue.number}: ${issue.title}',
+      );
       if (result.testEntry != null) {
         msg.write('\nTest entry created: #${result.testEntry!.number}');
       }
@@ -183,7 +190,8 @@ class EditIssueExecutor extends CommandExecutor {
           ItemResult.success(
             path: 'tom_issues',
             name: '#$issueNumber',
-            message: '[DRY RUN] Would update issue #$issueNumber '
+            message:
+                '[DRY RUN] Would update issue #$issueNumber '
                 'fields: ${fields.isEmpty ? '(none)' : fields.join(', ')}',
           ),
         ],
@@ -263,7 +271,8 @@ class AnalyzeExecutor extends CommandExecutor {
           ItemResult.success(
             path: 'tom_issues',
             name: '#$issueNumber',
-            message: '[DRY RUN] Would analyze issue #$issueNumber'
+            message:
+                '[DRY RUN] Would analyze issue #$issueNumber'
                 '${project != null ? ' and assign to $project' : ''}',
           ),
         ],
@@ -337,9 +346,7 @@ class AssignExecutor extends CommandExecutor {
     final opts = args.extraOptions;
     final project = opts['project'] as String?;
     if (project == null) {
-      return const ToolResult.failure(
-        'Missing required option: --project',
-      );
+      return const ToolResult.failure('Missing required option: --project');
     }
 
     if (args.dryRun) {
@@ -350,7 +357,8 @@ class AssignExecutor extends CommandExecutor {
           ItemResult.success(
             path: 'tom_issues',
             name: '#$issueNumber',
-            message: '[DRY RUN] Would assign issue #$issueNumber '
+            message:
+                '[DRY RUN] Would assign issue #$issueNumber '
                 'to project $project',
           ),
         ],
@@ -427,7 +435,8 @@ class TestingExecutor extends CommandExecutor {
       return ItemResult.failure(
         path: context.path,
         name: context.name,
-        error: 'Only stub(s) found for #$issueNumber: $stubIds '
+        error:
+            'Only stub(s) found for #$issueNumber: $stubIds '
             '— create a full dart test with project-specific ID',
       );
     }
@@ -440,10 +449,7 @@ class TestingExecutor extends CommandExecutor {
     // Per spec: update issue labels to TESTING and test entry to has-tests
     if (!args.dryRun) {
       try {
-        await service.updateIssue(
-          issueNumber: issueNumber,
-          tags: ['testing'],
-        );
+        await service.updateIssue(issueNumber: issueNumber, tags: ['testing']);
       } on Exception {
         // API call may fail — scan result is still valid
       }
@@ -776,25 +782,39 @@ class ListExecutor extends CommandExecutor {
       );
 
       final items = issues.map((issue) {
-        final stateLabel = issue.labels
-            .map((l) => l.name)
-            .where((n) =>
-                const ['new', 'analyzed', 'assigned', 'testing', 'verifying', 'resolved']
-                    .contains(n))
-            .firstOrNull ?? '';
-        final severityLabel = issue.labels
-            .map((l) => l.name)
-            .where((n) => n.startsWith('severity:'))
-            .firstOrNull ?? '';
-        final projectLabel = issue.labels
-            .map((l) => l.name)
-            .where((n) => n.startsWith('project:'))
-            .firstOrNull ?? '';
+        final stateLabel =
+            issue.labels
+                .map((l) => l.name)
+                .where(
+                  (n) => const [
+                    'new',
+                    'analyzed',
+                    'assigned',
+                    'testing',
+                    'verifying',
+                    'resolved',
+                  ].contains(n),
+                )
+                .firstOrNull ??
+            '';
+        final severityLabel =
+            issue.labels
+                .map((l) => l.name)
+                .where((n) => n.startsWith('severity:'))
+                .firstOrNull ??
+            '';
+        final projectLabel =
+            issue.labels
+                .map((l) => l.name)
+                .where((n) => n.startsWith('project:'))
+                .firstOrNull ??
+            '';
 
         return ItemResult.success(
           path: 'tom_issues',
           name: '#${issue.number}',
-          message: '#${issue.number}  '
+          message:
+              '#${issue.number}  '
               '[${severityLabel.replaceFirst('severity:', '').toUpperCase()}]  '
               '${projectLabel.replaceFirst('project:', '')}  '
               '${stateLabel.toUpperCase()}  '
@@ -853,11 +873,13 @@ class ShowExecutor extends CommandExecutor {
         ? scanner.parseBaseline(baselineContent)
         : <String, String>{};
 
-    final lines = matches.map((m) {
-      final file = m.filePath.replaceFirst('${context.path}/', '');
-      final status = statuses[m.testId] ?? 'NOT RUN';
-      return '${m.testId.padRight(16)} ${status.padRight(8)} $file:${m.line}';
-    }).join('\n');
+    final lines = matches
+        .map((m) {
+          final file = m.filePath.replaceFirst('${context.path}/', '');
+          final status = statuses[m.testId] ?? 'NOT RUN';
+          return '${m.testId.padRight(16)} ${status.padRight(8)} $file:${m.line}';
+        })
+        .join('\n');
 
     return ItemResult.success(
       path: context.path,
@@ -980,7 +1002,8 @@ class ScanExecutor extends CommandExecutor {
     if (issueNumber != null) {
       matches = scanner.scanForIssue(context.path, issueNumber);
     } else {
-      matches = scanner.scanProject(context.path)
+      matches = scanner
+          .scanProject(context.path)
           .where((m) => m.isIssueLinked)
           .toList();
     }
@@ -1000,10 +1023,12 @@ class ScanExecutor extends CommandExecutor {
       );
     }
 
-    final lines = matches.map((m) {
-      final file = m.filePath.replaceFirst('${context.path}/', '');
-      return '${m.testId.padRight(16)} $file:${m.line}';
-    }).join('\n');
+    final lines = matches
+        .map((m) {
+          final file = m.filePath.replaceFirst('${context.path}/', '');
+          return '${m.testId.padRight(16)} $file:${m.line}';
+        })
+        .join('\n');
 
     return ItemResult.success(
       path: context.path,
@@ -1045,7 +1070,9 @@ class SummaryExecutor extends CommandExecutor {
       if (summary.byState.isNotEmpty) {
         msg.writeln('By State:');
         for (final entry in summary.byState.entries) {
-          msg.writeln('  ${entry.key.toUpperCase().padRight(14)} ${entry.value}');
+          msg.writeln(
+            '  ${entry.key.toUpperCase().padRight(14)} ${entry.value}',
+          );
         }
         msg.writeln();
       }
@@ -1053,7 +1080,9 @@ class SummaryExecutor extends CommandExecutor {
       if (summary.bySeverity.isNotEmpty) {
         msg.writeln('By Severity:');
         for (final entry in summary.bySeverity.entries) {
-          msg.writeln('  ${entry.key.toUpperCase().padRight(14)} ${entry.value}');
+          msg.writeln(
+            '  ${entry.key.toUpperCase().padRight(14)} ${entry.value}',
+          );
         }
         msg.writeln();
       }
@@ -1368,9 +1397,7 @@ class LinkExecutor extends CommandExecutor {
     final opts = args.extraOptions;
     final testId = opts['test-id'] as String?;
     if (testId == null) {
-      return const ToolResult.failure(
-        'Missing required option: --test-id',
-      );
+      return const ToolResult.failure('Missing required option: --test-id');
     }
 
     if (args.dryRun) {
@@ -1381,7 +1408,8 @@ class LinkExecutor extends CommandExecutor {
           ItemResult.success(
             path: 'tom_issues',
             name: '#$issueNumber',
-            message: '[DRY RUN] Would link test $testId '
+            message:
+                '[DRY RUN] Would link test $testId '
                 'to issue #$issueNumber',
           ),
         ],
@@ -1437,7 +1465,8 @@ class SyncExecutor extends CommandExecutor {
     final autoApply = opts['auto'] == true;
     final dryRun = args.dryRun;
 
-    final allTests = scanner.scanProject(context.path)
+    final allTests = scanner
+        .scanProject(context.path)
         .where((m) => m.isIssueLinked)
         .toList();
 
@@ -1558,9 +1587,7 @@ class SyncExecutor extends CommandExecutor {
       name: context.name,
       success: failing.isEmpty,
       message: msg.toString(),
-      error: failing.isNotEmpty
-          ? 'Failing: ${failing.join(', ')}'
-          : null,
+      error: failing.isNotEmpty ? 'Failing: ${failing.join(', ')}' : null,
     );
   }
 }
@@ -1578,7 +1605,8 @@ class AggregateExecutor extends CommandExecutor {
 
   @override
   Future<ItemResult> execute(CommandContext context, CliArgs args) async {
-    final allTests = scanner.scanProject(context.path)
+    final allTests = scanner
+        .scanProject(context.path)
         .where((m) => m.isIssueLinked)
         .toList();
 
@@ -1746,10 +1774,7 @@ class ImportExecutor extends CommandExecutor {
       final content = file.readAsStringSync();
       final entries = _parseImportFile(content);
 
-      final created = await service.importIssues(
-        entries: entries,
-        repo: repo,
-      );
+      final created = await service.importIssues(entries: entries, repo: repo);
 
       final items = created.map((issue) {
         return ItemResult.success(
@@ -1812,7 +1837,8 @@ class InitExecutor extends CommandExecutor {
           ItemResult.success(
             path: 'init',
             name: 'labels',
-            message: '[DRY RUN] Would initialize labels '
+            message:
+                '[DRY RUN] Would initialize labels '
                 'for repo: $repo${force ? ' (force)' : ''}',
           ),
         ],
@@ -1829,7 +1855,8 @@ class InitExecutor extends CommandExecutor {
           ItemResult.success(
             path: 'init',
             name: 'labels',
-            message: 'Created ${result.issuesLabelsCreated} issue labels '
+            message:
+                'Created ${result.issuesLabelsCreated} issue labels '
                 'and ${result.testsLabelsCreated} test labels',
           ),
         ],
@@ -1868,8 +1895,8 @@ class SnapshotExecutor extends CommandExecutor {
       final scope = issuesOnly
           ? 'issues only'
           : testsOnly
-              ? 'tests only'
-              : 'issues and tests';
+          ? 'tests only'
+          : 'issues and tests';
       return ToolResult(
         success: true,
         processedCount: 0,
@@ -1939,7 +1966,8 @@ class RunTestsExecutor extends CommandExecutor {
           ItemResult.success(
             path: 'run-tests',
             name: 'workflow',
-            message: '[DRY RUN] Would trigger test workflow'
+            message:
+                '[DRY RUN] Would trigger test workflow'
                 '${wait ? ' (with wait)' : ''}',
           ),
         ],
@@ -1956,7 +1984,8 @@ class RunTestsExecutor extends CommandExecutor {
           ItemResult.success(
             path: 'run-tests',
             name: 'workflow',
-            message: 'Test workflow triggered'
+            message:
+                'Test workflow triggered'
                 '${wait ? ' (waiting for completion)' : ''}',
           ),
         ],

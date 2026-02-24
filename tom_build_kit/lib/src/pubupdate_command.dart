@@ -120,8 +120,12 @@ class PubUpdateCommand {
     print('  buildkit :pubupdate -s . -R --errors');
     print('  buildkit :pubupdate --project tom_* --changes');
     print('  buildkit :pubupdate --major-versions');
-    print('  buildkit :pubupdateall             # pub upgrade in entire workspace');
-    print('  buildkit :pubupdateall --errors    # only show projects with errors');
+    print(
+      '  buildkit :pubupdateall             # pub upgrade in entire workspace',
+    );
+    print(
+      '  buildkit :pubupdateall --errors    # only show projects with errors',
+    );
   }
 
   /// Execute pub upgrade across projects.
@@ -161,8 +165,11 @@ class PubUpdateCommand {
       final scanDir = p.isAbsolute(scanPath)
           ? scanPath
           : p.join(currentDir, scanPath);
-      projectPaths = scanForDartProjects(scanDir,
-          recursive: recursive, verbose: isVerbose);
+      projectPaths = scanForDartProjects(
+        scanDir,
+        recursive: recursive,
+        verbose: isVerbose,
+      );
     } else if (projectArg != null) {
       projectPaths = resolveProjectPatterns(projectArg, basePath: currentDir);
     } else {
@@ -176,8 +183,10 @@ class PubUpdateCommand {
     }
 
     if (dryRun) {
-      print('[DRY RUN] Would run pub upgrade on '
-          '${projectPaths.length} project(s)');
+      print(
+        '[DRY RUN] Would run pub upgrade on '
+        '${projectPaths.length} project(s)',
+      );
       if (majorVersions) print('[DRY RUN] with --major-versions');
       print('');
       for (final projectPath in projectPaths) {
@@ -238,8 +247,10 @@ class PubUpdateCommand {
         _displayResult(result, isVerbose, processedCount, projectPaths.length);
       } else {
         // Compact progress for filtered-out successes
-        print('  ($processedCount/${projectPaths.length}) '
-            '$projectName ✓');
+        print(
+          '  ($processedCount/${projectPaths.length}) '
+          '$projectName ✓',
+        );
       }
     }
 
@@ -357,5 +368,4 @@ class PubUpdateCommand {
       }
     }
   }
-
 }

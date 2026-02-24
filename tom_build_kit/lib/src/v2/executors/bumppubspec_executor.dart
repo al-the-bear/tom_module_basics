@@ -76,8 +76,11 @@ class BumpPubspecExecutor extends CommandExecutor {
 
     // Find package versions
     final packageVersions = <String, String>{};
-    final projects = scanForDartProjects(root, recursive: true,
-        verbose: verbose);
+    final projects = scanForDartProjects(
+      root,
+      recursive: true,
+      verbose: verbose,
+    );
 
     for (final packageName in packageRefs) {
       final version = _findPackageVersion(packageName, projects);
@@ -189,8 +192,11 @@ class BumpPubspecExecutor extends CommandExecutor {
     }
     // Default: scan from root recursively
     final scanDir = args.scan ?? root;
-    return scanForDartProjects(scanDir,
-        recursive: args.effectiveRecursive, verbose: args.verbose);
+    return scanForDartProjects(
+      scanDir,
+      recursive: args.effectiveRecursive,
+      verbose: args.verbose,
+    );
   }
 
   // ---------------------------------------------------------------------------

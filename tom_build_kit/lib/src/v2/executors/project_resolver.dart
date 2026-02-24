@@ -288,7 +288,6 @@ class ProjectResolver {
   bool _isProject(String dirPath) {
     return File(p.join(dirPath, 'pubspec.yaml')).existsSync();
   }
-
 }
 
 /// Type of config match found during project search.

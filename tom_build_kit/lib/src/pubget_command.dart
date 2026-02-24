@@ -164,8 +164,11 @@ class PubGetCommand {
       final scanDir = p.isAbsolute(scanPath)
           ? scanPath
           : p.join(currentDir, scanPath);
-      projectPaths = scanForDartProjects(scanDir,
-          recursive: recursive, verbose: isVerbose);
+      projectPaths = scanForDartProjects(
+        scanDir,
+        recursive: recursive,
+        verbose: isVerbose,
+      );
     } else if (projectArg != null) {
       projectPaths = resolveProjectPatterns(projectArg, basePath: currentDir);
     } else {
@@ -179,8 +182,10 @@ class PubGetCommand {
     }
 
     if (dryRun) {
-      print('[DRY RUN] Would run pub get on '
-          '${projectPaths.length} project(s)');
+      print(
+        '[DRY RUN] Would run pub get on '
+        '${projectPaths.length} project(s)',
+      );
       print('');
       for (final projectPath in projectPaths) {
         final relativePath = p.relative(projectPath, from: rootPath);
@@ -232,8 +237,10 @@ class PubGetCommand {
         _displayResult(result, isVerbose, processedCount, projectPaths.length);
       } else {
         // Compact progress for filtered-out successes
-        print('  ($processedCount/${projectPaths.length}) '
-            '$projectName ✓');
+        print(
+          '  ($processedCount/${projectPaths.length}) '
+          '$projectName ✓',
+        );
       }
     }
 
@@ -348,5 +355,4 @@ class PubGetCommand {
       }
     }
   }
-
 }

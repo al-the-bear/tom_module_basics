@@ -690,7 +690,9 @@ String _generateToolHelp() {
   final buf = StringBuffer();
   buf.writeln('**Build Kit** $_version - Pipeline-based build orchestration');
   buf.writeln();
-  buf.writeln('<cyan>**Usage:**</cyan> buildkit [options] <pipeline|:command> [args...]');
+  buf.writeln(
+    '<cyan>**Usage:**</cyan> buildkit [options] <pipeline|:command> [args...]',
+  );
   buf.writeln();
   buf.writeln('<cyan>**Commands**</cyan> (prefixed with :):');
   buf.writeln('  :versioner      Update version files');
@@ -762,7 +764,9 @@ String _generateCommandHelp(CommandDefinition cmd) {
   buf.writeln();
   buf.writeln('<cyan>**Command:**</cyan> :${cmd.name}');
   if (cmd.aliases.isNotEmpty) {
-    buf.writeln('<cyan>**Aliases:**</cyan> ${cmd.aliases.map((a) => ':$a').join(', ')}');
+    buf.writeln(
+      '<cyan>**Aliases:**</cyan> ${cmd.aliases.map((a) => ':$a').join(', ')}',
+    );
   }
   buf.writeln();
   buf.writeln(cmd.description);

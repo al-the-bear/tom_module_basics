@@ -100,8 +100,8 @@ class PubGetAllExecutor extends CommandExecutor {
 
   @override
   Future<ToolResult> executeWithoutTraversal(CliArgs args) async {
-    final wsRoot = args.root ??
-        findWorkspaceRoot(args.scan ?? Directory.current.path);
+    final wsRoot =
+        args.root ?? findWorkspaceRoot(args.scan ?? Directory.current.path);
     final pubGet = PubGetCommand(rootPath: wsRoot, verbose: args.verbose);
 
     final cmdArgs = <String>['--scan', wsRoot, '--recursive'];
@@ -186,8 +186,8 @@ class PubUpdateAllExecutor extends CommandExecutor {
 
   @override
   Future<ToolResult> executeWithoutTraversal(CliArgs args) async {
-    final wsRoot = args.root ??
-        findWorkspaceRoot(args.scan ?? Directory.current.path);
+    final wsRoot =
+        args.root ?? findWorkspaceRoot(args.scan ?? Directory.current.path);
     final pubUpdate = PubUpdateCommand(rootPath: wsRoot, verbose: args.verbose);
 
     final cmdArgs = <String>['--scan', wsRoot, '--recursive'];
