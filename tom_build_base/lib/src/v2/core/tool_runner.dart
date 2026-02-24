@@ -159,8 +159,8 @@ class ToolRunner {
       return const ToolResult.success();
     }
 
-    // Handle version
-    if (cliArgs.version) {
+    // Handle version (--version flag or bare 'version' positional arg)
+    if (cliArgs.version || cliArgs.positionalArgs.contains('version')) {
       output.writeln('${tool.name} v${tool.version}');
       return const ToolResult.success();
     }
@@ -337,21 +337,23 @@ class ToolRunner {
         if (traversalInfo is ProjectTraversalInfo) {
           final cmdArgs = cliArgs.commandArgs[cmd?.name];
           if (cmdArgs != null) {
-            // Check project patterns (ID → name → folder name glob)
+            // Check project patterns (ID → name → folder name glob → path)
             if (cmdArgs.projectPatterns.isNotEmpty) {
               final filter = FilterPipeline();
               final matches = filter.matchesProjectPattern(
                 context.fsFolder,
                 cmdArgs.projectPatterns,
+                executionRoot: traversalInfo.executionRoot,
               );
               if (!matches) return true; // Skip, continue
             }
-            // Check exclude patterns (ID → name → folder name glob)
+            // Check exclude patterns (ID → name → folder name glob → path)
             if (cmdArgs.excludePatterns.isNotEmpty) {
               final filter = FilterPipeline();
               final excluded = filter.matchesProjectPattern(
                 context.fsFolder,
                 cmdArgs.excludePatterns,
+                executionRoot: traversalInfo.executionRoot,
               );
               if (excluded) return true; // Skip, continue
             }

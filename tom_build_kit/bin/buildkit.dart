@@ -484,6 +484,15 @@ Future<bool> _executeCommand(
       );
       return false;
     }
+    // Check that the resolved path actually exists
+    final projectDir = Directory(projectPath);
+    if (!projectDir.existsSync()) {
+      print(
+        'Error: --project path does not exist: ${navArgs.project}\n'
+        '  Resolved: $projectPath',
+      );
+      return false;
+    }
     effectiveNavArgs =
         navArgs.copyWith(project: p.basename(navArgs.project!));
   }

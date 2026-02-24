@@ -1,3 +1,13 @@
+## 2.2.0
+
+### Added
+
+- **`filter_pipeline.dart`** — Added `_matchesRelativePath()` and `_isPathPattern()` for path-based pattern matching in `--exclude-projects` and `--project` filters. Patterns containing `/` (e.g., `core/tom_core_kernel`) are now matched against relative paths using glob matching, enabling directory-scoped project exclusion.
+- **`filter_pipeline.dart`** — Updated `matchesProjectPattern()` to accept optional `executionRoot` parameter for path-based matching.
+- **`tool_runner.dart`** — `ToolRunner.run()` now handles bare `version` as a positional arg (in addition to `--version`/`-V`), consistent with `handleSpecialCommands`.
+- **`help_generator.dart`** — `generateCommandHelp()` now includes a "Common Options" section showing `--help`, `--verbose`, and `--dry-run`.
+- **`tool_runner.dart`** — Per-command `matchesProjectPattern()` calls now pass `executionRoot` for path-based pattern support.
+
 ## 2.1.0
 
 ### Added

@@ -25,26 +25,36 @@ class FilterPipeline {
 
     // 2. Project include (--project, -p)
     // Resolution order: project ID → project name → folder name pattern (glob)
+    //                    → relative path pattern (for patterns with '/')
     if (info.projectPatterns.isNotEmpty) {
       result = result
           .where(
             (f) =>
                 _matchesProjectId(f, info.projectPatterns) ||
                 _matchesProjectName(f, info.projectPatterns) ||
-                _matchesNamePattern(f.name, info.projectPatterns),
+                _matchesNamePattern(f.name, info.projectPatterns) ||
+                _matchesRelativePath(
+                  p.relative(f.path, from: info.executionRoot),
+                  info.projectPatterns,
+                ),
           )
           .toList();
     }
 
     // 3. Project name exclude (--exclude-projects)
     // Resolution order: project ID → project name → folder name
+    //                    → relative path pattern (for patterns with '/')
     if (info.excludeProjects.isNotEmpty) {
       result = result
           .where(
             (f) =>
                 !_matchesProjectId(f, info.excludeProjects) &&
                 !_matchesProjectName(f, info.excludeProjects) &&
-                !_matchesNamePattern(f.name, info.excludeProjects),
+                !_matchesNamePattern(f.name, info.excludeProjects) &&
+                !_matchesRelativePath(
+                  p.relative(f.path, from: info.executionRoot),
+                  info.excludeProjects,
+                ),
           )
           .toList();
     }
@@ -123,11 +133,54 @@ class FilterPipeline {
   /// Check if a folder matches any project pattern by ID, name, or folder name glob.
   ///
   /// This is the unified matching method used for `--project` / `-p` filtering.
-  /// Resolution order: project ID → project name → folder name (glob).
-  bool matchesProjectPattern(FsFolder folder, List<String> patterns) {
-    return _matchesProjectId(folder, patterns) ||
+  /// Resolution order: project ID → project name → folder name (glob)
+  ///                    → relative path pattern (for patterns with '/').
+  ///
+  /// When [executionRoot] is provided, patterns containing '/' are matched
+  /// against the folder's path relative to the execution root.
+  bool matchesProjectPattern(
+    FsFolder folder,
+    List<String> patterns, {
+    String? executionRoot,
+  }) {
+    if (_matchesProjectId(folder, patterns) ||
         _matchesProjectName(folder, patterns) ||
-        _matchesNamePattern(folder.name, patterns);
+        _matchesNamePattern(folder.name, patterns)) {
+      return true;
+    }
+    // Try path-based matching for patterns containing '/'
+    if (executionRoot != null) {
+      final relativePath = p.relative(folder.path, from: executionRoot);
+      if (_matchesRelativePath(relativePath, patterns)) return true;
+    }
+    return false;
+  }
+
+  /// Whether a pattern is path-based (contains directory separators).
+  ///
+  /// Path patterns like `core/*`, `devops/**`, `**/tom_core_*` must be
+  /// matched against relative paths, not just the folder basename.
+  static bool _isPathPattern(String pattern) => pattern.contains('/');
+
+  /// Match a relative path against path-based patterns.
+  ///
+  /// Only considers patterns that contain '/' (directory separators).
+  /// Uses [Glob] matching for pattern evaluation.
+  bool _matchesRelativePath(String relativePath, List<String> patterns) {
+    for (final pattern in patterns) {
+      if (!_isPathPattern(pattern)) continue;
+      try {
+        final glob = Glob(pattern);
+        if (glob.matches(relativePath)) return true;
+      } catch (_) {
+        // Invalid glob — try simple string prefix match as fallback
+        final barePattern = pattern.replaceAll('*', '');
+        if (barePattern.isNotEmpty && relativePath.startsWith(barePattern)) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 
   /// Check if name matches any of the patterns (for include/project filters).

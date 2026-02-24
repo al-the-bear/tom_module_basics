@@ -457,13 +457,13 @@ void main() {
       tempSkipFiles.add(ws.placeSkipFile('_build'));
 
       final result = await ws.runTool(
-        'buildkit',
+        'versioner',
         [
           '--scan', '.', '--recursive', '--verbose',
-          ':versioner', '--list',
+          '--list',
         ],
       );
-      log.capture('buildkit --verbose :versioner --list (skip file in _build)', result);
+      log.capture('buildkit --verbose --list :versioner (skip file in _build)', result);
       final stdout = result.stdout as String;
       // Verbose mode lists discovered projects with "  - <relative-path>"
       // The skip message itself will contain the project name, so we check
@@ -486,10 +486,12 @@ void main() {
       }
       log.expectation('_build not in project listing lines', allExcluded);
       // Verify the skip message IS present (proves the feature is active)
-      final hasSkipMsg = stdout.contains('Skipping (buildkit_skip.yaml)');
-      log.expectation('skip message present in output', hasSkipMsg);
-      expect(stdout, contains('Skipping (buildkit_skip.yaml)'),
-          reason: 'Should log skip message for _build in verbose mode');
+      // The v2 traversal writes skip messages to stderr, not stdout.
+      final stderr = result.stderr as String;
+      final hasSkipMsg = stderr.contains('Skipping - buildkit_skip.yaml found:');
+      log.expectation('skip message present in stderr', hasSkipMsg);
+      expect(stderr, contains('Skipping - buildkit_skip.yaml found:'),
+          reason: 'Should log skip message for _build in verbose mode (on stderr)');
     });
   });
 

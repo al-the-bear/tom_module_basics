@@ -169,13 +169,18 @@ void main() {
       expect(deepResult.exitCode, equals(0));
 
       // Count dependency lines in each mode
+      // Normal mode uses -> and +> prefixes, deep mode adds ├── tree chars
+      bool isDepLine(String l) {
+        final t = l.trimLeft();
+        return t.startsWith('->') || t.startsWith('+>') || t.startsWith('├──') || t.startsWith('└──');
+      }
       final normalDepLines = normalStdout
           .split('\n')
-          .where((l) => l.trimLeft().startsWith('->'))
+          .where(isDepLine)
           .length;
       final deepDepLines = deepStdout
           .split('\n')
-          .where((l) => l.trimLeft().startsWith('->'))
+          .where(isDepLine)
           .length;
 
       // Bug #16 FIXED: deep mode shows MORE dependency entries because
