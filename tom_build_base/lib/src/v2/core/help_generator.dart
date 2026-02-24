@@ -1,3 +1,4 @@
+import 'help_topic.dart';
 import 'option_definition.dart';
 import 'command_definition.dart';
 import 'tool_definition.dart';
@@ -45,6 +46,17 @@ class HelpGenerator {
       }
       buf.writeln();
       buf.writeln('  Use `${tool.name} :command --help` for command-specific help.');
+      buf.writeln();
+    }
+
+    // Help topics
+    if (tool.helpTopics.isNotEmpty) {
+      buf.writeln('<magenta>**Help Topics**</magenta>');
+      for (final topic in tool.helpTopics) {
+        buf.writeln('  ${topic.name.padRight(20)} ${topic.summary}');
+      }
+      buf.writeln();
+      buf.writeln('  Use `${tool.name} help <topic>` for detailed information.');
       buf.writeln();
     }
 
@@ -129,6 +141,20 @@ class HelpGenerator {
       buf.writeln();
     }
 
+    return buf.toString();
+  }
+
+  /// Generate help text for a help topic.
+  static String generateTopicHelp(
+    HelpTopic topic, {
+    ToolDefinition? tool,
+  }) {
+    final buf = StringBuffer();
+    if (tool != null) {
+      buf.writeln('**${tool.name}** v${tool.version}');
+      buf.writeln();
+    }
+    buf.write(topic.content);
     return buf.toString();
   }
 

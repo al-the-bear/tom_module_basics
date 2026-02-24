@@ -223,6 +223,13 @@ class CompilerExecutor extends CommandExecutor {
     final currentPlatform = PlatformUtils.getCurrentPlatform();
     if (args.verbose) print('  Current platform: $currentPlatform');
 
+    // Create placeholder context for general placeholder resolution
+    // (folder, nature, path placeholders from ExecutePlaceholderResolver).
+    final placeholderCtx = ExecutePlaceholderContext.fromCommandContext(
+      context,
+      findWorkspaceRoot(projectPath),
+    );
+
     final savedDir = Directory.current.path;
     Directory.current = projectPath;
 
@@ -237,6 +244,7 @@ class CompilerExecutor extends CommandExecutor {
           projectPath: projectPath,
           sectionName: 'precompile',
           args: args,
+          placeholderCtx: placeholderCtx,
         );
       }
 
@@ -298,6 +306,7 @@ class CompilerExecutor extends CommandExecutor {
                     commandTemplates: section.commands,
                     projectPath: projectPath,
                     args: args,
+                    placeholderCtx: placeholderCtx,
                   )
                 : await _compileFile(
                     file: file,
@@ -306,6 +315,7 @@ class CompilerExecutor extends CommandExecutor {
                     commandTemplates: section.commandlines,
                     projectPath: projectPath,
                     args: args,
+                    placeholderCtx: placeholderCtx,
                   );
             if (success) compilationCount++;
           }
@@ -320,6 +330,7 @@ class CompilerExecutor extends CommandExecutor {
           projectPath: projectPath,
           sectionName: 'postcompile',
           args: args,
+          placeholderCtx: placeholderCtx,
         );
       }
 
@@ -370,6 +381,7 @@ class CompilerExecutor extends CommandExecutor {
     required String projectPath,
     required String sectionName,
     required CliArgs args,
+    required ExecutePlaceholderContext placeholderCtx,
   }) async {
     if (section.platforms.isNotEmpty) {
       final matches = section.platforms.any(
@@ -415,7 +427,14 @@ class CompilerExecutor extends CommandExecutor {
     }
 
     for (final commandTemplate in section.commandlines) {
-      var command = commandTemplate
+      // Resolve general placeholders (folder, nature, path, etc.)
+      // before compiler-specific platform replacements.
+      var command = ExecutePlaceholderResolver.resolveCommand(
+        commandTemplate,
+        placeholderCtx,
+        skipUnknown: true,
+      );
+      command = command
           .replaceAll(
             r'${current-os}',
             PlatformUtils.getTargetOS(currentPlatform),
@@ -476,6 +495,7 @@ class CompilerExecutor extends CommandExecutor {
     required List<String> commandTemplates,
     required String projectPath,
     required CliArgs args,
+    required ExecutePlaceholderContext placeholderCtx,
   }) async {
     final filePath = p.normalize(file);
     final fileName = p.basenameWithoutExtension(filePath);
@@ -574,6 +594,7 @@ class CompilerExecutor extends CommandExecutor {
     required List<String> commandTemplates,
     required String projectPath,
     required CliArgs args,
+    required ExecutePlaceholderContext placeholderCtx,
   }) async {
     final filePath = p.normalize(file);
     final fileName = p.basenameWithoutExtension(filePath);
@@ -592,8 +613,15 @@ class CompilerExecutor extends CommandExecutor {
     }
 
     for (final template in commandTemplates) {
-      var command = _resolvePlaceholders(
+      // Resolve general placeholders (folder, nature, path, etc.)
+      // before compiler-specific file/target placeholders.
+      final preResolved = ExecutePlaceholderResolver.resolveCommand(
         template,
+        placeholderCtx,
+        skipUnknown: true,
+      );
+      var command = _resolvePlaceholders(
+        preResolved,
         filePath: filePath,
         fileName: fileName,
         fileBasename: fileBasename,

@@ -1,4 +1,5 @@
 import 'command_definition.dart';
+import 'help_topic.dart';
 import 'option_definition.dart';
 
 /// Mode in which a tool can operate.
@@ -136,6 +137,12 @@ class ToolDefinition {
   /// Footer text for help output.
   final String? helpFooter;
 
+  /// Help topics available via `tool help <topic>`.
+  ///
+  /// Topics provide documentation sections that are separate from commands.
+  /// Use [defaultHelpTopics] from `builtin_help_topics.dart` for built-in topics.
+  final List<HelpTopic> helpTopics;
+
   /// Nature types that ALL must be present on a folder for the tool to run.
   ///
   /// Used for singleCommand tools where there is no [CommandDefinition].
@@ -158,9 +165,20 @@ class ToolDefinition {
     this.commands = const [],
     this.defaultCommand,
     this.helpFooter,
+    this.helpTopics = const [],
     this.requiredNatures,
     this.worksWithNatures = const {},
   });
+
+  /// Find a help topic by name.
+  ///
+  /// Returns null if no topic matches.
+  HelpTopic? findHelpTopic(String name) {
+    for (final topic in helpTopics) {
+      if (topic.name == name) return topic;
+    }
+    return null;
+  }
 
   /// Find command by name, alias, or unambiguous prefix.
   ///

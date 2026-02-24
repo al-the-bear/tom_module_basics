@@ -1045,6 +1045,7 @@ final buildkitTool = ToolDefinition(
   description: 'Pipeline-based build orchestration tool',
   version: BuildkitVersionInfo.version,
   mode: ToolMode.multiCommand,
+  helpTopics: defaultHelpTopics,
   features: const NavigationFeatures(
     projectTraversal: true,
     gitTraversal: true,

@@ -8,6 +8,7 @@ import 'folder/natures/dart_project_folder.dart';
 import 'folder/natures/git_folder.dart';
 import 'folder/natures/extension_folder.dart';
 import 'folder/natures/buildkit_folder.dart';
+import 'traversal/command_context.dart';
 
 /// Exception thrown when a placeholder cannot be resolved.
 class UnresolvedPlaceholderException implements Exception {
@@ -59,6 +60,23 @@ class ExecutePlaceholderContext {
        currentPlatform =
            '${_normalizeOs(currentOs ?? Platform.operatingSystem)}-'
            '${currentArch ?? _detectArch()}';
+
+  /// Create from a [CommandContext] during traversal.
+  ///
+  /// Copies natures from the context into the FsFolder so placeholder
+  /// resolution can access them.
+  factory ExecutePlaceholderContext.fromCommandContext(
+    CommandContext context,
+    String rootPath,
+  ) {
+    final folder = context.fsFolder;
+    folder.natures.clear();
+    folder.natures.addAll(context.natures);
+    return ExecutePlaceholderContext(
+      rootPath: rootPath,
+      folder: folder,
+    );
+  }
 
   static String _detectArch() {
     final dartExe = Platform.resolvedExecutable;
@@ -358,8 +376,16 @@ class ExecutePlaceholderResolver {
   /// Resolve all placeholders in a command string.
   ///
   /// Throws [UnresolvedPlaceholderException] if any placeholder cannot be
-  /// resolved for the current context.
-  static String resolveCommand(String command, ExecutePlaceholderContext ctx) {
+  /// resolved for the current context, unless [skipUnknown] is true.
+  ///
+  /// When [skipUnknown] is true, unrecognized placeholders are left as-is
+  /// in the output string. This is useful when other resolvers will handle
+  /// remaining placeholders (e.g., compiler-specific `${file}` placeholders).
+  static String resolveCommand(
+    String command,
+    ExecutePlaceholderContext ctx, {
+    bool skipUnknown = false,
+  }) {
     var result = command;
 
     // First, resolve ternary expressions
@@ -370,6 +396,7 @@ class ExecutePlaceholderResolver {
 
       // Check if it's a boolean placeholder
       if (!isBooleanPlaceholder(placeholder)) {
+        if (skipUnknown) return match.group(0)!;
         throw UnresolvedPlaceholderException(
           placeholder,
           ctx.folderPath,
@@ -384,7 +411,12 @@ class ExecutePlaceholderResolver {
     // Then, resolve simple placeholders
     result = result.replaceAllMapped(_simplePlaceholderRegex, (match) {
       final placeholder = match.group(1)!;
-      return resolvePlaceholder(placeholder, ctx);
+      try {
+        return resolvePlaceholder(placeholder, ctx);
+      } on UnresolvedPlaceholderException {
+        if (skipUnknown) return match.group(0)!;
+        rethrow;
+      }
     });
 
     return result;

@@ -7,6 +7,7 @@ import 'command_definition.dart';
 import 'help_generator.dart';
 import 'tool_definition.dart';
 import 'command_executor.dart';
+import '../execute_placeholder.dart';
 import '../traversal/traversal_info.dart';
 import '../traversal/build_base.dart';
 import '../traversal/filter_pipeline.dart';
@@ -151,6 +152,12 @@ class ToolRunner {
             output.writeln('  :${match.name}');
           }
           return const ToolResult.failure('Ambiguous command prefix');
+        }
+        // Check help topics before giving up
+        final topic = tool.findHelpTopic(cmdName);
+        if (topic != null) {
+          output.writeln(HelpGenerator.generateTopicHelp(topic, tool: tool));
+          return const ToolResult.success();
         }
         output.writeln('Unknown command: :$cmdName');
         return const ToolResult.failure('Unknown command');
@@ -360,7 +367,22 @@ class ToolRunner {
           }
         }
 
-        final result = await executor.execute(context, cliArgs);
+        // Resolve placeholders in CLI args per folder.
+        // Uses skipUnknown: true so command-specific placeholders (e.g.,
+        // compiler's ${file}) are left for the executor's own resolver.
+        final placeholderCtx = ExecutePlaceholderContext.fromCommandContext(
+          context,
+          executionRoot,
+        );
+        final resolvedArgs = cliArgs.withResolvedStrings(
+          (s) => ExecutePlaceholderResolver.resolveCommand(
+            s,
+            placeholderCtx,
+            skipUnknown: true,
+          ),
+        );
+
+        final result = await executor.execute(context, resolvedArgs);
         results.add(result);
         return true; // Continue to next
       },

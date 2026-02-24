@@ -250,6 +250,7 @@ final testkitTool = ToolDefinition(
   description: 'Test result tracking for Dart projects',
   version: TestKitVersionInfo.version,
   mode: ToolMode.multiCommand,
+  helpTopics: defaultHelpTopics,
   features: const NavigationFeatures(
     projectTraversal: true,
     gitTraversal: false,

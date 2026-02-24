@@ -5,6 +5,7 @@
 library;
 
 import 'help_generator.dart';
+import 'help_topic.dart';
 import 'tool_definition.dart';
 import 'command_definition.dart';
 
@@ -77,10 +78,19 @@ SpecialCommandResult handleSpecialCommands(
   // Help command
   if (first == 'help' || first == '--help' || first == '-h') {
     if (args.length > 1 && first == 'help') {
-      // Command-specific help: help :command or help command
+      // Command-specific help: help :command or help command or help topic
       final target = args[1];
       final cmdName = target.startsWith(':') ? target.substring(1) : target;
-      _printCommandHelp(tool, cmdName, printer, commandHelpGenerator);
+      // Check help topics first (they don't need : prefix)
+      final topic = tool.helpTopics.cast<HelpTopic?>().firstWhere(
+        (t) => t!.name == cmdName,
+        orElse: () => null,
+      );
+      if (topic != null) {
+        printer(HelpGenerator.generateTopicHelp(topic, tool: tool));
+      } else {
+        _printCommandHelp(tool, cmdName, printer, commandHelpGenerator);
+      }
     } else {
       printer(toolHelpGenerator(tool));
     }
@@ -110,6 +120,13 @@ void _printCommandHelp(
     buf.writeln('Available commands:');
     for (final c in tool.visibleCommands) {
       buf.writeln('  :${c.name.padRight(16)} ${c.description}');
+    }
+    if (tool.helpTopics.isNotEmpty) {
+      buf.writeln();
+      buf.writeln('Help Topics:');
+      for (final topic in tool.helpTopics) {
+        buf.writeln('  ${topic.name.padRight(16)} ${topic.summary}');
+      }
     }
     printer(buf.toString());
     return;
@@ -244,6 +261,19 @@ String generatePlainToolHelp(ToolDefinition tool) {
     'Use "${tool.name} help :command" for detailed help on a specific command.',
   );
   buf.writeln();
+
+  // Help topics
+  if (tool.helpTopics.isNotEmpty) {
+    buf.writeln('Help Topics:');
+    for (final topic in tool.helpTopics) {
+      buf.writeln('  ${topic.name.padRight(20)} ${topic.summary}');
+    }
+    buf.writeln();
+    buf.writeln(
+      'Use "${tool.name} help <topic>" for detailed information.',
+    );
+    buf.writeln();
+  }
 
   // Footer from tool definition
   if (tool.helpFooter != null) {

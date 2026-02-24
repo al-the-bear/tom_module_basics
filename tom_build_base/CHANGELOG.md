@@ -1,3 +1,24 @@
+## 2.4.0
+
+### Added
+
+- **`execute_placeholder.dart`** — `resolveCommand()` now accepts `skipUnknown` parameter. When true, unrecognized placeholders are left as-is instead of throwing, enabling multi-phase resolution (e.g., general placeholders first, then compiler-specific ones).
+- **`execute_placeholder.dart`** — Added `ExecutePlaceholderContext.fromCommandContext()` factory for easy creation from traversal's `CommandContext`.
+- **`cli_arg_parser.dart`** — Added `CliArgs.withResolvedStrings()` method to create a copy with placeholders resolved in positional args, extra options, and per-command options.
+- **`tool_runner.dart`** — ToolRunner now automatically resolves general placeholders (`${folder}`, `${dart.name}`, etc.) in all CLI args per folder during traversal, giving universal placeholder support to all commands.
+- **`tom_build_base_v2.dart`** — Exported `execute_placeholder.dart` from the v2 barrel.
+
+## 2.3.0
+
+### Added
+
+- **`help_topic.dart`** — New `HelpTopic` class for named help sections (topic content, summary, name).
+- **`builtin_help_topics.dart`** — Built-in `placeholdersHelpTopic` with comprehensive placeholder documentation.
+- **`tool_definition.dart`** — Added `helpTopics` field and `findHelpTopic()` method.
+- **`help_generator.dart`** — Added `generateTopicHelp()` and "Help Topics" section in tool help.
+- **`special_commands.dart`** — Help topic lookup in `handleSpecialCommands()` and `generatePlainToolHelp()`.
+- **`tool_runner.dart`** — Help topic lookup before "Unknown command" error.
+
 ## 2.2.0
 
 ### Added

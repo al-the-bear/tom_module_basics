@@ -259,6 +259,80 @@ class CliArgs {
 
   /// Whether help or version was requested.
   bool get isHelpOrVersion => help || version;
+
+  /// Create a copy with placeholders resolved in user-provided string values.
+  ///
+  /// Resolves placeholders in [positionalArgs], string values in
+  /// [extraOptions], and per-command [PerCommandArgs.options].
+  /// Other fields (flags, patterns, traversal config) are copied as-is.
+  ///
+  /// The [resolver] function is called for each string value.
+  /// Typically wraps [ExecutePlaceholderResolver.resolveCommand].
+  CliArgs withResolvedStrings(String Function(String) resolver) {
+    return CliArgs(
+      scan: scan,
+      recursive: recursive,
+      notRecursive: notRecursive,
+      root: root,
+      bareRoot: bareRoot,
+      scanExplicitlySet: scanExplicitlySet,
+      recursiveExplicitlySet: recursiveExplicitlySet,
+      excludePatterns: excludePatterns,
+      excludeProjects: excludeProjects,
+      recursionExclude: recursionExclude,
+      projectPatterns: projectPatterns,
+      modules: modules,
+      skipModules: skipModules,
+      innerFirstGit: innerFirstGit,
+      outerFirstGit: outerFirstGit,
+      topRepo: topRepo,
+      buildOrder: buildOrder,
+      workspaceRecursion: workspaceRecursion,
+      verbose: verbose,
+      dryRun: dryRun,
+      listOnly: listOnly,
+      force: force,
+      guide: guide,
+      dumpConfig: dumpConfig,
+      configPath: configPath,
+      help: help,
+      version: version,
+      noSkip: noSkip,
+      includeTestProjects: includeTestProjects,
+      testProjectsOnly: testProjectsOnly,
+      positionalArgs: positionalArgs.map(resolver).toList(),
+      commands: commands,
+      commandArgs: commandArgs.map(
+        (k, v) => MapEntry(
+          k,
+          PerCommandArgs(
+            commandName: v.commandName,
+            projectPatterns: v.projectPatterns,
+            excludePatterns: v.excludePatterns,
+            options: _resolveMapValues(v.options, resolver),
+          ),
+        ),
+      ),
+      extraOptions: _resolveMapValues(extraOptions, resolver),
+    );
+  }
+
+  /// Resolve string values in a map, leaving non-strings unchanged.
+  static Map<String, dynamic> _resolveMapValues(
+    Map<String, dynamic> map,
+    String Function(String) resolver,
+  ) {
+    return map.map((k, v) {
+      if (v is String) return MapEntry(k, resolver(v));
+      if (v is List) {
+        return MapEntry(
+          k,
+          v.map((e) => e is String ? resolver(e) : e).toList(),
+        );
+      }
+      return MapEntry(k, v);
+    });
+  }
 }
 
 /// Per-command arguments for multi-command tools.
