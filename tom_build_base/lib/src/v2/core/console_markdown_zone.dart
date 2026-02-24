@@ -59,8 +59,9 @@ class ConsoleMarkdownSink implements StringSink {
 
   @override
   void writeAll(Iterable objects, [String separator = '']) {
-    final rendered =
-        objects.map((o) => o.toString().toConsole()).join(separator);
+    final rendered = objects
+        .map((o) => o.toString().toConsole())
+        .join(separator);
     _delegate.write(rendered);
   }
 
@@ -116,9 +117,7 @@ Future<T> runWithConsoleMarkdown<T>(
       if (onError != null) {
         onError(error, stack);
       } else {
-        stderr.writeln(
-          '<red>**Uncaught error:**</red> $error'.toConsole(),
-        );
+        stderr.writeln('<red>**Uncaught error:**</red> $error'.toConsole());
         stderr.writeln(stack.toString());
         exit(1);
       }

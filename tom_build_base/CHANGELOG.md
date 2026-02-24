@@ -1,3 +1,9 @@
+## 2.5.1
+
+### Fixed
+
+- **`builtin_help_topics.dart`** — Escaped `*` in placeholders help topic context reference table to prevent console_markdown from consuming it as italic markup.
+
 ## 2.5.0
 
 ### Added

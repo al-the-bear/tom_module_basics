@@ -224,8 +224,6 @@ String? readPubspecVersion(String projectPath) {
 // Internal helpers (replacing deleted v1 ProjectDiscovery / ProjectScanner)
 // =============================================================================
 
-
-
 /// Resolve glob patterns to a list of project paths.
 Future<List<String>> _resolveGlobPatterns(
   List<String> patterns, {
@@ -263,8 +261,6 @@ Future<List<String>> _resolveGlobPatterns(
 
   return results;
 }
-
-
 
 /// Apply exclusion patterns to a list of project paths.
 List<String> _applyExclusions(

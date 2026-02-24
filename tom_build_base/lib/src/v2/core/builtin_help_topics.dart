@@ -232,9 +232,9 @@ Each system is independent and uses its own syntax.
     │ ${file/target}         │          │          │   ✓      │
     │ @{tool placeholders}   │          │   ✓      │          │
     │ @[defines]             │          │   ✓      │          │
-    │ $VAR / $[VAR]          │   ✓ (*)  │   ✓      │   ✓      │
+    │ $VAR / $[VAR]          │   ✓ (\*)  │   ✓      │   ✓      │
     └────────────────────────┴──────────┴──────────┴──────────┘
-    (*) resolved by shell, not by the tool
+    (\*) resolved by shell, not by the tool
 
 <green>**EXAMPLES**</green>
 
