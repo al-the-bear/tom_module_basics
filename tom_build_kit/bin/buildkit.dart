@@ -21,10 +21,12 @@
 /// - `--outer-first-git` - Process outermost git repos first
 library;
 
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
 import 'package:args/args.dart';
+import 'package:console_markdown/console_markdown.dart';
 import 'package:path/path.dart' as p;
 import 'package:tom_build_base/tom_build_base.dart';
 import 'package:tom_build_base/tom_build_base_v2.dart';
@@ -89,6 +91,23 @@ void _saveMacros() {
 }
 
 Future<void> main(List<String> args) async {
+  // Run inside a console_markdown zone so that print() output
+  // automatically renders markdown syntax (bold, colors, etc.)
+  // to ANSI escape codes.  The zone value guards against
+  // double-rendering when called from contexts that already
+  // have console_markdown active (e.g. tom_d4rt_dcli).
+  if (Zone.current[#consoleMarkdownActive] != true) {
+    return runZoned(
+      () => main(args),
+      zoneSpecification: ZoneSpecification(
+        print: (self, parent, zone, line) {
+          parent.print(zone, line.toConsole());
+        },
+      ),
+      zoneValues: {#consoleMarkdownActive: true},
+    );
+  }
+
   // Handle special commands (help, version) early
   final result = handleSpecialCommands(
     args,
@@ -669,11 +688,11 @@ String _findWorkspaceRoot(String fromPath) {
 /// Generate tool help text.
 String _generateToolHelp() {
   final buf = StringBuffer();
-  buf.writeln('Build Kit $_version - Pipeline-based build orchestration');
+  buf.writeln('**Build Kit** $_version - Pipeline-based build orchestration');
   buf.writeln();
-  buf.writeln('Usage: buildkit [options] <pipeline|:command> [args...]');
+  buf.writeln('<cyan>**Usage:**</cyan> buildkit [options] <pipeline|:command> [args...]');
   buf.writeln();
-  buf.writeln('Commands (prefixed with :):');
+  buf.writeln('<cyan>**Commands**</cyan> (prefixed with :):');
   buf.writeln('  :versioner      Update version files');
   buf.writeln('  :bumpversion    Bump version numbers');
   buf.writeln('  :compiler       Compile Dart executables');
@@ -687,7 +706,7 @@ String _generateToolHelp() {
   buf.writeln('  :pubupdate      Run dart pub upgrade');
   buf.writeln('  :pubupdateall   Run dart pub upgrade in all projects');
   buf.writeln();
-  buf.writeln('Git Commands:');
+  buf.writeln('<cyan>**Git Commands:**</cyan>');
   buf.writeln('  :gitstatus      Show git status');
   buf.writeln('  :gitcommit      Commit changes');
   buf.writeln('  :gitpull        Pull changes');
@@ -705,15 +724,15 @@ String _generateToolHelp() {
   buf.writeln('  :gitsquash      Squash commits');
   buf.writeln('  :gitrebase      Rebase branch');
   buf.writeln();
-  buf.writeln('Macros:');
+  buf.writeln('<cyan>**Macros:**</cyan>');
   buf.writeln('  :define         Define a macro (name=value)');
   buf.writeln('  :undefine       Remove a macro');
   buf.writeln('  :defines        List defined macros');
   buf.writeln();
-  buf.writeln('Options:');
+  buf.writeln('<yellow>**Options:**</yellow>');
   buf.writeln(_createGlobalParser().usage);
   buf.writeln();
-  buf.writeln('Examples:');
+  buf.writeln('<cyan>**Examples:**</cyan>');
   buf.writeln('  buildkit build                    Run build pipeline');
   buf.writeln(
     '  buildkit :versioner --scan .      Run versioner in current dir',
@@ -739,11 +758,11 @@ void _printUsage() {
 String _generateCommandHelp(CommandDefinition cmd) {
   final buf = StringBuffer();
 
-  buf.writeln('Build Kit $_version');
+  buf.writeln('**Build Kit** $_version');
   buf.writeln();
-  buf.writeln('Command: :${cmd.name}');
+  buf.writeln('<cyan>**Command:**</cyan> :${cmd.name}');
   if (cmd.aliases.isNotEmpty) {
-    buf.writeln('Aliases: ${cmd.aliases.map((a) => ':$a').join(', ')}');
+    buf.writeln('<cyan>**Aliases:**</cyan> ${cmd.aliases.map((a) => ':$a').join(', ')}');
   }
   buf.writeln();
   buf.writeln(cmd.description);
@@ -751,7 +770,7 @@ String _generateCommandHelp(CommandDefinition cmd) {
 
   // Command-specific options
   if (cmd.options.isNotEmpty) {
-    buf.writeln('Options:');
+    buf.writeln('<yellow>**Options:**</yellow>');
     for (final opt in cmd.options) {
       final abbr = opt.abbr != null ? '-${opt.abbr}, ' : '    ';
       final name = '--${opt.name}';
@@ -767,7 +786,7 @@ String _generateCommandHelp(CommandDefinition cmd) {
 
   // Examples
   if (cmd.examples.isNotEmpty) {
-    buf.writeln('Examples:');
+    buf.writeln('<cyan>**Examples:**</cyan>');
     for (final ex in cmd.examples) {
       buf.writeln('  $ex');
     }
@@ -776,7 +795,7 @@ String _generateCommandHelp(CommandDefinition cmd) {
 
   // Traversal info
   if (cmd.supportsProjectTraversal || cmd.supportsGitTraversal) {
-    buf.writeln('Traversal:');
+    buf.writeln('<cyan>**Traversal:**</cyan>');
     if (cmd.supportsProjectTraversal) {
       buf.writeln('  Supports --project, --exclude-project filters');
     }
